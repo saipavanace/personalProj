@@ -1,0 +1,635 @@
+<p class="auto-cursor-target"><a href="/wiki/spaces/ENGR/pages/16172060/Ncore3+Spyglass+Lint+Regression+Results?preview=%2F16172060%2F16233438%2FNcore3_Weekly_Spyglass_Lint.xlsx"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-spreadsheet.png'); width: 250px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">Ncore3_Weekly_Spyglass_L…</span></a></p><p class="auto-cursor-target"><time datetime="2020-11-30" class="date-past">30 Nov 2020</time>  Ncore3 Spyglass lint in Verilog mode</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01 					    : 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_02   						: 0 Errors,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_04 						: 0 Errors,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_05 						: 0 Errors,  0 Warnings(policy lint),  10 Warnings(design read)
+hw_config_06 						: 0 Errors,  0 Warnings(policy lint),  16 Warnings(design read)
+**hw_config_07 						: 0 Errors,  2 Errors(policy lint),  24 Warnings(design read)
+**hw_config_07_parity 				: 0 Errors,  8 Errors(policy lint),  24 Warnings(design read)
+**hw_config_08 						: 0 Errors,  1 Error(policy lint),  24 Warnings(design read)
+**hw_config_09 						: 0 Errors,  2 Errors(policy lint),  24 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint),  40 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  14 Warnings(design read)
+hw_config_20 						: 0 Errors,  0 Warnings(policy lint),  18 Warnings(design read)
+hw_config_22 						: 0 Errors,  0 Warnings(policy lint),  20 Warnings(design read)
+hw_config_32 						: 0 Errors,  0 Warnings(policy lint),  95 Warnings(design read)
+hw_config_10_res 					: 0 Errors,  0 Warnings(policy lint),  40 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.
+Note: ** Regarding Policy lint errors: saying W19 in stt_top*.v with message Constant 4&#39;h0d will be truncated is a known issue </pre>
+</div></div><p class="auto-cursor-target">11/20/2020 Ncore3 Spyglass lint in Verilog mode</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01 					    : 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_02   						: 0 Errors,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_04 						: 0 Errors,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_05 						: 2 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_06 						: 0 Errors,  0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_07 						: 0 Errors,  0 Warnings(policy lint),  24 Warnings(design read)
+hw_config_07_parity 				: 0 Errors,  0 Warnings(policy lint),  24 Warnings(design read)
+hw_config_08 						: 0 Errors,  0 Warnings(policy lint),  24 Warnings(design read)
+hw_config_09 						: 0 Errors,  0 Warnings(policy lint),  24 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint),  40 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  14 Warnings(design read)
+hw_config_20 						: 0 Errors,  0 Warnings(policy lint),  18 Warnings(design read)
+hw_config_22 						: 0 Errors,  0 Warnings(policy lint),  20 Warnings(design read)
+hw_config_32 						: 0 Errors,  0 Warnings(policy lint),  95 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">08/22/2020 Ncore3 Spyglass lint in SystemVerilog mode (Note: Verilog mode lint all failed because some modules have Verilog syntax error).</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_07_parity					: 2 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_08/hw_cfg_8				: 2 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_09						: 2 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 2 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 2 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">08/03/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 0 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/29/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 0 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/26/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 0 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/22/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 0 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/15/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 0 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/12/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 0 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/09/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 0 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint),  8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/06/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Errors,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Errors,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Errors,  7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 4 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 4 Errors,  0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 0 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 4 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 0 Errors,  0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Errors,  0 Warnings(policy lint), 8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">07/02/2020 Ncore3 Spyglass lint. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Error,   0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Error,   7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 1 Error,   0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 2 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 16 Errors, 0 Warnings(policy lint), 45 Warnings(design read)
+hw_config_08/hw_cfg_8				: 3 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 3 Errors,  0 Warnings(policy lint), 12 Warnings(design read)
+hw_config_10 						: 1 Error,   0 Warnings(policy lint), 19 Warnings(design read)
+hw_config_11 						: 0 Errors,  0 Warnings(policy lint),  7 Warnings(design read)
+hw_config_20/hw_cfg_20				: 1 Error,   0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 12 Errors,  0 Warnings(policy lint), 8 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">06/28/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01						: 0 Error,   0 Warnings(policy lint),  0 Warnings(design read), 9 fatals
+hw_config_02/hw_cfg_256				: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Error,   7 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 2 Errors,  0 Warnings(policy lint), 38 Warnings(design read)
+hw_config_07_parity					: 16 Errors, 0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_08/hw_cfg_8				: 2 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 6 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_10 						: 6 Errors,  0 Warnings(policy lint), 58 Warnings(design read)
+hw_config_11 						: 6 Errors,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Error,   0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 4 Errors,  0 Warnings(policy lint), 16 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">06/21/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256				: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Error,   0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Error,   0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 4 Errors,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 0 Error,   0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_07_parity					: 9 Errors,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_08/hw_cfg_8				: 1 Error,   0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 0 Error,   0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_10 						: 12 Errors, 0 Warnings(policy lint), 58 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Error,   0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Error,   0 Warnings(policy lint), 16 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">06/17/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256				: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Error,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Error,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_07_parity					: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_08/hw_cfg_8				: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_10 						: 0 Error,  0 Warnings(policy lint), 58 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Error,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Error,  0 Warnings(policy lint), 16 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">06/14/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256				: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Error,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Error,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_07_parity					: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_08/hw_cfg_8				: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_10 						: 0 Error,  0 Warnings(policy lint), 58 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Error,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Error,  0 Warnings(policy lint), 16 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p class="auto-cursor-target">06/10/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_01 						: 0 Error,  0 Warnings(policy lint),  0 Warnings(design read)
+hw_config_02/hw_cfg_256				: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_03						: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)		
+hw_config_04						: 0 Error,  0 Warnings(policy lint), 20 Warnings(design read)
+hw_config_05_duplication			: 0 Error,  0 Warnings(policy lint), 10 Warnings(design read)
+hw_config_06						: 0 Error,  0 Warnings(policy lint), 24 Warnings(design read)
+hw_config_07_synthesis/				: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_07_parity					: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_08/hw_cfg_8				: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_09						: 1 Error,  0 Warnings(policy lint), 37 Warnings(design read)
+hw_config_10 						: 0 Error,  0 Warnings(policy lint), 58 Warnings(design read)
+hw_config_11						: 6 Errors, 0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_20/hw_cfg_20				: 0 Error,  0 Warnings(policy lint), 26 Warnings(design read)
+hw_config_22/hw_cfg_22 				: 0 Error,  0 Warnings(policy lint), 16 Warnings(design read)
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p>06/03/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_08/hw_cfg_8 								: 1 Error,  0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_07/hw_config_07_synthesis				    : 1 Error,  0 Warnings(policy lint), 154 Warnings(design read)
+hw_config_10_synthesis/								: 0 Errors, 0 Warnings(policy lint), 170 Warnings(design read)
+hw_config_20/hw_cfg_20 								: 0 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity 						: 1 Error,  0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_22/hw_cfg_22 								: 0 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication 					: 3 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+hw_config_02/hw_cfg_256								: 0 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p>05/31/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_08/hw_cfg_8 								: 1 Error,  0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_07/hw_config_07_synthesis				    : 1 Error,  0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_10_synthesis/								: 0 Errors, 0 Warnings(policy lint), 170 Warnings(design read)
+hw_config_20/hw_cfg_20 								: 0 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity 						: 7 Errors, 0 Warnings(policy lint), 154 Warnings(design read)
+hw_config_22/hw_cfg_22 								: 0 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication 					:12 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+hw_config_02/hw_cfg_256								: 0 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p>05/28/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_08/hw_cfg_8 								: 1 Error,  0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_07/hw_config_07_synthesis				    : 2 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_10_synthesis/								: 1 Errors, 0 Warnings(policy lint), 137 Warnings(design read)
+hw_config_20/hw_cfg_20 								: 1 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity 						: 8 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_22/hw_cfg_22 								: 1 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication 					:12 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+hw_config_02/hw_cfg_256								: 0 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p>05/24/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_08/hw_cfg_8 								: 1 Error,  0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_07/hw_config_07_synthesis				    : 4 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_10_synthesis/								: 4 Errors, 0 Warnings(policy lint), 137 Warnings(design read)
+hw_config_20/hw_cfg_20 								: 2 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity 						:10 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_22/hw_cfg_22 								: 1 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication 					:14 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+hw_config_02/hw_cfg_256								: 2 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p>05/21/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_08/hw_cfg_8 								: 1 Error,  0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_07/hw_config_07_synthesis				    : 5 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_10_synthesis/								: 7 Errors, 0 Warnings(policy lint), 137 Warnings(design read)
+hw_config_20/hw_cfg_20 								: 1 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity 						:12 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_22/hw_cfg_22 								: 1 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication 					:21 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+hw_config_02/hw_cfg_256								: 3 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p>05/15/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung Configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_08/hw_cfg_8 								: 1 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_07/hw_config_07_synthesis				    : 1 Errors, 0 Warnings(policy lint), 121 Warnings(design read)
+hw_config_10_synthesis/								: 6 Errors, 0 Warnings(policy lint), 137 Warnings(design read)
+hw_config_20/hw_cfg_20 								: 0 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity 						: 1 Errors, 0 Warnings(policy lint), 122 Warnings(design read)
+hw_config_22/hw_cfg_22 								: 2 Errors, 0 Warnings(policy lint),  16 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication 					: 0 Errors, 0 Warnings(policy lint),  10 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.
+</pre>
+</div></div><p>05/08/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung configuration</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_20/hw_cfg_20             :  0 Errors, 0 Warning(policy lint),  16 Warnings(design read)
+hw_config_22/hw_cfg_22             :  0 Errors, 0 Warning(policy lint),  16 Warnings(design read)
+hw_config_02/hw_cfg_256            :  0 Errors, 0 Warning(policy lint),  10 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication  :  0 Errors, 0 Warning(policy lint),  10 Warnings(design read)
+hw_config_07/hw_cfg_7_parity       :  0 Errors, 0 Warning(policy lint), 121 Warnings(design read)
+hw_config_07/hw_config_07_synthesis:  0 Errors, 0 Warning(policy lint), 121 Warnings(design read)
+hw_config_10/hw_config_10_synthesis: 36 Errors,   Warning(policy lint),     Warnings(design read)
+ 
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p>05/01/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">NOTES: 
+hw_cfg_7_parity failed Maestro RTL generation. 
+See/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_7_parity/output/rtl/design/gen_wrapper.error.json
+ 
+hw_config_22/hw_cfg_22              :  26 Errors, 0 Warning(policy lint), 18 Warnings(design read)
+hw_config_02/hw_cfg_256             :   0 Errors, 0 Warning(policy lint), 13 Warnings(design read)
+hw_config_20/hw_cfg_20              : 218 Errors, 0 Warning(policy lint), 19 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication   :  12 Errors, 0 Warning(policy lint), 13 Warnings(design read)
+hw_config_07/hw_config_07_synthesis :   6 Errors, 0 Warning(policy lint),127 Warnings(design read)
+hw_config_10/hw_config_10_synthesis : 367 Errors, 0 Warning(policy lint),142 Warnings(design read)
+ 
+ 12 DMI                 lint errors in hw_cfg_5_duplication
+218 DII                 lint errors in hw_cfg_20
+ 26 DII                 lint errors in hw_cfg_22
+  6 DII                 lint errors in hw_config_07_synthesis
+357 DII                 lint errors in hw_config_10_synthesis
+ 10 Maestro/gen_wrapper lint errors in hw_config_10_synthesis
+ 
+Reports:
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_20/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_22/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_256/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_5_duplication/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_config_07_synthesis/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_config_10_synthesis/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p>04/26/2020 Ncore3 Spyglass lint in Verilog mode. NOTE: hw_cfg_22 is Samsung configuration.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_22/hw_cfg_22              :  2 Errors, 0 Warning(policy lint), 18 Warnings(design read)
+hw_config_07/hw_cfg_7_parity        :  2 Errors, 0 Warning(policy lint), 25 Warnings(design read)
+hw_config_02/hw_cfg_256             :  0 Errors, 0 Warning(policy lint), 13 Warnings(design read)
+hw_config_20/hw_cfg_20              :  2 Errors, 0 Warning(policy lint), 19 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication   :  0 Errors, 0 Warning(policy lint), 17 Warnings(design read)
+hw_config_07/hw_config_07_synthesis :  0 Errors, 0 Warning(policy lint), 25 Warnings(design read)
+hw_config_10/hw_config_10_synthesis :  4 Errors, 0 Warning(policy lint),142 Warnings(design read)
+
+
+hw_cfg_20, hw_cfg_22, hw_config_10_synthesis
+============================================
+[E]      W154              Error       dii_pipe_control_b.v    161     2     Declare net &#39;tt_qos&#39; explicitly
+[DF1]    W164a             Error       dii_pipe_control_b.v    161     10    LHS: &#39;tt_qos&#39; width 1 is less than RHS: &#39;cmd_req_fifo_data[69:66] &#39; width 4 in assignment [Hierarchy: &#39;:gen_wrapper:sys_dii@config_dii_a:u_dii_unit@dii_unit_b:pipe_control@dii_pipe_control_b&#39;]
+
+
+hw_cfg_7_parity
+===============
+[20C9]   UndrivenInTerm-ML             Error       fault_checker_c.v    182     10    Detected undriven input terminal gen_wrapper.dii0.u_dii_fault_checker.latent_fault_tree_0
+[979]    W123                          Error       fault_checker_c.v    162     10    Variable &#39;latent_fault_tree_0&#39; read but never set.[Hierarchy: &#39;:gen_wrapper:dii0@dii_top_a:u_dii_fault_checker@fault_checker_c&#39;]
+
+
+hw_config_10_synthesis
+======================
+[337]    W164a             Error       stt_entry_a.v           422     10    LHS: &#39;snp_req_TxnID[7:0] &#39; width 8 is less than RHS: &#39;((stashing_entry &amp; (~snp_req_DoNotGoToSD)) ? {1&#39;b1 ,ott_stash_encoded ,stt_entry_num} : {1&#39;b1 ,{ 1{ 1&#39;b0} }  ,stt_index})&#39; width 9 in assignment [Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:stt_top@stt_top_a:entry0@stt_entry_a&#39;]
+[59F]    W164a             Error       stt_entry_b.v           422     10    LHS: &#39;snp_req_TxnID[7:0] &#39; width 8 is less than RHS: &#39;((stashing_entry &amp; (~snp_req_DoNotGoToSD)) ? {1&#39;b1 ,ott_stash_encoded ,stt_entry_num} : {1&#39;b1 ,{ 1{ 1&#39;b0} }  ,stt_index})&#39; width 10 in assignment [Hierarchy: &#39;:gen_wrapper:caiu1@aiu_top_b:unit@aiu_unit_b:stt_top@stt_top_b:entry0@stt_entry_b&#39;]
+
+
+Reports:
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_20/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_22/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_256/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_5_duplication/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_cfg_7_parity/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_config_07_synthesis/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+/scratch/boon/hw_setup_concerto_spyglass/hw-ncr/hw_config_10_synthesis/output/rtl/design/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt
+
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p>04/23/2020 Ncore3 Spyglass lint is now running in Verilog mode.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_22/hw_cfg_22              :  2 Errors, 0 Warning(policy lint), 16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity        : 48 Errors, 0 Warning(policy lint), 25 Warnings(design read) 
+hw_config_02/hw_cfg_256             :  0 Errors, 0 Warning(policy lint), 13 Warnings(design read)
+hw_config_20/hw_cfg_20              :  0 Errors, 0 Warning(policy lint), 26 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication   :  0 Errors, 0 Warning(policy lint), 17 Warnings(design read) 
+hw_config_07/hw_config_07_synthesis :  0 Errors, 0 Warning(policy lint), 25 Warnings(design read)
+hw_config_10/hw_config_10_synthesis :  8 Errors, 0 Warning(policy lint),128 Warnings(design read)
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p>04/18/2020 Ncore3 Spyglass lint is now running in Verilog mode. Also, Samsung configuration (hw_config_22) is now included. Also, hw_cfg_7_parity is now included.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_22/hw_cfg_22              :  2 Errors, 0 Warning(policy lint), 16 Warnings(design read)
+hw_config_07/hw_cfg_7_parity        :743 Errors, 0 Warning(policy lint), 25 Warnings(design read) 
+hw_config_02/hw_cfg_256             :  0 Errors, 0 Warning(policy lint), 13 Warnings(design read)
+hw_config_20/hw_cfg_20              :  2 Errors, 0 Warning(policy lint), 26 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication   :  0 Errors, 0 Warning(policy lint), 17 Warnings(design read) 
+hw_config_07/hw_config_07_synthesis : 18 Errors, 0 Warning(policy lint), 25 Warnings(design read)
+hw_config_10/hw_config_10_synthesis : 26 Errors, 0 Warning(policy lint), 44 Warnings(design read)</pre>
+</div></div><p><br/></p><p>04/12/2020</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256             : 50 Errors, 0 Warning(policy lint),  5 Warnings(design read)
+hw_config_20/hw_cfg_20              :  4 Errors, 0 Warning(policy lint), 11 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication:  : 50 Errors, 0 Warning(policy lint),  5 Warnings(design read) 
+hw_config_07/hw_config_07_synthesis : 32 Errors, 0 Warning(policy lint),  5 Warnings(design read)
+hw_config_10/hw_config_10_synthesis : 28 Errors, 0 Warning(policy lint), 19 Warnings(design read)</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Lint error: hw_config_10_synthesis : IOAIU/ConcertoMUX
+W110     Error     ./ioaiu_core_a.v      3423    10    Incompatible width for port &#39;cmp_rsp_priority&#39;(width 3 in module &#39;concerto_mux_c&#39;) on instance &#39;concerto_mux&#39;(terminal width 1)
+W110     Error     ./ioaiu_core_b.v      3455    10    Incompatible width for port &#39;cmp_rsp_priority&#39;(width 3 in module &#39;concerto_mux_d&#39;) on instance &#39;concerto_mux&#39;(terminal width 1)
+UndrivenInTerm-ML    Error    ./concerto_mux_c.v     4044     10    Detected undriven input terminal gen_wrapper.caiu2.ioaiu_core.\g_cmux.concerto_mux .cmp_rsp_valid
+UndrivenInTerm-ML    Error    ./concerto_mux_d.v     4200     10    Detected undriven input terminal gen_wrapper.caiu3.ioaiu_core.\g_cmux.concerto_mux .cmp_rsp_valid
+W154     Error     ./ioaiu_core_a.v      3423     2     Declare net &#39;cmp_rsp_priority&#39; explicitly
+W154     Error     ./ioaiu_core_b.v      3455     2     Declare net &#39;cmp_rsp_priority&#39; explicitly
+W241     Error     ./concerto_mux_c.v    277      10    Output &#39;cmp_rsp_cm_status[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    278      10    Output &#39;cmp_rsp_r_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    279      10    Output &#39;cmp_rsp_target_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    280      10    Output &#39;cmp_rsp_initiator_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    281      10    Output &#39;cmp_rsp_cm_type[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    282      10    Output &#39;cmp_rsp_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    283      10    Output &#39;cmp_rsp_priority[2:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    284      10    Output &#39;cmp_rsp_valid&#39; is never set.
+W241     Error     ./concerto_mux_d.v   277      10    Output &#39;cmp_rsp_cm_status[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   278      10    Output &#39;cmp_rsp_r_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   279      10    Output &#39;cmp_rsp_target_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   280      10    Output &#39;cmp_rsp_initiator_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   281      10    Output &#39;cmp_rsp_cm_type[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   282      10    Output &#39;cmp_rsp_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   283      10    Output &#39;cmp_rsp_priority[2:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   284      10    Output &#39;cmp_rsp_valid&#39; is never set.
+ 
+Lint error: hw_config_10_synthesis : CHI_AIU
+W164a     Error     ./stt_entry_a.v    422      10    LHS: &#39;snp_req_TxnID[7:0] &#39; width 8 is less than RHS: &#39;((stashing_entry &amp; (~snp_req_DoNotGoToSD)) ? {1&#39;b1 ,ott_stash_encoded ,stt_entry_num} : {1&#39;b1 ,{ 1{ 1&#39;b0} }  ,stt_index})&#39; width 9 in assignment
+W164a     Error     ./stt_entry_b.v    422      10    LHS: &#39;snp_req_TxnID[7:0] &#39; width 8 is less than RHS: &#39;((stashing_entry &amp; (~snp_req_DoNotGoToSD)) ? {1&#39;b1 ,ott_stash_encoded ,stt_entry_num} : {1&#39;b1 ,{ 1{ 1&#39;b0} }  ,stt_index})&#39; width 10 in assignment
+ 
+Lint error: hw_cfg_256 : CHI_AIU
+W287a    Error     ./ott_top_a.v    2177     5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.
+…
+W287a    Error     ./ott_top_a.v    10507    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry49&#39; is undriven.
+ 
+Lint error: hw_config_07_synthesis : CHI_AIU
+W287a    Error     ./ott_top_a.v    1832    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.
+…
+W287a    Error     ./ott_top_a.v    6761    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry31&#39; is undriven.
+ 
+Lint error: hw_cfg_5_duplication : CHI_AIU
+W287a             Error       ./ott_top_a.v    2177     5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.
+…
+W287a   Error       ./ott_top_a.v    10507    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry49&#39; is undriven.
+ 
+Lint error: hw_cfg_20 : Maestro/gen_wrapper
+W110      Error     ./gen_wrapper.v    8051    10    Incompatible width for port &#39;axi4_ar_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W110      Error     ./gen_wrapper.v    8068    10    Incompatible width for port &#39;axi4_aw_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W154      Error     ./gen_wrapper.v    8051    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_ar_qos&#39; explicitly
+W154      Error     ./gen_wrapper.v    8068    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_aw_qos&#39; explicitly
+ 
+Lint error: hw_config_10_synthesis : Maestro/gen_wrapper
+W110     Error     ./gen_wrapper.v     12483    10    Incompatible width for port &#39;axi4_ar_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W110     Error     ./gen_wrapper.v     12500    10    Incompatible width for port &#39;axi4_aw_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W154     Error     ./gen_wrapper.v     12483    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_ar_qos&#39; explicitly
+W154     Error     ./gen_wrapper.v     12500    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_aw_qos&#39; explicitly
+ 
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p>04/05/2020</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256             : 50 Errors, 0 Warning(policy lint), 15 Warnings(design read)
+hw_config_20/hw_cfg_20              :  4 Errors, 0 Warning(policy lint), 23 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication:  : 50 Errors, 0 Warning(policy lint), 17 Warnings(design read) 
+hw_config_07/hw_config_07_synthesis : 32 Errors, 0 Warning(policy lint), 25 Warnings(design read)
+hw_config_10/hw_config_10_synthesis : 28 Errors, 0 Warning(policy lint), 41 Warnings(design read)</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Lint error: hw_config_10_synthesis : IOAIU/ConcertoMUX
+W110     Error     ./ioaiu_core_a.v      3348     10    Incompatible width for port &#39;cmp_rsp_priority&#39;(width 3 in module &#39;concerto_mux_c&#39;) on instance &#39;concerto_mux&#39;(terminal width 1)
+W110     Error     ./ioaiu_core_b.v      3380     10    Incompatible width for port &#39;cmp_rsp_priority&#39;(width 3 in module &#39;concerto_mux_d&#39;) on instance &#39;concerto_mux&#39;(terminal width 1)
+W154     Error     ./ioaiu_core_a.v      3348     2     Declare net &#39;cmp_rsp_priority&#39; explicitly
+W154     Error     ./ioaiu_core_b.v      3380     2     Declare net &#39;cmp_rsp_priority&#39; explicitly
+W241     Error     ./concerto_mux_c.v    277      10    Output &#39;cmp_rsp_cm_status[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    278      10    Output &#39;cmp_rsp_r_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    279      10    Output &#39;cmp_rsp_target_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    280      10    Output &#39;cmp_rsp_initiator_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    281      10    Output &#39;cmp_rsp_cm_type[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    282      10    Output &#39;cmp_rsp_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    283      10    Output &#39;cmp_rsp_priority[2:0]&#39; is never set.
+W241     Error     ./concerto_mux_c.v    284      10    Output &#39;cmp_rsp_valid&#39; is never set.
+W241     Error     ./concerto_mux_d.v   277      10    Output &#39;cmp_rsp_cm_status[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   278      10    Output &#39;cmp_rsp_r_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   279      10    Output &#39;cmp_rsp_target_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   280      10    Output &#39;cmp_rsp_initiator_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   281      10    Output &#39;cmp_rsp_cm_type[7:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   282      10    Output &#39;cmp_rsp_message_id[6:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   283      10    Output &#39;cmp_rsp_priority[2:0]&#39; is never set.
+W241     Error     ./concerto_mux_d.v   284      10    Output &#39;cmp_rsp_valid&#39; is never set.
+Lint error: hw_config_10_synthesis : CHI_AIU
+W164a     Error     ./stt_entry_a.v    422      10    LHS: &#39;snp_req_TxnID[7:0] &#39; width 8 is less than RHS: &#39;((stashing_entry &amp; (~snp_req_DoNotGoToSD)) ? {1&#39;b1 ,ott_stash_encoded ,stt_entry_num} : {1&#39;b1 ,{ 1{ 1&#39;b0} }  ,stt_index})&#39; width 9 in assignment
+W164a     Error     ./stt_entry_b.v    422      10    LHS: &#39;snp_req_TxnID[7:0] &#39; width 8 is less than RHS: &#39;((stashing_entry &amp; (~snp_req_DoNotGoToSD)) ? {1&#39;b1 ,ott_stash_encoded ,stt_entry_num} : {1&#39;b1 ,{ 1{ 1&#39;b0} }  ,stt_index})&#39; width 10 in assignment
+Lint error: hw_cfg_256 : CHI_AIU
+W287a    Error     ./ott_top_a.v    2177     5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.
+…
+W287a    Error     ./ott_top_a.v    10507    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry49&#39; is undriven.
+Lint error: hw_config_07_synthesis : CHI_AIU
+W287a    Error     ./ott_top_a.v    1832    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.
+…
+W287a    Error     ./ott_top_a.v    6761    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry31&#39; is undriven.
+Lint error: hw_cfg_5_duplication : CHI_AIU
+W287a             Error       ./ott_top_a.v    2177     5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.
+…
+W287a   Error       ./ott_top_a.v    10507    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry49&#39; is undriven.
+Lint error: hw_cfg_20 : Maestro/gen_wrapper
+W110      Error     ./gen_wrapper.v    8051    10    Incompatible width for port &#39;axi4_ar_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W110      Error     ./gen_wrapper.v    8068    10    Incompatible width for port &#39;axi4_aw_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W154      Error     ./gen_wrapper.v    8051    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_ar_qos&#39; explicitly
+W154      Error     ./gen_wrapper.v    8068    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_aw_qos&#39; explicitly
+Lint error: hw_config_10_synthesis : Maestro/gen_wrapper
+W110     Error     ./gen_wrapper.v     12483    10    Incompatible width for port &#39;axi4_ar_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W110     Error     ./gen_wrapper.v     12500    10    Incompatible width for port &#39;axi4_aw_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1)
+W154     Error     ./gen_wrapper.v     12483    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_ar_qos&#39; explicitly
+W154     Error     ./gen_wrapper.v     12500    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_aw_qos&#39; explicitly
+
+
+P/S:
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p>03/29/2020</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256             : 51 Errors, 0 Warning(policy lint), 15 Warnings(design read)
+hw_config_20/hw_cfg_20              :  8 Errors, 0 Warning(policy lint), 23 Warnings(design read)
+hw_config_07/hw_config_07_synthesis : 33 Errors, 0 Warning(policy lint), 25 Warnings(design read)
+hw_config_10/hw_config_10_synthesis : 35 Errors, 0 Warning(policy lint), 41 Warnings(design read)</pre>
+</div></div><p>NOTE: hw_cfg_5_duplication failed Maestro RTL generation, therefore excluded from this run. SW is fixing Maestro.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Lint Errors: hw_cfg_256: CHI_AIU
+W287a             Error       ./ott_top_a.v             2177     5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.[Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:ott_top@ott_top_a&#39;]
+…
+W287a             Error       ./ott_top_a.v             10458    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry49&#39; is undriven.[Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:ott_top@ott_top_a&#39;]
+Lint Errors: hw_config_07_synthesis: CHI_AIU
+W287a             Error       ./ott_top_a.v             1832    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry0&#39; is undriven.[Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:ott_top@ott_top_a&#39;]
+…
+W287a             Error       ./ott_top_a.v             6730    5     Input &#39;req_pri_mapped_encoded&#39; of instance &#39;entry31&#39; is undriven.[Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:ott_top@ott_top_a&#39;]
+Lint Errors: hw_cfg_20: CHI_AIU
+W164a             Error       ./command_packet_formatter_a.v    126     10    LHS: &#39;cmd_req_priority[2:0] &#39; width 3 is less than RHS: &#39;q_req_pri&#39; width 8 in assignment [Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:ott_top@ott_top_a:command_packet_formatter@command_packet_formatter_a&#39;]
+W164b             Error       ./command_packet_formatter_a.v    52      10    LHS: &#39;{cmd_dest_dii ,cmd_dest_dmi ,q_req_pri ,q_concerto_cmd ,atomic_coh_in_progress ,{q_QoS ,q_TgtID ,q_ReturnNID ,q_StashNIDValid ,q_ReturnTxnID ,q_Opcode ,q_Size ,q_Addr ,q_NS ,q_Order ,q_MemAttr ,q_SnpAttr ,q_LPID ,q_Excl ,q_TraceTag}}&#39; width 114 is greater than RHS: &#39;cmd_out_data&#39; width 109 in assignment [Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:ott_top@ott_top_a:command_packet_formatter@command_packet_formatter_a&#39;]
+W164c             Error       ./command_packet_formatter_a.v    52      10    LHS width &#39;114&#39; is greater than RHS width &#39;109&#39; [Hierarchy: &#39;:gen_wrapper:caiu0@aiu_top_a:unit@aiu_unit_a:ott_top@ott_top_a:command_packet_formatter@command_packet_formatter_a&#39;]
+
+Lint Errors: hw_cfg_256: DII
+W415              Error       ./sym_common_queue_c.v    282      10    Signal &#39;gen_wrapper.csr_network.axi_sys_dii.u_ctl_init.u_ctl_init_queue.out_req_queue_0_ready&#39; has multiple simultaneous drivers
+Lint Errors: hw_config_07_synthesis: DII
+W415              Error       ./sym_common_queue_c.v    282     10    Signal &#39;gen_wrapper.csr_network.axi_sys_dii.u_ctl_init.u_ctl_init_queue.out_req_queue_0_ready&#39; has multiple simultaneous drivers
+Lint Errors: hw_cfg_20: DII
+W415              Error       ./sym_common_queue_c.v            282     10    Signal &#39;gen_wrapper.csr_network.axi_sys_dii.u_ctl_init.u_ctl_init_queue.out_req_queue_0_ready&#39; has multiple simultaneous drivers
+
+Lint Errors: hw_cfg_20: Maestro/gen_wrapper
+W110              Error       ./gen_wrapper.v                   8051    10    Incompatible width for port &#39;axi4_ar_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1) [Hierarchy: &#39;:gen_wrapper&#39;]
+W110              Error       ./gen_wrapper.v                   8068    10    Incompatible width for port &#39;axi4_aw_qos&#39;(width 4 in module &#39;config_dii_a&#39;) on instance &#39;sys_dii&#39;(terminal width 1) [Hierarchy: &#39;:gen_wrapper&#39;]
+W154              Error       ./gen_wrapper.v                   8051    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_ar_qos&#39; explicitly
+W154              Error       ./gen_wrapper.v                   8068    2     Declare net &#39;sys_dii_axi4__axi_sys_dii_axi4_aw_qos&#39; explicitly
+
+ioaiu_*.tachl, dce_dir.tachl, dce_dm.tachl has embedded Spyglass directives that disable checks on width mismatch. So Spyglass is not able to catch width mismatch errors for these modules.</pre>
+</div></div><p><br/></p><p><br/></p><p>03/22/2020</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256             :  0 Error,  0 Warning(policy lint), 15 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication   :  0 Error,  0 Warning(policy lint), 17 Warnings(design read)
+hw_config_20/hw_cfg_20              :  0 Error,  0 Warning(policy lint), 24 Warnings(design read)
+hw_config_07/hw_config_07_synthesis :  0 Error,  0 Warning(policy lint), 25 Warnings(design read)
+hw_config_10/hw_config_10_synthesis : 30 Errors, 0 Warning(policy lint), 41 Warnings(design read)</pre>
+</div></div><p><br/></p><p>03/15/2020</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256                 : 1 Error, 0 Warning(policy lint), 5 Warnings(design read)
+hw_config_05/hw_cfg_5_duplication       : 1 Error, 0 Warning(policy lint), 5 Warnings(design read)
+hw_config_07/hw_config_07_synthesis     : 4 Errors,0 Warning(policy lint),11 Warnings(design read)
+hw_config_07/hw_config_07_synthesis_max : 3 Errors,0 Warning(policy lint),12 Warnings(design read)
+hw_config_20/hw_cfg_20                  : 2 Errors,0 Warning(policy lint),11 Warnings(design read)</pre>
+</div></div><p>NOTE: Maestro throws out a fatal error for hw_cfg_9, therefore hw_cfg_9 is excluded from this run.</p><p><br/></p><p>03/11/2020</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256             : 0 Error, 1 Warning (policy lint)
+hw_config_09/hw_cfg_9               : 0*Error, 0 Warning (policy lint)
+hw_config_05/hw_cfg_5_duplication   : 0 Error, 1 Warning (policy lint)
+hw_config_07/hw_config_07_synthesis : 0 Error, 0 Warning (policy lint)
+hw_config_20/hw_cfg_20              : 0 Error, 0 Warning (policy lint)</pre>
+</div></div><p>NOTE: hw_cfg_9 has 4 lint errors but they are all caused by Maestro (related to QoS parameter). Reported to Allan in previous run.</p><p><br/></p><p>03/07/2020</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">hw_config_02/hw_cfg_256              :  3 errors, 11 warnings
+hw_config_09/hw_cfg_9                : 20 errors, 15 warnings
+hw_config_05/hw_cfg_5_duplication    :  2 errors, 10 warnings
+hw_config_07/hw_config_07_synthesis  : 11 errors, 15 warnings
+hw_config_07/hw_cfg_7                : 11 errors, 15 warnings
+hw_config_02/hw_cfg_6                :  9 errors,  2 warnings
+hw_config_03/hw_cfg_3                : 19 errors, 12 warnings
+hw_config_20/hw_cfg_20               :  3 errors, 16 warnings</pre>
+</div></div><p><br/></p><p><br/></p><p><br/></p><p><br/></p>

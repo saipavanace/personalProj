@@ -1,0 +1,122 @@
+help:
+	@echo ""
+	@echo "SYNTAX: make [tool] NAME=[name] FILE=[file] FILE2=[file2] FILE3=[file3] WAIVER=[waiver]"
+	@echo ""
+	@echo "Output directory will be created at lint.[name]"
+	@echo ""
+	@echo "[tool]"
+	@echo "spyglass - run Spyglass"
+	@echo ""
+	@echo "[file]"
+	@echo "Path to RTL files to be read, use * for wildcard"
+	@echo ""
+	@echo "[file2], [file3] are optional"
+	@echo ""
+	@echo "[waiver]"
+	@echo "Path to Spyglass waiver file, this is also optional"
+	@echo ""
+	@echo "Example:"
+	@echo "make spyglass NAME=lint FILE=verilog.v"
+	@echo ""
+
+clean:
+	@rm -rf lint.*
+
+create:
+ifneq ("$(wildcard lint.${NAME})", "")
+	@echo "Directory lint.${NAME} already existed, it will be overwritten"
+	@rm -rf lint.${NAME}
+endif
+	@mkdir lint.${NAME}
+	@cd lint.${NAME}; touch lint.prj
+	@cd lint.${NAME}; echo "read_file -type hdl ${FILE}" >> lint.prj
+ifneq ("${FILE2}", "")
+	@cd lint.${NAME}; echo "read_file -type hdl ${FILE2}" >> lint.prj
+endif
+ifneq ("${FILE3}", "")
+	@cd lint.${NAME}; echo "read_file -type hdl ${FILE3}" >> lint.prj
+endif
+ifneq ("${WAIVER}", "")
+	@cd lint.${NAME}; echo "read_file -type waiver ${WAIVER}" >> lint.prj
+endif
+	@cd lint.${NAME}; echo "set_option define ARTERIS_LINT" >> lint.prj
+	@cd lint.${NAME}; echo "set_option projectwdir ." >> lint.prj
+	@cd lint.${NAME}; echo "set_option language_mode mixed" >> lint.prj
+	@cd lint.${NAME}; echo "set_option designread_enable_synthesis no" >> lint.prj
+	@cd lint.${NAME}; echo "set_option designread_disable_flatten no" >> lint.prj
+	@cd lint.${NAME}; echo "set_option active_methodology $$SPYGLASS_HOME/GuideWare2.0/block/rtl_handoff" >> lint.prj
+	@cd lint.${NAME}; echo "set_option enableSV yes" >> lint.prj
+	@cd lint.${NAME}; echo "set_option ignoredu { no_project_name__noc* }" >> lint.prj
+	@cd lint.${NAME}; echo "set_option ignoredu { no_project_name }" >> lint.prj
+	@cd lint.${NAME}; echo "set_option ignoredu { root }" >> lint.prj
+	@cd lint.${NAME}; echo "set_option inferblackbox yes" >> lint.prj
+	@cd lint.${NAME}; echo "current_methodology $$SPYGLASS_HOME/GuideWare2.0/block/rtl_handoff" >> lint.prj
+	@cd lint.${NAME}; echo "current_goal lint/lint_rtl" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option ignorerules { W240 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W241 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W287a }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W164a }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W164b }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W164c }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W415a }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W443 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W444 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option addrules { W576 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option ignorerules { FlopEConst }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option ignorerules { CMD_overloadrule01 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option ignorerules { WRN_69 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option ignorerules { STARC05-1.3.1.3 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_goal_option ignorerules { STARC05-2.11.3.1 }" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules BlockHeader+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules BufClock+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules CheckDelayTimescale-ML+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules DuplicateCaseLabel-ML+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules NoAssignX-ML+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules NoXInCase-ML+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules ParamWidthMismatch-ML+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules sim_race02+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-1.4.3.4+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.1.3.1+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.1.4.5+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.1.5.3+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.1.6.5+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.10.2.3+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.2.3.3+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.3.1.6+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.5.1.7+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules STARC05-2.5.1.9+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W110a+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W116+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W164a+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W164b+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W164c+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W215+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W216+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W215+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W263L+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W292+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W317+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W336+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W337+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W362+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W392+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W415a+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W424+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W426+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W443+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W444+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W450L+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W467+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W480+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W481a+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W481b+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W486+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W496a+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W496b+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W499+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W502+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_option overloadrules W576+severity=Error" >> lint.prj
+	@cd lint.${NAME}; echo "set_parameter check_initialization_assignment yes" >> lint.prj
+spyglass:
+	@make create NAME=${NAME}
+	@cd lint.${NAME}; sg_shell -project lint.prj < ../scripts/run.tcl | tee spyglass.log

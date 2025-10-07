@@ -1,0 +1,66 @@
+#!/bin/bash -f
+export ATRENTA_LICENSE_FILE=5285@lic-node0
+export LM_LICENSE_FILE=5285@lic-node0:1717@lic-node0
+#export SPYGLASS_HOME=/engr/dev/tools/atrenta/SpyGlass/5.4.1.1/SPYGLASS_HOME
+export SPYGLASS_HOME=/engr/dev/tools/synopsys/SpyGlass-M-2017.03-SP1-1/SpyGlass-M2017.03-SP1-1/SPYGLASS_HOME
+#export SPYGLASS_HOME=/engr/dev/tools/synopsys/SpyGlass_vQ-2020.03-SP1-1/SPYGLASS_HOME
+export PATH="$SPYGLASS_HOME/bin:${PATH}"
+
+config_name=$1
+env_name=$2
+dir_name=$3
+if [[ $env_name = "psys" ]];
+then
+    makefile_loc_name="top"
+elif [[ $env_name =~ "ccp" ]];
+then
+    makefile_loc_name="aiu"
+else
+    makefile_loc_name=$env_name
+fi
+
+job_name="$env_name_$config_name"
+# makefile_loc=$CONCERTO_TOP/rtl/$makefile_loc_name/lint
+makefile_loc=$WORK_TOP/dv/scripts/Makefile_lint
+#echo stuff starts here!
+#insert wait for license here
+lint_fail_str=""
+#pushd $makefile_loc
+dest_lint_log="$dir_name/debug/$env_name/$config_name/rtl"
+pushd $dest_lint_log
+
+lic_string=`lmstat -c 5285@lic-node0 -a | grep checker | grep -e "Total\ of\ [8-9]+([^0-9]+[0-9])\ licenses\ in\ use"`
+while [ "$lic_string" ] ; do
+    echo "WAITING FOR ATRENTA LICENSE"
+    sleep 10s
+    lic_string=`lmstat -c 5285@lic-node0 -a | grep checker | grep -e "Total\ of\ [8-9]+([^0-9]+[0-9])\ licenses\ in\ use"`
+done
+file_exists="`ls $dir_name/debug/$env_name/$config_name/rtl/`"
+#cp -r $WORK_TOP/dv/scripts/waivers.swl $WORK_TOP/dv/scripts/run.tcl $dest_lint_log
+cp -r $WORK_TOP/dv/scripts/spyglass/waivers.swl $WORK_TOP/dv/scripts/spyglass/run.tcl $WORK_TOP/dv/scripts/spyglass/lint.prj $dest_lint_log
+cp -r $makefile_loc $dest_lint_log/Makefile
+source /engr/dev/tools/script/snps-eng.bash
+if [[ $file_exists =~ \.v ]]; then
+    echo "make --file=$makefile_loc spyglass NAME=$config_name DIRECTORY=$dir_name FILE=$dir_name/debug/$env_name/$config_name/rtl/\*.v WAIVER=$dest_lint_log/waivers.swl INCDIR=$dir_name/debug/$env_name/$config_name/rtl"
+    make --file=$dest_lint_log/Makefile spyglass NAME=$config_name DIRECTORY=$dir_name FILE=$dir_name/debug/$env_name/$config_name/rtl/\*.v WAIVER=$dest_lint_log/waivers.swl INCDIR=$dir_name/debug/$env_name/$config_name/rtl
+#    make -f $makefile_loc/Makefile spyglass NAME=$config_name DIRECTORY=$dir_name FILE=$dir_name/debug/$env_name/$config_name/rtl/\*.v FILE2=$dir_name/debug/$env_name/$config_name/memory/\*.v
+else
+    lint_fail_str="LINT FAILED: COMPILE FAILED"
+fi
+
+#lint_log="$dest_lint_log/lint.$config_name/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt"
+lint_log="$dest_lint_log/lint/consolidated_reports/lint_lint_rtl/moresimple.rpt"
+if [ -f $lint_log ];
+then
+    #cp $lint_log $dest_lint_log/lint.log
+    cp $lint_log $dir_name/debug/$env_name/$config_name/lint.log
+    rm -rf $dest_lint_log/lint.$config_name
+else
+    if [ -z "$lint_fail_str" ];
+    then
+	lint_fail_str="LINT FAILED: SOMETHING HAPPENED WITH LINT"
+    fi
+    echo $lint_fail_str
+fi
+   
+popd

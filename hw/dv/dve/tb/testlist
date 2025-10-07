@@ -1,0 +1,21 @@
+node $WORK_TOP/../scripts/qrsim.js -a -m -e dve -c -n hw_config_2 -d ASSERT_ON,RTL_DUT,INHOUSE_AXI,INHOUSE_APB_VIP -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_2 -i dve0 -y hw_config_02
+
+node $WORK_TOP/../scripts/qrsim.js -e dve -n hw_config_2 -d RTL_DUT,INHOUSE_AXI,DUMP_ON -t dve_bringup_test -R 14059573 -p +UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+dve_sb_en=1
+
+#node $WORK_TOP/../scripts/qrsim.js -e dve -n hw_config_2 -d RTL_DUT,INHOUSE_AXI,DUMP_ON -t dve_qchannel_test -R 14059573 -p +UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+dve_sb_en=1,+dve_qchannel_sanity_test=1
+
+node $WORK_TOP/../scripts/qrsim.js -a -m -e dve -i dve0 -c -n hw_config_7 -d ASSERT_ON,RTL_DUT,INHOUSE_AXI,INHOUSE_APB_VIP -y hw_config_07 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7
+
+node $WORK_TOP/../scripts/qrsim.js -e dve -n hw_config_7 -d RTL_DUT,INHOUSE_AXI,DUMP_ON -t dve_bringup_test -R 14059573 -p +UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+dve_sb_en=1
+
+#dve resiliency_sanity_tests
+#Compile -- hw_cfg_7_all_ecc
+node $WORK_TOP/../scripts/qrsim.js -e dve -a -c -n hw_cfg_7_all_ecc -d ASSERT_ON,RTL_DUT,INHOUSE_AXI,INHOUSE_APB_VIP,RESILIENCY_TESTING -i dve0 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7_all_ecc -y hw_config_07 
+#test run -- hw_cfg_7_all_ecc uce+ce of ECC
+##node $WORK_TOP/../scripts/qrsim.js -e dve -n hw_cfg_7_all_ecc -t dve_bringup_test -R 20467925 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+RDY_NOT_ASSERTED_TIMEOUT=65000,+k_targ_src_id_chk_en=1,+smi_ndp_err_inj=1,+inj_cntl=1,+corr_error_inj_pcnt=70,+k_num_requests=10,+dve_sb_en=1
+node $WORK_TOP/../scripts/qrsim.js -e dve -n hw_cfg_7_all_ecc -t dve_bringup_test -R 57789191 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+RDY_NOT_ASSERTED_TIMEOUT=65000,+k_targ_src_id_chk_en=1,+inj_cntl=2,+smi_ndp_err_inj=1,+uncorr_error_inj_pcnt=70,+expect_mission_fault=1,+k_smi_cov_en=0,+k_num_requests=100,+dve_sb_en=1
+###################################
+### Perf monitor bringup_test 
+###################################
+#dve perf monitor sanity test
+node $WORK_TOP/../scripts/qrsim.js -e dve -n hw_config_2 -t perf_cnt_test -R 16554408 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=1000000000000,+RDY_NOT_ASSERTED_TIMEOUT=65000,+k_targ_src_id_chk_en,+dve_sb_en=0,+main_seq_iter=1,+counter_control=0,+event_first=1,+ssr_count=1,+event_second=0

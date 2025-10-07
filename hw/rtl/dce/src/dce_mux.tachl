@@ -1,0 +1,75 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2022 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE MUX
+// Filename: dce_mux.tachl
+//=============================================================================
+
+var u = obj.lib;
+
+var assertOn = u.getParam('assertOn');
+
+var DW = u.getParam('DW');
+var NUM = u.getParam('NUM');
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'clk_i', 1);
+u.port('input',  'reset_ni', 1);
+u.port('output', 'ready_o', NUM);
+u.port('input',  'valid_i', NUM);
+u.port('input',  'data_i', NUM*DW);
+u.port('input',  'ready_i', 1);
+u.port('output', 'valid_o', 1);
+u.port('output', 'data_o', DW);
+u.port('input',  'bvsel_i', NUM); 
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+localparam NUM = \=NUM=\;
+localparam DW = \=DW=\;
+
+wire [\=(NUM*DW)-1=\:0] data_in = data_i;
+
+wire [\=NUM-1=\:0] bvsel_in = bvsel_i;
+
+assign ready_o = bvsel_in & {\=NUM=\{ready_i}};
+
+assign valid_o = {|{valid_i & bvsel_in}};
+
+assign data_o = \=DW=\'d0
+    \js for (var i=0; i < NUM; i++) {
+              |  ({\=DW=\{bvsel_in[\=i=\]}} & data_in[\=DW*i=\ +: \=DW=\])
+    \js }
+              ;
+
+/////////////////////////////////////////////////////////////////
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) { \jsend
+
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off   
+// coverage off
+
+assert_zero_one_hot #(0, NUM) assert_select(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	(bvsel_i)
+);
+
+// coverage on
+// pragma synthesis_on
+// synopsys translate_on 
+`endif
+
+\js }
+
+endmodule

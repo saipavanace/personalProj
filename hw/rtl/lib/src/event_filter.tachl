@@ -1,0 +1,140 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Filter box Unit
+// Author: Ronak Salamat
+// //=============================================================================
+\jsend
+
+\jsbegin
+
+const u						= obj.lib;
+const bundleFunctions				= obj.userLib.bundleFunctions;
+const libUtils					= obj.userLib;
+const getHWPortName				= libUtils.getHWPortName;
+
+
+//=============================================================================
+// Parameters
+//=============================================================================
+
+const csrInterface				= libUtils.hierGetParam('csrInterface',u.getParam);
+
+const attrInterface				= libUtils.hierGetParam('attrInterface',u.getParam);
+
+const wFUnitId					= attrInterface.signals.funit_id;
+
+const wUSerbits					= attrInterface.signals.user || 0; 
+
+//=============================================================================
+// Interfaces and port declarations
+//=============================================================================
+
+u.interface(csrInterface.name,    'slave' , csrInterface.signals);
+
+u.interface(attrInterface.name,    'slave' , attrInterface.signals);
+
+u.port('output',  'filter_evt', 1);
+
+//=============================================================================
+// Local functions
+//=============================================================================
+
+function extend( name, width, newWidth) {
+  /* istanbul ignore else env ncore_3p6, ncore_3p7 */ 
+  if (newWidth > width) {
+    return "{"+(newWidth-width)+"'d0, "+name+"}";
+  }
+  else if (newWidth == width) {
+    return name;
+  }
+  /* istanbul ignore next env ncore_3p4, ncore_3p7 */ 
+  else {
+    return name + "["+(newWidth-1)+ ":0]";
+  }
+}
+
+function signalWidth(signals, key){
+	return (Math.abs(signals[key]) || 
+/* istanbul ignore next env ncore_3p2,ncore_3p4, ncore_3p6, ncore_3p7 */ 0);
+}
+
+function csrPortWidth( register, field, type) {
+		return signalWidth(csrInterface.signals, getHWPortName( register, field, type ));
+}
+
+function csrPort(register, field, type) {
+	return csrInterface.name + getHWPortName(register, field, type);
+}
+
+
+const wFilterVal				= csrPortWidth("BCNTFR", "FilterVal", "out");
+const wFilterSel				= csrPortWidth("BCNTFR", "FilterSel", "out");
+
+
+//=============================================================================
+// Instantiate Interfaces
+//=============================================================================
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+//wire declarations
+wire [\=(wFilterVal-1)=\:0] mux_funitvsuser;
+
+wire [\=(wFilterVal-1)=\:0] attr_masked_val;
+
+wire filter_box_out;
+wire ao_mux_sel_valid;
+
+//===============================================================================
+\jsbegin
+
+//coming from architecture spec
+var selectValues  = {
+ 0: "user",
+ 1: "funit_id"
+};
+
+//ao_mux
+var ao_mux_selects = [];
+var evt_filtersel_ports = {};
+var num_ao_mux_entry = 0;
+
+Object.keys( selectValues ).sort().forEach(v => {
+  var attr = selectValues[v];
+
+  if(attrInterface.signals[attr]) {
+     evt_filtersel_ports["in"+num_ao_mux_entry] = extend(attrInterface.name + attr, attrInterface.signals[attr], wFilterVal); //attr;
+     ao_mux_selects.push( csrPort( "BCNTFR", "FilterSel", "out")+" == "+wFilterSel+"'d"+v  );
+     num_ao_mux_entry++;
+  }
+});
+
+evt_filtersel_ports['sel'] = "{"+ao_mux_selects.reverse().join(", ")+"}";
+evt_filtersel_ports['sel_valid'] = "ao_mux_sel_valid";
+evt_filtersel_ports['out'] = "mux_funitvsuser"; \jsend
+
+\=obj.lib.instance({
+        instanceName: 'event_filtersel_mux',
+        moduleName: 'ao_mux',
+        params: {
+	    nInputs          : num_ao_mux_entry,
+            wMux             : wFilterVal,
+            addSelectValid   : true
+
+        },
+        verilogParams: {},
+        ports: evt_filtersel_ports
+    })=\ 
+
+assign attr_masked_val = mux_funitvsuser & \=csrPort("BCNTMR", "MaskVal", "out")=\;
+
+assign filter_box_out = (attr_masked_val == \=csrPort("BCNTFR", "FilterVal", "out")=\);
+
+assign filter_evt = (~ \=csrPort("BCNTFR", "FilterEn", "out")=\ | filter_box_out | ~ao_mux_sel_valid);   //if filter is not enable, then filter_evt forced to 1
+
+
+endmodule

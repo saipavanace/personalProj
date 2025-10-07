@@ -1,0 +1,262 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU
+// Author: Benjamin Madon
+//=============================================================================
+
+
+var utilFunctions   = obj.userLib.lib_utils;
+
+var newToOldStyleInterface	= obj.userLib.newToOldStyleInterface.bind( null, obj.userLib );
+var m = obj.userLib;
+var u=obj.lib;
+
+//this function generates an object with the folowing structure
+// {maskarray : maskarray,carry:carry} 
+// valid_bits_with_overflow is a NumberOfGranulePerBeat x NumberOfGranulePerBeat+message_length array such that valid_bits_with_overflow [ start granule ] [gr] = 1 if location gr contains valid payload given the start granule and teh length of the message
+//maskarray is a 1d array with the folowing structure : maskarray [start granule] = string conaining a verilog constant which is to be used to generate valid for the corresponding start granule 
+//carry is a 1d with the folowing structure : carry[start granule] = 1 if a message starting in start granule will carry over to the enxt beat 
+function generate_mask_and_carry (NumberOfGranulePerBeat,message_length){
+    var valid_bits_with_overflow=[]
+    var carry=[]
+    for(var strt_gr =0;strt_gr<NumberOfGranulePerBeat;strt_gr++){
+     valid_bits_with_overflow[strt_gr]=[];
+        for (var gr=0;gr<(NumberOfGranulePerBeat+message_length);gr++){
+            if (gr<strt_gr){
+                valid_bits_with_overflow[strt_gr][gr]=0;
+            } else if(gr<strt_gr+message_length){
+                valid_bits_with_overflow[strt_gr][gr]=1;
+            }
+            else {
+                valid_bits_with_overflow[strt_gr][gr]=0;
+            }
+        }
+    }
+    for(var strt_gr =0;strt_gr<NumberOfGranulePerBeat;strt_gr++){
+        carry[i]=0;
+        for (var gr in valid_bits_with_overflow[strt_gr]) {
+            if (valid_bits_with_overflow[strt_gr][gr]==1 & gr>=NumberOfGranulePerBeat){
+                carry[strt_gr]=1
+            }
+        }
+    }
+    var maskarray=[]
+    for(var strt_gr =0;strt_gr<NumberOfGranulePerBeat;strt_gr++){
+        var mask=""+NumberOfGranulePerBeat+"'b"
+        for (var gr =0;gr<NumberOfGranulePerBeat;gr++){
+        mask+=valid_bits_with_overflow[strt_gr][NumberOfGranulePerBeat - gr-1];
+        }
+        maskarray[strt_gr]=mask;
+    }
+    return {maskarray: maskarray,carry: carry}
+}
+
+function concat(listOfSignalsFromLSBtoMSB,listOfWidths){
+    var width=0;
+    var len = listOfSignalsFromLSBtoMSB.length;
+    width += listOfWidths[len-1];
+    var bundle="{"+listOfSignalsFromLSBtoMSB[len-1];
+    for (var i=len-2; i>=0; i--){
+        bundle+=","+listOfSignalsFromLSBtoMSB[i];
+        width += listOfWidths[i];
+    }
+    bundle+="}"
+    return {"width" : width, "bundle" : bundle}
+}
+
+var p =u.getParam();
+
+u.nInterfaces(p.interfaces);
+var mask_and_carry_constant = generate_mask_and_carry(p.NumberOfGranulePerBeat,p.message_length);
+
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+wire [\=p.NumberOfGranulePerBeat-1=\:0] valid_mask ;
+
+\jsbegin
+//cannot carry on more than one message
+
+// This if statement is to separate the case in which message can carry over to the next beat
+if( p.message_length >1) {
+\jsend
+
+    wire carry_valid, next_carry_valid;
+    wire new_carry;
+    wire [\=p.NumberOfGranulePerBeat-1=\:0] carry_mask,not_carry_mask;
+    wire [\=m.log2ceil(p.message_length)-1=\:0] carry_length, next_carry_length,new_carry_length;
+
+
+        \jsbegin
+        // this if statement is for the cases where a message can carry over multiple beats
+        if ( p.message_length > p.NumberOfGranulePerBeat) {
+        \jsend
+
+        \=u.dffre(1,"carry_valid","next_carry_valid","1'b0","1'b1",p.interfaces ["clkInt"].name+"clk",p.interfaces ["clkInt"].name+"reset_n")=\
+        \=u.dffre(m.log2ceil(p.message_length),"carry_length","next_carry_length",m.log2ceil(p.message_length)+"'b0","1'b1",p.interfaces ["clkInt"].name+"clk",p.interfaces ["clkInt"].name+"reset_n")=\
+        
+        assign next_carry_valid = &carry_mask ? |(carry_length-\=m.log2ceil(p.message_length)=\'d\=p.NumberOfGranulePerBeat=\) : new_carry;
+        assign next_carry_length = &carry_mask ? carry_length-\=m.log2ceil(p.message_length)=\'d\=p.NumberOfGranulePerBeat=\ : (new_carry ? new_carry_length : \=m.log2ceil(p.message_length)=\'d0);
+        assign not_carry_mask = \=p.NumberOfGranulePerBeat=\'d\=2**p.NumberOfGranulePerBeat-1=\ << carry_length ;
+        assign carry_mask = ~not_carry_mask;
+        
+        assign new_carry_length = ({ \=m.log2ceil(p.message_length)=\{start_ptr_\=p.NumberOfGranulePerBeat-1=\_out}} & \=m.log2ceil(p.message_length)=\'d\=p.message_length - 1=\ )
+                                    \jsbegin
+                                        for (var gr=p.NumberOfGranulePerBeat-2;gr>=0;gr--){
+                                            if(mask_and_carry_constant.carry[gr]){
+                                    \jsend
+                                                | ( { \=m.log2ceil(p.message_length)=\{start_ptr_\=gr=\_out}} & \=m.log2ceil(p.message_length)=\'d\=p.message_length - p.NumberOfGranulePerBeat+gr=\ ) 
+                                    \jsbegin
+                                                }
+                                        }
+                                    \jsend
+                                    ;
+        assign new_carry = start_ptr_\=p.NumberOfGranulePerBeat-1=\_out 
+                                 \jsbegin
+                                     for (var gr=p.NumberOfGranulePerBeat-2;gr>=0;gr--){
+                                         if(mask_and_carry_constant.carry[gr]){
+                                 \jsend
+                                             |  start_ptr_\=gr=\_out
+                                 \jsbegin
+                                             }
+                                     }
+                                 \jsend
+                                 ;
+        \jsbegin
+        // this else statement is for messages which cannot carry over more than 1 beat 
+
+        } else {
+        \jsend
+
+        \=u.dffre(1,"carry_valid","next_carry_valid","1'b0","1'b1",p.interfaces ["clkInt"].name+"clk",p.interfaces ["clkInt"].name+"reset_n")=\
+        \=u.dffre(m.log2ceil(p.message_length),"carry_length","next_carry_length",m.log2ceil(p.message_length)+"'b0","1'b1",p.interfaces ["clkInt"].name+"clk",p.interfaces ["clkInt"].name+"reset_n")=\
+        
+        assign next_carry_valid = new_carry;
+        assign next_carry_length = new_carry_length ;
+        assign not_carry_mask = \=p.NumberOfGranulePerBeat=\'d\=2**p.NumberOfGranulePerBeat-1=\ << carry_length ;
+        assign carry_mask = ~not_carry_mask;
+        
+        assign new_carry_length = ({ \=m.log2ceil(p.message_length)=\{start_ptr_\=p.NumberOfGranulePerBeat-1=\_out}} & \=m.log2ceil(p.message_length)=\'d\=p.message_length - 1=\ )
+                                    \jsbegin
+                                        for (var i=p.NumberOfGranulePerBeat-2;i>=0;i--){
+                                            if(mask_and_carry_constant.carry[i]){
+                                    \jsend
+                                                | ( { \=m.log2ceil(p.message_length)=\{start_ptr_\=i=\_out }} & \=m.log2ceil(p.message_length)=\'d\=p.message_length - p.NumberOfGranulePerBeat+i=\ ) 
+                                    \jsbegin
+                                                }
+                                        }
+                                    \jsend
+                                    ;
+                                    
+        assign new_carry = (start_ptr_\=p.NumberOfGranulePerBeat-1=\_out)
+                                 \jsbegin
+                                     for (var i=p.NumberOfGranulePerBeat-2;i>=0;i--){
+                                         if(mask_and_carry_constant.carry[i]){
+                                 \jsend
+                                             |  ( start_ptr_\=i=\_out)
+                                 \jsbegin
+                                             }
+                                     }
+                                 \jsend
+                                 ;
+
+    \jsbegin
+    }
+    \jsend
+
+
+    assign valid_mask = { \=p.NumberOfGranulePerBeat=\{start_ptr_0_out}} & \=mask_and_carry_constant.maskarray[0]=\ 
+    \jsbegin
+        for (var i=1;i<p.NumberOfGranulePerBeat;i++){
+    \jsend
+                | { \=p.NumberOfGranulePerBeat=\{start_ptr_\=i=\_out}} & \=mask_and_carry_constant.maskarray[i]=\ 
+    \jsbegin
+        }
+    \jsend
+    ;
+        
+    \jsbegin                
+    for (var i=0;i<p.NumberOfGranulePerBeat;i++){
+    \jsend
+    assign push_\=i=\_valid = cxs_out_deframer_in_valid & ( valid_mask[\=i=\] | (carry_mask[\=i=\] & carry_valid));
+    \jsbegin
+    }
+    \jsend
+
+\jsbegin
+} else {
+\jsend
+
+
+
+
+assign valid_mask = { \=p.NumberOfGranulePerBeat=\{start_ptr_0_out}} & \=mask_and_carry_constant.maskarray[0]=\ 
+\jsbegin
+    for (var gr=1;gr<p.NumberOfGranulePerBeat;gr++){
+\jsend
+            | { \=p.NumberOfGranulePerBeat=\{start_ptr_\=gr=\_out}} & \=mask_and_carry_constant.maskarray[gr]=\ 
+\jsbegin
+    }
+\jsend
+;
+
+
+\jsbegin                
+for (var gr=0;gr<p.NumberOfGranulePerBeat;gr++){
+\jsend
+    assign push_\=gr=\_valid = cxs_out_deframer_in_valid & valid_mask[\=gr=\];
+\jsbegin
+    }
+}
+\jsend
+
+\js if ( p.assertOn ) {
+
+    `ifdef OVL_ASSERT_ON
+    // synthesis_off
+    // pragma synthesis_off
+    // coverage off
+
+
+\jsbegin
+
+var carry_ptr=[];
+var carry_w =[]
+if(mask_and_carry_constant.carry[p.NumberOfGranulePerBeat-1]){
+
+for (var i=0;i<p.NumberOfGranulePerBeat;i++){
+        if(mask_and_carry_constant.carry[i]){
+            carry_ptr.push("start_ptr_"+i+"_out");
+            carry_w.push(1);
+            }
+}
+
+var carry_ptr_vec = concat(carry_ptr,carry_w);
+\jsend
+
+wire [\=carry_ptr_vec.width-1=\ : 0 ] carry_ptr_vec;
+wire [2:0] fire_occupied_entry_to_allocate;
+
+assign carry_ptr_vec = \=carry_ptr_vec.bundle=\;
+
+ovl_zero_one_hot #(.width(\=carry_ptr_vec.width=\),.msg("This vector is used to calculate the carry in teh Deframer, it must be one hot!")) carry_vac (
+        .clock(\=p.interfaces["clkInt"].name=\clk),
+        .reset(\=p.interfaces["clkInt"].name=\reset_n),
+        .enable(1'b1),
+        .test_expr(carry_ptr_vec),
+        .fire(fire_occupied_entry_to_allocate)
+    );
+
+\js }
+    // coverage on
+    // pragma synthesis_on
+    // synthesis_on
+    `endif
+\js }
+
+endmodule

@@ -1,0 +1,849 @@
+\jsbegin
+    var u = obj.lib;
+    var log2ceil           = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+\jsend
+
+\jsbegin
+    u.paramDefault('assertOn','int',0);
+
+//Command
+    var tid_width                       = Math.abs(u.getParam('CMDReqInterface', 'message_id'));
+    var cmd_addr_width                  = Math.abs(u.getParam('CMDReqInterface', 'addr'));
+    var cmd_mpf1_width                  = Math.abs(u.getParam('CMDReqInterface', 'mpf1'));
+    var cmd_mpf2_width                  = Math.abs(u.getParam('CMDReqInterface', 'mpf2'));
+    var cmd_intfsize_width              = Math.abs(u.getParam('CMDReqInterface', 'intf_size'));
+    var cmd_tof_width                   = Math.abs(u.getParam('CMDReqInterface', 'tof'));
+    var aux_width                       = Math.abs(u.getParam('CMDReqInterface', 'aux'));
+    var assertOn                        = obj.lib.getParam('assertOn');
+
+   var CMDOverflowBufInSRAM            = u.getParam("CMDOverflowBufInSRAM");
+   var memGen                          = u.getParam('memGen');
+   var skidInterfaceBundle             = u.getParam('skidInterfaceBundle');
+   var fnErrDetectCorrect              = u.getParam('fnErrDetectCorrect');
+
+   var nExclusiveEntries             = u.getParam('nExclusiveEntries');
+   var wCacheLineOffset                = u.getParam('wCacheLineOffset');
+   var target_id_width                 = wFUnitId;
+   var nCmdReq                         = u.getParam('nCmdReq');
+   var unit_id_width                   = u.getParam('unit_id_width');
+   var port_id_width                   = u.getParam('port_id_width');
+   var h_prot_width                    = u.getParam('wHProt'); 
+   var t_tier_width                    = u.getParam('wTtier');
+   var steering_width                  = u.getParam('wSteering');
+   var priority_width                  = u.getParam('wPriority');
+   var ql_width                        = u.getParam('wQl');
+   var cmd_attrv_width                 = u.getParam('cmd_attr_width');
+   var cmdRspInterface                 = u.getParam('NCCMDRspInterface');
+   var str_req_width                   = u.getParam('str_req_width'); 
+   var status_width                    = Math.abs(u.getParam('NCCMDRspInterface', 'cm_status'));
+   var cm_type_width                   = Math.abs(u.getParam('CMDReqInterface', 'cm_type'));
+   var cmd_size_width                  = Math.abs(u.getParam('CMDReqInterface', 'size'));
+   var cmd_qos_width                   = Math.abs(u.getParam('CMDReqInterface', 'qos'));
+   var cmd_ns_width                    = Math.abs(u.getParam('CMDReqInterface', 'ns'));
+   var rmessage_id_width               = Math.abs(u.getParam('NCCMDRspInterface', 'r_message_id'));
+   var initiator_id_width              = Math.abs(u.getParam('NCCMDRspInterface', 'initiator_id'));
+   var m_prot_width                    = Math.abs(u.getParam('NCCMDRspInterface', 'm_prot'));
+   var tm_width                        = Math.abs(u.getParam('NCCMDRspInterface', 'tm'));
+   
+   var tt_id_width  		       = u.getParam('tt_id_width');
+   var cmd_mpf1_width                  = Math.abs(u.getParam('CMDReqInterface', 'mpf1'));
+   var cmd_mpf2_width                  = Math.abs(u.getParam('CMDReqInterface', 'mpf2'));
+   var cmd_aux_width                   = Math.abs(u.getParam('CMDReqInterface', 'aux'));
+   var cmd_intf_width                   = Math.abs(u.getParam('CMDReqInterface', 'intf_size'));
+
+   var h_prot_width                    = Math.abs(u.getParam('NCCMDRspInterface', 'h_prot'));
+   var t_tier_width                    = Math.abs(u.getParam('NCCMDRspInterface', 't_tier'));
+   var steering_width                  = Math.abs(u.getParam('NCCMDRspInterface', 'steering'));
+   var priority_width                  = Math.abs(u.getParam('NCCMDRspInterface', 'priority'));
+   var ql_width                        = Math.abs(u.getParam('NCCMDRspInterface', 'ql'));
+
+   var fnNativeInterface               = u.getParam('fnNativeInterface');
+
+
+   var NCCmdRsp                        = u.getParam('cmType','NCCmdRsp'); 
+   var CmdClnInv                       = u.getParam('cmType','CmdClnInv'); 
+   var CmdMkInv                        = u.getParam('cmType','CmdMkInv'); 
+   var CmdRdNC                         = u.getParam('cmType','CmdRdNC');
+   var CmdClnShPsist                   = u.getParam('cmType','CmdClnShPsist');
+   var CmdClnVld                       = u.getParam('cmType','CmdClnVld');
+
+   var wFUnitId                        = u.getParam('wFUnitId');
+   var wFPortId                        = obj.lib.getParam('wFPortId');
+
+   var nSkidBufSize                    = obj.lib.getParam('nSkidBufSize');
+   var nSkidBufArb                     = obj.lib.getParam('nSkidBufArb');
+
+   var init_id_width                   = wFUnitId;
+
+   var cmd_req_width = wFUnitId + cm_type_width + tid_width + cmd_addr_width + cmd_attrv_width + cmd_mpf1_width + cmd_mpf2_width  + cmd_size_width + cmd_tof_width + cmd_qos_width + aux_width + cmd_intfsize_width + priority_width + ql_width; 
+
+   var cmd_resp_width =  wFUnitId + cm_type_width + tid_width + h_prot_width + t_tier_width + steering_width + priority_width + ql_width + status_width  + tid_width + 1;
+   var str_req_rd_width = wFUnitId + tid_width + priority_width + ql_width + cmd_qos_width + 1;
+
+   var req_tm = cmd_addr_width + cmd_attrv_width - 1;
+
+   var req_tid_lsb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width ;
+   var req_tid_msb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width - 1;
+
+   var req_init_id_lsb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width;
+   var req_init_id_msb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId -1;
+
+   var req_qos_lsb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width;
+   var req_qos_msb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width - 1;
+
+   var req_ql_lsb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width;
+   var req_ql_msb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width + ql_width - 1;
+
+   var req_pri_lsb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width + ql_width ;
+   var req_pri_msb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width + ql_width + priority_width - 1;
+//Command Response
+   var cmd_rsp_status_lsb = tid_width;
+   var cmd_rsp_status_msb = tid_width + status_width -1;
+
+   var cmd_rsp_ql_lsb = tid_width + status_width ;
+   var cmd_rsp_ql_msb = tid_width + status_width + ql_width - 1;
+
+   var cmd_rsp_priority_lsb = tid_width + status_width + ql_width;
+   var cmd_rsp_priority_msb = tid_width + status_width + ql_width + priority_width - 1;
+
+   var cmd_rsp_steering_lsb = tid_width + status_width + ql_width + priority_width;
+   var cmd_rsp_steering_msb = tid_width + status_width + ql_width + priority_width + steering_width -1;
+
+   var cmd_rsp_t_tier_lsb = tid_width + status_width + ql_width + priority_width + steering_width;
+   var cmd_rsp_t_tier_msb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width -1;
+
+   var cmd_rsp_h_prot_lsb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width ;
+   var cmd_rsp_h_prot_msb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width - 1;
+
+   var cmd_rsp_targ_id_lsb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width;
+   var cmd_rsp_targ_id_msb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width + wFUnitId + -1;
+
+   var cmd_rsp_msg_id_lsb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width + wFUnitId;
+   var cmd_rsp_msg_id_msb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width + wFUnitId + tid_width -1;
+
+   var cmd_rsp_cm_type_lsb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width + wFUnitId + tid_width ;
+   var cmd_rsp_cm_type_msb = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width + wFUnitId + tid_width + cm_type_width -1;
+   
+   var cmd_rsp_tm          = tid_width + status_width + ql_width + priority_width + steering_width + t_tier_width + h_prot_width + wFUnitId + tid_width + cm_type_width ;
+
+
+   var cm_type_lsb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width ;
+   var cm_type_msb = cmd_addr_width + cmd_attrv_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width -1;
+
+   var wSkidEntry              = (CMDOverflowBufInSRAM) ? log2ceil(nSkidBufSize-nSkidBufArb)+1 : 1;
+
+//=============================================================================
+// ports
+//=============================================================================
+
+    u.port('input', 'clk'                       , 1);
+    u.port('input', 'reset_n'                   , 1);
+    u.port('input', 'csr_force_ro_vz_hi'        , 1);
+    u.port('input', 'csr_force_eo_vz_hi'        , 1);
+
+    u.port('input', 'out_cmd_req_fifo_ready'    , 1);
+    u.port('input', 'my_f_unit_id'              , wFUnitId);
+    u.port('input', 'str_req_fifo_ready_rd'     , 1);
+    u.port('input', 'wtt_addr_ewa_match'        , 1);
+    u.port('input', 'rtt_cmo_match'             , 1);
+    u.port('input', 'rtt_full'                  , 1);
+    u.port('input', 'wtt_eo_full'               , 1);
+
+    u.port('output','skid_cerr'                 , 1);
+    u.port('output','skid_ucerr'                , 1);
+    u.port('output','skid_cerr_entry'           , wSkidEntry);
+    u.port('output','skid_ucerr_entry'          , wSkidEntry);
+    
+    u.port('input', 'addr_match_on_wtt'         , 1);
+    u.port('input', 'addr_match_on_rtt'         , 1);
+
+    u.port('input', 'cmd_req_UCE'               , 1);
+
+    u.port('output', 'cmd_req_fifo_valid'       , 1);
+    u.port('output', 'cmd_req_fifo_data'        , cmd_req_width);
+    u.port('output', 'cmd_resp_fifo_ready'      , 1);
+    u.port('output', 'cmd_req_fifo_empty'       , 1);
+
+    u.port('output', 'str_req_fifo_valid_rd'    , 1);
+    u.port('output', 'str_req_fifo_data_rd'     , str_req_width);
+    u.port('output', 'str_req_fifo_last_rd'     , 1);
+    u.port('output', 'str_req_rd_fifo_in_ready' , 1);
+
+obj.lib.interface('cmd_req_slv_', 'slave', obj.lib.getParam('CMDReqInterface'));
+obj.lib.interface('cmd_rsp_mst_', 'master',  obj.lib.getParam('NCCMDRspInterface'));
+
+if(memGen.skidMem[0].MemType == "SYNOPSYS") {
+  obj.lib.interface("skid0_", 'master', skidInterfaceBundle);
+  obj.lib.interface("skid1_", 'master', skidInterfaceBundle);  
+}
+
+\jsend
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+wire                             cmd_req_fifo_skid_ready;
+wire [\=cmd_req_width-1=\:0]     cmd_req_fifo_in_packet;
+wire [\=cmd_req_width=\:0]       cmd_req_fifo_fifo_data;
+wire [\=cmd_req_width-1=\:0]     cmd_req_fifo_mux_data;
+wire [\=cmd_req_width-1=\:0]     cmd_req_fifo_overflow_data;
+
+wire                             cmd_req_fifo_fifo_valid;
+wire                             cmd_req_fifo_mux_valid;
+wire                             cmd_req_fifo_overflow_valid;
+
+wire                             cmd_req_fifo_fifo_ready;
+wire                             cmd_req_fifo_mux_ready;
+wire                             cmd_req_fifo_overflow_ready;
+
+wire [\=cmd_req_width-1=\:0]     cmd_req_fifo_out_packet;
+wire [\=cmd_resp_width-1=\:0]    cmd_resp_fifo_in_packet;
+wire [\=cmd_resp_width-1=\:0]    cmd_resp_fifo_out_packet;
+wire [\=cmd_resp_width-1=\:0]    cmd_resp;
+wire [\=cmd_attrv_width-1=\:0]   cmd_req_slv_attrv;
+wire [\=cm_type_width-1=\:0]     cmd_rsp_cm_type;
+wire [\=tid_width-1=\:0]         cmd_rsp_tid;
+wire [\=wFUnitId-1=\:0]          cmd_rsp_target_id;
+
+\js if (h_prot_width != 0 ) {
+wire [\=h_prot_width-1=\:0]      cmd_rsp_h_prot;
+\js }
+
+\jsbegin
+// Dont have t_tier
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (t_tier_width != 0 ) {
+\jsend
+wire [\=t_tier_width-1=\:0]      cmd_rsp_t_tier;
+\js }
+
+\jsbegin
+// Dont have steer.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (steering_width != 0 ) {
+\jsend
+wire [\=steering_width-1=\:0]    cmd_rsp_steering;
+\js }
+
+\js if (priority_width != 0 ) {
+wire [\=priority_width-1=\:0]    cmd_rsp_priority;
+\js }
+
+\jsbegin
+// Dont have ql.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (ql_width != 0 ) {
+\jsend
+wire [\=ql_width-1=\:0]          cmd_rsp_ql;
+\js }
+
+wire                             cmd_rsp_tm;
+
+
+wire [\=status_width-1=\:0]      cmd_rsp_status;
+wire [\=tid_width-1=\:0]         cmd_rsp_rid;
+wire [\=wFUnitId-1=\:0]          str_req_rd_target_id;
+wire [\=tid_width-1=\:0]         str_req_rd_rid;
+wire [\=str_req_rd_width-1=\:0]  str_req_rd_fifo_in_packet;
+wire [\=str_req_rd_width-1=\:0]  str_req_fifo_out_packet;
+wire                             cmd_req_fifo_in_ready;
+wire                             cmd_req_fifo_out_valid;
+wire                             cmd_resp_fifo_out_valid;
+wire                             cmd_req_fifo_in_valid;
+wire                             cmd_resp_fifo_in_valid;
+wire                             out_cmd_resp_ready;
+wire                             cmd_resp_fifo_empty;
+wire                             str_req_rd_fifo_in_valid;
+wire                             str_req_fifo_empty;
+
+wire                        readout_nc;
+
+wire                        incoming_msg_target_mismatch;
+assign                      incoming_msg_target_mismatch = (cmd_req_slv_target_id != {my_f_unit_id,\=wFPortId=\'b0});
+
+wire                        incoming_msg_cmstatus_error;
+assign                      incoming_msg_cmstatus_error = (cmd_req_slv_cm_status[7:6] == 2'b11);
+
+wire 			    arb_empty;
+//CMD request FIFO
+
+// Drop any mismatched target transactions.
+assign cmd_req_fifo_in_valid  = cmd_req_slv_valid & !incoming_msg_target_mismatch & !incoming_msg_cmstatus_error & !cmd_req_UCE;
+
+assign cmd_req_slv_attrv      = {cmd_req_slv_tm,
+                                 cmd_req_slv_rl,
+				 cmd_req_slv_lk,
+				 cmd_req_slv_or,
+				 cmd_req_slv_pr,
+				 \jsbegin
+				 // Always have NS bit
+				 /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */				 
+				 if (cmd_ns_width != 0) {
+				 \jsend
+				 cmd_req_slv_ns,
+				 \js } 
+				 cmd_req_slv_es,
+				 cmd_req_slv_en,
+				 cmd_req_slv_st,
+				 cmd_req_slv_ch,
+				 cmd_req_slv_ca,
+				 cmd_req_slv_ac,
+((cmd_req_slv_or == 2'b00) | (cmd_req_slv_or == 2'b01) | (csr_force_ro_vz_hi & (cmd_req_slv_or == 2'b10)) | (csr_force_eo_vz_hi & (cmd_req_slv_or == 2'b11)) ? 1'b1 : cmd_req_slv_vz)};
+
+assign cmd_req_fifo_in_packet = {
+				 \=(priority_width != 0) ? 'cmd_req_slv_priority,' : '' =\
+				 \jsbegin
+				 // Dont have ql
+				 /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+				 if (ql_width != 0) {
+				 \jsend
+				 cmd_req_slv_ql,
+				 \js }
+                                 cmd_req_slv_intf_size,
+                                 \=(aux_width != 0) ? 'cmd_req_slv_aux,' : ''=\
+				 cmd_req_slv_mpf2,
+				 cmd_req_slv_mpf1,
+				 cmd_req_slv_initiator_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\],
+				 cmd_req_slv_cm_type,
+				 cmd_req_slv_message_id,
+				 \=(cmd_qos_width != 0) ? 'cmd_req_slv_qos,' : ''=\
+				 cmd_req_slv_tof,
+				 cmd_req_slv_size,
+				 cmd_req_slv_attrv,
+				 cmd_req_slv_addr};
+				 
+assign cmd_req_slv_ready      = cmd_req_fifo_in_ready;
+
+wire barrier_second_cmo = wtt_addr_ewa_match & rtt_cmo_match;
+
+\jsbegin
+    var CmdWrNCPtl        = u.getParam('cmType','CmdWrNCPtl');
+    var CmdWrNCFull       = u.getParam('cmType','CmdWrNCFull');
+\jsend
+
+wire tt_read   = ~((cmd_req_fifo_out_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdWrNCPtl=\ || cmd_req_fifo_out_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdWrNCFull=\));
+wire tt_write  =  ((cmd_req_fifo_out_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdWrNCPtl=\ || cmd_req_fifo_out_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdWrNCFull=\));
+
+\js if (nExclusiveEntries== 0) {
+wire barrier_hazard = 1'b0;
+\js } else {
+wire barrier_hazard = (addr_match_on_wtt & tt_read) || (addr_match_on_rtt & tt_write);
+\js }
+
+assign cmd_req_fifo_valid = cmd_req_fifo_out_valid & ~barrier_second_cmo & ~barrier_hazard;
+assign cmd_req_fifo_data  = cmd_req_fifo_out_packet;
+
+
+wire mux_tt_cmo;
+wire mux_fifo_readin;
+
+// AKA is this transaction bypassable
+wire fifo_readin;
+
+\js if (nExclusiveEntries== 0) {
+assign fifo_readin = cmd_req_fifo_in_valid ? ~((cmd_req_slv_cm_type == \=CmdWrNCPtl=\ || cmd_req_slv_cm_type == \=CmdWrNCFull=\) && cmd_req_slv_or!=2'b11) : 1'b1;
+\js } else {
+\js // No Bypassing when exclusive entries are enabled. This is based on the implication that a PCIe initiator cannot talk to an exclusive monitor. 
+assign fifo_readin = 1'b1;
+\js }
+
+wire tt_cmo;
+assign tt_cmo = (cmd_req_fifo_in_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdClnInv=\) |
+                (cmd_req_fifo_in_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdMkInv=\) |
+	        (cmd_req_fifo_in_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdClnShPsist=\ |
+		(cmd_req_fifo_in_packet[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdClnVld=\));
+\jsbegin
+// Leaving assert off. should remove
+/* istanbul ignore if env ncore_3p4,ncore_3p6,ncore_3p7  */
+if (assertOn) { \jsend
+// synopsys translate_off
+assert_never #(0) assert_skid_overflow(
+        .clk            (clk),
+        .reset_n        (reset_n),
+        .test_expr      (cmd_req_fifo_in_valid & ~cmd_req_fifo_in_ready)
+);
+// synopsys translate_on
+\jsbegin
+} \jsend
+
+
+assign mux_tt_cmo             = tt_cmo;
+assign mux_fifo_readin        = fifo_readin;
+
+////////////////////////////////////////
+//
+//	CMD Skidbuffer
+
+\jsbegin
+var overflow_depth = (nSkidBufSize == nSkidBufArb) ? 2 : nSkidBufSize-nSkidBufArb;
+var overflow_mem   = (nSkidBufSize == nSkidBufArb) ? "NONE" : memGen.skidMem[0].MemType;
+\jsend
+
+wire skidbuffer_ready = out_cmd_req_fifo_ready & ~barrier_second_cmo & ~barrier_hazard;
+wire out_cerr, out_uerr;
+wire [\=log2ceil(overflow_depth)=\-1:0] out_err_index;
+
+wire out_cerr_non_bypass, out_uerr_non_bypass; 
+wire out_cerr_bypass, out_uerr_bypass; 
+wire [\=log2ceil(overflow_depth)=\-1:0] err_index_non_bypass, err_index_bypass;
+wire cmd_req_fifo_skid_ready_non_bypass, cmd_req_fifo_skid_ready_bypass;
+wire cmd_req_fifo_out_valid_non_bypass, cmd_req_fifo_out_valid_bypass;
+wire skidbuffer_ready_non_bypass, skidbuffer_ready_bypass;
+wire [\=cmd_req_width=\-1:0] cmd_req_fifo_out_packet_non_bypass, cmd_req_fifo_out_packet_bypass;
+
+assign cmd_req_fifo_in_ready  = (cmd_req_fifo_in_valid & fifo_readin) ? cmd_req_fifo_skid_ready_non_bypass : cmd_req_fifo_skid_ready_bypass;
+
+assign cmd_req_fifo_empty = ~(cmd_req_fifo_out_valid_bypass | cmd_req_fifo_out_valid_non_bypass | cmd_req_fifo_in_valid) & arb_empty;
+
+////////////////
+// Overflow FIFOs
+
+// Bypassable FIFO
+\jsbegin
+var overflow_depth = (nSkidBufSize == nSkidBufArb) ? 2 : nSkidBufSize-nSkidBufArb;
+var overflow_mem   = (nSkidBufSize == nSkidBufArb) ? "NONE" : memGen.skidMem[0].MemType;
+
+        var dii_cmd_req_inp_fifo_Params = {
+                width			: cmd_req_width,
+		depth			: overflow_depth,
+		memoryType		: overflow_mem,
+		genInterfaceNew         : null,
+		fnErrDetectCorrect 	: fnErrDetectCorrect
+        };
+
+        var  instance_ports_for_dii_cmd_req_fifo = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+		in_valid  	: '(cmd_req_fifo_in_valid & fifo_readin)',
+		in_ready	: 'cmd_req_fifo_skid_ready_non_bypass',
+		in_data		: 'cmd_req_fifo_in_packet',
+		out_valid	: 'cmd_req_fifo_out_valid_non_bypass',
+		out_ready	: 'skidbuffer_ready_non_bypass',
+		out_data	: 'cmd_req_fifo_out_packet_non_bypass',
+		out_cerr	: 'out_cerr_non_bypass',
+		out_uerr	: 'out_uerr_non_bypass',
+		out_err_index   : 'err_index_non_bypass'
+        };
+
+if(memGen.skidMem[0].MemType == "SYNOPSYS") {
+	instance_ports_for_dii_cmd_req_fifo['wt_sel'] = "skid0_wt_sel";
+	instance_ports_for_dii_cmd_req_fifo['wt_addr'] = "skid0_wt_addr";		     			     
+	instance_ports_for_dii_cmd_req_fifo['wt_data'] = "skid0_wt_data";		     			     
+	instance_ports_for_dii_cmd_req_fifo['rd_sel'] = "skid0_rd_sel";		     			     
+	instance_ports_for_dii_cmd_req_fifo['rd_addr'] = "skid0_rd_addr";		     			     
+	instance_ports_for_dii_cmd_req_fifo['rd_data'] = "skid0_rd_data";		     			     	
+}
+
+\jsend
+
+\=u.instance({
+        instanceName  : 'dii_skidbuffer_overflow',
+        moduleName    : 'com_fifo_mem',
+        params        : dii_cmd_req_inp_fifo_Params,
+        verilogParams : {},
+        ports         : instance_ports_for_dii_cmd_req_fifo
+})=\
+
+// Bypass FIFO
+\jsbegin
+        var dii_cmd_req_inp_fifo_bypass_Params = {
+                width			: cmd_req_width,
+		depth			: overflow_depth,
+		memoryType		: overflow_mem,
+		genInterfaceNew         : null,
+		fnErrDetectCorrect 	: fnErrDetectCorrect
+        };
+
+        var  instance_ports_for_dii_cmd_req_fifo_bypass = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+		in_valid  	: '(cmd_req_fifo_in_valid & ~fifo_readin)',
+		in_ready	: 'cmd_req_fifo_skid_ready_bypass',
+		in_data		: 'cmd_req_fifo_in_packet',
+		out_valid	: 'cmd_req_fifo_out_valid_bypass',
+		out_ready	: 'skidbuffer_ready_bypass',
+		out_data	: 'cmd_req_fifo_out_packet_bypass',
+		out_cerr	: 'out_cerr_bypass',
+		out_uerr	: 'out_uerr_bypass',
+		out_err_index   : 'err_index_bypass'
+        };
+
+if(memGen.skidMem[0].MemType == "SYNOPSYS") {
+	instance_ports_for_dii_cmd_req_fifo_bypass['wt_sel'] = "skid1_wt_sel";
+	instance_ports_for_dii_cmd_req_fifo_bypass['wt_addr'] = "skid1_wt_addr";		     			     
+	instance_ports_for_dii_cmd_req_fifo_bypass['wt_data'] = "skid1_wt_data";		     			     
+	instance_ports_for_dii_cmd_req_fifo_bypass['rd_sel'] = "skid1_rd_sel";		     			     
+	instance_ports_for_dii_cmd_req_fifo_bypass['rd_addr'] = "skid1_rd_addr";		     			     
+	instance_ports_for_dii_cmd_req_fifo_bypass['rd_data'] = "skid1_rd_data";		     			     	
+}
+\jsend
+
+assign skid_cerr  = ((cmd_req_fifo_out_valid_non_bypass & out_cerr_non_bypass) | (cmd_req_fifo_out_valid_bypass & out_cerr_bypass)) & cmd_req_fifo_mux_ready; 
+assign skid_ucerr = ((cmd_req_fifo_out_valid_non_bypass & out_uerr_non_bypass) | (cmd_req_fifo_out_valid_bypass & out_uerr_bypass)) & cmd_req_fifo_mux_ready;
+
+\js if (CMDOverflowBufInSRAM == 1) {
+assign skid_cerr_entry = out_cerr_non_bypass ? {1'b0,err_index_non_bypass} : {1'b1,err_index_bypass};
+assign skid_ucerr_entry = out_uerr_non_bypass ? {1'b0,err_index_non_bypass} : {1'b1,err_index_bypass};
+\js } else {
+assign skid_cerr_entry = 1'h0;
+assign skid_ucerr_entry = 1'h0;
+\js }
+
+\=u.instance({
+        instanceName  : 'dii_skidbuffer_overflow_bypass',
+        moduleName    : 'com_fifo_mem',
+        params        : dii_cmd_req_inp_fifo_bypass_Params,
+        verilogParams : {},
+        ports         : instance_ports_for_dii_cmd_req_fifo_bypass
+})=\
+
+// Fair arbitration unless RTT is full.
+wire last_selected;
+wire last_selected_in = ~last_selected;
+wire contention = (cmd_req_fifo_out_valid_bypass & cmd_req_fifo_out_valid_non_bypass);
+wire switch = contention & skidbuffer_ready;
+
+// In RTT Full Case always select bypass buffer.
+// Otherwise switch the winners of contention.
+// Otherwise just go with who is valid.
+wire select_bypass = contention ? 1'b1 :
+                     cmd_req_fifo_out_valid_bypass ? 1'b1 : 1'b0;
+		     
+
+\=u.dffre(       1
+              , 'last_selected'
+              , 'last_selected_in'
+              , "1'b0"
+              , 'switch'
+              , 'clk'
+              , 'reset_n')=\
+
+
+assign skidbuffer_ready_bypass     = select_bypass ? cmd_req_fifo_mux_ready : 1'b0;
+assign skidbuffer_ready_non_bypass = select_bypass ? 1'b0 : cmd_req_fifo_mux_ready;
+
+
+wire drop = out_uerr;
+
+assign cmd_req_fifo_mux_valid  = (select_bypass ? cmd_req_fifo_out_valid_bypass : cmd_req_fifo_out_valid_non_bypass) & !drop;
+assign cmd_req_fifo_mux_data   =  select_bypass ? cmd_req_fifo_out_packet_bypass : cmd_req_fifo_out_packet_non_bypass;
+assign out_cerr =                 select_bypass ? out_cerr_bypass : out_cerr_non_bypass;
+assign out_uerr =                 select_bypass ? out_uerr_bypass : out_uerr_non_bypass;
+assign out_err_index =            select_bypass ? err_index_bypass : err_index_non_bypass;
+
+/////////////////
+//"Arb Buffer
+
+\jsbegin
+        var dii_arb_Params = {
+                WIDTH         : cmd_req_width,
+                ENTRIES       : nSkidBufArb+1,
+                assertOn       : assertOn,
+		init_id_lsb   : req_init_id_lsb,
+		init_id_msb   : req_init_id_msb,
+		addr_lsb      : wCacheLineOffset,
+		addr_msb      : cmd_addr_width-1
+        };
+
+	// CMO Unused
+        var  instance_ports_for_arb_fifo = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                vldin           : 'cmd_req_fifo_mux_valid',
+                din             : 'cmd_req_fifo_mux_data',
+		readin          : '~select_bypass',
+		cmo             : "1'b0", 
+		readyin         : 'cmd_req_fifo_mux_ready',
+                vldout          : 'cmd_req_fifo_out_valid',
+                dout            : 'cmd_req_fifo_out_packet',
+                ready           : 'skidbuffer_ready',
+                empty           : 'arb_empty',
+                readout         : 'readout_nc',
+		rtt_full        : '(rtt_full | wtt_eo_full)'
+        };
+\jsend
+
+\=u.instance({
+        instanceName  : 'skidbuffer',
+        moduleName    : 'dii_skidbuffer',
+        params        : dii_arb_Params,
+        verilogParams : {},
+        ports         : instance_ports_for_arb_fifo
+})=\
+
+////////////////////////////////////////
+//
+//	CMD Response FIFO
+//
+
+//Enqueue request when a Command request is dequeued from the input request FIFO and is enqeued in either RTT or WTT.
+assign cmd_resp_fifo_in_valid    =  out_cmd_req_fifo_ready & cmd_req_fifo_valid;
+//Target ID of the response is the initiator ID of the command request
+assign cmd_rsp_target_id         = cmd_req_fifo_out_packet[\=req_init_id_msb=\: \=req_init_id_lsb=\];
+assign cmd_rsp_cm_type           = \=NCCmdRsp=\;
+assign cmd_rsp_tid               = \=tid_width=\'h0;
+//CMD Resp Input packet
+//RMessage ID of the command response is the TID of the command request
+assign cmd_rsp_rid               = cmd_req_fifo_out_packet[\=req_tid_msb=\: \=req_tid_lsb=\];
+// 
+assign cmd_rsp_status            = \=status_width=\'h0;
+assign cmd_rsp_tm                = cmd_req_fifo_out_packet[\=req_tm=\];
+
+\js if (h_prot_width != 0 ) {
+assign cmd_rsp_h_prot            = \=h_prot_width=\'h0;
+\js }
+
+\jsbegin
+// Dont have t_tier.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (t_tier_width != 0 ) {
+\jsend
+assign cmd_rsp_t_tier            = 'h0;
+\js }
+
+\jsbegin
+// Dont have steer.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (steering_width != 0 ) {
+\jsend
+assign cmd_rsp_steering          = 'h0;
+\js }
+
+\js if (priority_width != 0 ) {
+assign cmd_rsp_priority          = cmd_req_fifo_out_packet[\=req_pri_msb=\: \=req_pri_lsb=\];
+\js }
+
+\jsbegin
+// Dont have ql.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (ql_width != 0 ) {
+\jsend
+assign cmd_rsp_ql                = cmd_req_fifo_out_packet[\=req_ql_msb=\: \=req_ql_lsb=\];
+\js }
+
+assign cmd_resp_fifo_in_packet   = {cmd_rsp_tm,
+                                    cmd_rsp_cm_type,
+                                    cmd_rsp_tid,
+				    cmd_rsp_target_id,
+\js if (cmd_rsp_h_prot_lsb != cmd_rsp_h_prot_msb + 1){				    
+				    cmd_rsp_h_prot,
+\js }
+
+\jsbegin
+// Dont have t_tier.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (cmd_rsp_t_tier_lsb != cmd_rsp_t_tier_msb + 1){
+\jsend
+				    cmd_rsp_t_tier,
+\js }
+\jsbegin
+// Dont have steer.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (cmd_rsp_steering_lsb != cmd_rsp_steering_msb + 1){
+\jsend
+				    cmd_rsp_steering,
+\js }				    				    
+\js if (cmd_rsp_priority_lsb != cmd_rsp_priority_msb + 1){				    
+				    cmd_rsp_priority,
+\js }
+\jsbegin
+// Dont have ql.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (cmd_rsp_ql_lsb != cmd_rsp_ql_msb + 1){
+\jsend
+				    cmd_rsp_ql,
+\js }				    				    
+				    cmd_rsp_status,
+				    cmd_rsp_rid};
+
+//Command Response output packet 
+assign cmd_rsp_mst_valid         = cmd_resp_fifo_out_valid ;
+
+assign cmd_resp                  = cmd_resp_fifo_out_packet;
+
+//RMessage ID of the command response is the TID of the command request
+assign cmd_rsp_mst_r_message_id                                              = cmd_resp[\=tid_width-1=\: 0];
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (cmd_rsp_status_lsb != cmd_rsp_status_msb + 1){
+\jsend
+assign cmd_rsp_mst_cm_status                                                 = cmd_resp[\=cmd_rsp_status_msb=\: \=cmd_rsp_status_lsb=\];
+\js }
+
+\jsbegin
+// Dont have ql.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (cmd_rsp_ql_lsb != cmd_rsp_ql_msb + 1){
+\jsend
+assign cmd_rsp_mst_ql                                                        = cmd_resp[\=cmd_rsp_ql_msb=\: \=cmd_rsp_ql_lsb=\];
+\js }
+
+\js if (cmd_rsp_priority_lsb != cmd_rsp_priority_msb + 1){
+assign cmd_rsp_mst_priority                                                  = cmd_resp[\=cmd_rsp_priority_msb=\: \=cmd_rsp_priority_lsb=\];
+\js }
+
+\jsbegin
+// Dont have steer.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (cmd_rsp_steering_lsb != cmd_rsp_steering_msb + 1){
+\jsend
+assign cmd_rsp_mst_steering                                                  = cmd_resp[\=cmd_rsp_steering_msb=\: \=cmd_rsp_steering_lsb=\];
+\js }
+
+\jsbegin
+// Dont have ql.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if (cmd_rsp_t_tier_lsb != cmd_rsp_t_tier_msb + 1){
+\jsend
+assign cmd_rsp_mst_t_tier                                                    = cmd_resp[\=cmd_rsp_t_tier_msb=\: \=cmd_rsp_t_tier_lsb=\];
+\js }
+
+\js if (cmd_rsp_h_prot_lsb != cmd_rsp_h_prot_msb + 1){
+assign cmd_rsp_mst_h_prot                                                    = cmd_resp[\=cmd_rsp_h_prot_msb=\: \=cmd_rsp_h_prot_lsb=\];
+\js }
+
+
+assign cmd_rsp_mst_target_id                                                 = {cmd_resp[\=cmd_rsp_targ_id_msb=\: \=cmd_rsp_targ_id_lsb=\],{\=wFPortId=\{1'b0}}};
+assign cmd_rsp_mst_initiator_id                                              = {my_f_unit_id,{\=wFPortId=\{1'b0}}};
+assign cmd_rsp_mst_message_id                                                = cmd_resp[\=cmd_rsp_msg_id_msb=\: \=cmd_rsp_msg_id_lsb=\];
+assign cmd_rsp_mst_cm_type                                                   = cmd_resp[\=cmd_rsp_cm_type_msb=\: \=cmd_rsp_cm_type_lsb=\];
+
+\js if(m_prot_width != 0) {
+assign cmd_rsp_mst_m_prot                                                    = \=m_prot_width=\'h0;
+\js }
+
+\jsbegin
+// Always have tm bit
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+if(tm_width != 0) {
+\jsend
+assign cmd_rsp_mst_tm                                                        = cmd_resp[\=cmd_rsp_tm=\];
+\js }
+
+assign out_cmd_resp_ready                                                    = cmd_rsp_mst_ready;
+
+\jsbegin
+        var dii_cmd_resp_fifo_Params = {
+                width       : cmd_resp_width ,
+                depth       : 4,
+                bypass_mode : 0
+        };
+
+        var  instance_ports_for_dii_cmd_resp_fifo = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                push_valid      : 'cmd_resp_fifo_in_valid',
+                push_data       : 'cmd_resp_fifo_in_packet',
+                push_ready      : 'cmd_resp_fifo_ready',
+                pop_valid       : 'cmd_resp_fifo_out_valid',
+                pop_data        : 'cmd_resp_fifo_out_packet',
+                pop_ready       : 'out_cmd_resp_ready',
+                empty           : 'cmd_resp_fifo_empty'
+
+        };
+\jsend
+
+  \=u.instance({
+        instanceName: 'dii_cmd_resp_fifo',
+        moduleName: 'dii_fifo',
+        params: dii_cmd_resp_fifo_Params,
+        verilogParams: {},
+        ports: instance_ports_for_dii_cmd_resp_fifo
+  })=\
+
+//////////////////////////////////////
+//
+//	STR Request FIFO for read request
+//
+
+\jsbegin
+// Always AXI
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */ 
+if ( fnNativeInterface == "AXI4" | fnNativeInterface == "AXI3" | fnNativeInterface == "AXI") {
+\jsend
+// AXI - Only push STRReq if there is not a match
+assign str_req_rd_fifo_in_valid = cmd_req_fifo_valid &
+                                  out_cmd_req_fifo_ready & (((cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdClnInv=\ |
+                                                              cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdMkInv=\ |
+							      cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdClnVld=\ | 
+							      cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdClnShPsist=\) & ~wtt_addr_ewa_match) |
+							      cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdRdNC=\);
+\jsbegin							      
+} else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */ {
+\jsend
+// ACE-L - Dont push CMO immediatly to STRReq FIFO
+assign str_req_rd_fifo_in_valid = cmd_req_fifo_valid &
+       				  out_cmd_req_fifo_ready & ~((cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdClnInv=\ |
+                                                              cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdMkInv=\ |
+							      cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdClnVld=\ |
+							      cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdClnShPsist=\)) &
+							      cmd_req_fifo_out_packet[\=cm_type_msb=\: \=cm_type_lsb=\] == \=CmdRdNC=\;
+\js }
+
+ 
+assign str_req_rd_target_id      = cmd_req_fifo_out_packet[\=req_init_id_msb=\: \=req_init_id_lsb=\];
+assign str_req_rd_rid            = cmd_req_fifo_out_packet[\=req_tid_msb=\: \=req_tid_lsb=\];
+assign str_req_rd_fifo_in_packet = {    cmd_req_fifo_out_packet[\=req_tm=\],
+                                        \jsbegin
+                                        // Dont have ql.
+                                        /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7  */
+                                        if(ql_width != 0) {
+					\jsend
+					cmd_req_fifo_out_packet[\=req_ql_msb=\: \=req_ql_lsb=\],
+					\js }
+                                        \js if(priority_width != 0) {
+					cmd_req_fifo_out_packet[\=req_pri_msb=\: \=req_pri_lsb=\],
+					\js }
+                                        \js if(cmd_qos_width != 0) {
+					cmd_req_fifo_out_packet[\=req_qos_msb=\: \=req_qos_lsb=\],
+					\js }					
+                                        str_req_rd_target_id,
+					str_req_rd_rid
+				   }; 
+
+\jsbegin
+        var dii_str_req_rd_fifo_Params = {
+                width       : str_req_rd_width ,
+                depth       : 4,
+                bypass_mode : 0
+        };
+
+        var  instance_ports_for_dii_str_req_rd_fifo = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                push_valid      : 'str_req_rd_fifo_in_valid',
+                push_data       : 'str_req_rd_fifo_in_packet',
+                push_ready      : 'str_req_rd_fifo_in_ready',
+                pop_valid       : 'str_req_fifo_valid_rd',
+                pop_data        : 'str_req_fifo_out_packet',
+                pop_ready       : 'str_req_fifo_ready_rd',
+                empty           : 'str_req_fifo_empty'
+
+        };
+\jsend
+
+  \=u.instance({
+        instanceName  : 'dii_str_req_rd_fifo',
+        moduleName    : 'dii_fifo',
+        params        : dii_str_req_rd_fifo_Params,
+        verilogParams : {},
+        ports         : instance_ports_for_dii_str_req_rd_fifo
+  })=\
+
+
+assign str_req_fifo_data_rd = {
+                                str_req_fifo_out_packet[\=str_req_rd_width=\-1],
+                                \js if (ql_width != 0 | priority_width != 0 | cmd_qos_width != 0) {
+				str_req_fifo_out_packet[\=str_req_rd_width=\-2:\=wFUnitId + tid_width=\],				
+				\js }
+                                1'b0,
+				\=tt_id_width=\'b0,
+				str_req_fifo_out_packet[\=wFUnitId + tid_width=\-1:0]
+			      };
+assign str_req_fifo_last_rd = str_req_fifo_valid_rd;
+
+endmodule
+

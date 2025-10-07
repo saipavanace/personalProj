@@ -1,0 +1,99 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU demux.
+//
+//////////////////////////////////////////////////////////////////////////
+var u = obj.lib;
+var m = obj.userLib;
+
+var assertOn = u.getParam('assertOn');
+var NUM = u.getParam('NUM');
+var DW = u.getParam('DW');
+
+u.paramDefault('clkAssertInterface', 'object', null);
+u.paramDefault('NO_DATA_OUT', 'object', 0);
+
+var clkAssertInterface     = m.hierGetParam('clkAssertInterface', u.getParam);
+var NO_DATA_OUT            = m.hierGetParam('NO_DATA_OUT', u.getParam);
+
+u.interface(clkAssertInterface.name, 'slave', clkAssertInterface.signals);
+
+u.port('output','ready_o',1);
+u.port('input','valid_i',1);
+u.port('input','data_i',DW);
+u.port('input','ready_i',NUM);
+u.port('output','valid_o',NUM);
+if (!NO_DATA_OUT) {
+u.port('output','data_o',NUM*DW);
+}
+u.port('input','bvsel_i',NUM);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+\=u.getPorts('\n    ')=\
+);
+
+\js if (NO_DATA_OUT) {
+wire [\=(NUM*DW)-1=\:0] data_o;
+\js }
+
+wire [\=NUM-1=\:0]	t_ready;
+wire [\=NUM-1=\:0]	t_valid;
+
+assign t_ready = (ready_i & bvsel_i) | ~bvsel_i;
+
+assign ready_o = (& t_ready) & (| bvsel_i);
+assign valid_o = t_valid & bvsel_i;
+assign data_o = {\=NUM=\{data_i}};
+
+\js	for(let i=0; i<NUM; i=i+1) {
+		assign t_valid[\=i=\] = valid_i & (&(t_ready | ({{\=NUM-1=\{1'b0}},1'b1}<<\=i=\)));
+\js	}
+
+\jsbegin
+////////////////////////////////////////////////////////////////////
+/* istanbul ignore else env ncore_3p7 */
+    if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off
+// coverage off
+
+//assert_never #(0) assert_param(
+//	.clk		(clk_i),
+//	.reset_n	(reset_ni),
+//	.test_expr	(NUM<2)
+//);
+
+assert_never_unknown #(0,\=((NUM+1)*2)+NUM=\) assert_control(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(reset_ni),
+	.test_expr	({\=(((NUM+1)*2)+NUM)=\{reset_ni}} & 
+			 {ready_o, valid_i, ready_i, valid_o, bvsel_i})
+);
+
+assert_never_unknown #(0,\=DW+NUM=\) assert_data(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(reset_ni),
+	.test_expr	({\=DW+NUM=\{reset_ni}} &
+			 {bvsel_i, ({\=DW=\{valid_i}} & data_i)})
+);
+
+// coverage on
+// synopsys translate_on
+// pragma synthesis_on
+`endif
+\js }
+
+endmodule
+

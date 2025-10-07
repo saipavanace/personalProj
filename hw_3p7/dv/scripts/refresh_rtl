@@ -1,0 +1,100 @@
+#!/bin/bash
+if [ -d "$WORK_TOP/debug/image" ]; then
+    rm -rf $WORK_TOP/debug/image
+else
+    echo "did not find $WORK_TOP/debug/image"
+fi
+if [ ! -d "$WORK_TOP/debug" ]; then
+    mkdir -p $WORK_TOP/debug
+fi
+# if [ -z $1 ]; then
+# ucb_flag=""
+# elif [ $1 == "-ucb" ]; then
+# ucb_flag="--maestro_client_home $2"
+# else
+# echo "Illegal command line argument: $1"
+# exit 1
+# fi
+# echo "Use custom build flag is $ucb_flag"
+while getopts 'b:u' flag; do
+    case "${flag}" in
+	b) USE_USER_BUILD_NO=1; USE_BUILD_NO=${OPTARG};;
+	u) UPGRADE_TO_LATEST=1;;
+	*) ;;
+    esac
+done
+build_no_str="";
+if [ $USE_USER_BUILD_NO ]; then
+    build_no=$USE_BUILD_NO;
+    build_no_str="--image_id $build_no"
+    echo "Forcing Build#$build_no"
+elif [[ $MAESTRO_HOME =~ debug/image && !$UPGRADE_TO_LATEST ]]; then
+    build_no=`cat $WORK_TOP/debug/image/build_no.txt`;
+    if [ $? ]; then
+	build_no=`readlink -f /engr/build/maestro/Ncore3.7/maestro-product/stable | xargs basename`;
+	echo "Updating to Build#$build_no"
+    else
+	echo "Rebuilding with Build#$build_no"	
+    fi
+    
+    build_no_str="--image_id $build_no"
+
+else
+    build_no=`readlink -f /engr/build/maestro/Ncore3.7/maestro-product/stable | xargs basename`;
+    echo "Updating to Build#$build_no"
+fi
+    
+
+#    build_no=`dirname $MAESTRO_HOME | xargs readlink -f | xargs basename`;
+
+
+
+#echo "Building with Build#$build_no"
+#/engr/dev/releases/maestro/build/tools/build_custom_product_image.js --branch_name Ncore3.7 --hw_ncr $WORK_TOP --build_dir $WORK_TOP/debug/image --hw_sym $WORK_TOP/../hw-sym --hw_lib $WORK_TOP/../hw-lib --hw_ccp $WORK_TOP/../hw-ccp $ucb_flag --image_id 950
+echo "$WORK_TOP/dv/scripts/build_custom_product_image.js --branch_name Ncore3.7 --hw_ncr $WORK_TOP --build_dir $WORK_TOP/debug/image --hw_sym $WORK_TOP/../hw-sym --hw_lib $WORK_TOP/../hw-lib --hw_ccp $WORK_TOP/../hw-ccp"
+
+$WORK_TOP/dv/scripts/build_custom_product_image.js --branch_name Ncore3.7 --hw_ncr $WORK_TOP --build_dir $WORK_TOP/debug/image --hw_sym $WORK_TOP/../hw-sym --hw_lib $WORK_TOP/../hw-lib --hw_ccp $WORK_TOP/../hw-ccp
+
+if [ ! -f $WORK_TOP/debug/image/SOURCEME ]
+then
+  echo "DEBUG::$WORK_TOP/debug/image/SOURCEME does not exist"
+  exit 1
+fi
+
+echo $build_no > $WORK_TOP/debug/image/build_no.txt
+
+echo 'module unload dev/release/master/stable' > $WORK_TOP/SOURCEME_image
+
+cat $WORK_TOP/debug/image/SOURCEME >> $WORK_TOP/SOURCEME_image
+
+echo 'if [ -z $MAESTRO_EXAMPLES_OVERRIDE ]; then' >> $WORK_TOP/SOURCEME_image
+echo '  export MAESTRO_EXAMPLES=$WORK_TOP/../test_projects/ncore_v3.7_configs/base_configs' >> $WORK_TOP/SOURCEME_image
+echo 'else' >> $WORK_TOP/SOURCEME_image
+echo '  echo "Found \$MAESTRO_EXAMPLES_OVERRIDE: $MAESTRO_EXAMPLES_OVERRIDE"' >> $WORK_TOP/SOURCEME_image
+echo '  export MAESTRO_EXAMPLES=$MAESTRO_EXAMPLES_OVERRIDE' >> $WORK_TOP/SOURCEME_image
+echo 'fi' >> $WORK_TOP/SOURCEME_image
+echo 'echo "#### MAESTRO_EXAMPLES = $MAESTRO_EXAMPLES"' >> $WORK_TOP/SOURCEME_image
+
+
+echo 'module unload dev/release/master/stable' > $WORK_TOP/SOURCEME_image.tcsh
+
+echo "/engr/dev/releases/maestro/build/tools/setup_maestro.sh --build_dir $WORK_TOP/debug/image" >> $WORK_TOP/SOURCEME_image.tcsh
+echo "source .setup_maestro.sourceme.tcsh" >> $WORK_TOP/SOURCEME_image.tcsh
+
+echo 'if (! $?MAESTRO_EXAMPLES_OVERRIDE ) then' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '  setenv MAESTRO_EXAMPLES $WORK_TOP/../test_projects/ncore_v3.7_configs/base_configs' >> $WORK_TOP/SOURCEME_image.tcsh
+echo 'else ' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '  if ( $MAESTRO_EXAMPLES_OVERRIDE == " " ) then' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '    echo "MAESTRO_EXAMPLES_OVERRIDE is empty."' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '    setenv MAESTRO_EXAMPLES $WORK_TOP/../test_projects/ncore_v3.7_configs/base_configs' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '  else' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '    setenv MAESTRO_EXAMPLES $MAESTRO_EXAMPLES_OVERRIDE' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '    echo "OVERRIDE MAESTRO_EXAMPLES = $MAESTRO_EXAMPLES"' >> $WORK_TOP/SOURCEME_image.tcsh
+echo '  endif' >> $WORK_TOP/SOURCEME_image.tcsh
+echo 'endif' >> $WORK_TOP/SOURCEME_image.tcsh
+echo 'echo "### MAESTRO_EXAMPLES = $MAESTRO_EXAMPLES"' >> $WORK_TOP/SOURCEME_image.tcsh
+
+
+echo "for bash --> $WORK_TOP/SOURCEME_image"
+echo "for tcsh --> $WORK_TOP/SOURCEME_image.tcsh"
+

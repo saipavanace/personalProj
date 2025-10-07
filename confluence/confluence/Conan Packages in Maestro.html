@@ -1,0 +1,153 @@
+<div class="contentLayout2">
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759723974251 {padding: 0px;}
+div.rbtoc1759723974251 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759723974251 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759723974251'>
+<ul class='toc-indentation'>
+<li><a href='#ConanPackagesinMaestro-SettingupConanforMaestro'>Setting up Conan for Maestro</a></li>
+<li><a href='#ConanPackagesinMaestro-ManagingMaestroConanpackages'>Managing Maestro Conan packages</a>
+<ul class='toc-indentation'>
+<li><a href='#ConanPackagesinMaestro-AddingaNewConanPackageforMaestro'>Adding a New Conan Package for Maestro</a></li>
+<li><a href='#ConanPackagesinMaestro-UpdatingaMaestroConanpackage'>Updating a Maestro Conan package</a></li>
+</ul>
+</li>
+<li><a href='#ConanPackagesinMaestro-Troubleshooting'>Troubleshooting</a></li>
+</ul>
+</div></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="ConanPackagesinMaestro-SettingupConanforMaestro">Setting up Conan for Maestro</h1><p>Maestro consumes most of its third-party dependencies using <a class="external-link" href="https://conan.io/" rel="nofollow">Conan package manager</a>.</p><p>Before building maestro on a local (virtual) machine one needs to install and configure  Conan:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Install Conan.
+$ sudo pip3 install conan
+
+# Make sure Conan version is &gt;= 1.33. If it&#39;s not, run sudo pip3 install --upgrade conan
+$ conan --version
+ 
+# Copy Conan configuration from the remote server. You&#39;ll need to enter you UNIX/Linux environment password.
+$ scp &lt;username&gt;@gr6-3.arteris.com:/scratch3/maestro/conan/config/conan_config_arteris.tar.gz /some/existing/local/directory/
+ 
+# Install the Conan configuration for the local user.
+$ conan config install /path/to/conan/config/conan_config_arteris.tar.gz</pre>
+</div></div><p><br/></p><p>On remote Arteris machines Conan is already installed. One might need to load Maestro module though:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ module load maestro</pre>
+</div></div><p class="auto-cursor-target">All the Maestro Conan dependencies are defined in <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/develop/conanfile.txt" rel="nofollow">maestro/conanfile.txt</a>:</p><div id="expander-475887730" class="expand-container"><div id="expander-control-475887730" class="expand-control"><span class="expand-control-icon"><img style="vertical-align:middle;" class="expand-control-image" src="https://arterisip.atlassian.net/wiki/images/icons/grey_arrow_down.png"></span><span class="expand-control-text">conanfile.txt</span></div><div id="expander-content-475887730" class="expand-content"><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">[requires]
+boost/1.70.0@conan/stable
+OpenSSL/1.1.0i@conan/stable
+grpc/1.14.2@conan/stable
+ortools/7.3@conan_arteris/stable
+mlic/0.2@conan_arteris/stable
+lefdef/5.8.60@conan_arteris/stable
+rapidjson/1.1.0@conan_arteris/stable
+valijson/20170924@conan_arteris/stable
+g3log/1.2.x@conan_arteris/stable
+exprtk/20171111@conan_arteris/stable
+crc32c/20171130@conan_arteris/stable
+sparsehash/20160726@conan_arteris/stable
+cpptcl/1.1.3@conan_arteris/stable
+catch2/2.13.7@conan_arteris/stable
+
+[generators]
+cmake
+
+[options]
+boost:fPIC=True
+boost:shared=False
+boost:header_only=False
+OpenSSL:no_zlib=True
+OpenSSL:no_comp=True
+rapidjson:has_stdstring=True
+catch2:with_main=False</pre>
+</div></div></div></div></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="ConanPackagesinMaestro-ManagingMaestroConanpackages">Managing Maestro Conan packages</h1><div class="confluence-information-macro confluence-information-macro-note"><span class="aui-icon aui-icon-small aui-iconfont-warning confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p><span>Maestro consumes packages from Arteris own server only (<a class="external-link" href="http://conan.arteris.com:9300" rel="nofollow">http://conan.arteris.com:9300</a>).</span></p></div></div><p><span style="letter-spacing: 0.0px;">The sources of all the packages can be found on </span><a class="external-link" href="http://gitlab.arteris.com/maestro/packages" rel="nofollow" style="letter-spacing: 0.0px;">http://gitlab.arteris.com/maestro/packages</a><span style="letter-spacing: 0.0px;">.</span></p><p>The packages are built and uploaded to the remote automatically by Jenkins pipelines which can be found at <a class="external-link" href="http://jenkins-maestro1.arteris.com:8080/job/packages/" rel="nofollow">http://jenkins-maestro1.arteris.com:8080/job/packages/</a></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="ConanPackagesinMaestro-AddingaNewConanPackageforMaestro">Adding a New Conan Package for Maestro</h2><div class="confluence-information-macro confluence-information-macro-tip"><span class="aui-icon aui-icon-small aui-iconfont-approve confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>Before adding a new package, please check out official Conan <a class="external-link" href="https://docs.conan.io/en/latest/creating_packages.html" rel="nofollow">documentation</a> on packages creation.</p></div></div><ol><li class="auto-cursor-target">Create a new repository (project) under <a class="external-link" href="http://gitlab.arteris.com/maestro/packages" rel="nofollow">http://gitlab.arteris.com/maestro/packages</a> (there should be a big blue button &quot;New Project&quot; in the top right corner) and clone it.</li><li class="auto-cursor-target">Add to the repository:<ol><li class="auto-cursor-target">Library source code.<br/>It can be a tarball or a zip-archive or plain source code in a separate directory. Having a copy of source code in this private repo is preferable, as it's safer than downloading code from open sources (GitHub, etc.).</li><li class="auto-cursor-target">Package recipe (conanfile.py).<br/>Find out mode about the recipes in the official <a class="external-link" href="https://docs.conan.io/en/latest/creating_packages.html" rel="nofollow">documantation</a>.</li><li class="auto-cursor-target">README.md<br/>Please include a README file with important info (like package options, etc.)</li><li class="auto-cursor-target">.gitlab-ci.yml<br/>This file describes a pipeline that is run to build and upload a Conan package. Please refer to existing files for example.</li><li class="auto-cursor-target">(Optional) .gitignore<br/>If you need to ignore some files.</li><li class="auto-cursor-target">(Optional) test_package/<br/><span style="letter-spacing: 0.0px;">These are “package” tests. They validate that the package is properly created, and that the package consumers will be able to link against it and reuse it. It's highly </span>recommend<span style="letter-spacing: 0.0px;"> to use these tests.<br/>More info can be found in <a class="external-link" href="https://docs.conan.io/en/latest/creating_packages/getting_started.html" rel="nofollow">creating_packages</a>, <a class="external-link" href="https://docs.conan.io/en/latest/developing_packages/package_dev_flow.html#conan-test" rel="nofollow">package_dev_flow</a> and <a class="external-link" href="https://docs.conan.io/en/latest/reference/commands/creator/test.html" rel="nofollow">conan test</a>.</span></li></ol></li><li><span style="letter-spacing: 0.0px;">Commit and push your changes. The GitLab CI pipeline should run automatically.</span></li><li><span style="letter-spacing: 0.0px;">If the pipeline is failing, fix the errors and push the fix.</span></li></ol></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="ConanPackagesinMaestro-UpdatingaMaestroConanpackage">Updating a Maestro Conan package</h2><ol><li>Clone a corresponding package repository from <a class="external-link" href="http://gitlab.arteris.com/maestro/packages" rel="nofollow">http://gitlab.arteris.com/maestro/packages</a>.</li><li>Update the recipe (conanfile.py) or the sources. Update README accordingly.</li><li>Push your changes. The GitLab CI pipeline should run automatically (make sure there is <em>.gitlab-ci.yml</em> file in the repository root).</li></ol></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="ConanPackagesinMaestro-Troubleshooting">Troubleshooting</h1><div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col/><col/></colgroup><tbody><tr><th style="text-align: center;" class="confluenceTh">Issue</th><th style="text-align: center;" class="confluenceTh">Suggested Fix</th></tr><tr><td class="confluenceTd"><div class="content-wrapper"><p>Error while installing Conan Packages, e.g.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ERROR: crc32c/20171130@conan_arteris/stable: Error in package_info() method, line 86
+        self.cpp_info.names[&quot;cmake_find_package&quot;] = &quot;Crc32c&quot;
+        TypeError: &#39;_CppInfo&#39; object does not support item assignment</pre>
+</div></div></div></td><td class="confluenceTd"><div class="content-wrapper"><p>Make sure Conan version is &gt;= 1.33:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ conan --version</pre>
+</div></div><p class="auto-cursor-target">If the version is smaller than 1.33:</p><ul style="list-style-type: square;"><li class="auto-cursor-target"><p class="auto-cursor-target">on local (virtual) machine</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Upgrade Conan
+$ pip3 install --upgrade conan</pre>
+</div></div></li><li class="auto-cursor-target"><p class="auto-cursor-target">on remote Arteris machine (markham, etc.)</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Load maestro module
+$ module load maestro</pre>
+</div></div></li></ul></div></td></tr><tr><td class="confluenceTd">Package not found.</td><td class="confluenceTd"><div class="content-wrapper"><p>Make sure you have Arteris Conan remote set up:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ conan remote list
+
+# It should output something like:
+# arteris: http://conan.arteris.com:9300 [Verify SSL: True]</pre>
+</div></div><p class="auto-cursor-target">If there is no &quot;arteris&quot; remote in the list, download and install Conan configuration:</p><ul style="list-style-type: square;"><li class="auto-cursor-target"><p class="auto-cursor-target">on local (virtual) machine:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Copy Conan configuration from the remote server. You&#39;ll need to enter you UNIX/Linux environment password.
+$ scp &lt;username&gt;@gr6-3.arteris.com:/scratch3/maestro/conan/config/conan_config_arteris.tar.gz /some/existing/local/directory/
+ 
+# Install the Conan configuration for the local user.
+$ conan config install /path/to/conan/config/conan_config_arteris.tar.gz</pre>
+</div></div></li><li class="auto-cursor-target"><p class="auto-cursor-target">on remote Arteris machine:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ conan config install /scratch3/maestro/conan/config/conan_config_arteris.tar.gz</pre>
+</div></div></li></ul></div></td></tr><tr><td class="confluenceTd"><div class="content-wrapper"><p>Missing prebuilt package, e.g.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ERROR: Missing prebuilt package for &#39;&lt;SomeLib&gt;/x.y.z@conan_arteris/stable&#39;</pre>
+</div></div></div></td><td class="confluenceTd"><p>This error means that a package with given name was found on the remote server, but there is no pre-built binary for current configuration (settings and options). Try the following:</p><ol><li>Check \[options\] section of the <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/develop/conanfile.txt" rel="nofollow">maestro/conanfile.txt</a>. You might have accidentally changed it.</li><li>Contact package maintainers. </li></ol></td></tr></tbody></table></div></div>
+</div>
+</div>
+</div>

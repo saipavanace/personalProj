@@ -1,0 +1,137 @@
+[
+    {
+        "name": "xCCR",
+        "description": "Credit Control Register",
+        "csrDescription": "Credit Control Register",
+        "addressOffset": 0,
+        "fields": [
+            {
+                "name": "DCECreditLimit",
+                "bitOffset": 0,
+                "bitWidth": "return register.conditionIndex < (derived.nDCEs || derived.nDce) ? 5 : 0",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Credit limit for this DCE",
+                "descriptionOverloadFn": "return `Credit limit for DCE${register.conditionIndex}`",
+                "reset": 0
+            },
+            {
+                "name": "DCECounterState",
+                "bitOffset": 5,
+                "bitWidth": "return register.conditionIndex < (derived.nDCEs || derived.nDce) ? 3 : 0",
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "volatile" : true,
+                "description": "Credit Counter State: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)",
+                "descriptionOverloadFn": "return `Credit Counter State for DCE${register.conditionIndex}: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)`",
+                "reset": 7
+            },
+            {
+                "name": "DMICreditLimit",
+                "bitOffset": 8,
+                "bitWidth": "return register.conditionIndex < (derived.nDmis || derived.nDmi) ? 5 : 0",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Credit limit for this DMI",
+                "descriptionOverloadFn": "return `Credit limit for DMI${register.conditionIndex}`",
+                "reset": "return (derived.BootInfo.regionHut === 0) && derived.InterleaveInfo.dmiIGSV[0].IGV[derived.BootInfo.regionHui].DMIIDV.includes(register.conditionIndex) ? 2 : 0"
+            },
+            {
+                "name": "DMICounterState",
+                "bitOffset": 13,
+                "bitWidth": "return register.conditionIndex < (derived.nDmis || derived.nDmi) ? 3 : 0",
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "volatile" : true,
+                "description": "Credit Counter State: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)",
+                "descriptionOverloadFn": "return `Credit Counter State for DMI${register.conditionIndex}: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)`",
+                "reset": 7
+            },
+            {
+                "name": "DIICreditLimit",
+                "bitOffset": 16,
+                "bitWidth": "return register.conditionIndex < (derived.nDiis || derived.nDii) ? 5 : 0",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Credit limit for this DII",
+                "descriptionOverloadFn": "return `Credit limit for DII${register.conditionIndex}`",
+                "reset": "return ((derived.BootInfo.regionHut === 1) && (register.conditionIndex == derived.BootInfo.regionHui)) || (register.conditionIndex == (derived.nDiis||derived.nDii)-1) ? 2 : 0"
+            },
+            {
+                "name": "DIICounterState",
+                "bitOffset": 21,
+                "bitWidth": "return register.conditionIndex < (derived.nDiis || derived.nDii) ? 3 : 0",
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "volatile" : true,
+                "description": "Credit Counter State: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)",
+                "descriptionOverloadFn": "return `Credit Counter State for DII${register.conditionIndex}: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)`",
+                "reset": 7
+            }
+           ]
+    },
+    {
+        "name": "DCECCR",
+        "description": "DCE Credit Control Register",
+        "csrDescription": "DCE Credit Control Register",
+        "addressOffset": 0,
+        "fields": [
+            {
+                "name": "DMICreditLimit",
+                "bitOffset": 0,
+                "bitWidth": 5,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Credit limit for this DMI",
+                "descriptionOverloadFn": "return `Credit limit for DMI${register.conditionIndex}`",
+                "reset": 0
+            },
+            {
+                "name": "DMICounterState",
+                "bitOffset": 5,
+                "bitWidth": 3,
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "volatile" : true,
+                "description": "Credit Counter State for this DMI: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)",
+                "descriptionOverloadFn": "return `Credit Counter State for DMI${register.conditionIndex}: 000 (Normal Operation), 001 (Empty), 010 (Negative), 100 (Full), 111 (No connection)`",
+                "reset": 7
+            },
+            {
+                "name": "Rsvd",
+                "bitOffset": 8,
+                "bitWidth": 24,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "All the bits of this field are set to 0",
+                "reset": "0x0"
+           }
+           ]
+    }
+]

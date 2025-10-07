@@ -1,0 +1,105 @@
+##########################
+#  
+#  compiles 
+#
+##########################
+
+#dryrun compile 
+node $WORK_TOP/../scripts/qrsim.js -m -q -e dce -c -n dryrun_config -d INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON -z $WORK_TOP/../test_projects/ncore_v3.0_configs/dce_config/dryrun_config/dryrun.tcl -a
+
+#hw_config_two compile
+node $WORK_TOP/../scripts/qrsim.js -m -q -e dce -c -n hw_config_two -d INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON -Z $WORK_TOP/../test_projects/ncore_v3.0_configs/fsys_config/hw_cfg_2 -a
+
+#config1 compile
+node $WORK_TOP/../scripts/qrsim.js -m -q -e dce -c -n config1 -d INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON -Z $WORK_TOP/../test_projects/ncore_v3.0_configs/dce_config/config1 -a
+
+#config2 compile
+node $WORK_TOP/../scripts/qrsim.js -m -q -e dce -c -n config2 -d INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON -Z $WORK_TOP/../test_projects/ncore_v3.0_configs/dce_config/config2 -a
+
+##########################
+#  
+#  1> single_txn tests 
+#
+##########################
+#dryrun_config tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 34545294
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 02848920
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 2343996
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 7722331
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 90568120
+
+#hw_config_two tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 90078622
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 13761164
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 10350471
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 77830695
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 89594675
+
+#config1 tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 46297312
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 39967364
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 78092224
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 31957901
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +single_txn,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 09271964
+
+###########################################################
+##
+## 2> all_ops, no updates, no stashing (addr conflict tests)
+##
+###########################################################
+#dryrun_config tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 09005809
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 31637849
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 05533928
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 86465297
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 57128378
+
+#hw_config_two tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 29244068
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 97592674
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 34100745
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 60491408
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 67540339
+
+#config1 tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 94482826
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 23790655
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 30911506
+rode $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 79510147
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=30,+k_no_addr_conflicts=0,+k_num_coh_cmds=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 69689228
+
+############################################################
+##
+## 3> all_ops + update req, no stashing (addr conflict tests)
+##
+############################################################
+#dryrun_config tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 82519360
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 10392406
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 60060038
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 27829166
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n dryrun_config -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 99630735
+
+#hw_config_two tests
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 99503018
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 19155074
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 73907740
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 69288482
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n hw_config_two -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 41848560
+
+#config1
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 10899724
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 49111285
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 30739431
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 85177458
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +k_max_num_addr=50,+k_num_coh_cmds=2000,+k_no_addr_conflicts=0,+updreq,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 69900736
+
+############################################################
+##
+## 4> stash_ldcchshared with dm_hits + readvld
+##
+############################################################
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +ldcchshd_dm_hit,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 75567969
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +ldcchshd_dm_hit,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 90421898
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +ldcchshd_dm_hit,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 43670135
+node $WORK_TOP/../scripts/qrsim.js -e dce -q -n config1 -t dce_bringup_test -p +ldcchshd_dm_hit,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_targ_src_id_chk_en,+k_dce_scb_en=1,+k_dm_chks_en=1 -R 58058581

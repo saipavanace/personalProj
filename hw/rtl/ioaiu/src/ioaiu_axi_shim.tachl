@@ -1,0 +1,479 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// AXI Shim
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var utilFunctions = obj.userLib;
+var utilFunctionsSym = obj.userLib.symLib;
+var bundleFunctions      = obj.userLib.bundleFunctions;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+u.paramDefault('inWidth',  'int', 1);
+u.paramDefault('outWidth',  'int', 1);
+u.paramDefault('maxOutstanding',  'int', []);
+u.paramDefault('multiBeat',  'boolean', false);
+u.paramDefault('singleBeatNarrow',  'boolean', false);
+
+var inWidth             = u.getParam('inWidth');
+var outWidth            = u.getParam('outWidth');
+var maxOutstanding      = u.getParam('maxOutstanding');
+var multiBeat           = u.getParam('multiBeat');
+var singleBeatNarrow    = u.getParam('singleBeatNarrow');
+
+var clkInterface  = u.getParam('clkInterface');
+var inInterface   = u.getParam('inInterface');
+var outInterface  = u.getParam('outInterface');
+
+var ar_channel  = inInterface['ar_'];
+var aw_channel  = inInterface['aw_'];
+var w_channel   = inInterface['w_'];
+var r_channel   = inInterface['r_'];
+var b_channel   = inInterface['b_'];
+var ac_channel  = inInterface['ac_'];
+var cr_channel  = inInterface['cr_'];
+var cd_channel  = inInterface['cd_'];
+
+var hasUser = Math.abs(r_channel["user"]) > 0;
+var hasAtomic = Math.abs(aw_channel["atop"]) > 0;
+
+// User field not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+if(hasUser) {
+var userPerData = Math.abs(outInterface['r_']["user"]);
+} else {
+var userPerData = 0;
+}
+
+var id_width = ar_channel['id'];
+
+obj.lib.interface('', "slave",      clkInterface.signals);
+obj.lib.interface('in_', "slave",   inInterface);
+obj.lib.interface('out_', "master", outInterface);
+
+var numOutWidthsInInWidth = inWidth/outWidth;
+var bottom_bit = log2ceil(outWidth/8);
+var selector_bits = log2ceil(numOutWidthsInInWidth);
+
+\jsend
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+// 1-1 not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+if(numOutWidthsInInWidth == 1) { \jsend
+\=bundleFunctions.assignByBundle('out_ar_','in_ar_'     , ar_channel, [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_aw_','in_aw_'     , aw_channel, [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_w_', 'in_w_'      , w_channel , [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_r_', 'in_r_'      , r_channel , [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_b_', 'in_b_'      , b_channel , [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_ac_', 'in_ac_'      , ac_channel , [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_cr_', 'in_cr_'      , cr_channel , [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_cd_', 'in_cd_'      , cd_channel , [],u.bundle)=\
+\js } else {
+
+\js if (userPerData == r_channel["user"]) {
+\=bundleFunctions.assignByBundle('out_w_', 'in_w_'      , w_channel ,           ['data','strb','valid','ready','last'] , u.bundle)=\
+\js } else {
+\=bundleFunctions.assignByBundle('out_w_', 'in_w_'      , w_channel ,           ['data','strb','valid','ready','user','last'] , u.bundle)=\
+\js }
+
+\=bundleFunctions.assignByBundle('out_ar_','in_ar_'     , ar_channel,           ['ready','valid','size','len']  , u.bundle)=\
+\=bundleFunctions.assignByBundle('out_aw_','in_aw_'     , aw_channel,           ['ready','valid','size','len']  , u.bundle)=\
+\=bundleFunctions.assignByBundle('out_b_', 'in_b_'      , b_channel ,           []                              , u.bundle)=\
+\=bundleFunctions.assignByBundle('out_ac_', 'in_ac_'      , ac_channel , [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_cr_', 'in_cr_'      , cr_channel , [],u.bundle)=\
+\=bundleFunctions.assignByBundle('out_cd_', 'in_cd_'      , cd_channel , [],u.bundle)=\
+
+\jsbegin
+if (numOutWidthsInInWidth != 2) {
+     console.log("Error: "+u.getModuleName()+" - only supports 2-to-1 AXI Interface at the moment.");
+     throw("ERROR - ioaiu_axi_shim.tachl");
+}
+\jsend
+
+\js ///////////////////////////////////////////////
+\js // Write Data Channel
+\js ///////////////////////////////////////////////
+
+wire                         w_narrow;
+wire [\=selector_bits=\-1:0] w_chunk;
+
+wire                         aw_narrow = (in_aw_size != \=aw_channel["size"]=\'d\=log2ceil(inWidth/8)=\);
+wire [\=selector_bits-1=\:0] aw_chunk  = in_aw_addr[\=(selector_bits-1+bottom_bit)=\:\=bottom_bit=\];
+
+wire                         w_fifo_ready;
+wire                         w_fifo_out_valid;
+wire                         w_fifo_out_ready;
+wire [\=aw_channel["addr"]-1=\:0] w_addr;
+
+\jsbegin
+var w_fifo_Params = {
+                width       : aw_channel["addr"]+selector_bits+1 ,
+                depth       : 3 ,
+                bypass_mode : 0
+        };
+
+var  instance_ports_for_w_fifo = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                push_valid      : 'in_aw_valid & in_aw_ready',
+                push_data       : '{in_aw_addr,aw_narrow,aw_chunk}',
+                push_ready      : 'w_fifo_ready',
+                pop_valid       : 'w_fifo_out_valid',
+                pop_data        : '{w_addr,w_narrow,w_chunk}',
+                pop_ready       : 'w_fifo_out_ready'
+        };
+
+\jsend
+
+ \=u.instance({
+        instanceName: 'w_fifo',
+        moduleName: 'fifo',
+        params: w_fifo_Params,
+        verilogParams: {},
+        ports: instance_ports_for_w_fifo
+ })=\
+
+\js if (hasAtomic) {
+\js // Write Atomic Transaction Context
+
+wire aw_context_full;
+wire aw_context_empty;
+
+wire                         r_aw_new;
+wire                         r_aw_narrow;
+wire [\=selector_bits-1=\:0] r_aw_chunk;
+wire                         r_aw_match;
+
+\jsbegin
+var aw_context_Params = {
+  wData       : 1+selector_bits+1,
+  wId         : aw_channel["id"],
+  depth       : maxOutstanding
+};
+
+var  instance_ports_for_aw_context = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                empty           : 'aw_context_empty',
+                full            : 'aw_context_full',
+                push            : 'in_aw_valid & in_aw_ready & in_aw_atop[5]',
+                push_id         : 'in_aw_id',
+                push_data       : `{1'b1,aw_narrow,aw_chunk}`,
+                pop             : 'out_r_valid & out_r_ready & out_r_last',
+                pop_id          : 'out_r_id',
+                pop_match       : 'r_aw_match',
+                pop_update      : 'out_r_valid & out_r_ready & ~out_r_last',
+                pop_data        : '{r_aw_new,r_aw_narrow,r_aw_chunk}'
+        };
+
+\jsend
+
+ \=u.instance({
+        instanceName: 'aw_context',
+        moduleName: 'ioaiu_axi_shim_context',
+        params: aw_context_Params,
+        verilogParams: {},
+        ports: instance_ports_for_aw_context
+ })=\
+
+assign in_aw_ready  = out_aw_ready & w_fifo_ready & ~aw_context_full;
+assign out_aw_valid = in_aw_valid  & w_fifo_ready & ~aw_context_full;
+\js } else {
+assign in_aw_ready  = out_aw_ready & w_fifo_ready;
+assign out_aw_valid = in_aw_valid  & w_fifo_ready;
+\js }
+
+\js // Data Channel Splitting
+
+wire [\=selector_bits=\-1:0] w_current_lane;
+wire [\=selector_bits=\-1:0] w_beat_number, w_beat_number_in;
+wire w_new, w_new_in;
+
+assign w_new_in = (in_w_valid & in_w_ready & ~in_w_last & w_new) ? 1'b0 : (in_w_valid & in_w_ready & in_w_last) ? 1'b1 : w_new;
+
+\=u.dffre(1, "w_new", "w_new_in", "1'b1", "1'b1", 'clk', 'reset_n')=\
+
+assign in_w_ready  = out_w_ready & w_fifo_out_valid & ((w_beat_number == \=selector_bits=\'h1) | w_narrow | (w_chunk & w_new));
+
+assign w_fifo_out_ready = out_w_ready & out_w_valid & out_w_last & ((w_beat_number == \=selector_bits=\'h1) | w_narrow | (w_chunk & w_new));
+
+
+assign w_beat_number_in = ((out_w_valid & out_w_ready &  out_w_last & (w_beat_number == \=selector_bits=\'h1)) | w_narrow | (w_chunk & w_new)) ? \=selector_bits=\'h0 :
+                        ( out_w_valid & out_w_ready & ~out_w_last & (w_chunk & w_new)) ? \=selector_bits=\'h0 :
+                         (out_w_valid & out_w_ready)                        ? w_beat_number + \=selector_bits=\'h1 :
+			  w_beat_number;
+
+\=u.dffre(selector_bits, "w_beat_number", "w_beat_number_in", selector_bits + '\'b0', "1'b1", 'clk', 'reset_n')=\
+
+assign out_w_valid = in_w_valid  & w_fifo_out_valid;
+assign out_w_last = in_w_last & ((w_beat_number == \=selector_bits=\'h1) | w_narrow | (w_chunk & w_new));
+
+\js // Byte Lane Selection
+reg [\=outWidth=\-1:0]          w_data_r;
+reg [\=outWidth/8=\-1:0]        w_strb_r;
+
+assign out_w_data  = w_data_r;
+assign out_w_strb  = w_strb_r;
+
+\jsbegin
+// User field not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+    if (hasUser) { \jsend
+reg [\=userPerData=\-1:0]       w_user_r;
+assign out_w_user  = w_user_r;
+\js }
+
+assign w_current_lane = w_beat_number + (w_new ? w_chunk : 1'b0);
+
+always @ (*) begin
+  case (w_current_lane)
+    \js for ( let i = 1; i < numOutWidthsInInWidth; i++) {
+    \=i=\   :
+        w_data_r = in_w_data[\=(outWidth*(i+1))-1=\:\=outWidth*i=\];    
+    \js }
+    default :
+        w_data_r = in_w_data[\=outWidth-1=\:0];
+  endcase
+end
+
+always @ (*) begin
+  case (w_current_lane)
+    \js for ( let i = 1; i < numOutWidthsInInWidth; i++) {
+    \=i=\   :
+        w_strb_r   = in_w_strb[\=((outWidth/8)*(i+1))-1=\:\=(outWidth/8)*i=\];    
+    \js }
+    default :
+        w_strb_r   = in_w_strb[\=(outWidth/8)-1=\:0];
+  endcase
+end
+
+\jsbegin
+// User field not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+    if (hasUser) { \jsend
+always @ (*) begin
+  case (w_current_lane)
+    \js for ( let i = 1; i < numOutWidthsInInWidth; i++) {
+    \=i=\   :
+        w_user_r   = in_w_strb[\=((userPerData)*(i+1))-1=\:\=(userPerData)*i=\];
+    \js }
+    default :
+        w_user_r   = in_w_strb[\=userPerData-1=\:0];
+  endcase
+end
+\js }
+
+
+\js ///////////////////////////////////////////////
+\js // Read Data Channel
+\js ///////////////////////////////////////////////
+
+wire ar_narrow;
+
+assign ar_narrow = (in_ar_size != \=ar_channel["size"]=\'d\=log2ceil(inWidth/8)=\);
+
+assign out_ar_size = (ar_narrow) ? in_ar_size : \=ar_channel["size"]=\'d\=log2ceil(outWidth/8)=\;
+assign out_aw_size = (aw_narrow) ? in_aw_size : \=aw_channel["size"]=\'d\=log2ceil(outWidth/8)=\;
+
+assign out_ar_len = (ar_narrow) ? \=ar_channel["len"]=\'b0 : {in_ar_len[\=ar_channel["len"]-2=\:0],~in_ar_addr[\=bottom_bit=\]};
+assign out_aw_len = (aw_narrow) ? \=aw_channel["len"]=\'b0 : {in_aw_len[\=aw_channel["len"]-2=\:0],~in_aw_addr[\=bottom_bit=\]};
+
+\js // Read Transaction Context
+
+wire ar_context_full;
+wire ar_context_empty;
+
+wire [\=selector_bits-1=\:0] ar_chunk  = in_ar_addr[\=(selector_bits-1+bottom_bit)=\:\=bottom_bit=\];
+
+wire                         r_ar_new;
+wire                         r_ar_narrow;
+wire [\=selector_bits-1=\:0] r_ar_chunk;
+wire                         r_ar_match;
+wire                         r_ar_update;
+
+wire                         r_new;
+wire                         r_narrow;
+wire [\=selector_bits-1=\:0] r_chunk;
+
+assign in_ar_ready  = out_ar_ready & ~ar_context_full;
+assign out_ar_valid = in_ar_valid  & ~ar_context_full;
+
+\jsbegin
+var ar_context_Params = {
+  wData       : 1+selector_bits+1,
+  wId         : ar_channel["id"],
+  depth       : maxOutstanding
+};
+
+var  instance_ports_for_ar_context = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                empty           : 'ar_context_empty',
+                full            : 'ar_context_full',
+                push            : 'in_ar_valid & in_ar_ready',
+                push_id         : 'in_ar_id',
+                push_data       : `{1'b1,ar_narrow,ar_chunk}`,
+                pop             : 'out_r_valid & out_r_ready & out_r_last',
+                pop_id          : 'out_r_id',
+                pop_match       : 'r_ar_match',
+                pop_update      : 'r_ar_update',
+                pop_data        : '{r_ar_new,r_ar_narrow,r_ar_chunk}'
+        };
+
+\jsend
+
+ \=u.instance({
+        instanceName: 'ar_context',
+        moduleName: 'ioaiu_axi_shim_context',
+        params: ar_context_Params,
+        verilogParams: {},
+        ports: instance_ports_for_ar_context
+ })=\
+
+\js ///////////////
+\js // R Channel //
+\js ///////////////
+
+\js // Beat Counting
+
+wire [\=selector_bits=\-1:0] r_beat_number, r_beat_number_in;
+wire [\=selector_bits=\-1:0] r_current_lane;
+
+assign r_ar_update = out_r_valid & out_r_ready & ~out_r_last & r_new & ((r_current_lane == 1'h1) | r_chunk);
+
+assign r_beat_number_in = out_r_valid & out_r_ready & ((r_current_lane == 1'h1) | r_narrow | (r_new & r_chunk)) ? \=selector_bits=\'h0 :
+                          out_r_valid & out_r_ready                                         ? r_beat_number + \=selector_bits=\'h1 :
+			                                                                      r_beat_number;
+
+\=u.dffre(selector_bits, "r_beat_number", "r_beat_number_in", selector_bits+'\'b0', "1'b1", 'clk', 'reset_n')=\
+
+assign r_current_lane = r_beat_number + (r_new & r_chunk);
+
+\js var rChannelWidth = Math.abs(r_channel['data'] + r_channel['resp'] + r_channel['user'] + r_channel['last'] + r_channel['trace'] + r_channel['poison'] + r_channel['id']);
+
+wire [\=rChannelWidth-1=\:0] r_channel_in;
+wire [\=rChannelWidth-1=\:0] r_channel_out;
+wire r_channel_in_valid;
+wire r_channel_in_ready;
+wire [\=inWidth-1=\:0] new_r_data;
+wire [1:0] new_r_resp;
+wire [\=outWidth-1=\:0] hold_r_data;
+wire [1:0] hold_r_resp;
+wire hold_r_data_en;
+\jsbegin
+// User field not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+    if (hasUser) { \jsend
+wire [\=userPerData-1=\:0] new_r_user;
+wire [\=userPerData-1=\:0] hold_r_user;
+\js }
+
+\=u.instance({
+        moduleName: 'rdy_vld_pipe',
+        instanceName: 'r_channel',
+        params: {
+                depth:          2,
+                width:          rChannelWidth,
+                pipeForward:    "yes",
+                pipeBackward:   "yes",
+                simplePipe:     "no",
+                circular:       "no"
+                 },
+        verilogParams: {
+        },
+        ports: {
+                clk:            'clk',
+                reset_n:        'reset_n',
+                in_ready:       'r_channel_in_ready',
+                in_valid:       'r_channel_in_valid',
+                in_data:        'r_channel_in',
+                out_ready:      'in_r_ready',
+                out_valid:      'in_r_valid',
+                out_data:       'r_channel_out'
+        },
+        portsDelimiter: '\n\t'
+})=\
+
+\js // Buffer Logic
+  assign hold_r_data_en = out_r_valid & (~r_new | (r_new & ~r_narrow)) & (r_beat_number == \=selector_bits=\'h0);
+
+  \=u.dffre(outWidth, 'hold_r_data', 'out_r_data', outWidth+'\'b0', 'hold_r_data_en', 'clk', 'reset_n')=\
+  \=u.dffre(       2, 'hold_r_resp', 'out_r_resp', '2\'b0', 'hold_r_data_en', 'clk', 'reset_n')=\
+
+  assign new_r_data[511:256] = (r_new & ~r_chunk & r_narrow) ? 256'b0 : out_r_data;
+  assign new_r_data[255:0]   = (r_new &  r_chunk           ) ? 256'b0 : ((~r_new|(r_new & ~r_narrow)) & (r_beat_number == \=selector_bits=\'h1)) ? hold_r_data : out_r_data;
+
+  wire [1:0] comb_r_resp = ((hold_r_resp==2'b11) | (out_r_resp==2'b11)) ? 2'b11 :
+                           ((hold_r_resp==2'b10) | (out_r_resp==2'b10)) ? 2'b10 : out_r_resp;
+
+  assign new_r_resp[1:0] = ((~r_new|(r_new & ~r_narrow)) & (r_beat_number == \=selector_bits=\'h1)) ? comb_r_resp : out_r_resp;
+
+\jsbegin
+// User field not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+    if (hasUser) { \jsend
+  \=u.dffre(outWidth, 'hold_r_user', 'out_r_user', userPerData+'\'b0', 'hold_r_data_en', 'clk', 'reset_n')=\
+
+  assign new_r_user[\=userPerData*2-1=\:\=userPerData=\] = (r_new & r_chunk) ? out_r_user : hold_r_user;
+  assign new_r_user[\=userPerData-1=\:0]   = hold_r_user;
+\js }
+
+  assign {          
+\jsbegin
+// User field not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+    if (hasUser) { \jsend
+                    in_r_user,
+\js }
+\js if (r_channel['trace']) {
+                    in_r_trace,
+\js }
+\js if (r_channel['poison']) {
+                    in_r_poison,
+\js }
+                    in_r_resp,in_r_last,in_r_id,in_r_data} = r_channel_out;
+  assign r_channel_in = {           
+\jsbegin
+// User field not supported for 3.7.1
+/* istanbul ignore if env ncore_3p7 */
+    if (hasUser) { \jsend
+                                    out_r_user,
+\js }
+\js if (r_channel['trace']) {
+                                    out_r_trace,
+\js }
+\js if (r_channel['poison']) {
+                                    out_r_poison,
+\js }
+                                    new_r_resp,out_r_last,out_r_id,new_r_data};
+
+  assign r_channel_in_valid = 
+                     ( out_r_valid &  r_narrow &  ~r_beat_number) |
+                     ( out_r_valid & ~r_narrow & ( r_beat_number | (r_new & r_chunk)));
+
+\js if (r_channel["rack"]) {
+  assign out_r_rack = in_r_rack;
+\js }
+
+assign out_r_ready = r_channel_in_ready;
+
+\js if (hasAtomic) {
+assign r_new    = r_ar_match ? r_ar_new    : r_aw_new;
+assign r_narrow = r_ar_match ? r_ar_narrow : r_aw_narrow;
+assign r_chunk  = r_ar_match ? r_ar_chunk  : r_aw_chunk;
+\js } else {
+assign r_new    = r_ar_new;
+assign r_narrow = r_ar_narrow;
+assign r_chunk  = r_ar_chunk;
+\js }
+
+\js }
+
+endmodule

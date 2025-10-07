@@ -1,0 +1,115 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2023 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// Timeout with BIST Control support extracted from ioaiu_control module
+// - For first trigger force the count register to threshold minus 1.
+// - For second trigger force the threshold amount to smallest value to shorten rollover time. 
+//=============================================================================
+
+// Variables
+
+var u = obj.lib;
+
+// Ports
+
+u.port('input',  'clk_i', 1);
+u.port('input',  'reset_ni', 1);
+u.port('input',  'uerrs_en_bit_3', 1); // timeout uncorrectable error enable bit 3, default tied high so that timeout counter cannot reach 0
+u.port('input',  'external_i', 1);     // external reference signal, default tied low
+u.port('input',  'cfg_external_i', 1); // from CSR register TOCR_TimeOutRefEn
+u.port('input',  'cfg_top_i', 31);     // from CSR register TOCR_TimeOutThreshold
+u.port('input',  'cfg_tperiod_i', 32); // from CSR register EDR (Engineering Debug Register). Only cfg_period_i[31:12] is used, default tied low.
+u.port('input',  'bist_timeout_trigger', 1); // from functional safety controller
+u.port('output', 't_sv_ovt', 1);      // overflow timeout event
+u.port('output', 't_sv_ovt_clr', 1);  // overflow timeout event clear
+u.port('output', 't_cfg_timeout', 1); // timeout threshold is configured to 0
+u.port('output', 'timeout_trigger_os_falling', 1); // timeout trigger one-shot, falling edge
+u.port('output', 'timeout_trigger_os',         1); // timeout trigger one-shot, rising edge
+u.port('output', 't_sv_timeout_bist', 1);          // functional safety bist-triggered timeout
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+wire dff_enable = 1'b1;
+
+wire [31:12] t_cfg_tperiod_in;
+wire [31:12] t_cfg_tperiod;
+wire         t_cfg_tperiod_eq_0_in;
+wire         t_cfg_tperiod_eq_0;
+wire         timeout_trigger_r;
+wire [31:0]  timeout_test_value;
+wire         period_en;
+wire [31:0]  sv_timer_in;
+wire [31:0]  q_sv_timer;
+
+// BIST Control
+// - For first trigger force the count register to threshold minus 1.
+// - For second trigger force the threshold amount to smallest value to shorten rollover time. 
+
+//
+// This one shot forces the count register to go to threshold minus one for first trigger
+//
+assign timeout_trigger_os = bist_timeout_trigger & ~timeout_trigger_r;
+
+assign timeout_trigger_os_falling = ~bist_timeout_trigger & timeout_trigger_r;
+
+\=u.dffre(1,  'timeout_trigger_r', 'bist_timeout_trigger', "1'b0",  'dff_enable', 'clk_i', 'reset_ni')=\
+
+assign timeout_test_value = {t_cfg_tperiod[31:12], 12'b0} - 1;
+
+//
+// This enable loads the smaller threshold value for the second trigger
+//
+assign t_cfg_tperiod_in = bist_timeout_trigger ? 20'b1 :
+                                {|{cfg_top_i}} ? { {|{cfg_top_i[30:19]}}, cfg_top_i[18:0] } :
+                                                 cfg_tperiod_i[31:12];
+
+assign t_cfg_tperiod_eq_0_in = ~{|{t_cfg_tperiod_in}};
+
+assign period_en = ~bist_timeout_trigger | (bist_timeout_trigger & t_sv_ovt);
+
+\=u.dffre(20, 't_cfg_tperiod',      't_cfg_tperiod_in',      "20'b0", 'period_en',  'clk_i', 'reset_ni')=\
+
+\=u.dffre(1,  't_cfg_tperiod_eq_0', 't_cfg_tperiod_eq_0_in',  "1'b0", 'dff_enable', 'clk_i', 'reset_ni')=\
+
+//
+// Timeout overflow event
+//
+assign t_sv_ovt = (q_sv_timer[31:12] == t_cfg_tperiod) & ~t_cfg_timeout & ~t_cfg_tperiod_eq_0;
+
+//
+// Timeout overflow event clear
+//
+assign t_sv_ovt_clr = t_cfg_timeout | timeout_trigger_os_falling;
+
+// Timeout Counter
+//
+assign sv_timer_in = timeout_trigger_os ? timeout_test_value :
+                     ((q_sv_timer[31:12] >= t_cfg_tperiod) | t_cfg_timeout) ? 32'h0 :
+                     ((cfg_external_i ? external_i : 1'b1) & ( ~t_cfg_tperiod_eq_0)) ? q_sv_timer + 1'b1 :
+                                                                                       q_sv_timer;
+						      
+\=u.dffre(32, 'q_sv_timer', 'sv_timer_in', "32'b0", 'dff_enable', 'clk_i', 'reset_ni')=\
+
+//
+// Timeout threshold is configured to 0
+//
+assign t_cfg_timeout = ~uerrs_en_bit_3 | t_cfg_tperiod_eq_0;
+
+//
+// Functional Safety BIST-triggered Timeout
+//
+
+wire q_oc_ovt;
+wire q_oc_ovt_in = (t_cfg_timeout | timeout_trigger_os_falling) ? 1'b0 :
+                   (bist_timeout_trigger & t_sv_ovt)            ? 1'b1 :
+                                                                  q_oc_ovt;
+
+\=u.dffre(1,  'q_oc_ovt', 'q_oc_ovt_in',  "1'b0", 'dff_enable', 'clk_i', 'reset_ni')=\
+
+assign t_sv_timeout_bist = t_sv_ovt & bist_timeout_trigger & q_oc_ovt;
+
+endmodule

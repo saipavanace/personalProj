@@ -1,0 +1,257 @@
+{
+    "name":"Performance monitor FSYS regression testlist",
+    "version": "0.1",
+    "iter": "1",
+    "project":{"name":"Ncore","version":"3.2"},
+    "envlist":{"fsys":"$WORK_TOP/dv/full_sys/tb/runsim_perfmon_testlist.json"},
+
+    "plusargs": {
+        "+UVM_MAX_QUIT_COUNT": "1",
+        "+UVM_VERBOSITY": "UVM_NONE",
+        "+command_line_directed_test":null,
+        "+legato_scb_dis": "1",
+        "+dii_scb_en": "0",
+        "+perf_test": "1",
+	    "+no_bfm_delays":"1",
+        "+disable_pri_check":"1",
+	    "+disable_qos_check":"1",
+        "+wt_expected_end_state": "100"
+       },
+
+    "defines": "DUMP_ON,ASSERT_ON,INHOUSE_APB_VIP,DATA_ADEPT,COVER_ON,RESILIENCY_TESTING",
+
+    "configlist": {
+        "hw_cfg_nxpauto_v8": {
+            "purpose": "Performance monitors regression: NXP auto config",
+            "tcl_lib": " hw_config_nxpauto_v8",
+            "tcl_dir": "$WORK_TOP/../test_projects/ncore_v3.0_configs/fsys_config/hw_cfg_nxpauto",
+            "compile_args": "",
+            "label"  : [ "all" ]           
+        },
+        "hw_cfg_2": {
+            "purpose": "Performance monitors regression: HW-CFG-2",
+            "tcl_lib": " hw_config_02",
+            "tcl_dir": "$WORK_TOP/../test_projects/ncore_v3.0_configs/fsys_config/hw_cfg_2",
+            "compile_args": "",
+            "label"  : [ "all","basic","counter_mode","event" ]
+        },
+        "hw_cfg_3": {
+            "purpose": "Performance monitors regression: HW-CFG-3",
+            "tcl_lib": "hw_config_01",
+            "tcl_dir": "$WORK_TOP/../test_projects/ncore_v3.0_configs/fsys_config/hw_cfg_1",
+            "compile_args": "",
+            "label"  : [ "all","basic","counter_mode","event" ]
+        }
+    },
+
+    "testlist": 
+    {
+        "perfmon_default": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Test event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_nxpauto_v8",
+                "hw_cfg_2"
+            ],
+            "iter": 20,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "0"
+            },
+            "label": [
+                "all",
+                "basic"
+            ]
+        },
+        "perfmon_default_all_blocks ": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Test event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_2",
+                "hw_cfg_3"
+            ],
+            "iter": 20,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "10"
+            },
+            "label": [
+                "all",
+                "basic"
+            ]
+        },
+        "perfmon_counter_normal": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Counter in NORMAL mode : event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                 "hw_cfg_nxpauto_v8",
+                "hw_cfg_2"
+            ],
+            "iter": 10,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "0",
+                "+perfmon_directed_rand":null,
+                "+counter_control":"0"
+            },
+            "label": [
+                "all",
+                "counter_mode"
+            ]
+        },
+        "perfmon_counter_normal_all_blocks": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Counter in NORMAL mode : event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_3",
+                "hw_cfg_2"
+            ],
+            "iter": 10,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "10",
+                "+perfmon_directed_rand":null,
+                "+counter_control":"0"
+            },
+            "label": [
+                "all",
+                "counter_mode"
+            ]
+        },
+        "perfmon_counter_and": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Counter in AND mode : event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                 "hw_cfg_nxpauto_v8",
+                "hw_cfg_2"
+            ],
+            "iter": 10,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "0",
+                "+perfmon_directed_rand":null,
+                "+counter_control":"1"
+            },
+            "label": [
+                "all",
+                "counter_mode"
+            ]
+        },
+        "perfmon_counter_and_all_blocks": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Counter in AND mode : event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                 "hw_cfg_3",
+                "hw_cfg_2"
+            ],
+            "iter": 10,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "10",
+                "+perfmon_directed_rand":null,
+                "+counter_control":"1"
+            },
+            "label": [
+                "all",
+                "counter_mode"
+            ]
+        },
+        "perfmon_counter_xor": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Counter in XOR mode : event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_nxpauto_v8",
+                "hw_cfg_2"
+            ],
+            "iter": 10,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "0",
+                "+perfmon_directed_rand":null,
+                "+counter_control":"2"
+            },
+            "label": [
+                "all",
+                "counter_mode"
+            ]
+        },
+        "perfmon_counter_xor_all_blocks": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "Counter in XOR mode : event SMI_TX0/1/2  or AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_3",
+                "hw_cfg_2"
+            ],
+            "iter": 10,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "10",
+                "+perfmon_directed_rand":null,
+                "+counter_control":"2"
+            },
+            "label": [
+                "all",
+                "counter_mode"
+            ]
+        },
+        "perfmon_event_stalls": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "On both events: Test SMI_TX0/1/2 and AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_nxpauto_v8",
+                "hw_cfg_2"
+            ],
+            "iter": 5,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "0",
+                "+perfmon_directed_rand":null,
+                "+ioaiu0_event_first":"0v1n1v2n2v3n3v13n4v1n5v2n6v3n7v13",
+                "+ioaiu0_event_second":"0v13n1v3n2v2n3v1n4v13n5v3n6v2n7v1"
+            },
+            "label": [
+                "all",
+                "event"
+            ]
+        },
+        "perfmon_event_first_stalls": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "On first event only: Test SMI_TX0/1/2 and AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_nxpauto_v8",
+                "hw_cfg_2"
+            ],
+            "iter": 5,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "0",
+                "+perfmon_directed_rand":null,
+                "+ioaiu0_event_first":"0v1n1v2n2v3n3v13n4v1n5v2n6v3n7v13",
+                "+ioaiu_event_second":"0"
+            },
+            "label": [
+                "all",
+                "event"
+            ]
+        },
+        "perfmon_event_second_stalls": {
+            "name": "concerto_fullsys_perfmon_test",
+            "purpose": "On second event only : Test SMI_TX0/1/2 and AXI R stall performance monitors",
+            "config": [
+                "hw_cfg_nxpauto_v8",
+                "hw_cfg_2"
+            ],
+            "iter": 5,
+            "plusargs": {
+                "+ioaiu_num_trans": "10",
+                "+chi_num_trans": "0",
+                "+perfmon_directed_rand":null,
+                "+ioaiu0_event_second":"0v1n1v2n2v3n3v13n4v1n5v2n6v3n7v13",
+                "+ioaiu_event_first":"0"
+            },
+            "label": [
+                "all",
+                "event"
+            ]
+        }    }
+}

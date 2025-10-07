@@ -1,0 +1,238 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE Transaction Manager STRreq
+//
+// Filename: dce_tm_str_req.tachl
+//=============================================================================
+
+var u = obj.lib;
+var m = obj.userLib;
+
+let ASSERT_ON    = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+let N_ATT        = m.ParamDefaultGet(u, 'nAttEntries', 'int', 32);
+let W_FUNIT_ID   = m.ParamDefaultGet(u, 'wFUnitId', 'int', 4);
+let W_FPORT_ID   = m.ParamDefaultGet(u, 'wFPortId', 'int', 4);
+let CMD_REQ_INTF = m.ParamDefaultGet(u, 'cmdReqInterface', 'object', {});
+let STR_REQ_INTF = m.ParamDefaultGet(u, 'strReqInterface', 'object', {});
+let SNP_REQ_INTF = m.ParamDefaultGet(u, 'snpReqInterface', 'object', {});
+let RBR_REQ_INTF = m.ParamDefaultGet(u, 'rbrReqInterface', 'object', {});
+let CM_TYPE      = m.ParamDefaultGet(u, 'cmType', 'object', {});
+
+let W_INIT_ID    = CMD_REQ_INTF.initiator_id;
+let W_MSG_ID     = CMD_REQ_INTF.message_id;
+let W_QOS        = SNP_REQ_INTF.qos;
+let W_M_PROT     = STR_REQ_INTF.m_prot;
+let W_H_PROT     = CMD_REQ_INTF.h_prot;
+let W_T_TIER     = SNP_REQ_INTF.t_tier;
+let W_STEER      = SNP_REQ_INTF.steering;
+let W_PRI        = SNP_REQ_INTF.priority;
+let W_QL         = SNP_REQ_INTF.ql;
+let W_CM_STATUS  = CMD_REQ_INTF.cm_status;
+let W_RB_ID      = RBR_REQ_INTF.rb_id - 1;
+let W_MPF1       = CMD_REQ_INTF.mpf1;
+let W_MPF2       = CMD_REQ_INTF.mpf2;
+let W_INTF_SIZE  = CMD_REQ_INTF.intf_size;
+
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+u.port('input', 'my_f_unit_id', W_FUNIT_ID);
+
+u.port('input', 'att_entry_req_str_valid', N_ATT);
+u.port('input', 'att_entry_req_str_last',  N_ATT);
+u.port('output','att_entry_req_str_ready', N_ATT);
+u.port('output','att_entry_req_str_grant', N_ATT);
+
+u.port('input', 'att_entry_req_initiator_id',  N_ATT * W_INIT_ID);
+u.port('input', 'att_entry_req_cm_status',     N_ATT * W_CM_STATUS);
+u.port('input', 'att_entry_req_message_id',    N_ATT * W_MSG_ID);
+u.port('input', 'att_entry_req_rb_id',         N_ATT * W_RB_ID);
+u.port('input', 'att_entry_req_gid',           N_ATT * 1);
+u.port('input', 'att_entry_req_str_mpf1',      N_ATT * W_MPF1);
+u.port('input', 'att_entry_req_str_mpf2',      N_ATT * W_MPF2);
+u.port('input', 'att_entry_req_str_intf_size', N_ATT * W_INTF_SIZE);
+u.port('input', 'att_entry_req_str_tm',        N_ATT * 1);
+
+if ( W_QOS != 0 ) {
+u.port('input', 'att_entry_req_qos',       N_ATT * W_QOS);
+}
+if ( W_PRI != 0 ) {
+u.port('input', 'att_entry_req_pri',       N_ATT * W_PRI);
+}
+
+m.defineMasterPortsFromInterface('tm_str_req_', STR_REQ_INTF, u.port);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts()=\);
+
+localparam
+  W_RB_ID = \=W_RB_ID=\,
+  W_M_PROT = \=W_M_PROT=\,
+  W_H_PROT = \=W_H_PROT=\,
+  W_T_TIER = \=W_T_TIER=\,
+  W_STEER = \=W_STEER=\,
+  W_PRI = \=W_PRI=\,
+  W_QL = \=W_QL=\,
+  W_MSG_ID = \=W_MSG_ID=\,
+  W_INIT_ID = \=W_INIT_ID=\,
+  W_CM_STATUS = \=W_CM_STATUS=\,
+  W_MPF1 = \=W_MPF1=\,
+  W_MPF2 = \=W_MPF2=\,
+  W_INTF_SIZE = \=W_INTF_SIZE=\,
+  W_QOS = \=W_QOS=\,
+  N_ATT = \=N_ATT=\,
+  W_FUNIT_ID = \=W_FUNIT_ID=\,
+  W_FPORT_ID = \=W_FPORT_ID=\;
+
+//
+// STR Packet
+//                            
+
+wire tm_str_req_last;
+   
+\=u.instance ({
+               instanceName: 'str_req_rr_arb',
+               moduleName: 'rr_arb_comb_mux_therm',
+               params: {
+                        num_inputs: N_ATT,
+                        interleave_mode : 1
+                        },
+               verilogParams: {},
+               ports: {
+                       'clk' : 'clk',
+                       'reset_n' : 'reset_n',
+                       'sink_valid':'att_entry_req_str_valid',
+                       'sink_last': 'att_entry_req_str_last',
+                       'sink_ready': 'att_entry_req_str_ready',
+                       'sink_grant': 'att_entry_req_str_grant',
+                       'source_valid': 'tm_str_req_valid',
+                       'source_ready': 'tm_str_req_ready',
+                       'source_last' : 'tm_str_req_last'
+                       }
+               })=\ 
+                               
+assign tm_str_req_target_id = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_INIT_ID{att_entry_req_str_grant[\=i=\ ]}} & att_entry_req_initiator_id[W_INIT_ID*\=i=\ +: W_INIT_ID]) |
+\js                             }
+                                {W_INIT_ID{1'b0}});
+assign tm_str_req_initiator_id = {my_f_unit_id, {W_FPORT_ID{1'b0}}};                    
+assign tm_str_req_cm_type = \=CM_TYPE.StrReq=\;
+assign tm_str_req_message_id = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_MSG_ID{att_entry_req_str_grant[\=i=\]}} & \=W_MSG_ID=\'d\=i=\) |
+\js                             }
+                                \=W_MSG_ID=\'d0);
+\js if (W_QOS!=0) {
+wire [W_QOS-1:0] tm_str_req_qos;
+assign tm_str_req_qos        = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_QOS{att_entry_req_str_grant[\=i=\]}} & att_entry_req_qos[W_QOS*\=i=\ +: W_QOS]) |
+\js                             }
+                                \=W_QOS=\'d0);
+\js }
+\js if (W_M_PROT > 0) {  
+assign tm_str_req_m_prot = \=W_M_PROT=\'b0;
+\js }
+\js if (W_H_PROT > 0) {  
+assign tm_str_req_h_prot = {W_H_PROT{1'b0}};
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if (W_T_TIER > 0) {
+\jsend                      
+assign tm_str_req_t_tier = {W_T_TIER{1'b0}};
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if (W_STEER > 0) {
+\jsend                    
+assign tm_str_req_steering = {W_STEER{1'b0}};
+\js }
+\js if (W_PRI > 0) {                      
+assign tm_str_req_priority = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_PRI{att_entry_req_str_grant[\=i=\]}} & att_entry_req_pri[W_PRI*\=i=\ +: W_PRI]) |
+\js                             }
+                                \=W_PRI=\'d0); 
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if (W_QL > 0) {
+\jsend     
+assign tm_str_req_ql = {W_QL{1'b0}};   
+\js }
+assign tm_str_req_cm_status = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_CM_STATUS{att_entry_req_str_grant[\=i=\]}} & att_entry_req_cm_status[W_CM_STATUS*\=i=\ +: W_CM_STATUS]) |
+\js                            }
+                                {W_CM_STATUS{1'b0}}); 
+assign tm_str_req_r_message_id = (
+\jsbegin
+                                  for (let i=0; i< N_ATT ; i++)
+                                  {
+\jsend
+                                   ({W_MSG_ID{att_entry_req_str_grant[\=i=\]}} & att_entry_req_message_id[W_MSG_ID*\=i=\ +: W_MSG_ID]) |
+\js                               }   
+                                   {W_MSG_ID{1'b0}});
+assign tm_str_req_rb_id = (
+\jsbegin
+                           for (let i=0; i< N_ATT ; i++)
+                           {
+\jsend
+                            ({W_RB_ID+1{att_entry_req_str_grant[\=i=\]}} & {att_entry_req_gid[\=i=\], att_entry_req_rb_id[W_RB_ID*\=i=\ +: W_RB_ID]}) |
+\js                        } 
+                            {W_RB_ID+1{1'b0}});    
+assign tm_str_req_mpf1 = (
+ \jsbegin
+                          for (let i=0; i< N_ATT ; i++)
+                          {
+\jsend
+                           ({W_MPF1{att_entry_req_str_grant[\=i=\]}} & att_entry_req_str_mpf1[W_MPF1*\=i=\ +: W_MPF1]) |
+\js                        }
+                           {W_MPF1{1'b0}}); 
+assign tm_str_req_mpf2 = (
+ \jsbegin
+                          for (let i=0; i< N_ATT ; i++)
+                          {
+\jsend
+                           ({W_MPF2{att_entry_req_str_grant[\=i=\]}} & att_entry_req_str_mpf2[W_MPF2*\=i=\ +: W_MPF2]) |
+\js                       } 
+                           {W_MPF2{1'b0}});
+assign tm_str_req_intf_size = (
+ \jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_INTF_SIZE{att_entry_req_str_grant[\=i=\]}} & att_entry_req_str_intf_size[W_INTF_SIZE*\=i=\ +: W_INTF_SIZE]) |
+\js                             } 
+                                {W_INTF_SIZE{1'b0}});
+
+assign tm_str_req_tm = (
+ \jsbegin
+                        for (let i=0; i< N_ATT ; i++)
+                        {
+\jsend
+                         (att_entry_req_str_grant[\=i=\] & att_entry_req_str_tm[\=i=\]) |
+\js                      }
+                         1'b0); 
+
+endmodule

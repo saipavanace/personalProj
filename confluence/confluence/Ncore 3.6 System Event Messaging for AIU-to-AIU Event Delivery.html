@@ -1,0 +1,138 @@
+<p><style>[data-colorid=teg2ceempn]{color:#ff5630} html[data-color-mode=dark] [data-colorid=teg2ceempn]{color:#cf2600}</style>This confluence page describes the changes required for Ncore 3.6 System Event Messaging to support AIU-to-AIU Event Delivery. </p><p>Basically any AIU with EventInInterface issues a SysReq.Event message to DVE, and DVE broadcasts the message to all other AIUs with EventOutInterface.</p><span class="confluence-embedded-file-wrapper image-center-wrapper"><img class="confluence-embedded-image image-center" src="https://arterisip.atlassian.net/wiki/download/attachments/148930623/image-20230208-004130.png?api=v2" /></span><p /><p><strong>References</strong></p><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-7702" rel="nofollow">[CONC-7702] EVENTIReq is missing - Jira (atlassian.net)</a></p><p><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16160456/Arch+Ncore+3.4+Docs" data-linked-resource-id="16160456" data-linked-resource-version="110" data-linked-resource-type="page">Arch Ncore 3.4 Docs - Engineering - Confluence (atlassian.net)</a> </p><p>-Ncore SysCmd Architecture Specification 0.55</p><p>-Ncore Connectivity Architecture Specification 0.86</p><p><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16159947/System+Event+and+Coherency+Wrapper" data-linked-resource-id="16159947" data-linked-resource-version="130" data-linked-resource-type="page">System Event and Coherency Wrapper - Engineering - Confluence (atlassian.net)</a></p><p /><p><strong>Scope</strong></p><p>(1)Any AIU that is a DVM snoop agent is configured with an EventInInterface and an EventOutInterface. </p><p>OR</p><p>(2) Any AIU that is configured with an EventInInterface, or an EventOutInterface, or both. This could in principle include non DVM agent. This would mostly impact Maestro and have minor impact on RTL work.</p><p>The architecture specifically mentions that the targets of the broadcast from DVE are the agent that have attached to the coherency (Note 11 page 21). This would need to be modified if (2) was to be chosen. The rest of the page assumes the scope is (1)</p><p /><p><strong>Changes required for Ncore Connectivity Map to provide additional connectivities:</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Ncore Connectivity Architecture Spec Update
+===========================================
+Unit      Control Network 0 (CN0)  Control Network 1 (CN1)
+          Tx Msg  Rx Msg           Tx Msg  Rx Msg
+--------- ------------------------ ------------------------
+CAIU-CHI  SysReq  SysReq           SysRsp  SysRsp
+
+CAIU-ACE  
+          SysReq  SysReq           SysRsp  SysRsp
+
+NCAIU (ACELite/ACELiteE with DVM)
+          SysReq *SysReq          *SysRsp  SysRsp 
+
+NCAIU (AXI with Proxy Cache)
+          SysReq  SysReq           SysRsp  SysRsp
+
+NCAIU (AXI without Proxy Cache)
+          NA      NA               NA      NA
+
+NCAIU (ACELite/ACELiteE without DVM)
+          NA      NA               NA      NA 
+
+DCE
+          SysReq  SysReq           SysRsp  SysRsp
+
+DVE                                        
+         *SysReq  SysReq           SysRsp *SysRsp</pre>
+</div></div><p>The additional connectivities are marked with asterisk *</p><p /><p><strong>Changes required for Maestro to provide additional interface objects:</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Interface Object from Maestro
+=============================
+Unit                                 Event Interface        Static FUnitId Array
+----                                 ---------------------  --------------------
+CAIU-CHI                            *interface.uEvtInInt    interfaces.uSysDceIdInt
+                                     interface.uEvtOutInt   interfaces.uSysDveIdInt
+
+CAIU-ACE                            *interface.uEvtInInt    interfaces.uSysDceIdInt
+                                     interface.uEvtOutInt   interfaces.uSysDveIdInt
+
+NCAIU (ACELite/ACELiteE with DVM)   *interface.uEvtInInt    interfaces.uSysDveIdInt
+                                    *interface.uEvtOutInt
+
+NCAIU (AXI with Proxy Cache)         NA                     interfaces.uSysDceIdInt
+          
+
+NCAIU (AXI without Proxy Cache)      NA                     NA
+
+NCAIU (ACELite/ACELiteE without DVM)
+                                     NA                     NA
+          
+DCE                                  NA                     interfaces.uSysCaIdInt
+                                                            interfaces.uSysCaNodeIdInt
+
+DVE                                  NA                     interfaces.uSysIdInt
+                                                            interfaces.uSysNodeIdInt</pre>
+</div></div><p /><p><strong>Changes required for CHI-AIU:</strong></p><p>(1) To set the useSysEvtSender parameter to 1 in the sys_evt_coh_concerto module instantiation, so that CHI-AIU instantiates a SysEvent Sender to issue a SysReq.Event to DVE when processing an event coming from the EventInInterface.</p><p>NOTES: </p><p>Existing CHI-AIU instantiates:</p><p>-a SysCoh Sender to send SysReq.Attach/Detach to DCEs and DVE.</p><p>-a SysEvent Receiver to process SysReq.Event from DCE and signals it on the EventOutInterface</p><p /><p>(2) To increase the input queue size of the SysEvent Receiver by</p><p>(a) the number of AIUs configured with the EventInInterface. (<span data-colorid="teg2ceempn">comment from Ben : I thought the AIU were only receiving events from DVE and DCE which can send events only one at a time</span>)</p><p>OR<br />(b) one because DVE Event Broadcaster broadcasts one outstanding SysReq.Event message at a time. (Currently what is specified in the architecture document paragraph 1.3.2)</p><p /><p>(3) Need to decode SysRsp rmessage_id. If it&rsquo;s 0, then route it to SysCoh Sender, otherwise SysEvent Sender.</p><p /><p><strong>Changes required for IOAIU:</strong></p><p>(1) To set the useSysEvtSender parameter to 1 in the sys_evt_coh_concerto module instantiation, so that IOAIU - configured as ACE or ACELite with DVM or ACELiteE with DVM - instantiates a SysEvent Sender to issue a SysReq.Event to DVE when processing an event coming from the EventInInterface.</p><p>NOTES: </p><p>Existing IOAIU - when configured as ACE or ACELite with DVM or ACELiteE with DVM - instantiates:</p><p>-a SysCoh Sender to send SysReq.Attach/Detach to DCEs and DVE.</p><p>Existing IOAIU - when configured as AXI with Proxy Cache - instantiates:</p><p>-a SysEvent Receiver to process SysReq.Event from DCE and signals it on the EventOutInterface</p><p /><p>(2) To increase the input queue size of the SysEvent Receiver by </p><p>(a)the number of AIUs configured with the EventInInterface.</p><p>(b) one because DVE Event Broadcaster broadcasts one outstanding SysReq.Event message at a time. </p><p /><p>(3) Need to decode SysRsp rmessage_id. If it&rsquo;s 0, then route it to SysCoh Sender, otherwise SysEvent Sender.</p><p /><p><strong>Changes required for DVE:</strong></p><p>(1) To instantiate a newly created module System Event Broadcaster.</p><p>NOTE: Ncore SysCmd Architecture Specification should specify the System Event Broadcaster module in terms of the functional behavior and architectural elements required. Just like other modules SysCoh Sender, SysCoh Receiver, SysEvent Sender, SysEvent Receiver.</p><p /><p><strong>Changes required for DCE:</strong></p><p>In 3.6 DCE will no longer broadcast events to AIUs. Instead DCE will send events only to DVE which in turn will perform the broadcasting on the DCE&rsquo;s behalf to all the AIUs and respond to DCE. DCE will still continue to receive Sysco messages from AIUs and respond to them as before.</p><p>(1) Change nEventAgentsForSender to nDVEs.</p><p>(2) Map the event_i_funit_id ports to FUNIT IDs of DVEs.</p><p /><p><strong>Changes required for DMI and DII:</strong></p><p>(1) Instantiate a System Event Sender block ( or sys_event_coh sender block with useSysEvtSender set to 1).</p><p>(2) Drive the event request interface of the sender block from the exclusive monitor events (store pass or fail). And connect the SysReqTX and SysRspRX interfaces from the block to Concerto-mux.</p><p /><p><strong>System Event Broadcaster Module</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">// System Event Broadcaster can be contructed by connecting System Event Receiver and
+// System Event Sender in series together with some glue logic. The glue logic is to
+// exclude the initiator AIU from the target AIUs.
+//
+//                        Sys.Event Broadcaster
+//                 +---------------------------------------+
+//                 |  +-----------+         +-----------+  |
+// SysReq.Event ---|-&gt;|           |         |           |--|--&gt; SysReq.Event
+//                 |  | Sys.Event |---Req--&gt;| Sys.Event |  |
+//                 |  | Receiver  |&lt;--Ack---| Sender    |  |
+// SysRsp       &lt;--|--|           |         |           |&lt;-|--- SysRsp
+//                 |  +-----------+         +-----------+  |
+//                 +---------------------------------------+
+//
+//
+// Sys.Event Broadcaster Transaction Flow
+// ======================================
+// SysReq.Event -&gt; fork
+//                 broadcast SysReq.Event to specified targets
+//                 collect SysRsp from specified targets
+//                 join
+//              -&gt; issue SysRsp
+//
+// NOTE: need to exclude the initiator AIU from the target AIUs.
+
+// =========================
+// sys_evt_broadcaster.tachl NOTE: This is the core logic module. A wrapper is required.
+// =========================
+
+// Parameters
+var wFUnitId         = u.getParam('wFUnitId');
+var wMessageId       = u.getParam('wMessageId');
+var wSysReqOp        = u.getParam('wSysReqOp');
+var wProtocolTimeout = u.getParam('wProtocolTimeout');
+var nEventAgents     = u.getParam('nEventAgents'); //also use it to size the input queue
+
+
+// Clock interface
+u.port('input',  'clk',      1);
+u.port('input',  'reset_n',  1);
+u.port('output', 'busy',     1);
+
+// FUnitId interface
+for (var i=0; i &lt; nEventAgentsForReceiver; i++) {
+u.port('input', 'event_agent_'+i+'_f_unit_id', wFUnitId);
+}
+
+// CSR interface
+u.port('input',  'csr_protocol_timeout_value', wProtocolTimeout);
+u.port('output', 'csr_sys_evt_err_vld', 1); //Protocol Timeout Error
+u.port('output', 'csr_sys_evt_err_f_unit_id', wFUnitId);
+
+// Input SysReq interface
+u.port('input',  'ingress_sysreq_valid', 1);
+u.port('output', 'ingress_sysreq_ready', 1);
+u.port('input',  'ingress_sysreq_initiator_f_unit_id', wFUnitId);
+u.port('input',  'ingress_sysreq_message_id', wMessageId);
+u.port('input',  'ingress_sysreq_cmstatus', 8);
+u.port('input',  'ingress_sysreq_op', wSysReqOp); // 0=NOP 1=Attach 2=Detach 3=Event
+
+// Output SysRsp interface
+u.port('output', 'ingress_sysrsp_valid', 1);
+u.port('input',  'ingress_sysrsp_ready', 1);
+u.port('output', 'ingress_sysrsp_target_f_unit_id', wFUnitId);
+u.port('output', 'ingress_sysrsp_rmessage_id', wMessageId);
+u.port('output', 'ingress_sysrsp_cmstatus', 8);
+
+// Output SysReq interface
+u.port('output', 'egress_sysreq_valid', 1);
+u.port('input',  'egress_sysreq_ready', 1);
+u.port('output', 'egress_sysreq_initiator_f_unit_id', wFUnitId);
+u.port('output', 'egress_sysreq_message_id', wMessageId);
+u.port('output', 'egress_sysreq_cmstatus', 8);
+u.port('output', 'egress_sysreq_op', wSysReqOp); // 0=NOP 1=Attach 2=Detach 3=Event
+
+// Input SysRsp interface
+u.port('input',  'egress_sysrsp_valid', 1);
+u.port('output', 'egress_sysrsp_ready', 1);
+u.port('input',  'egress_sysrsp_target_f_unit_id', wFUnitId);
+u.port('input',  'egress_sysrsp_rmessage_id', wMessageId);
+u.port('input',  'egress_sysrsp_cmstatus', 8);</pre>
+</div></div><p /><p>(2) Existing DVE instantiates a SysCoh.Receiver module that processes SysReq.Attach/Detach from all AIUs that are DVM snoop agents.</p><p>The incoming SysReq message opcode needs to be decoded. If the opcode indicates Attach or Detach, then route the SysReq message to the SysCoh.Receiver. If the opcode indicates Event, then route the SysReq message to the System Event Broadcaster.</p><p /><p>From Arch Ncore 3.4 Docs - Ncore SysCmd Architecture Specification released on 02/08/2023</p><span class="confluence-embedded-file-wrapper image-center-wrapper"><img class="confluence-embedded-image image-center" src="https://arterisip.atlassian.net/wiki/download/attachments/148930623/image-20230301-205019.png?api=v2" /></span><p />

@@ -1,0 +1,187 @@
+##### ACHL/VCS Compile
+####
+####
+#####list of static seeded tests for checkin screening
+##### guideline <=15min total runtime, <=25 tests
+###
+####32b (sys_dii)
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 32b -i sys_dii -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_07 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7
+###runsim -e dii -c 32b -t rw_none_ednpoint -i 1 -s 38674518
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 32b -t dii_test -R 30674518 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=30000000000,+k_32b_cmdset=1,+k_ace_slave_read_data_interleave_dis=1,+k_targ_src_id_chk_en=1,+dii_scb_en=1,+k_timeout=2000000,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=10,+wt_order_request=20,+wt_order_endpoint=70,+wt_reuse_addr=30,+w_dbad=1  -u _sys_dii_rw_none_end_point_0
+#
+####64b
+#
+###Migrated the below test to the runsim testlist
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 64b_temp -i dii0 -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_07 -Z $MAESTRO_EXAMPLES/../dii_config/64b
+##
+##
+####simple rw
+###runsim -e dii -c 64b -t rd_none -i 1 -s 22598156
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 44942680 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000  -u _rd_none_0
+###runsim -e dii -c 64b -t wr_none -i 1 -s 38149109 
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 13364947 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000  -u _wr_none_0
+##
+####request ordering
+###runsim -e dii -c 64b -t rd_request -s 30090979 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 30090979 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _rd_request_0
+###runsim -e dii -c 64b -t wr_request -s 46791856 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 46791856 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _wr_request_0
+###runsim -e dii -c 64b -t rw_none_request -s 66572728 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 66572728 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50,ctrlr_value=0xff -u _rw_none_request_0  
+##
+####endpoint ordering
+###runsim -e dii -c 64b -t rd_endpoint_noreuse -s 3952407 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 3952407 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=0,+wt_order_endpoint=100,+wt_reuse_addr=0 -u _rd_endpoint_noreuse_0
+###runsim -e dii -c 64b -t wr_endpoint_noreuse -s 1238708 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 1238708 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=0,+wt_order_endpoint=100,+wt_reuse_addr=0 -u _wr_endpoint_noreuse_0
+###runsim -e dii -c 64b -t rw_none_endpoint -s 55152939 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 55152939 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=0,+wt_order_endpoint=50,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=10 -u _rw_none_endpoint_0 
+##
+####the most strenuous / general test enabling 1k,r,w,ordering
+###runsim -e dii -c 64b -t rw -i 1 -s 30674518
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 30674518 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=30000000000,+k_ace_slave_read_data_interleave_dis=1,+k_targ_src_id_chk_en=1,+dii_scb_en=1,+k_timeout=2000000,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=5,+wt_order_none=40,+wt_order_request=30,+wt_order_endpoint=30,+wt_reuse_addr=30,+w_dbad=1  -u _rw_0
+##
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=100,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+performance_test=1,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_write_addr_chnl_burst_pct=100,+k_burst_pct=100 -u _perf_0
+##
+## Latency check
+##runsim -e dii -c 64b -t rd_none_latench_chk -s 0 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=2,+RDY_NOT_ASSERTED_TIMEOUT=80000,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+DTR_RSP_MSG_Q_TIME_LIMIT=20000,+DTR_RSP_MSG_Q_SIZE_LIMIT=40,+wait_cycles=200,+latency_chk_test=1,+wt_reuse_addr=0 -u rd_none_latench_chk_0
+#
+##runsim -e dii -c 64b -t wr_none_latench_chk -s 0 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=2,+RDY_NOT_ASSERTED_TIMEOUT=80000,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+STR_RSP_MSG_Q_TIME_LIMIT=20000,+STR_RSP_MSG_Q_SIZE_LIMIT=40,+wait_cycles=200,+latency_chk_test=1,+wt_reuse_addr=0 -u wr_none_latench_chk_0
+#---------------------------------------------------------------------------------------------------------------------------
+####128b
+#
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 128b -i dii0 -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_02 -Z $MAESTRO_EXAMPLES/../dii_config/128b
+#
+###simple rw
+##runsim -e dii -c -i dii0 128b -t rd_none -i 1 -s 22598156
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -n 128b -t dii_test -R 44942680 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000  -u _rd_none_0
+##runsim -e dii -c -i dii0 128b -t wr_none -i 1 -s 38149109 
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 13364947 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+wt_dbad=2,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000  -u _wr_none_0
+#
+###request ordering
+##runsim -e dii -c -i dii0 128b -t rd_request -s 30090979 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 30090979 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _rd_request_0
+##runsim -e dii -c -i dii0 128b -t wr_request -s 46791856 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 46791856 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _wr_request_0
+##runsim -e dii -c -i dii0 128b -t rw_none_request -s 66572728 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 66572728 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50 -u _rw_none_request_0  
+#
+###endpoint ordering
+##runsim -e dii -c -i dii0 128b -t rd_endpoint_noreuse -s 3952407 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 3952407 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=0,+wt_order_endpoint=100,+wt_reuse_addr=0 -u _rd_endpoint_noreuse_0
+##runsim -e dii -c -i dii0 128b -t wr_endpoint_noreuse -s 1238708 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 1238708 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=0,+wt_order_endpoint=100,+wt_reuse_addr=0 -u _wr_endpoint_noreuse_0
+##runsim -e dii -c -i dii0 128b -t rw_none_endpoint -s 55152939 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 55152939 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=0,+wt_order_endpoint=50,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=10 -u _rw_none_endpoint_0 
+#
+###the most strenuous / general test enabling 1k,r,w,ordering
+##runsim -e dii -c -i dii0 128b -t rw -i 1 -s 30674518
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 30674518 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=30000000000,+k_ace_slave_read_data_interleave_dis=1,+k_targ_src_id_chk_en=1,+dii_scb_en=1,+k_timeout=2000000,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=5,+wt_order_none=40,+wt_order_request=30,+wt_order_endpoint=30,+wt_reuse_addr=30  -u _rw_0
+#
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=100,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+performance_test=1,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_write_addr_chnl_burst_pct=100,+k_burst_pct=100 -u _perf_0
+#
+#--------------------------------------------------------------------------------------------------------------
+###256b
+#
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 256b -i dii0 -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_02 -Z $MAESTRO_EXAMPLES/../dii_config/256b
+#
+###simple rw
+##runsim -e dii -c -i dii0 256b -t rd_none -i 1 -s 22598156
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 44942680 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000  -u _rd_none_0
+##runsim -e dii -c -i dii0 256b -t wr_none -i 1 -s 38149109 
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 13364947 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000  -u _wr_none_0
+#
+###request ordering
+##runsim -e dii -c -i dii0 256b -t rd_request -s 30090979 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 30090979 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _rd_request_0
+##runsim -e dii -c -i dii0 256b -t wr_request -s 46791856 -i 1
+#/engr/dev/tools/node/.nvm/versions/node/v8.12.0/bin/node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 46791856 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _wr_request_0
+##runsim -e dii -c -i dii0 256b -t rw_none_request -s 66572728 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 66572728 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50 -u _rw_none_request_0  
+#
+###endpoint ordering
+##runsim -e dii -c -i dii0 256b -t rd_endpoint_noreuse -s 3952407 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 3952407 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=0,+wt_order_endpoint=100,+wt_reuse_addr=0 -u _rd_endpoint_noreuse_0
+##runsim -e dii -c -i dii0 256b -t wr_endpoint_noreuse -s 1238708 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 1238708 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=0,+wt_order_endpoint=100,+wt_reuse_addr=0 -u _wr_endpoint_noreuse_0
+##runsim -e dii -c -i dii0 256b -t rw_none_endpoint -s 55152939 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 55152939 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=0,+wt_order_endpoint=50,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=10 -u _rw_none_endpoint_0 
+#
+###the most strenuous / general test enabling 1k,r,w,ordering
+##runsim -e dii -c -i dii0 256b -t rw -i 1 -s 30674518
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 30674518 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=30000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+k_targ_src_id_chk_en=1,+dii_scb_en=1,+k_timeout=2000000,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=5,+wt_order_none=40,+wt_order_request=30,+wt_order_endpoint=30,+wt_reuse_addr=30  -u _rw_0
+#
+#
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_num_cmd=100,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+wt_dbad=1,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+performance_test=1,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_write_addr_chnl_burst_pct=100,+k_burst_pct=100 -u _perf_0
+#
+### Latency check
+##runsim -e dii -c 256b -t rd_none_latench_chk -s 0 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=2,+RDY_NOT_ASSERTED_TIMEOUT=80000,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+DTR_RSP_MSG_Q_TIME_LIMIT=20000,+DTR_RSP_MSG_Q_SIZE_LIMIT=40,+wait_cycles=200,+latency_chk_test=1,+wt_reuse_addr=0 -u rd_none_latench_chk_0
+#
+##runsim -e dii -c 256b -t wr_none_latench_chk -s 0 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=2,+RDY_NOT_ASSERTED_TIMEOUT=80000,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+STR_RSP_MSG_Q_TIME_LIMIT=20000,+STR_RSP_MSG_Q_SIZE_LIMIT=40,+wait_cycles=200,+latency_chk_test=1,+wt_reuse_addr=0 -u wr_none_latench_chk_0
+##---------------------------------------------------------------------------------------------------------------------------
+####256b_wXttCtrlEntries_4 (limiting rRttCtrlEntries and wRttCtrlEntries to 4)
+#
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 256b_wXttEntry_4 -i dii0 -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_20 -Z $MAESTRO_EXAMPLES/../dii_config/256b_wXttCtrlEntries_4
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b_wXttEntry_4 -t dii_test -R 36572728 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50,+inj_cntl=1,+smi_ndp_err_inj=1,+inject_smi_corr_error -u _rw_none_request_0  
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b_wXttEntry_4 -t dii_test -R 46791856 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _wr_request_0
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b_wXttEntry_4 -t dii_test -R 56572729 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50 -u _rw_none_request_1  
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b_wXttEntry_4 -t dii_test -R 63254088 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+CONC-7416-WORKAROUND,+CONC-7066-WORKAROUND,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+performance_test=1,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_write_addr_chnl_burst_pct=100,+k_burst_pct=100 -u _perf_0
+
+##---------------------------------------------------------------------------------------------------------------------------
+##---------------------------------------------------------------------------------------------------------------------------
+####256b_narrow_axid (limiting axid width)
+#
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 256b_axid -i dii0 -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_01 -Z $MAESTRO_EXAMPLES/../dii_config/256b_narrow_axid
+
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b_axid -t dii_test -R 46791856 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+RDY_NOT_ASSERTED_TIMEOUT=30000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+k_num_cmd=3000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _wr_request_0
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 256b_axid -t dii_test -R 63254088 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+performance_test=1,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_write_addr_chnl_burst_pct=100,+k_burst_pct=100 -u _perf_0
+
+####128b_ecc (resiliency with SECDED)
+#
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 128b_ecc -i dii0 -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_nxpauto -Z $MAESTRO_EXAMPLES/../dii_config/128b_ecc
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_ecc -t dii_test -R 66572728 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+RDY_NOT_ASSERTED_TIMEOUT=200000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50,+inj_cntl=1,+smi_ndp_err_inj=1,+inject_smi_corr_error -u _rw_none_request_0  
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_ecc -t dii_test -R 7866305 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+k_ace_slave_read_data_interleave_dis=1,+k_targ_src_id_chk_en=1,+dii_scb_en=1,+k_timeout=2000000,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+k_num_cmd=500,+disable_pri_check=1,+smi_ndp_err_inj=1,+expect_mission_fault=1,+k_smi_cov_en=0,+inj_cntl=2,+inject_smi_uncorr_error=1,+uncorr_error_inj_pcnt=70,+axi4pc_eos_off=1,+k_csr_seq=dii_csr_enable_err_detection_interrupts_resiliency_seq,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=2,+wt_order_none=40,+wt_order_request=30,+wt_order_endpoint=30,+wt_reuse_addr=30 -u _rw_
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_ecc -t dii_test -R 46791856 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+RDY_NOT_ASSERTED_TIMEOUT=200000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _wr_request_0
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_ecc -t dii_test -R 66572728 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+RDY_NOT_ASSERTED_TIMEOUT=200000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50,+ctrlr_valud=0x03 -u _rw_none_request_1  
+
+$WORK_TOP/../scripts/qrsim.js -e dii -n 128b_ecc -t dii_test -R 13254088 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+RDY_NOT_ASSERTED_TIMEOUT=200000,+k_num_cmd=100,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+performance_test=1,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_write_addr_chnl_burst_pct=100,+k_burst_pct=100 -u _perf_0
+
+##---------------------------------------------------------------------------------------------------------------------------
+####128b_parity (resiliency with SECDED)
+#
+node $WORK_TOP/../scripts/qrsim.js -m -e dii -a -c -n 128b_parity -i dii0 -C -d INHOUSE_AXI,INHOUSE_APB_VIP,RTL_DUT,ASSERT_ON,COVER_ON,RESILIENCY_TESTING -y hw_config_07 -Z $MAESTRO_EXAMPLES/../dii_config/128b_parity
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_parity -t dii_test -R 86572728 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+RDY_NOT_ASSERTED_TIMEOUT=20000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50 -u _rw_none_request_0  
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_parity -t dii_test -R 48791856 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+RDY_NOT_ASSERTED_TIMEOUT=20000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=0,+wt_order_request=100,+wt_order_endpoint=0,+wt_reuse_addr=50 -u _wr_request_0
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_parity -t dii_test -R 68572729 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=20000000,+RDY_NOT_ASSERTED_TIMEOUT=200000,+k_num_cmd=1000,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=50,+wt_order_request=50,+wt_order_endpoint=0,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+wt_reuse_addr=50 -u _rw_none_request_1  
+
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_parity -t dii_test -R 13254008 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+RDY_NOT_ASSERTED_TIMEOUT=20000,+k_num_cmd=100,+wt_wrong_id=0,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_timeout=2000000,+performance_test=1,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_write_addr_chnl_burst_pct=100,+k_burst_pct=100 -u _perf_0
+
+## Latency check
+##runsim -e dii -c 128b_parity -t rd_none_latench_chk -s 0 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_parity -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=2,+RDY_NOT_ASSERTED_TIMEOUT=80000,+wt_cmd_rd_nc=100,+wt_cmd_wr_nc_full=0,+wt_cmd_wr_nc_ptl=0,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+DTR_RSP_MSG_Q_TIME_LIMIT=20000,+DTR_RSP_MSG_Q_SIZE_LIMIT=40,+wait_cycles=200,+latency_chk_test=1,+wt_reuse_addr=0 -u rd_none_latench_chk_0
+#
+##runsim -e dii -c 128b_parity -t wr_none_latench_chk -s 0 -i 1
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b_parity -t dii_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=15000000000,+k_num_cmd=2,+RDY_NOT_ASSERTED_TIMEOUT=80000,+wt_cmd_rd_nc=0,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_cmd_cmo=0,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+STR_RSP_MSG_Q_TIME_LIMIT=20000,+STR_RSP_MSG_Q_SIZE_LIMIT=40,+wait_cycles=200,+latency_chk_test=1,+wt_reuse_addr=0 -u wr_none_latench_chk_0
+
+###################################
+### Perf monitor bringup_test 
+###################################
+#dii perf monitor sanity test
+node $WORK_TOP/../scripts/qrsim.js -e dii -n 64b_temp -t perf_cnt_test -R 415906 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=30000000000,+k_ace_slave_read_data_interleave_dis=1,+k_targ_src_id_chk_en=1,+dii_scb_en=1,+k_timeout=2000000,+prob_ace_rd_resp_error=0,+prob_ace_wr_resp_error=0,+perfmon_directed_rand,+event_first=1,+event_second=0,+counter_control=0,+ssr_count=1,+k_num_cmd=25,+RDY_NOT_ASSERTED_TIMEOUT=80000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_cmd_cmo=10,+wt_order_none=100,+wt_order_request=0,+wt_order_endpoint=0,+wt_reuse_addr=0

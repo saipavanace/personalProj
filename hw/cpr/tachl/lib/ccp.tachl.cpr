@@ -1,0 +1,276 @@
+{
+   "name":"ccp",
+   "tachl":[
+      {
+         "name":"ccp",
+         "params":[
+         {
+          "parameterName": "UseTagRamInputFlop",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.Cache.UseTagRamInputFlop"
+        },
+        {
+          "parameterName": "UseTagRamOutputFlop",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.Cache.UseTagRamOutputFlop"
+        },
+            {
+               "parameterName":"num_ports",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of CCP instances interleaved in a group",
+               "default":1
+            },
+            {
+               "parameterName":"wCacheLineOffset",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The width of cacheline offset",
+               "default":6,
+               "formula":"return system.concertocparams.wCacheLine"
+            },
+            {
+               "parameterName":"wData",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The data beat size in bits",
+               "default":128,
+               "formula":"return unit.Interfaces.external.params.wData"
+            },
+            {
+               "parameterName":"wAddr",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"the width of system address",
+               "default":48,
+               "formula":"return unit.Interfaces.external.params.wAddr"
+            },
+            {
+               "parameterName":"wSecurity",
+               "type":"integer",
+               "parameterType":"architecture",
+               "default":1,
+               "formula":"return system.concertocparams.wNS",
+               "description":"The width of security bit",
+               "validValues":"0, 1"
+            },
+            {
+               "parameterName":"wStateBits",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The width of cache state",
+               "default":2,
+               "minimum":1,
+               "maximum":4
+            },
+            {
+               "parameterName":"nClkDiv",
+               "type":"integer",
+               "parameterType":"architecture",
+               "default":1
+            },
+            {
+               "parameterName":"nSets",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of cache set",
+               "default":16,
+               "formula":"return unit.Cache.nSets || 2;"
+            },
+            {
+               "parameterName":"nWays",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of cache way",
+               "default":2,
+               "formula":"return unit.Cache.nWays || 1;"
+            },
+            {
+               "parameterName":"nTableEntries",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of table entries for outstanding cache fill",
+               "default":3,
+               "formula":"return unit.ImplementationParameters && (unit.ImplementationParameters.nRttCtrlEntries !== undefined) ? unit.ImplementationParameters.nRttCtrlEntries : unit.ImplementationParameters.nOttCtrlEntries;"
+            },
+            {
+               "parameterName":"useScratchpad",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"Enable scratchpad support in ccp. This enables logic and configuration registers required to configure part or whole cache as a simple read write SRAM",
+               "validValues":"0,1",
+               "default":0,
+               "formula":"return unit.Cache.useScratchpad ? 1 : 0"
+            },
+            {
+               "parameterName":"nBeatsPerBank",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of beats of data sotred in data array bank",
+               "default":1,
+               "validValues":"1,2",
+               "formula":"return unit.Cache.nBeatsPerBank"
+            },
+            {
+               "parameterName":"useSramInputFlop",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"Enable CCP data ram input stage flop",
+               "validValues":"0,1",
+               "default":1,
+               "formula":"return unit.Cache.useSramInputFlop"
+            },
+            {
+               "parameterName":"nTagBanks",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of tag banks",
+               "default":1,
+               "formula":"return unit.Cache.nTagBanks || 1;",
+               "validValues":"1, 2"
+            },
+            {
+               "parameterName":"nDataBanks",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of data banks",
+               "default":1,
+               "formula":"return unit.Cache.nDataBanks || 1;",
+               "validValues":"1, 2, 4"
+            },
+            {
+               "parameterName":"TagErrInfo",
+               "type":"enum",
+               "parameterType":"architecture",
+               "description":"The protection scheme used for tag protection",
+               "validValues":"NONE, SECDED, PARITY",
+               "default":"NONE",
+               "formula":"return unit.Cache.TagErrInfo === 'PARITY'? 'PARITYENTRY' : unit.Cache.TagErrInfo;"
+            },
+            {
+               "parameterName":"DataErrInfo",
+               "type":"enum",
+               "parameterType":"architecture",
+               "description":"The protection scheme used for data protection",
+               "validValues":"NONE, SECDED, PARITY",
+               "default":"NONE",
+               "formula":"return unit.Cache.DataErrInfo === 'PARITY'? 'PARITYENTRY' : unit.Cache.DataErrInfo;"
+            },
+            {
+               "parameterName":"useDinBuffer",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"If this buffering is enabled, the logic expects data coming on write and fill buffer to be buffered inside data bank (for timing and performance)",
+               "validValues":"0,1",
+               "default":0,
+               "formula":"return unit.Cache.useDinBuffer ? 1 : 0"
+            },
+            {
+               "parameterName":"useDoutBuffer",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"If this buffering is enabled, the data coming out on evict and readrsp port is buffered after reading from data arrays",
+               "validValues":"0,1",
+               "default":1,
+               "formula":"return unit.Cache.useDoutBuffer ? 1 : 0"
+            },
+            {
+               "parameterName":"nRPPorts",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"The number of replacement policy RAM",
+               "default":1,
+               "formula":"return unit.useCache ? unit.Cache.ImplementationParameters.nRPPorts : 1;",
+               "minimum":1,
+               "maximum":2
+            },
+            {
+               "parameterName":"RepPolicy",
+               "type":"enum",
+               "parameterType":"architecture",
+               "description":"The cahce replacement policy",
+               "validValues":"RANDOM, NRU",
+               "default":"NRU",
+               "formula":"return unit.useCache ? unit.Cache.ImplementationParameters.RepPolicy : 'RANDOM';"
+            },
+            {
+               "parameterName":"PriSubDiagAddrBits",
+               "type":"array",
+               "parameterType":"architecture",
+               "description":"The primary index select bits",
+               "reference":"",
+               "formula":"return unit.useCache ? unit.Cache.SelectInfo.PriSubDiagAddrBits : [7];",
+               "arrayType":"integer"
+            },
+            {
+               "parameterName":"SecSubRows",
+               "type":"array",
+               "parameterType":"architecture",
+               "description":"For index bit hashing",
+               "reference":"",
+               "formula":"return unit.useCache ? unit.Cache.SelectInfo.SecSubRows.map(v => {return \"\'h\"+v.toString(16);}) : [];",
+               "arrayType":"string"
+            },
+            {
+               "parameterName":"PortPriSubDiagAddrBits",
+               "type":"array",
+               "parameterType":"architecture",
+               "description":"For port select",
+               "reference":"",
+               "formula":"return unit.useCache ? unit.Cache.SelectInfo.PortPriSubDiagAddrBits || [] : [];",
+               "arrayType":"integer"
+            },
+            {
+               "parameterName":"PortSecSubRows",
+               "type":"array",
+               "parameterType":"architecture",
+               "description":"For port select",
+               "reference":"",
+               "formula":"return unit.useCache ? unit.Cache.SelectInfo.PortSecSubRows || {} : {};",                
+                "arrayType":"string"
+
+            },
+            {
+               "parameterName":"TagBankSelBits",
+               "type":"array",
+               "parameterType":"architecture",
+               "description":"The bits for tag bank selecting",
+               "reference":"",
+               "formula":"return unit.Cache.nTagBanks > 1 ? unit.Cache.SelectInfo.TagBankSelBits.map(v => unit.Cache.SelectInfo.PriSubDiagAddrBits.indexOf(v)) : [];",
+               "arrayType":"integer"
+            },
+            {
+               "parameterName":"DataBankSelBits",
+               "type":"array",
+               "parameterType":"architecture",
+               "description":"The bits for data bank selecting",
+               "reference":"",
+               "formula":"return unit.Cache.nDataBanks > 1 ? unit.Cache.SelectInfo.DataBankSelBits.map(v => unit.Cache.SelectInfo.PriSubDiagAddrBits.indexOf(v)) : [];",
+               "arrayType":"integer"
+            },
+            {
+               "parameterName":"evictPortDoutBufferDepth",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"output buffer depth for evict port",
+               "default":2,
+               "minimum":2,
+               "maximum":16
+            },
+            {
+               "parameterName":"rdrspPortDoutBufferDepth",
+               "type":"integer",
+               "parameterType":"architecture",
+               "description":"output buffer depth for rdrsp port",
+               "default":2,
+               "minimum":0,
+               "maximum":32
+            }
+         ]
+      }
+   ]
+}

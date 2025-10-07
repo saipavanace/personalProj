@@ -1,0 +1,225 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines single transaction table entry
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+var clkInterface = {
+    clk: 1,
+    reset_n: 1
+}
+var chi_e              = u.getParam('chi_e');
+var interfaces         = u.getParam('interfaces');
+var cm_type  = u.getParam('cm_type');
+var chi_cmd  = u.getParam('chi_cmd');
+var initiator_id_width = u.getParam('initiator_id_width');
+var port_id_width =  u.getParam('port_id_width');
+var unit_id_width =  u.getParam('unit_id_width');
+var lpid_width =  u.getParam('lpid_width');
+var wData =  u.getParam('wData');
+var num_region = 2;
+var region_addr_width = 32;
+var intf_size = Math.max(log2ceil(wData/64),1);
+var mpf1_width =  u.getParam('CMDReqInterface').mpf1;
+var mpf2_width =  u.getParam('CMDReqInterface').mpf2;
+var wMProt_cmd_req = u.getParam('CMDReqInterface').m_prot;
+var cmd_aux_width = u.getParam('CMDReqInterface').aux;
+var stash_nid_width = u.getParam('ReqInterface').ReturnNID;
+var req_rsvdc_width =  u.getParam('ReqInterface').RSVDC;
+var aux_rsvdc_diff = cmd_aux_width - req_rsvdc_width;
+var qosInfo  = u.getParam('qosInfo');
+var num_pri_buckets =  qosInfo.qosMap.length;
+var wPriority = u.getParam('CMDReqInterface').priority;
+var cmd_out_data_width = bundleFunctions.getBundleWidth(u.getParam('ReqInterface'),['SrcID','TxnID','LikelyShared','AllowRetry','PCrdType','ExCompAck','TraceTag'],obj.lib.bundle) + 1 + 8 + wPriority + 6 + 1 + 1;
+var wHProt = u.getParam('CMDReqInterface').h_prot;
+var wTTier = u.getParam('CMDReqInterface').t_tier;
+var wSteering = u.getParam('CMDReqInterface').steering;
+var wQl = u.getParam('CMDReqInterface').ql;
+var wReqFlit_TraceTag_local = u.getParam('wReqFlit_TraceTag_local');
+var wReqFlit_StashNIDValid_local = u.getParam('wReqFlit_StashNIDValid_local');
+var wReqFlit_ReturnNID_local = u.getParam('wReqFlit_ReturnNID_local');
+var wReqFlit_ReturnTxnID_local = u.getParam('wReqFlit_ReturnTxnID_local');
+var snpattr_width =  u.getParam('ReqInterface').SnpAttr;
+var mpf2_zero_fill_stash_width = mpf2_width-6;
+var mpf2_zero_fill_width = mpf2_width-lpid_width-1;
+var wAddr =  u.getParam('wAddr');
+var wFlit_Addr    = interfaces.chiInt.params.wAddr;
+var wAddr_diff = wAddr - wFlit_Addr;
+  
+u.port('input','clk', 1);
+u.port('input','reset_n',1);
+u.port('input','init_id',initiator_id_width);
+u.port('input','cmd_out_data', cmd_out_data_width);
+u.port('output','cmd_req_data',bundleFunctions.getBundleWidth(u.getParam('CMDReqInterface'),['valid','ready'],obj.lib.bundle) );
+u.port('input','ott_entry_num_cmdmux',u.getParam('wOttEntries'));
+u.port('input','q_map_target_f_unit_id',unit_id_width);
+u.port('input','out_cmd_req_target_f_unit_id',unit_id_width);
+
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+
+\js if(wPriority > 0) {
+wire [\=wPriority=\-1:0] q_req_pri;
+\js }
+wire cmos_cmd;
+wire [7:0] q_concerto_cmd ;
+wire [31:0] csr_r0_addr_low_d1;
+wire [31:0] csr_r0_addr_high_d1;
+wire [31:0] csr_r1_addr_low_d1;
+wire [31:0] csr_r1_addr_high_d1;
+wire atomic_coh_in_progress;
+wire q_Opcode_atomics;
+wire q_Opcode_stashonce;
+wire q_tracetagTrigger;
+ 
+\=bundleFunctions.wiresFromInterface('q_', u.getParam('ReqInterface'),['SrcID','TxnID','LikelyShared','AllowRetry','PCrdType','ExCompAck','TraceTag'],obj.lib.bundle )=\ 
+
+\=bundleFunctions.wiresFromInterface('cmd_req_', u.getParam('CMDReqInterface'),['valid','ready','last'],obj.lib.bundle )=\   
+
+assign {q_tracetagTrigger, cmos_cmd, q_Opcode_stashonce, q_Opcode_atomics, cmd_req_vz, cmd_req_ac, cmd_req_ca, cmd_req_ch,
+\js if(wPriority > 0) {
+        q_req_pri,
+\js }
+        q_concerto_cmd, atomic_coh_in_progress,
+        \=bundleFunctions.packetizeBundle('q_', u.getParam('ReqInterface'),['SrcID','TxnID','LikelyShared','AllowRetry','PCrdType','ExCompAck','TraceTag'],obj.lib.bundle)=\} = cmd_out_data ;
+
+assign cmd_req_initiator_id[\=u.getParam('CMDReqInterface').initiator_id-1=\:0]   = init_id;
+
+assign cmd_req_target_id = ({{\=port_id_width=\{1'b0}}, out_cmd_req_target_f_unit_id} << \=port_id_width=\);
+
+assign cmd_req_d_id = q_map_target_f_unit_id;
+   
+assign cmd_req_message_id  [\=u.getParam('CMDReqInterface').message_id-1=\:0]     = { {\=u.getParam('CMDReqInterface').message_id-u.getParam('wOttEntries')=\{1'b0}}, ott_entry_num_cmdmux  } ;
+assign cmd_req_cm_type     [\=u.getParam('CMDReqInterface').cm_type-1=\:0]        = q_concerto_cmd  ;
+
+\js if(wHProt > 0) {
+\js if(wHProt == 1) {
+assign cmd_req_h_prot  = 1'b0;
+\js } else {
+assign cmd_req_h_prot      [\=u.getParam('CMDReqInterface').h_prot-1=\:0]         = \=wHProt=\'b0 ;
+\js } }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wTTier > 0) {
+\jsend
+assign cmd_req_t_tier      [\=u.getParam('CMDReqInterface').t_tier-1=\:0]         = \=wTTier=\'b0 ;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wSteering > 0) {
+\jsend
+assign cmd_req_steering    [\=u.getParam('CMDReqInterface').steering-1=\:0]       = \=wSteering=\'b0 ;
+\js }
+
+\js if(wPriority > 0) {
+assign cmd_req_priority    [\=u.getParam('CMDReqInterface').priority-1=\:0]       = q_req_pri ;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wQl > 0) {
+\jsend
+assign cmd_req_ql          [\=u.getParam('CMDReqInterface').ql-1=\:0]             = \=wQl=\'b0 ;
+\js }
+
+\js if(wMProt_cmd_req> 0) {
+    \js if(wMProt_cmd_req == 1) {
+assign cmd_req_m_prot = 1'b0;
+    \js } else {
+assign cmd_req_m_prot [\=u.getParam('CMDReqInterface').m_prot-1=\:0] = \=wMProt_cmd_req=\'b0;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wAddr_diff > 0) {
+\jsend
+assign  cmd_req_addr = {\=wAddr- wFlit_Addr=\'b0, q_Addr};
+\js } else {
+assign  cmd_req_addr = q_Addr;
+\js }
+
+assign cmd_req_st                  =  q_MemAttr[1];
+assign cmd_req_en                  =  1'b0 ; // Endianness 0 : LE  , 1 : BE
+assign cmd_req_es                  =  q_Excl ;  
+assign cmd_req_ns                  =  q_NS ;  
+assign cmd_req_pr                  =  1'b0 ;  
+assign cmd_req_or                  =  cmos_cmd ? \=u.getParam('CMDReqInterface').or=\'b0 : q_Order ;
+assign cmd_req_lk          [\=u.getParam('CMDReqInterface').lk-1=\:0]  = \=u.getParam('CMDReqInterface').lk=\'b0 ; 
+assign cmd_req_rl          [\=u.getParam('CMDReqInterface').rl-1=\:0]  = cmos_cmd ? \=u.getParam('CMDReqInterface').rl=\'b10 : \=u.getParam('CMDReqInterface').rl=\'b01 ; 
+assign cmd_req_tm                   = q_tracetagTrigger;
+
+assign cmd_req_mpf1 [\=mpf1_width-1=\:0] =
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (wReqFlit_StashNIDValid_local > 0) { 
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if ((mpf1_width-stash_nid_width-1) > 0) {
+    \jsend
+            ({\=mpf1_width=\{q_Opcode_stashonce}} & {q_StashNIDValid, {\=mpf1_width-stash_nid_width-1=\{1'b0}}, q_ReturnNID}) |
+    \js } else {
+            ({\=mpf1_width=\{q_Opcode_stashonce}} & {q_StashNIDValid, q_ReturnNID}) |
+    \js }
+\js }
+            ({\=mpf1_width=\{q_Opcode_atomics  }} & {\=mpf1_width-3=\'b0, q_Opcode[2:0]});
+
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (wReqFlit_ReturnTxnID_local > 0) { 
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (mpf2_zero_fill_width > 0) {
+    \jsend
+assign cmd_req_mpf2 [\=mpf2_width-1=\:0] = q_Opcode_stashonce ? {q_ReturnTxnID[5], {\=mpf2_width-6=\{1'b0}}, q_ReturnTxnID[4:0]} :
+                                                                {1'b1, \=mpf2_width-lpid_width-1=\'b0, q_LPID[\=lpid_width-1=\:0]};
+    \js } else { 
+assign cmd_req_mpf2 [\=mpf2_width-1=\:0] = q_Opcode_stashonce ? {q_ReturnTxnID[5], {\=mpf2_width-6=\{1'b0}}, q_ReturnTxnID[4:0]} :
+                                                                {1'b1, q_LPID[\=lpid_width-1=\:0]};
+    \js }
+\js } else /* istanbul ignore next env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ if (mpf2_zero_fill_width > 0) {
+assign cmd_req_mpf2 [\=mpf2_width-1=\:0] = {1'b1, \=mpf2_width-lpid_width-1=\'b0, q_LPID[\=lpid_width-1=\:0]};
+\js } else {
+assign cmd_req_mpf2 [\=mpf2_width-1=\:0] = {1'b1, q_LPID[\=lpid_width-1=\:0]};
+\js }
+
+assign cmd_req_size        [\=u.getParam('CMDReqInterface').size-1=\:0]  = q_Size;
+
+assign cmd_req_intf_size   [\=u.getParam('CMDReqInterface').intf_size-1=\:0]  =  \=u.getParam('CMDReqInterface').intf_size=\'d\=intf_size=\;
+assign cmd_req_tof         [\=u.getParam('CMDReqInterface').tof-1=\:0]  = \=u.getParam('CMDReqInterface').tof=\'b1 ; // Connecting Concerto Native
+\js if ( u.getParam('CMDReqInterface').qos != 0 ) {
+assign cmd_req_qos         [\=u.getParam('CMDReqInterface').qos-1=\:0]  =  q_QoS;
+\js }
+assign cmd_req_cm_status  = 8'b0;
+
+\js if (cmd_aux_width > 0) {
+    \js if (req_rsvdc_width > 0) {
+        \jsbegin
+            /* istanbul ignore if env ncore_3p6, ncore_3p7 */
+            if (aux_rsvdc_diff > 0 ) { \jsend
+assign cmd_req_aux= {\=aux_rsvdc_diff=\'b0, q_RSVDC};
+        \js } else {
+assign cmd_req_aux= q_RSVDC;
+        \js }
+    \js } else {
+assign cmd_req_aux= \=cmd_aux_width=\'b0;
+    \js }
+\js }
+
+assign cmd_req_data =  \=bundleFunctions.packetizeBundle('cmd_req_', u.getParam('CMDReqInterface'),['valid','ready','last'],obj.lib.bundle )=\   ;
+
+endmodule

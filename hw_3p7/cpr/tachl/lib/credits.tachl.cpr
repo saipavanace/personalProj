@@ -1,0 +1,75 @@
+{
+  "name": "credits",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "",
+      "params": [
+        {
+          "parameterName": "MaxCreditPerDCE",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<system.nDces; i++) { res.push((unit.ImplementationParameters.nDceCmdCredits)); } return res; ",
+          "description": "Maximum number of commands the block can send to each DCE"
+        },
+        {
+          "parameterName": "MaxCreditPerDMI",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<system.nDmis; i++) { res.push((unit.ImplementationParameters.nDmiCmdCredits)); } return res; ",
+          "description": "Maximum number of commands the block can send to each DMI"
+        },
+        {
+          "parameterName": "MaxCreditPerDII",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<system.nDiis; i++) { res.push((unit.ImplementationParameters.nDiiCmdCredits)); } return res; ",
+          "description": "Maximum number of commands the block can send to each DII"
+        },
+        {
+          "parameterName": "MaxCreditPerQOS",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<16; i++) { res.push(0); } return res; ",
+          "description": "Maximum number of commands the block can send on each QOS bucket"
+        },
+        {
+          "parameterName": "ReserveWrPerDCE",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<system.nDces; i++) { res.push(unit.ImplementationParameters.nDceWrCmdCredits); } return res; ",
+          "description": "Number of credits out of MaxCredit that are reserved for Writes only"
+        },
+        {
+          "parameterName": "ReserveWrPerDMI",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<system.nDmis; i++) { res.push(unit.ImplementationParameters.nDmiWrCmdCredits); } return res; ",
+          "description": "Number of credits out of MaxCredit that are reserved for Writes only"
+        },
+        {
+          "parameterName": "ReserveWrPerDII",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<system.nDiis; i++) { res.push(unit.ImplementationParameters.nDiiWrCmdCredits); } return res; ",
+          "description": "Number of credits out of MaxCredit that are reserved for Writes only"
+        },
+        {
+          "parameterName": "ReserveWrPerQOS",
+          "type": "array",
+          "arrayType": "integer",
+          "parameterType": "architecture",
+          "formula": "var res = []; for (var i=0; i<16; i++) { res.push(0); } return res; ",
+          "description": "Number of credits out of MaxCredit that are reserved for Writes only"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "name": "NC_InterfaceAXI",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "name",
+          "parameterTitle": "Name of Interface",
+          "default": "axi4_",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "params",
+          "parameterTitle": "Interface parameters",
+          "parameterType": "architecture",
+          "docID": 226,
+          "type": "object",
+          "reference": "InterfaceParams"
+        }
+      ],
+      "baseName": "InterfaceAXI"
+    },
+    {
+      "name": "InterfaceParams",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wArId",
+          "parameterTitle": "Width of Ar Id",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 6,
+          "parameterType": "architecture",
+          "guiDescription": "Width of ArId bits.",
+          "docID": 227,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wAwId",
+          "parameterTitle": "Width of Aw Id",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 6,
+          "parameterType": "architecture",
+          "guiDescription": "Width of  AwId bits.",
+          "docID": 228,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wAddr",
+          "parameterTitle": "AXI address bus width",
+          "minimum": 12,
+          "maximum": 52,
+          "default": 32,
+          "parameterType": "architecture",
+          "guiDescription": "Width of address bits.\nFollowing unit level limits apply \nNCAIU/DMI - min 32, max 54\nDII - min 12, max 54",
+          "docID": 229,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wResp",
+          "parameterTitle": "Width of Resp",
+          "minimum": 2,
+          "maximum": 4,
+          "default": 2,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wData",
+          "parameterTitle": "AXI data bus width",
+          "default": 64,
+          "parameterType": "architecture",
+          "guiDescription": "Width of data bits.\nFollowing limitations apply \nAXI interface connected to memory as Ncore master(DMI): 128 & 256\nAXI interface connected to phriparal device Ncore master (DII): 64, 128 & 256\nAXI/ACE-Lite/ACE interface connected to a master agent accelerator,GPU, GIC etc as Ncore slave (AIU): 64, 128 & 256",
+          "docID": 231,
+          "validValues": "32,64,128,256",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wAwUser",
+          "parameterTitle": "Width of Aw user",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Wdth of Aw user bits.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wWUser",
+          "parameterTitle": "Width of W user",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Specify the width of AXI interface w user bits.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wBUser",
+          "parameterTitle": "Width of B user",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Specify the width of AXI interface b user bits.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wArUser",
+          "parameterTitle": "Width of Ar user",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Width of Ar user bits.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wRUser",
+          "parameterTitle": "Width of R user",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Specify the width of AXI interface R user bits.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wLen",
+          "parameterTitle": "Width of length",
+          "minimum": 8,
+          "maximum": 8,
+          "default": 8,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wSize",
+          "parameterTitle": "Width of size",
+          "minimum": 3,
+          "maximum": 4,
+          "default": 3,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wLock",
+          "parameterTitle": "Width of lock",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "wQos",
+          "parameterTitle": "Width of QoS",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "QoS port gets enabled as standard 4 bit wide port when QoS is enabled.",
+          "validValues": "0,4",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wRegion",
+          "parameterTitle": "Width of region",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": true,
+          "parameterName": "wProt",
+          "parameterTitle": "Width of AXI prot",
+          "default": 3,
+          "parameterType": "architecture",
+          "guiDescription": "Prot bits always set at 3 bits. Please refer to trust zone section of Reference manual",
+          "docID": 232,
+          "validValues": "3",
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 3
+        }
+      ]
+    }
+  ]
+}

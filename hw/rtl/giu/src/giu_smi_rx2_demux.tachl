@@ -1,0 +1,55 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU smi_rx2 demux
+// Author: Benjamin Madon
+//this module is used to decode and forward the response to the trace capture block. 
+//=============================================================================
+
+
+
+var m = obj.userLib;
+var u=obj.lib;
+var newToOldStyleInterface	= m.newToOldStyleInterface.bind( null, m );
+var utilFunctions   = m.lib_utils;
+
+var p =u.getParam();
+u.nInterfaces(p.interfaces);
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+wire isDtwDbgRsp;
+assign isDtwDbgRsp = \=p.interfaces["smirx_in"].name+"ndp_msg_type"=\ == \=p.cmType["DtwDbgRsp"]=\;
+
+\jsbegin 
+var interfaceFunc         = new obj.userLib[p.interfaces["smirx_in"].interface];
+var smirx_inInterface          = interfaceFunc.getSignals(p.interfaces["smirx_in"].params);
+\jsend
+
+\jsbegin
+for (var sig in smirx_inInterface.ndp_){
+
+    if(smirx_inInterface.ndp_[sig].width > 0 & sig != "msg_valid" & sig != "msg_ready") {
+
+\jsend
+    assign \=p.interfaces["smirx_out"].name+"ndp_"+sig=\ = \=p.interfaces["smirx_in"].name+"ndp_"+sig=\;
+    assign \=p.interfaces["smirx_trace"].name+"ndp_"+sig=\ = \=p.interfaces["smirx_in"].name+"ndp_"+sig=\;
+
+\jsbegin
+    }
+}
+\jsend
+    assign \=p.interfaces["smirx_out"].name+"ndp_msg_valid"=\ =  \=p.interfaces["smirx_in"].name+"ndp_msg_valid"=\ & ~isDtwDbgRsp;
+    assign \=p.interfaces["smirx_trace"].name+"ndp_msg_valid"=\ = \=p.interfaces["smirx_in"].name+"ndp_msg_valid"=\ & isDtwDbgRsp;
+
+\jsbegin
+//the trace path should alwys be ready because the output of teh input pipe is tied to 1.
+\jsend
+    assign \=p.interfaces["smirx_in"].name+"ndp_msg_ready"=\ =  \=p.interfaces["smirx_out"].name+"ndp_msg_ready"=\ ;
+
+
+endmodule

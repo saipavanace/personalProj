@@ -1,0 +1,260 @@
+<h2 id="Ncore3.6IOAIU&amp;IOAIU_SUBSYS:2024w32-BlockingProgress:"><strong>Blocking Progress:</strong></h2><p><a class="external-link" href="https://solvnetplus.synopsys.com/s/case/5004w000030ytaE/issue-master-transaction-isvalid-check-failed" rel="nofollow">https://solvnetplus.synopsys.com/s/case/5004w000030ytaE/issue-master-transaction-isvalid-check-failed</a><br/><a class="external-link" href="https://solvnetplus.synopsys.com/s/case/5004w0000303juS/invalid-covergroups-generated-for-acelite-interface" rel="nofollow">https://solvnetplus.synopsys.com/s/case/5004w0000303juS/invalid-covergroups-generated-for-acelite-interface</a></p><h2 id="Ncore3.6IOAIU&amp;IOAIU_SUBSYS:2024w32-Highlights:"><strong>Highlights:</strong></h2><ul><li><p>Team spent time on dv development work for new feature for 3.6.4 release.</p></li><li><p>Team worked on triaging/fixing DV Jiras for 3.6.4 release</p></li><li><p>Team also worked on snps tb development work, focusing on the snps port interleaving feature for multiported IO-AIUs</p></li></ul><h2 id="Ncore3.6IOAIU&amp;IOAIU_SUBSYS:2024w32-Activities:"><strong>Activities:</strong></h2><p><u>Ajit</u></p><p>Fixed Jira:</p><ul><li><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15064" rel="nofollow">CONC15064</a> Added a test to always inject tag errors, updated the CSR sequence, and added scoreboard logic to check NACK_CE with cycle counter logic.</p></li></ul><p>Debug:</p><ul><li><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15167" rel="nofollow">CONC-15167</a>  Debugged and assigned to Eric, then found it's related to an unsupported snoop transaction.</p></li><li><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15151" rel="nofollow">CONC-15151</a> Debugged and found that it relates to restrictions on the length for coherent transactions, and FSYS is attempting to perform that; assigned it back to Urvish.</p></li></ul><p>Worked on:</p><ul><li><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15194" rel="nofollow">CONC-15194</a>  After debugging the ACE cache model, I found that the index for <code>reeadu_address_area_q</code> is picked randomly with a queue size of 128. After 1000 attempts, we were unable to select addresses that are not in use. I am working on updating the logic also discuse with hema for the same.</p></li><li><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15216" rel="nofollow">CONC-15126</a> Copied Hema's local changes and enabled ACE, ACE-Lite, and AXI with cache IOAIU, but the test is still hanging, so I'm debugging the issue.<br/></p></li></ul><p><u>Priyanka</u></p><ul><li><p>Worked on Task - config updates <br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15197" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15197?src=confmacro" class="jira-issue-key">CONC-15197</a>
+                            </span>
+ <br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14651" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14651?src=confmacro" class="jira-issue-key">CONC-14651</a>
+                            </span>
+ </p></li><li><p>Resolved / worked - <br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15193" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15193?src=confmacro" class="jira-issue-key">CONC-15193</a>
+                            </span>
+ -Fixed Timeout issue <br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15195" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15195?src=confmacro" class="jira-issue-key">CONC-15195</a>
+                            </span>
+ <br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15163" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15163?src=confmacro" class="jira-issue-key">CONC-15163</a>
+                            </span>
+ </p></li><li><p>Worked on <br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15166" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15166?src=confmacro" class="jira-issue-key">CONC-15166</a>
+                            </span>
+ <br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15167" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15167?src=confmacro" class="jira-issue-key">CONC-15167</a>
+                            </span>
+ </p></li></ul><p><u>Hema</u></p><ul><li><p>Guide team in fails triage, resolution and debug, and also snps TB development.</p></li><li><p>Completed DV development work on crucial 3.6.4 Jiras - <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-14649" rel="nofollow">CONC-14649</a>,  <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-14896" rel="nofollow">CONC-14896</a></p></li></ul><p><u>Kavish</u></p><ol start="1"><li><p>Added noDVM stimulus in IOAIU &amp; IOAIU_SUBSYS bench <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-14659" rel="nofollow">CONC-14659</a>.</p></li><li><p>STT utilization with noDVM <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15164" rel="nofollow">CONC-15164</a>. The additional task to verify in configs with ACE interface required several more DVE Tb compile fixes when noDVM was enabled <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15185" rel="nofollow">CONC-15185</a>.</p></li><li><p>DVM bug <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-15163" rel="nofollow">CONC-15163</a>, debugged the issue with order violation. Synopsys VIP is generating illegal stimulus with respect to ARID in DVM complete, Priyanka closed it as she coludn’t reproduce for to create a Synopsy ticket</p></li></ol><h2 id="Ncore3.6IOAIU&amp;IOAIU_SUBSYS:2024w32-Holidays/Leaves:"><strong>Holidays/Leaves:</strong></h2><p />

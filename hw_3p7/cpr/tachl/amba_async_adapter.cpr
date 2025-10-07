@@ -1,0 +1,84 @@
+{
+  "name": "amba_async_adapter",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "",
+      "params": [
+        {
+         "parameterName": "syncDepth",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 2,
+         "minimum": 2,
+         "maximum": 8,
+         "formula": "return system.syncDepth"
+        },
+	{
+         "parameterName": "depth",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 0,
+         "minimum": 0,
+         "maximum": 32,
+         "formula": "return unit.depth"
+        },
+	{
+         "parameterName": "jitterOn",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 0,
+         "minimum": 0,
+         "maximum": 1,
+         "formula": "return system.jitterOn"
+        },
+	{
+         "parameterName": "async",
+         "type": "boolean",
+         "parameterType": "architecture",
+         "default": true
+        },
+        {
+          "parameterName": "interfaces",
+          "type": "object",
+          "reference": "InterfacesParam",
+          "parameterType": "architecture",
+          "description": "Interface parameters"
+        }
+      ]
+    },
+    {
+      "name": "InterfacesParam",
+      "params": [
+        {
+          "parameterName": "inInterface",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.external",
+          "description": "Need Formula from Maestro"
+        },
+	{
+          "parameterName": "outInterface",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.external",
+          "description": "Need Formula from Maestro"
+        },
+        {
+          "parameterName": "inClkInterface",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.clkInt",
+          "parameterType": "architecture",
+          "description": "Need Formula from Maestro"
+        },
+        {
+          "parameterName": "outClkInterface",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.clkInt",
+          "parameterType": "architecture",
+          "description": "Need Formula from Maestro"
+        }
+       ]
+    }
+   ]
+}

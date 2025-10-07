@@ -1,0 +1,106 @@
+<p><style>[data-colorid=s56nftcmhk]{color:#2e74b5} html[data-color-mode=dark] [data-colorid=s56nftcmhk]{color:#4a90d1}[data-colorid=c1eafqn3pd]{color:#252525} html[data-color-mode=dark] [data-colorid=c1eafqn3pd]{color:#dadada}[data-colorid=usen254roj]{color:#252525} html[data-color-mode=dark] [data-colorid=usen254roj]{color:#dadada}[data-colorid=bng9anil31]{color:#252525} html[data-color-mode=dark] [data-colorid=bng9anil31]{color:#dadada}[data-colorid=ztq06elwgi]{color:#2e74b5} html[data-color-mode=dark] [data-colorid=ztq06elwgi]{color:#4a90d1}[data-colorid=q4msa2ro3b]{color:#2e74b5} html[data-color-mode=dark] [data-colorid=q4msa2ro3b]{color:#4a90d1}[data-colorid=yl2byegtgm]{color:#2e74b5} html[data-color-mode=dark] [data-colorid=yl2byegtgm]{color:#4a90d1}[data-colorid=smamfrnoso]{color:#252525} html[data-color-mode=dark] [data-colorid=smamfrnoso]{color:#dadada}[data-colorid=b1mssuy097]{color:#2e74b5} html[data-color-mode=dark] [data-colorid=b1mssuy097]{color:#4a90d1}</style><span class="confluence-anchor-link" id="ACHLRequirements1000-_GoBack"><span class="confluence-anchor-link" id="_GoBack" /></span><br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<span data-colorid="s56nftcmhk">Arteris HDL Metalanguage</span><br />
+<span data-colorid="yl2byegtgm">Requirements</span>
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<span data-colorid="q4msa2ro3b">Manadher Kharroubi</span><br />
+<a class="external-link" href="mailto:manadher@arteris.com" rel="nofollow">manadher@arteris.com</a><br />
+<span data-colorid="ztq06elwgi">Feb 16 2017</span><br />
+<span data-colorid="b1mssuy097">Version 1.0.0</span>
+  <br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+<br class="atl-forced-newline" /></p>
+<h1 id="ACHLRequirements1000-Introduction">Introduction</h1>
+<p><br class="atl-forced-newline" />
+<br class="atl-forced-newline" />
+Flexibility is a major attribute of the Arteris <strong>Network on Chip (NoC)</strong> IP solution. This aspect manifests itself, almost, in all levels of an NoC solution design. In the architectural level, our IP should be able to adapt to variable number and types of initiators (traffic input sockets) and variable number and types of targets (traffic output sockets). In addition to the variability of the number of end points, the topology of the NoC and thereof the connectivity of its nodes is subject to SOC configuration runtime and/or user input decisions. At a lower level of architecture, the components of our NoC will inherit the configurability constraint/requirement from the architecture level and add to it a configurability constraint/requirement linked to the handling of the connectivity and, orthogonally, the possibility of changing the implementation or behavior of the same component with the same interface (i.e. Round robin Arbiter vs priority Arbiter, Any arbiter implementation vs a newer better implementation or simply a more use case specific implementation).<br />
+A second key attribute of the Arteris NoC IP solution is quality (absence of hardware bugs). The reason is that the NoC is central in a SoC, and any defect can immediately translate to a nonfunctioning chip, which is a disaster both for the customer and for Arteris. Quality of such a complex and configurable IP requires a rigorous divide-and-conquer approach to verification: the NoC is build up by assembling together fully and verified building blocks, which have been verified non-only for functional correctness in one configuration, but for functional correctness for the complete configuration space. This also requires a robust reuse methodology, where critical components are designed once to be as fast, as small and as high performance as possible, then enforcing to reuse these components, and only them, to build bigger structures.<br />
+As can be seen, combining reuse, assembly and configuration of smaller blocks to build the NoC, in a way that covers a wide configuration space, at the highest level of quality at all time, requires dedicated support from the development environment. <br />
+To enable the design and the use of its technologythis, Arteris has chosen to design and implement a HDL new development language that is centered on configurability, reuse, and quality. The design of a language opens the door for the opportunity to easily enhance designer productivity by offering language shortcuts to commonly used patterns in HW design, minimize bugs and simplify team collaboration   by enforcing company design. Having the ability to write HW description in our own language offers our HW engineers an entry point to create metadata   that describes the design components at an abstraction level that enables the software component of our solution to use HW attributes directly derived from the HW description. The SW can, also, generate its own metadata from the ACHL WHW description and cache it by attaching it to the HW description Data Structure. <br />
+<span data-colorid="c1eafqn3pd">A&nbsp;<strong>Hardware Description Language</strong>&nbsp;(<strong>HDL</strong>) is a specialized&nbsp;computer language&nbsp;used to describe the structure and behavior of&nbsp;electronic circuits, and most commonly,&nbsp;digital logic&nbsp;circuits.</span> <br />
+<span data-colorid="usen254roj">A hardware description language enables a precise,&nbsp;formal&nbsp;description of an electronic circuit that allows for the automated analysis and&nbsp;simulation&nbsp;of an electronic circuit. It also allows for the synthesis of a HDL description into a&nbsp;netlist&nbsp;(a specification of physical electronic components and how they are connected together), which can then be&nbsp;placed and routed&nbsp;to produce the&nbsp;set of masks&nbsp;used to create an&nbsp;integrated circuit.</span><br />
+<span data-colorid="smamfrnoso">A hardware description language looks much like a&nbsp;programming language&nbsp;such as&nbsp;C; it is a textual description consisting of expressions, statements and control structures. One important difference between most programming languages and HDLs is that HDLs explicitly include the notion of time.</span><br />
+<span data-colorid="bng9anil31">For its new development language, Arteris does not need to build a Hardware Description Language as we just described it, instead, it has chosen to focus solely on the parametrized generation of logic structures. There is no foreseeable need to implement a notion of time or anything related to simulation; instead the need is to allow designers to create quickly and efficiently digital logic structures, offering a higher level of abstraction for the most common HW macro functions.</span><br />
+For implementation effort and expertise restrictions, Arteris decided to go for a language overlay over a scripting language (Java Script in a first implementation) and named the metalanguage Arteris Configurable Hardware Language (ACHL). ACHL is meant to be used by both our hardware designers and software designers.<br />
+An ACHL program is not meant to be simulated, instead, it need to be run, and as a result, it will produce a hardware description of the implemented functions in another target language suitable for simulation and/or synthesis, such as Verilog or SystemC.<br />
+From the designer point of view, ACHL is meant to both enable/empower and simplify the hardware implementation process by providing a framework that allows for maximum configurability for the structure and the behavior of the described hardware while requiring, relatively, less verbosity than commercial HDLs. Arteris Software should be able to perform custom configuration on customer site taking into account Customer input.<br />
+From a Software architecture point of view, ACHL may, also, be used as a mean to represent higher level aspects of the design in the form of metadata classified and registered (attached to) at the design level and individual HW component level; and as such will be a foundation on top of which the software stack will be built. The uncertainty in the statement above is meant to leave some room for the designer of the Data Model of the software to make a decision on the best way to design and emplace the metadata describing no HDL specific aspects of the design description.</p>
+<h1 id="ACHLRequirements1000-Configurability">Configurability</h1>
+<p><br class="atl-forced-newline" />
+Configurability (Polymorphism) is generally achieved at different levels of any program (HDL description) code.</p>
+<h2 id="ACHLRequirements1000-Textlevelconfiguration">Text level configuration</h2>
+<p><br class="atl-forced-newline" />
+At the level of a compilation unit (the file that contains the actual code) a preprocessor can alter the content of a file by either substituting special text (macros) with predefined replacement to it, conditionally omit some parts of the text or replicate a specific piece of text with minor changes that may be related to the specific code generation iteration number. At this level the configuration is agnostic to any semantics of the code it is manipulating. That's why the C preprocessor is used in countless compilers or interpreters of completely different languages.<br />
+The current implementation of the ACHL compiler has defined a textual configuration step that uses a specific format of underlying language comments to insert scripting code that is executed only once for the purpose of code generation.<br />
+It is unclear as this level of the design whether this capability will be kept moving forward, as it might make more difficult an automatic link between the ACHL description and the upper levels of the software responsible for assembling them.</p>
+<h2 id="ACHLRequirements1000-Semantic/executionlevelconfiguration">Semantic/execution level configuration</h2>
+<p><br class="atl-forced-newline" />
+Textual configuration, being semantic agnostic, does not allow any change based on actual attributes of the construct being added or configured. ACHL should implement the necessary framework to allow for a design aware configuration of all its components. The task may be achieved by HW builder functions of the underlying language (i.e. Java Script) taking design parameters as input and producing the right HW constructs and connectivity.<br />
+The current implementation of the ACHL compiler allows the creation of the architectural components of any Hardware module by a call to a function defined in Java Script. The conditional and iterative call to those functions will result in the appropriate configuration for the described HW components.<br />
+The encapsulation of the declaration of HW items in function calls allows, also, to implement a library of builder functions that will provide entry points for enforcing the company HW design guide lines and alleviating some of the verbosity issues introduced by the use of Java Script.<br />
+We anticipate that this level of configuration could be based on the concept of parameters as constraints, which propagate from an upper level of the hierarchy to the level below recursively, when the program is run and HDL generation functions are called. We see two kind of parameters propagation: at instantiation of a sub-module inside a module, and at connection of two interfaces. To allow maximum flexibility, parameters need to be expressed as constraints, and propagation need to be done by a constraint solver.<br />
+The same technique allows also the use of the same library functions to implement proprietary <em>linting</em> checks.</p>
+<h1 id="ACHLRequirements1000-Hardwareabstractionandmetadata">Hardware abstraction and metadata</h1>
+<p><br class="atl-forced-newline" />
+The parsing execution of an ACHL program produces a of a digital HW description code, from results in a data model created by such program, made of data structure plus explicit and/or implicit semantics, that formally describes the design intent. Such a generated HW description allows the full verification of the functionality of the digital circuit using 3rd party simulation tools, and the actual synthesis of a more refined structure (gate level) that describes the same circuit using 3rd party logic synthesis tools. That input allows for further design and architecture decisions linked mostly to timing and layout and further physical level processes that will, ultimately, lead to a successful implementation of an actual circuit on a silicon die.<br />
+The compilation execution of anof ACHL program should result in the build of a well-defined formal representation of any Arteris solution design. That representation should have a software intelligible formal definition that will allow our software to:</p>
+<ol>
+	<li>Represent Arteris HW elements in a runtime configurable format. (configuration should be easily done at customer site with minimal user intervention.</li>
+	<li>Read relevant design information about the Arteris actual post configuration solutionWhat is it?.</li>
+	<li>Use a high level of representation of the Arteris solution to retarget either RTL generation to different HDL languages or modeling to functional simulation languages like SystemC.</li>
+	<li>Use an easy mechanism to introduce conditional pipelining into the design.</li>
+	<li>This can translate to the requirement that ACHL implements a data flow paradigm since it's easy to insert pipeline stages at various points in a data-flow description without impacting the overall functionality</li>
+	<li>Attach metadata relevant to any specific procedure (like timing or area estimation) of our SW to the relevant HW elements.</li>
+	<li>Use a suitable, easy to use, Application Procedural Interface (API) to parse both the design and the relevant metadata.</li>
+	<li>Easily inject customer implemented component (in known industry HDL languages as well as in ACHL) within Arteris solutions.</li>
+	<li>This requires productizing ACHL (or a part of it) to enable our customers to write their own components and seamlessly integrate their generation with the other Arteris IP</li>
+	<li>Serialize and store partially or completely elaborated ACHL representations on disk.</li>
+	<li>Rebuild ACHL data structures from serialized data.</li>
+	<li>Allow the partition of resulting RTL code along customer defined boundaries and produce RTL code in separate directories.</li>
+</ol>
+
+
+<p>ACHL as a language dedicated to generation of parametrized digital logic structures, need to offer powerful abstraction to describe clock and clock domains (automatic routing of clock signals, reset signals; automatic clock adaptations of all kind), power and power domains (automatic generation of activity signals, high level clock gating, power mode transitions, etc.). These areas are a very common source of design mistakes there is a tremendous productivity gain if the language offers the right level of abstraction.<br />
+&nbsp;<br />
+ACHL shall offer constructs for the most common digital design patterns Arteris will have to use: <br />
+state machines; <br />
+storage and access functions (how to read and write in the storage using well known policies like FIFO, LIFO, dictionaries &ndash; access with a key &ndash; lookup, etc.); <br />
+complex operators like priority encoding, lead zero position, arithmetic and type cast&hellip; <br />
+&nbsp;&nbsp;<br />
+As for the generators, need strong support for parametrization through constraint propagations. As explained before, there are at least two type of parameters sets: instance parameters (defined and/or inherited when a generator is instantiated inside another one) and connection parameters (defined and/or inherited when two interfaces are connected). Parameters are constraints in nature and a constraint solver shall be used to propagate them between interconnected elements.
+<br class="atl-forced-newline" />
+The language need to offer functions to help with validation, like automatic generation of coverage directives for the generated elementary functions, automatic testbench creation, etc (TBD).<br />
+The language should offer a clear separation between the description of the functionality, and the insertion of pipelines at different locations, to enable automatic configuration of the pipelining under implementation constraints such as clock frequency, technology, distance spanning etc. (TBD).<br />
+The ACHL infrastructure should have support for automatic generation of synthesis scripts, like declaration of timing exceptions at asynchronous boundaries, clock gating, etc.<br />
+The ACHL lanh=guage should have provisions to generate other kind of output beyond the HDL implementation of the design, so that generators can be programmed to produce other form of metadata description of their modules, such as IPXACT, documentation, area, performance and power estimates, and so on.</p>
+<h1 id="ACHLRequirements1000-Implementationconsiderations">Implementation considerations</h1>
+<p><br class="atl-forced-newline" />
+A business decision has been taken to avoid using the Python language as undelaying language for ACHL. Other than the business decisions, the usual SW framework constraints should be observed, it would be helpful to enumerate a set of implementation constraints:</p>
+<ol>
+	<li>Reasonable intuitive parallels with existing HDLs (i.e. easy deduction of functionality from ACHL names like &quot;definePort&quot; or &quot;defineInstance&quot; to denote industry wide known actions of defining a HW port or a module instantiation)</li>
+	<li>Reasonable naming practices in cross module naming and instantiations.</li>
+	<li>Reasonable verbosity requirements. The required verbosity should alleviate the burden of writing HDL description using existing HDLs by minimizing the amount of written code and avoid complicating the HW description process to the point where typing errors become more likely.</li>
+	<li>Reasonable debugging effort requirements. When a bug is found either in ACHL compilation or in the resulting RTL compilation or simulation. It should be reasonably easy to trace back the failure to the actual faulty ACHL code.</li>
+	<li>Reasonable ACHL compilation time. The memory usage and runtime of our compiler should allow for the handling of our existing and projected designs with reasonable machine constraints (amount of RAM and #CPUs).</li>
+	<li>Reasonable memory usage (our designs should be compiled with reasonable RAM requirements compared to industry EDA tools)</li>
+	<li>Excellent stability, since ACHL programs will be run by the users to obtain the HDL implementation of the Arteris IP.</li>
+</ol>
+
+
+<p><br class="atl-forced-newline" />
+<br class="atl-forced-newline" /></p>

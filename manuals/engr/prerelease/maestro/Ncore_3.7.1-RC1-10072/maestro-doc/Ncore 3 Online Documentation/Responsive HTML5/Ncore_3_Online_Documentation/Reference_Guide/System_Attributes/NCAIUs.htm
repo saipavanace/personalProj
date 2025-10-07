@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>NCAIUs</title>
+<meta content="NCAIUs" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Reference_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "4.3.1_1";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Reference_Guide/System_Attributes/Addressing_and_Memory_Regions.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Reference_Guide/System_Attributes/Caches.htm">
+ <meta name="topic-breadcrumbs" content="Reference Guide > System Attributes" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="993547"><a id="1094_Heading1_993547" name="1094_Heading1_993547"></a>3.3 NCAIUs</p><p class="BodyAfterHead" id="993564">A non&#x2D;coherent agent interface unit (NCAIU) can be configured to serve in many different roles.</p><p class="Body" id="993671">A Multi&#x2D;ported AXI NCAIU is an NCAIU which can be configured with 2, 4, or 8 identical AXI4&#160;agent ports. Transaction requests arriving at a Multi&#x2D;ported NCAIU will be address interleaved across all the ports, according to user specified bits. Each NCAIU core will see a mutually exclusive set of addresses. If a proxy cache is specified then it will implement a set of interleaved proxy cache instances, each associated with a given AXI port. The size of each proxy cache instance can be configured from 4kB to 8Mb in powers of 2. All proxy cache instances will be the same size.</p><p class="Body" id="993673">An NCAIU with a proxy cache can access coherent and non&#x2D;coherent traffic. An address&#x2D;based coherency mode exists with a coherency bit added to the address map. This allows the AXI NCAIU to access both the DMI coherent address space as well as the non&#x2D;coherent address space of the DII.</p><p class="Body" id="993675">To enable support for legacy agents that do not support read data interleaving, interleaving for the NCAIU can be turned off. In this mode, data returned from the cache will return as non&#x2D;interleaved.</p><p class="Body" id="1001305">When interleaving is disabled, data from the network is stored in the data buffer and only forwarded to the agent when full lines have been received. All requests for a given AXID is issued before requests for succeeding AXIDs is provided. This mode will also disable SMI bypasses.</p></div>
+</body>
+</html>

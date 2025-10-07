@@ -1,0 +1,61 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU split.
+//
+//////////////////////////////////////////////////////////////////////////
+var u = obj.lib;
+var m = obj.userLib;
+
+var NUM = u.getParam('NUM');
+var assertOn = u.getParam('assertOn');
+
+u.paramDefault('clkAssertInterface', 'object', null);
+var clkAssertInterface     = m.hierGetParam('clkAssertInterface', u.getParam);
+u.interface(clkAssertInterface.name, 'slave', clkAssertInterface.signals);
+
+u.port('output','ready_o',1);
+u.port('input','valid_i',1);
+u.port('input','ready_i',NUM);
+u.port('output','valid_o',NUM);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+\=u.getPorts('\n    ')=\
+);
+
+assign ready_o = (& ready_i);
+
+\js	for(let i=0; i<NUM; i=i+1) {
+		assign valid_o[\=i=\] = valid_i & (&(ready_i | ({{\=NUM-1=\{1'b0}},1'b1}<<\=i=\)));
+\js	}
+
+//////////////////////////////////////////////////////////////////
+\jsbegin
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off
+// coverage off
+
+assert_never_unknown #(0, \=2*(NUM+1)=\) assert_state(
+        .clk            (clk_i),
+        .reset_n        (reset_ni),
+        .qualifier      (reset_ni),
+        .test_expr      ({valid_i, ready_i, ready_o, valid_o})
+);
+// coverage on
+// synopsys translate_on
+// pragma synthesis_on
+`endif
+\js }
+
+endmodule

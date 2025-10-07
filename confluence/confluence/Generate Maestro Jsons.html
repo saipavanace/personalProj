@@ -1,0 +1,21 @@
+<h1 id="GenerateMaestroJsons-gen_cfg.pl">gen_cfg.pl</h1><p>The gen_cfg.pl script can be used to generate all supported maestro configurations that are used by the models. To understand how to run maestro itself to generate these, see <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16167739/Maestro+Note" data-linked-resource-id="16167739" data-linked-resource-version="44" data-linked-resource-type="page">Maestro Note</a></p><h1 id="GenerateMaestroJsons-MaestroExamples">Maestro Examples</h1><ul><li>input files are not needed for the default configurations</li><li>run command: gen_cfg.pl --queue</li><li>output json: perf-vc/tests/json/maestro_example/hw_config_*.top.level.rtl.csr.json</li><li>Note that output json is not expected to be checked in, but always generated so that it is always current with latest maestro</li></ul><h1 id="GenerateMaestroJsons-hw-test-projects">hw-test-projects</h1><ul><li>input tcl files are from hw-test-projects/ncore_v3.0_configs/fsys_config/</li><li>run command: gen_cfg.pl --proj --queue</li><li>output json: perf-vc/tests/json/hw-test-projects/hw_cfg_*.top.level.rtl.csr.json</li><li>Note that these json are currently checked in</li></ul><h1 id="GenerateMaestroJsons-GenCfgDetails">Gen Cfg Details</h1><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Gen Cfg Detail</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false; theme: Confluence" data-theme="Confluence">Name:
+       gen_cfg.pl - generate standard cfg jsons
+
+Usage:
+       gen_cfg.pl [--help] [--queue] [--proj]
+
+Description:
+       Run maestro to generate standard jsons in perf-vc/tests/json
+       -h , --help
+              Print this message and exit
+       -p , --proj
+              Use tcl files in hw-test-projects from workspace and put
+              json file in perf-vc/tests/json/hw-test_projects
+              Default is to use maestro configs an dput in maestro_examples
+       -q , --queue
+              Run on the queue in parallel instead of in order locally
+       -k , --keep
+              Keep all of the files in the run directory.
+              Default is to keep only if there are fails.</pre>
+</div></div><p> </p><p> </p>

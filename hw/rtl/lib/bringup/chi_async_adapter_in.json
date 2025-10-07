@@ -1,0 +1,26 @@
+{   "jitterOn" : 0,
+    "async" : true,
+    "depth" : 2,
+    "interfaces" : {
+        "clkInterface" :  {"name" : "a_",
+                             "direction" : "slave",
+                             "interface" : "InterfaceCLK"},
+        "inInterface" :  {"name" : "in_",
+                          "direction" : "slave",
+                          "params" : {"file_path" : "$WORK_TOP/rtl/lib/bringup/chi_params.json"},
+                          "interface" : "InterfaceCHI"},
+        "asyncInterface" :  {"name" : "int_async_",
+                             "direction" : "master",
+                             "params" : {"file_path" : "$WORK_TOP/rtl/lib/bringup/async_params.json"},
+                             "interface" : "InterfaceAsyncFIFO"},
+        "protectionInterface" :  {"name" : "pin_",
+                                  "direction" : "master",
+                                  "params" : {"file_path" : "$WORK_TOP/rtl/lib/bringup/prot_parms.json"},
+                                  "interface" : "InterfacePROT"}
+    },
+    "protectionStyle" : {"protection"   : "ecc",
+                         "forceErr"     : true,
+                         "scrub"        : true,
+                         "useCorrected" : true,
+                         "protWidth"    : 16}
+}

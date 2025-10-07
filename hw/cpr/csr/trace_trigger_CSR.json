@@ -1,0 +1,370 @@
+[
+    {
+        "name": "xTCTRLR0",
+        "description": "Trace Control Register",
+        "csrDescription": "Trace Control Register",
+        "addressOffset": 0,
+        "fields": [
+            {
+                "name": "native_trace_en",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "0: Ignore native trace signaling. 1: Allow native trace signaling to set trigger",
+                "reset": 1
+            },
+            {
+                "name": "addr_match_en",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace on address range match",
+                "reset": 0
+            },
+            {
+                "name": "opcode_match_en",
+                "bitOffset": 2,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace on opcode match",
+                "reset": 0
+            },
+            {
+                "name": "memattr_match_en",
+                "bitOffset": 3,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace on memory attribute match",
+                "reset": 0
+            },
+            {
+                "name": "user_match_en",
+                "bitOffset": 4,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace if there is a match on specified user bits",
+                "reset": 0
+            },
+            {
+                "name": "target_type_match_en",
+                "bitOffset": 5,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace if there is a match on specified target type",
+                "reset": 0
+            },
+            {
+                "name": "hut",
+                "bitOffset": 6,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Specify target type. 0: DMI, 1: DII",
+                "reset": 0
+            },
+            {
+                "name": "hui",
+                "bitOffset": 7,
+                "bitWidth": 5,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Specifies the HUI NunItID for DII, and MIG number for DMI",
+                "reset": 0
+            },
+            {
+                "name": "Rsvd0",
+                "bitOffset": 12,
+                "bitWidth": 6,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bits 17:12",
+                "reset": 0
+            },
+            {
+                "name": "range",
+                "bitOffset": 18,
+                "bitWidth": 6,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Address range size. This field indicates a binary number from 0 to 31 from which region's size is calculated as (Size of IG) * 2^(Size + 12) bytes",
+                "reset": 0
+            },
+            {
+                "name": "Rsvd1",
+                "bitOffset": 24,
+                "bitWidth": 2,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bits 25:24",
+                "reset": 0
+            },
+            {
+                "name": "aw",
+                "bitOffset": 26,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Match memattr on AW channel",
+                "reset": 0
+            },
+            {
+                "name": "ar",
+                "bitOffset": 27,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Match memattr on AR channel",
+                "reset": 0
+            },
+            {
+                "name": "memattr",
+                "bitOffset": 28,
+                "bitWidth": 4,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Specifies memory attribute. Memattr on CHI, AxCache on AXI/ACE/ACE-Lite/ACE-Lite-E",
+                "reset": 0
+            }
+        ]
+    },
+    {
+        "name": "xTBALR0",
+        "description": "Trace Base Address Low Register",
+        "csrDescription": "Trace Base Address Low Register",
+        "addressOffset": 4,
+        "fields": [
+            {
+                "name": "base_addr_lo",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Lower order bits 43:12 of the base address of the region"
+            }
+        ]
+    },
+    {
+        "name": "xTBAHR0",
+        "description": "Trace Base Address High Register",
+        "csrDescription": "Trace Base Address High Register",
+        "addressOffset": 8,
+        "fields": [
+            {
+                "name": "base_addr_hi",
+                "bitOffset": 0,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Lower order bits 51:44 of the base address of the region"
+            }
+        ]
+    },
+    {
+        "name": "xTOPCR0",
+        "description": "Trace Opcode Register",
+        "csrDescription": "Trace Opcode Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "opcode1",
+                "bitOffset": 0,
+                "bitWidth": 15,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Opcode 1 (mapping defined based on Native interface, MSB unused bits are RO reserved)\nCHI : CHI opcode field.\nACE : {ATOP,DOMAIN,SNOOP}\nAXI : Not applicable."
+            },
+            {
+                "name": "valid1",
+                "bitOffset": 15,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Valid 1"
+            },
+            {
+                "name": "opcode2",
+                "bitOffset": 16,
+                "bitWidth": 15,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Opcode 2 (mapping defined based on Native interface, MSB unused bits are RO reserved)\nCHI : CHI opcode field.\nACE : {ATOP,DOMAIN,SNOOP}\nAXI : Not applicable."
+            },
+            {
+                "name": "valid2",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Valid 2"
+            }
+        ]
+    },
+    {
+        "name": "xTOPCR1",
+        "description": "Trace Opcode Register",
+        "csrDescription": "Trace Opcode Register",
+        "addressOffset": 16,
+        "fields": [
+            {
+                "name": "opcode3",
+                "bitOffset": 0,
+                "bitWidth": 15,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Opcode 3 (mapping defined based on Native interface, MSB unused bits are RO reserved)\nCHI : CHI opcode field.\nACE : {ATOP,DOMAIN,SNOOP}\nAXI : Not applicable."
+            },
+            {
+                "name": "valid3",
+                "bitOffset": 15,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Valid 3"
+            },
+            {
+                "name": "opcode4",
+                "bitOffset": 16,
+                "bitWidth": 15,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Opcode 4 (mapping defined based on Native interface, MSB unused bits are RO reserved)\nCHI : CHI opcode field.\nACE : {ATOP,DOMAIN,SNOOP}\nAXI : Not applicable."
+            },
+            {
+                "name": "valid4",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Valid 4"
+            }
+        ]
+    },
+    {
+        "name": "xTUBR0",
+        "description": "Trace User Bits Register",
+        "csrDescription": "Trace User Bits Register",
+        "addressOffset": 20,
+        "fields": [
+            {
+                "name": "user",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "User bits. Width parameterized."
+            }
+        ]
+    },
+    {
+        "name": "xTUBMR0",
+        "description": "Trace User Bits Mask Register",
+        "csrDescription": "Trace User Bits Mask Register",
+        "addressOffset": 24,
+        "fields": [
+            {
+                "name": "user_mask",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "User bits. Width parameterized."
+            }
+        ]
+    }
+]

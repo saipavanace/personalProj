@@ -1,0 +1,1704 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DMI Transaction Control Block
+// Author: Travis Johnson
+//=============================================================================
+
+// Variables
+var u                       = obj.lib;
+var libUtils				= obj.userLib;
+var bundleFunctions         = obj.userLib.bundleFunctions;
+var readDataIdWidth         = obj.lib.getParam('readDataInterface', 'id');
+var axiArIdWidth            = obj.lib.getParam('axiInterface', 'ar_', 'id');
+var axiAwIdWidth            = obj.lib.getParam('axiInterface', 'aw_', 'id');
+var wAddr                   = obj.lib.getParam('wAddr');
+var numAtomicEntries        = 4;
+var numMergeEntries         = 4;
+var wAtomicOpType           = 3;
+var wAtomicType             = 2;
+var nRttEntries             = obj.lib.getParam('nRttCtrlEntries');
+var wData                   = obj.lib.getParam('wData');
+var wDwid                   = obj.lib.getParam('returnDataInterface', 'dwid');
+var useCmc                  = obj.lib.getParam('useCmc');
+var useAtomic               = obj.lib.getParam('useAtomic');
+var cmType                  = obj.lib.getParam('cmType');
+var log2ceil                = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+var wBeat                   = log2ceil(obj.lib.getParam('nBeats'));
+var wId                     = log2ceil(nRttEntries);
+var useScratchpad           = obj.lib.getParam('useScratchpad');
+var transCsrInterface       = obj.lib.getParam('transCsrInterface');
+var ccpParams               = obj.lib.getParam('ccpParams');
+var wAddrCAM                = obj.lib.getParam('wAddrCAM');
+var returnDataInterface     = obj.lib.getParam('returnDataInterface');
+var wUser		    = obj.lib.getParam('returnDataInterface', 'user');
+var fillInterface           = obj.lib.getParam('fillInterface')
+var clkInterface            = obj.lib.getParam('clkInterface');
+var dwsPerBeat              = wData/64;
+var useQos                  = obj.lib.getParam('useQos');
+var wQos                    = returnDataInterface.qos;
+var wSize                   = obj.lib.getParam('rttLookup', 'size');
+var nDtwMergeMrdLateInFlight= obj.lib.getParam('nDtwMergeMrdLateInFlight');
+var wCacheLineOffset        = obj.lib.getParam('wCacheLineOffset');
+var wBytesPerBeat           = Math.log2(wData/8);
+var readAllocateInterface   = obj.lib.getParam('readAllocateInterface');
+var wNS                     = readAllocateInterface.ns;
+var wCmType                 = readAllocateInterface.cm_type;
+var wMpf2                   = obj.lib.getParam('readAllocateInterface', 'mpf2');
+var wAiuId                  = obj.lib.getParam('readAllocateInterface', 'aiu_id');
+var wFPortId                = obj.lib.getParam('wFPortId');
+var wIdplusone = wId + 1;
+var nWttEntries             = obj.lib.getParam('nWttCtrlEntries');
+var wIdWtt                  = log2ceil(nWttEntries);
+var wIdWttplusone = wIdWtt + 1;
+var priorityThreshold       = obj.lib.getParam('priorityThreshold');
+var assertOn                = obj.lib.getParam('assertOn');
+var enableReadDataInterleaving  = obj.lib.getParam('enableReadDataInterleaving');
+if(enableReadDataInterleaving){
+var useExRdDataMem          = obj.lib.getParam('useExRdDataMem');
+var rdBufferMemoryInterface = obj.lib.getParam('rdBufferMemoryInterface');
+var rdBufferProtType        = obj.lib.getParam('rdBufferProtType');
+var rdBufferGen             = obj.lib.getParam('rdBufferGen');
+var rdBufferParam           = obj.lib.getParam('rdBufferParam');
+}
+var ASILB = obj.lib.getParam("ASILB");
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore if env ncore_3p7 */
+if(ASILB){
+var rtt_flop_bundle = obj.lib.getParam("rtt_flop_bundle");
+var wtt_flop_bundle = obj.lib.getParam("wtt_flop_bundle");
+
+
+obj.lib.interface('rtt_',          'master', rtt_flop_bundle);
+obj.lib.interface('wtt_',          'master', wtt_flop_bundle);
+}
+//
+// Interfaces
+//
+// Inputs
+obj.lib.interface('', 'slave', obj.lib.getParam('clkInterface'));
+obj.lib.interface('read_alloc_', 'slave', obj.lib.getParam('readAllocateInterface'));
+obj.lib.interface('write_alloc_', 'slave', obj.lib.getParam('writeAllocateInterface'), ['id']);
+obj.lib.interface('read_data_', 'slave', obj.lib.getParam('readDataInterface'));
+obj.lib.interface('write_resp_', 'master', obj.lib.getParam('axiInterface', 'b_'));
+obj.lib.interface('write_res_data_', 'slave', obj.lib.getParam('writeDataInterface'), ['id']);
+obj.lib.interface('read_cam_', 'slave', obj.lib.getParam('camAddrInterface'));
+obj.lib.port('output', 'read_cam_match_fill', 1);
+obj.lib.interface('rtt_cam_',  'slave', obj.lib.getParam('camRttVectorInterface'));
+obj.lib.interface('write_cam_', 'slave', obj.lib.getParam('camAddrInterface'));
+obj.lib.port('input', 'read_alloc_bus_valid', 1);
+obj.lib.port('input', 'read_alloc_fill', 1);
+obj.lib.port('input', 'read_alloc_sp', 1);
+obj.lib.port('input', 'write_alloc_evict', 1);
+obj.lib.port('output', 'rtt_dealloc_vec', nRttEntries);
+obj.lib.port('output', 'rtt_dealloc_valid', 1);
+obj.lib.port('output', 'rtt_dealloc_id', wId);
+obj.lib.port('output', 'read_cam_match_pmon', 1);
+obj.lib.port('output', 'write_cam_match_pmon', 1);
+obj.lib.port('output', 'pmon_rtt_alloc_id_vec', nRttEntries);
+obj.lib.port('output', 'pmon_wtt_alloc_id_vec', nWttEntries);
+obj.lib.port('output', 'wtt_dealloc_vec', nWttEntries);
+if(useAtomic){
+obj.lib.port("output","nb_atomic",3);
+}
+if ( useAtomic ) {
+obj.lib.interface('atomic_op_', 'slave', obj.lib.getParam('writeProtDataInterface'));
+obj.lib.interface('atomic_rd_', 'slave', obj.lib.getParam('returnDataInterface'));
+obj.lib.port('input', 'atomic_rd_sp', 1);
+}
+
+if ( useCmc ) {
+obj.lib.port('input', 'ccp_cache_fill_fifo_avail', 1);
+obj.lib.port('input', 'ccp_cache_fill_done', 1);
+obj.lib.port('input', 'ccp_cache_fill_done_id', wId);
+obj.lib.port('input', 'ccp_p1_valid', 1);
+obj.lib.port('input', 'read_write_addr_s_pop_ready_p1', 1);
+
+}
+else {
+obj.lib.port('input', 'write_req_valid', 1);
+obj.lib.port('input', 'write_req_ready', 1);
+obj.lib.port('input', 'read_req_valid', 1);
+obj.lib.port('input', 'read_req_ready', 1);
+}
+
+obj.lib.port('input',   'csr_UEDR_TimeoutErrDetEn', 1);
+obj.lib.port('input',   'csr_UEDR_TimeoutReset',    1);
+obj.lib.port('input',   'csr_timeout_threshold',    31);
+obj.lib.port('output',  'tt_timeout_ue_valid',        1);
+obj.lib.port('output',  'tt_timeout_ue_ns',         wNS, "reg",true);
+obj.lib.port('output',  'tt_timeout_ue_addr',      wAddr,"reg",true);
+obj.lib.port('output',  'tt_timeout_ue_id',     12,"reg",true);
+
+obj.lib.port('output', "tt_timeout_ue_transaction_type",2,"reg",true);
+obj.lib.port('output', 'pmon_num_active_wtt_entries', wIdWttplusone);
+obj.lib.port('output', 'pmon_num_active_rtt_entries', wIdplusone);
+
+
+
+// Outputs
+obj.lib.interface('read_trans_', 'master', obj.lib.getParam('readTransactionInterface'));
+obj.lib.interface('write_trans_', 'master', obj.lib.getParam('writeTransactionInterface'));
+obj.lib.interface('write_data_', 'master', obj.lib.getParam('writeDataInterface'));
+obj.lib.interface('return_data_', 'master', obj.lib.getParam('returnDataInterface'));
+obj.lib.interface('fill_data_', 'master', obj.lib.getParam('fillInterface'));
+obj.lib.interface('return_resp_', 'master', obj.lib.getParam('writeResponseInterface'));
+obj.lib.interface('mrg_', 'master', obj.lib.getParam('writeDataBufferInterface'));
+obj.lib.interface('', 'master', obj.lib.getParam('transCsrInterface'));
+
+if(useExRdDataMem) {
+    obj.lib.interface('', 'master', rdBufferMemoryInterface);
+} 
+
+obj.lib.port('output', 'read_alloc_id', wId);
+
+if (useQos & priorityThreshold){
+    obj.lib.port('output', 'RTT_threshold_reached' ,1);
+    obj.lib.port('input','RttQoSRsv',8);
+    obj.lib.port('output', 'WTT_threshold_reached' ,1);
+    obj.lib.port('input','WttQoSRsv',8);
+}
+
+var wttLookup = u.getParam("wttLookup");
+var atomicFillInterface = {
+    ns:     useAtomic * 1,
+    addr:   useAtomic * wAddr,
+    dirty:  useAtomic * 1,
+    sp:     useAtomic * useScratchpad * 1
+}
+
+if(useAtomic) {
+var atomicMemInterface = Object.assign({}, returnDataInterface);
+['mpf1', 'size', 'intf_size'].forEach(e => delete atomicMemInterface[e]);
+atomicMemInterface['sp'] = 1;
+} else {
+var atomicMemInterface = {};
+}
+// Copy read data interface
+var readDataPlusLookupInterface = Object.assign({}, obj.lib.getParam('readDataInterface'));
+// Add RTT return id field
+readDataPlusLookupInterface['return_id'] = obj.lib.getParam('returnDataInterface', 'id');
+if(obj.lib.getParam("nExclusiveEntries")>0){
+readDataPlusLookupInterface['ex_pass'] = 1;
+}
+// Add rtt Lookup interface fields 
+Object.keys(obj.lib.getParam('rttLookup')).forEach(function(key) {
+    readDataPlusLookupInterface[key] = obj.lib.getParam('rttLookup', key);
+});
+//console.log("DMI_TRANSACTION_CONTROL:readDataPlusLookupInterface = \n"+JSON.stringify(readDataPlusLookupInterface,null,8));
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+    
+    // self defined atomic types encoding for local use
+    localparam  LD      = 2'b0,
+                STR     = 2'b01,
+                COMPARE = 2'b10,
+                SWAP    = 2'b11;
+
+    localparam  MRG_INV = \=cmType['DtwMrgMrdInv']=\,
+                MRG_SCLN= \=cmType['DtwMrgMrdSCln']=\,
+                MRG_SDTY= \=cmType['DtwMrgMrdSDty']=\,
+                MRG_UCLN= \=cmType['DtwMrgMrdUCln']=\,
+                MRG_UDTY= \=cmType['DtwMrgMrdUDty']=\;
+
+    localparam ATM_LD  = \=cmType['CmdRdAtm']=\,
+               ATM_STR = \=cmType['CmdWrAtm']=\,
+               ATM_COMP= \=cmType['CmdCompAtm']=\,
+               ATM_SWAP= \=cmType['CmdSwapAtm']=\;
+
+    localparam RD_HNT = \=cmType['HntRead']=\,
+               RD_PRF = \=cmType['MrdPref']=\,
+               CMD_PRF = \=cmType['CmdPref']=\; 
+
+    localparam RD_INV = \=cmType['MrdInv']=\,
+               RD_CLEAN = \=cmType['MrdCln']=\,
+               RD_FLUSH = \=cmType['MrdFlush']=\;
+
+    localparam NC_MKINV = \=cmType['CmdMkInv']=\,
+               NC_PRSST = \=cmType['CmdClnShPsist']=\,
+               NC_CLEAN = \=cmType['CmdClnVld']=\,
+               NC_FLUSH = \=cmType['CmdClnInv']=\;
+
+    localparam DT_INV   = \=cmType['DtrDataInv']=\,
+               DT_SCLN  = \=cmType['DtrDataSCln']=\,
+               DT_SDTY  = \=cmType['DtrDataSDty']=\,
+               DT_UCLN  = \=cmType['DtrDataUCln']=\,
+               DT_UDTY  = \=cmType['DtrDataUDty']=\;
+    
+    localparam RD_WSCLN = \=cmType['MrdRdWSCln']=\,
+               RD_WUCLN = \=cmType['MrdRdWUCln']=\,
+               RD_WUNIQ = \=cmType['MrdRdWU']=\,
+               RD_WINV  = \=cmType['MrdRdWInv']=\;
+
+    localparam SLVERR = 2'b10,
+               DECERR = 2'b11;
+
+
+    localparam NC_CMDRD = \=cmType['CmdRdNC']=\;
+
+
+
+    //
+    // Wires
+    //
+    wire rtt_trans_active;
+    wire rtt_trans_active_4clkGate;
+    wire wtt_trans_active;
+    wire wtt_trans_active_4clkGate;
+    wire rtt_fill_active;
+    wire wtt_evict_active;
+    wire write_resp_vldrdy;
+    wire rtt_lookup_valid;
+    wire wtt_lookup_evict;
+    wire [\=obj.lib.getParam('readDataInterface', 'id')-1=\:0] rtt_lookup_id;
+    \=bundleFunctions.wiresFromInterface('rtt_lookup_', obj.lib.getParam('rttLookup'), [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('wtt_lookup_', wttLookup, [], obj.lib.bundle)=\    
+    \=bundleFunctions.wiresFromInterface('atomic_fill_', atomicFillInterface, [], obj.lib.bundle)=\
+    wire push_atomic_hit_id_valid;
+    wire push_atomic_hit_id_ready;
+    wire [\=wId-1=\:0] push_atomic_hit_id;
+    wire pop_atomic_hit_id_valid;
+    wire pop_atomic_hit_id_ready;
+    wire [\=wId-1=\:0] pop_atomic_hit_id;
+    \js if (useScratchpad){
+    wire push_atomic_spad_id_valid;
+    wire push_atomic_spad_id_ready;
+    wire [\=wId-1=\:0] push_atomic_spad_id;
+    wire pop_atomic_spad_id_valid;
+    wire pop_atomic_spad_id_ready;
+    wire [\=wId-1=\:0] pop_atomic_spad_id;
+    \js }
+    wire read_trans_fifo_valid;
+    wire read_trans_fifo_ready;
+    wire rtt_trans_valid;
+    wire rtt_trans_ready;
+    wire rtt_alloc_ready;
+    wire rtt_alloc_valid;
+    wire [\=axiArIdWidth-1=\:0] axi_read_alloc_init_id_mpf2;
+    wire merge_result_data_fill;
+    wire merge_vz;
+    wire merge_fill_ns;
+    wire [\=obj.lib.getParam('wAddr')-1=\:0] merge_fill_addr;
+    wire merge_op_valid;
+    wire merge_op_ready;
+    wire merge_no_fill;
+    wire bus_return_merge_data;
+    wire alloc_tracker_vldrdy;
+    wire dtr_sent_valid;
+    wire dff_enable = 1'b1;
+    wire [\=nRttEntries-1=\:0] set_tt_valid;
+    wire [\=nWttEntries-1=\:0] set_wtt_valid;
+    wire [\=nRttEntries-1=\:0] set_tt_valid_q1;
+    wire [\=nWttEntries-1=\:0] set_wtt_valid_q1;
+
+    wire wtt_timeout_ue_valid;
+    wire [\=wNS-1=\:0] wtt_timeout_ue_ns;
+    wire [\=wAddr-1=\:0] wtt_timeout_ue_addr;
+    wire [11:0] wtt_timeout_ue_id;
+
+    wire rtt_timeout_ue_valid;
+    wire [\=wNS-1=\:0] rtt_timeout_ue_ns;
+    wire [\=wAddr-1=\:0] rtt_timeout_ue_addr;
+    wire [11:0] rtt_timeout_ue_id;
+
+\js if(useCmc) {
+    wire bus_fill_data_sent;
+    wire bus_fill_data_sent_in;
+    wire bus_fill_data_sent_en;
+    \js }
+\js if(useAtomic) {
+    \jsbegin
+    if(useScratchpad) {
+    \jsend
+        wire pop_sp_hit_ptr_valid;        
+    \jsbegin
+    }
+    \jsend
+
+    wire atomic_hit_sink1_valid;
+    wire bus_return_atomic_data;
+    wire bus_return_atomic_str;
+    wire atomic_mem_data_sent_in;
+    wire atomic_rd_valid_q;
+    wire atomic_alloc_valid;
+    wire atomic_alloc_ready;
+    wire atomic_alloc_hit;
+    wire atomic_op_drop;
+    wire [\=obj.lib.getParam('returnDataInterface', 'id')-1=\:0] atomic_op_drop_id;
+    wire pop_hit_ptr_valid;
+    wire atomic_mem_data_sent_en;
+    wire atomic_mem_data_sent;
+\js } else {
+    wire atomic_op_drop = 1'b0;
+    wire [\=obj.lib.getParam('returnDataInterface', 'id')-1=\:0] atomic_op_drop_id = \=obj.lib.getParam('returnDataInterface', 'id')=\'d0;
+\js }
+
+    wire [\=obj.lib.getParam('returnDataInterface', 'id')-1=\:0] rtt_return_id;
+    wire bus_return_data_fill;
+    wire merge_return_data_sent;
+    wire merge_return_data_sent_in;
+    wire merge_return_data_sent_en;
+    wire merge_return_data_valid;
+    wire merge_return_data_ready;
+
+    \=bundleFunctions.wiresFromInterface('write_resp_fifo_pop_',    obj.lib.getParam('axiInterface', 'b_'),  [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('read_data_fifo_push_',    readDataPlusLookupInterface,   [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('read_data_fifo_pop_',     readDataPlusLookupInterface,   [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('rd_buffer_out_',   	    obj.lib.getParam('readDataInterface'),   [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('write_trans_fifo_push_',  obj.lib.getParam('writeTransactionInterface'), ['id'], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('merge_result_data_',      obj.lib.getParam('returnDataInterface'), [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('bus_return_data_',        obj.lib.getParam('returnDataInterface'), [], obj.lib.bundle)=\
+
+    \=bundleFunctions.wiresFromInterface('atomic_bus_data_',        atomicMemInterface,                      [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('atomic_ccp_data_',        atomicMemInterface,                      [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('atomic_mem_data_',        atomicMemInterface,                      [], obj.lib.bundle)=\
+
+    \=bundleFunctions.wiresFromInterface('merge_mem_data_',         obj.lib.getParam('returnDataInterface'), [], obj.lib.bundle)=\
+\js if(useCmc) {
+    \=bundleFunctions.wiresFromInterface('bus_fill_data_',          obj.lib.getParam('fillInterface'),       ['intf_size', 'size', 'mpf1',"full"], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('merge_fill_data_',        obj.lib.getParam('fillInterface'),       ['intf_size', 'size', 'mpf1',"full"], obj.lib.bundle)=\
+\js }
+\js if(useAtomic) {
+    \=bundleFunctions.wiresFromInterface('atomic_result_data_',     obj.lib.getParam('returnDataInterface'), ['intf_size', 'size', 'mpf1'], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('atomic_fill_data_',       obj.lib.getParam('fillInterface'),       ['intf_size', 'size', 'mpf1',"full"], obj.lib.bundle)=\
+
+\js }
+    wire bus_dtr_return_data_sent;
+    wire bus_dtr_return_data_sent_in;
+    wire bus_dtr_return_data_sent_en;
+    wire [\=wAtomicType-1=\:0] atomic_alloc_type;
+    wire [\=obj.lib.getParam('readTransactionInterface', 'id')-1=\:0] push_read_alloc_id;
+    wire [\=wSize-1=\:0] push_read_trans_size;
+    wire [\=wSize-1=\:0] read_alloc_size_modified;
+    wire [\=obj.lib.getParam('writeTransactionInterface', 'id') - 1=\:0] write_trans_fifo_push_id;
+    wire [\=obj.lib.getParam('nRttCtrlEntries')-1=\:0] dtr_sent_idx;
+    wire bus_no_return_data;
+    wire bus_no_fill;
+    wire [\=wAddr-1=\:0] addr_mask;
+
+    wire rd_buffer_active; 
+    \=bundleFunctions.wiresFromInterface('', {read_alloc_id_vec: nRttEntries, write_alloc_id_vector: nWttEntries}, [], obj.lib.bundle)=\
+ 
+
+    assign addr_mask   = {\=wAddr-wBytesPerBeat=\'d0 ,{\=wBytesPerBeat=\{1'b1}}};
+\js // assume cache hit data always 1 beat
+\js if(useAtomic) {    
+    assign read_trans_fifo_valid = is_atomic(read_alloc_cm_type) ? read_alloc_valid & read_alloc_bus_valid & rtt_alloc_ready & atomic_alloc_ready : read_alloc_valid & rtt_alloc_ready;
+\js } else {
+    assign read_trans_fifo_valid = read_alloc_valid & rtt_alloc_ready;
+\js }
+
+    assign trans_active = rtt_trans_active | wtt_trans_active | read_trans_fifo_valid | write_trans_fifo_push_valid;
+    assign trans_active_4clkGate = rtt_trans_active_4clkGate | wtt_trans_active_4clkGate | read_trans_valid | write_trans_valid;
+\js if(useCmc) {
+    assign fill_active  = rtt_fill_active;
+    assign evict_active = wtt_evict_active;
+\js }
+\js // needs to be done for EWA or cache eviction. CacheOp always have vz == 1 CCMP 4.8.4.3.1.
+    assign downstream_bresp_err = csr_UEDR_ProtErrDetEn & write_resp_vldrdy & (return_resp_resp == SLVERR | return_resp_resp == DECERR);
+    assign downstream_bresp     = return_resp_resp;
+    assign downstream_baddr     = wtt_lookup_addr & ~addr_mask; 
+    assign downstream_bns       = wtt_lookup_ns;
+    assign downstream_evict     = wtt_lookup_evict;
+    assign downstream_waxid       = \=12-axiAwIdWidth>0? "{"+(12-axiAwIdWidth)+"'d0,write_resp_fifo_pop_id}":"write_resp_fifo_pop_id[11:0]"=\;
+    
+
+
+    assign downstream_rresp_err = csr_UEDR_ProtErrDetEn & read_data_fifo_pop_valid & read_data_fifo_pop_ready & (read_data_fifo_pop_resp == SLVERR | read_data_fifo_pop_resp == DECERR);
+    assign downstream_rresp     = read_data_fifo_pop_resp;    
+    assign downstream_raddr     = read_data_fifo_pop_addr & ~addr_mask;
+    assign downstream_rns       = read_data_fifo_pop_ns;
+    assign downstream_fill      = read_data_fifo_pop_fill;
+    assign downstream_raxid       = \=12-axiArIdWidth>0? "{"+(12-axiArIdWidth)+"'d0,read_data_fifo_pop_id}":"read_data_fifo_pop_id[11:0]"=\;
+
+    assign rtt_trans_ready      = 1'b1;
+
+    //
+    // Instances
+    //
+    // Read Response ready valid handshake
+    //
+
+\jsbegin
+var rttParams =  {
+            clkInterface:      obj.lib.getParam('clkInterface'),
+            allocateInterface: obj.lib.getParam('readAllocateInterface'),
+            lookupInterface:   obj.lib.getParam('rttLookup'),
+            camAddrInterface:  obj.lib.getParam('camAddrInterface'),
+            camRttVectorInterface:  obj.lib.getParam('camRttVectorInterface'),
+            axiInterface:      obj.lib.getParam('axiInterface'),
+            numEntries:        obj.lib.getParam('nRttCtrlEntries'),
+            useCmc:            useCmc,
+            cmType:            cmType,
+            ccpParams:         ccpParams,
+            wFPortId:          wFPortId,
+            wAddrCAM:          wAddrCAM,
+            wCacheLineOffset:  obj.lib.getParam('wCacheLineOffset'),
+            assertOn        : assertOn,
+            useQos : useQos,
+            priorityThreshold : useQos,
+            nExclusiveEntries : obj.lib.getParam("nExclusiveEntries"),
+            ASILB : ASILB,
+            useAtomic         : useAtomic
+};
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore if env ncore_3p7 */
+if(ASILB){
+    rttParams["rtt_flop_bundle"] =rtt_flop_bundle;
+}
+
+var rttPorts = {
+            trans_active        : 'rtt_trans_active',
+            trans_active_4clkGate: 'rtt_trans_active_4clkGate',
+            fill_active         : 'rtt_fill_active',
+            cam_match_fill      : 'read_cam_match_fill',
+            trans_id            : 'read_alloc_id',
+            read_axi_id       : 'axi_read_alloc_init_id_mpf2',
+            trans_id_vec        : 'read_alloc_id_vec',
+            alloc_fill          : 'read_alloc_fill',
+            trans_valid         : 'rtt_trans_valid',
+            trans_ready         : 'rtt_trans_ready',
+            alloc_valid         : 'rtt_alloc_valid',
+            dealloc_valid       : 'rtt_dealloc_valid',
+            dealloc_id          : 'rtt_dealloc_id',
+            resp_valid          : 'rtt_lookup_valid',
+            resp_id             : 'rtt_lookup_id',
+            alloc_ready         : 'rtt_alloc_ready',
+            atomic_drop         : 'atomic_op_drop',
+            atomic_drop_id      : 'atomic_op_drop_id',
+            dtr_sent_valid      : 'dtr_sent_valid',
+            dtr_sent_idx        : 'dtr_sent_idx',
+            tt_dealloc_vec      : 'rtt_dealloc_vec',
+            alloc_tracker_vldrdy: 'alloc_tracker_vldrdy',
+            return_id           : 'rtt_return_id',
+            alloc_size          : 'read_alloc_size_modified',
+            alloc_bus           : 'read_alloc_bus_valid',
+	    pmon_num_active_rtt_entries : 'pmon_num_active_rtt_entries',
+	    read_cam_match_pmon : 'read_cam_match_pmon',
+	    set_tt_valid	: 'set_tt_valid',
+        csr_UEDR_TimeoutErrDetEn: 'csr_UEDR_TimeoutErrDetEn',
+        csr_UEDR_TimeoutReset   : 'csr_UEDR_TimeoutReset',
+        csr_timeout_threshold   : 'csr_timeout_threshold',
+        tt_timeout_ue_valid     : 'rtt_timeout_ue_valid',
+        tt_timeout_ue_ns        : 'rtt_timeout_ue_ns',
+        tt_timeout_ue_addr      : 'rtt_timeout_ue_addr',
+        tt_timeout_ue_id        :"rtt_timeout_ue_id"
+};
+
+if(useAtomic){
+    rttPorts ["nb_atomic"]  = "nb_atomic";
+}
+
+if ( useCmc ) {
+rttPorts['fill_done_valid'] = 'ccp_cache_fill_done';
+rttPorts['fill_done_id'] = 'ccp_cache_fill_done_id';
+rttPorts['ccp_p1_valid'] = 'ccp_p1_valid';
+rttPorts['read_write_addr_s_pop_ready_p1'] = 'read_write_addr_s_pop_ready_p1';
+} 
+else {
+rttPorts['write_req_valid'] = 'write_req_valid';
+rttPorts['write_req_ready'] = 'write_req_ready';
+}
+
+if(useQos & priorityThreshold){
+    rttPorts ['TT_threshold_reached']= 'RTT_threshold_reached';
+    rttPorts ['ttQoSRsv'] = 'RttQoSRsv'
+};
+
+var rttInterfaces = [];
+rttInterfaces.push({modulePrefix: '',            localPrefix: '',            interface: obj.lib.getParam('clkInterface')});
+rttInterfaces.push({modulePrefix: 'alloc_',      localPrefix: 'read_alloc_', interface: obj.lib.getParam('readAllocateInterface'), exclude:['valid', 'ready', 'size']});
+rttInterfaces.push({modulePrefix: 'lookup_',     localPrefix: 'rtt_lookup_', interface: obj.lib.getParam('rttLookup')});
+rttInterfaces.push({modulePrefix: 'rtt_cam_',    localPrefix: 'rtt_cam_',    interface: obj.lib.getParam('camRttVectorInterface')});
+rttInterfaces.push({modulePrefix: 'cam_',        localPrefix: 'read_cam_',   interface: obj.lib.getParam('camAddrInterface')});
+
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore if env ncore_3p7 */
+if(ASILB){
+    rttInterfaces.push({
+        modulePrefix: "rtt_", 
+        localPrefix: "rtt_", 
+        interface: rtt_flop_bundle,
+        direction: "master"
+    })}
+\jsend
+
+    \=obj.lib.instance({
+        instanceName: 'rtt',
+        moduleName  : 'dmi_tt',
+        params      : rttParams,
+        ports       : rttPorts,
+        interfaces  : rttInterfaces
+    })=\
+
+    assign alloc_tracker_vldrdy     = read_trans_fifo_valid & read_trans_fifo_ready;
+    assign read_alloc_size_modified = ((read_alloc_size - 1'b1)           & {\=wSize=\{read_alloc_cm_type == ATM_COMP}})                                   |
+                                      (read_alloc_size                 & {\=wSize=\{read_alloc_cm_type != ATM_COMP}});
+
+    \=obj.lib.dffre(nRttEntries, 'set_tt_valid_q1', 'set_tt_valid',  '{'+nRttEntries+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+
+
+    always @ (*) begin
+    case ({wtt_timeout_ue_valid, rtt_timeout_ue_valid})
+
+        2'b00 : begin tt_timeout_ue_addr = \=wAddr=\'d0 ; tt_timeout_ue_ns = \=wNS=\'d0 ; tt_timeout_ue_transaction_type = 2'b00;   tt_timeout_ue_id = 12'd0;            end
+        2'b01 : begin tt_timeout_ue_addr = rtt_timeout_ue_addr ; tt_timeout_ue_ns = rtt_timeout_ue_ns ; tt_timeout_ue_transaction_type = 2'b00; tt_timeout_ue_id = rtt_timeout_ue_id; end
+        2'b10 : begin tt_timeout_ue_addr = wtt_timeout_ue_addr ; tt_timeout_ue_ns = wtt_timeout_ue_ns ; tt_timeout_ue_transaction_type = 2'b01; tt_timeout_ue_id = wtt_timeout_ue_id; end
+        2'b11 : begin tt_timeout_ue_addr = wtt_timeout_ue_addr ; tt_timeout_ue_ns = wtt_timeout_ue_ns ;  tt_timeout_ue_transaction_type = 2'b01; tt_timeout_ue_id = wtt_timeout_ue_id; end
+        default : begin tt_timeout_ue_addr = \=wAddr=\'d0 ; tt_timeout_ue_ns = \=wNS=\'d0 ;tt_timeout_ue_transaction_type = 2'b00;   tt_timeout_ue_id = 12'd0;                end
+        
+    endcase
+    end
+
+    assign tt_timeout_ue_valid = wtt_timeout_ue_valid | rtt_timeout_ue_valid;
+
+    assign pmon_rtt_alloc_id_vec    = set_tt_valid_q1;
+
+\js if(useAtomic) {    
+    assign read_alloc_ready = is_atomic(read_alloc_cm_type) ? (read_alloc_bus_valid ? read_trans_fifo_ready & rtt_alloc_ready & atomic_alloc_ready : rtt_alloc_ready & atomic_alloc_ready) : rtt_alloc_ready & read_trans_fifo_ready; 
+
+    assign rtt_alloc_valid = is_atomic(read_alloc_cm_type) ? (read_alloc_bus_valid ? read_alloc_valid & atomic_alloc_ready
+& read_trans_fifo_ready : read_alloc_valid & atomic_alloc_ready) : read_alloc_valid & read_trans_fifo_ready;
+    assign push_read_trans_size = ((read_alloc_fill == 1'b1) | is_atomic(read_alloc_cm_type) | is_merge(read_alloc_cm_type)) ? \=wSize=\'h6 : read_alloc_size;
+
+\js } else {
+    assign read_alloc_ready = rtt_alloc_ready & read_trans_fifo_ready; 
+    assign rtt_alloc_valid = read_alloc_valid & read_trans_fifo_ready;
+    assign push_read_trans_size = ((read_alloc_fill == 1'b1) | is_merge(read_alloc_cm_type)) ? \=wSize=\'h6 : read_alloc_size;
+\js }
+
+
+    \=obj.lib.instance({
+        instanceName: 'read_trans_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            width: bundleFunctions.getBundleWidth(obj.lib.getParam('readTransactionInterface'), ['valid', 'ready'], obj.lib.bundle),
+            depth: 2,
+            zerodepth: 0,
+            bypass_mode: 0,
+            interface: obj.lib.getParam('readTransactionInterface')
+        },
+        verilogParams: {},
+        ports: {
+            push_valid: 'read_trans_fifo_valid',
+            push_ready: 'read_trans_fifo_ready',
+            push_id:    'axi_read_alloc_init_id_mpf2',
+            push_size:  'push_read_trans_size'},
+        interfaces: [
+            {modulePrefix: '',      localPrefix: '',            interface: obj.lib.getParam('clkInterface')},
+            {modulePrefix: 'push_', localPrefix: 'read_alloc_', interface: obj.lib.getParam('readTransactionInterface'), exclude:['size', 'valid', 'ready', 'id']},
+            {modulePrefix: 'pop_',  localPrefix: 'read_trans_', interface: obj.lib.getParam('readTransactionInterface')}
+        ],
+        portsDelimiter: '\n        '
+    })=\
+
+
+\jsbegin
+var dataBufferSize      = obj.lib.getParam('nBeats') * obj.lib.getParam('nRttCtrlEntries');
+if (enableReadDataInterleaving) { 
+var wMemIndex        = log2ceil(dataBufferSize);
+
+//=============================================================================
+// Read Buffer 
+// Only instantiated if downstream target has read data interleaving enabled.
+//=============================================================================
+var SRAM =1; 
+var readBufferParams =  {
+    SRAM                        : SRAM,
+    numEntries                  : obj.lib.getParam('nRttCtrlEntries'),
+    clkInterface                : obj.lib.getParam('clkInterface'),
+    readDataInterface           : obj.lib.getParam('readDataInterface'),
+    assertOn                    : assertOn,
+    nBeats                      : obj.lib.getParam('nBeats'),
+    wId                         : obj.lib.getParam('readTransactionInterface', 'id'),
+    rdBufferProtType            : rdBufferProtType,
+    rdBufferGen                 : rdBufferGen,
+    rdBufferParam               : rdBufferParam,
+    useExRdDataMem              : useExRdDataMem,
+    rdBufferMemoryInterface     : rdBufferMemoryInterface,
+};
+
+var readBufferPorts = {
+    alloc_en                    : 'alloc_tracker_vldrdy',
+    alloc_Id                    : 'axi_read_alloc_init_id_mpf2',
+    alloc_Idx_vec               : 'read_alloc_id_vec',
+    active                      : 'rd_buffer_active',
+    csr_UEDR_MemErrDetEn        : 'csr_UEDR_MemErrDetEn', 
+    csr_CECR_ErrDetEn           : 'csr_CECR_ErrDetEn'
+};
+// SRAM always set for read buffer for 3.4
+/* istanbul ignore else env ncore_3p4,ncore_3p6, ncore_3p7 */
+if(SRAM){
+
+    if ( rdBufferProtType !== 'NONE' ) {
+readBufferPorts['mem_uce']        = 'rd_buffer_mem_uce';
+readBufferPorts['mem_uce_index']  = 'rd_buffer_mem_uce_index';
+    }
+
+    if ( rdBufferProtType === 'SECDED' ) {
+readBufferPorts['mem_ce']         = 'rd_buffer_mem_ce';
+readBufferPorts['mem_ce_index']   = 'rd_buffer_mem_ce_index';
+    }
+}
+
+
+var readBufferInterfaces = [];
+readBufferInterfaces.push({modulePrefix: '',              localPrefix: '',                        interface: clkInterface});
+readBufferInterfaces.push({modulePrefix: 'read_data_in_',   localPrefix: 'read_data_',          interface: obj.lib.getParam('readDataInterface')});
+readBufferInterfaces.push({modulePrefix: 'read_data_out_',   localPrefix: 'rd_buffer_out_',          interface: obj.lib.getParam('readDataInterface')});
+if ( useExRdDataMem ) {
+readBufferInterfaces.push({modulePrefix: '',  localPrefix: '',  interface: rdBufferMemoryInterface});
+}
+if ( rdBufferProtType === 'NONE' ) { \jsend
+assign rd_buffer_mem_uce = 1'b0;
+assign rd_buffer_mem_uce_index = \=wMemIndex=\'d0;
+\jsbegin
+} 
+if ( rdBufferProtType !== 'SECDED' ) { \jsend
+assign rd_buffer_mem_ce = 1'b0;
+assign rd_buffer_mem_ce_index = \=wMemIndex=\'d0;
+\jsbegin
+} \jsend
+    \=obj.lib.instance({
+        instanceName: 'read_buffer',
+        moduleName  : 'dmi_read_buffer',
+        params      : readBufferParams,
+        ports       : readBufferPorts,
+        interfaces  : readBufferInterfaces
+    })=\
+\jsbegin
+// else --- if enableReadDataInterleaving
+// Do not instantiate read data buffer
+} else { \jsend
+    assign rd_buffer_active = 1'b0; 
+    \=bundleFunctions.assignByBundle('rd_buffer_out_', 'read_data_', obj.lib.getParam('readDataInterface'), [], obj.lib.bundle)=\
+\jsbegin
+} \jsend
+
+    assign push_read_alloc_id = axi_read_alloc_init_id_mpf2;
+
+    // Write Response ready valid handshake
+    // is handled in protocol.v and wtt just snoops what's going on
+    assign write_resp_vldrdy = write_resp_fifo_pop_valid  & write_resp_fifo_pop_ready;
+
+\jsbegin
+var wttPorts = {
+            trans_active            : 'wtt_trans_active',
+            trans_active_4clkGate   : 'wtt_trans_active_4clkGate',
+            write_trans_id          : 'write_trans_fifo_push_id',
+            write_trans_valid       : 'write_trans_fifo_push_valid',
+            write_trans_ready       : 'write_trans_fifo_push_ready',
+            write_resp_valid        : 'write_resp_vldrdy',
+            write_resp_id           : 'write_resp_fifo_pop_id',
+            write_alloc_evict       : 'write_alloc_evict',
+            evict_active            : 'wtt_evict_active',
+            lookup_evict            : 'wtt_lookup_evict',
+            csr_UEDR_TimeoutErrDetEn: 'csr_UEDR_TimeoutErrDetEn',
+            csr_UEDR_TimeoutReset   : 'csr_UEDR_TimeoutReset',
+            csr_timeout_threshold   : 'csr_timeout_threshold',
+            tt_timeout_ue_valid     : 'wtt_timeout_ue_valid',
+            tt_timeout_ue_ns        : 'wtt_timeout_ue_ns',
+            tt_timeout_ue_addr      : 'wtt_timeout_ue_addr',
+            tt_timeout_ue_id        : "wtt_timeout_ue_id",
+	    pmon_num_active_wtt_entries : 'pmon_num_active_wtt_entries',
+	    write_cam_match_pmon    : 'write_cam_match_pmon',
+	    write_alloc_id_vector   : 'write_alloc_id_vector',
+	    dealloc_id		    : 'wtt_dealloc_vec',
+	    set_wtt_valid	    : 'set_wtt_valid'
+        };
+
+if ( useCmc ) {
+
+wttPorts['read_write_addr_s_pop_ready_p1'] = 'read_write_addr_s_pop_ready_p1';
+wttPorts['ccp_p1_valid'] = 'ccp_p1_valid';
+
+}
+else {
+wttPorts['read_req_valid'] = 'read_req_valid';
+wttPorts['read_req_ready'] = 'read_req_ready';
+
+}
+
+if(useQos & priorityThreshold){
+    wttPorts ['TT_threshold_reached']= 'WTT_threshold_reached';
+    wttPorts ['ttQoSRsv'] = 'WttQoSRsv'
+};
+
+\jsend
+
+    \=obj.lib.dffre(nWttEntries, 'set_wtt_valid_q1', 'set_wtt_valid',  '{'+nWttEntries+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+    assign pmon_wtt_alloc_id_vec    = set_wtt_valid_q1;
+
+\jsbegin
+    var  wttPrams = {           // Interfaces
+                    clkInterface: obj.lib.getParam('clkInterface'),
+                    writeAllocateInterface: obj.lib.getParam('writeAllocateInterface'),
+                    wttLookup: wttLookup,
+                    camAddrInterface: obj.lib.getParam('camAddrInterface'),
+                    axiInterface: obj.lib.getParam('axiInterface'),
+                    // Entries
+                    nWttCtrlEntries: obj.lib.getParam('nWttCtrlEntries'),
+                    wFPortId: wFPortId,
+                    wCacheLineOffset: obj.lib.getParam('wCacheLineOffset'),
+                    wAddrCAM: wAddrCAM,
+                    useCmc :useCmc,
+                    assertOn        : assertOn,
+                    useQos : useQos,
+                    priorityThreshold : useQos,
+                    nExclusiveEntries     : obj.lib.getParam("nExclusiveEntries"),
+                    addressIdMap : obj.lib.getParam("addressIdMap"),
+                    ASILB : ASILB
+    };
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore if env ncore_3p7 */
+    if(ASILB){
+        wttPrams["wtt_flop_bundle"] =wtt_flop_bundle;  
+    }
+
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'wtt',
+        moduleName: 'dmi_wtt',
+        params: wttPrams,
+        verilogParams: {},
+        ports: wttPorts,
+        interfaces: [
+            {modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface')},
+            {modulePrefix: 'write_alloc_', localPrefix: 'write_alloc_', interface: obj.lib.getParam('writeAllocateInterface')},
+            {modulePrefix: 'lookup_', localPrefix: 'wtt_lookup_', interface: wttLookup},
+            {modulePrefix: 'cam_', localPrefix: 'write_cam_', interface: obj.lib.getParam('camAddrInterface')},
+            {modulePrefix: 'wtt_', localPrefix: 'wtt_', interface: wtt_flop_bundle},
+        ],
+        portsDelimiter: '\n        '
+    })=\  
+
+
+\=bundleFunctions.assignByBundle('read_data_fifo_push_', 'rd_buffer_out_', obj.lib.getParam('readDataInterface'), [], obj.lib.bundle)=\
+\=bundleFunctions.assignByBundle('read_data_fifo_push_', 'rtt_lookup_', obj.lib.getParam('rttLookup'), [], obj.lib.bundle)=\
+assign read_data_fifo_push_return_id = rtt_return_id;
+    \=obj.lib.instance({
+        instanceName: 'read_data_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            width: libUtils.bundleFunctions.getBundleWidth(readDataPlusLookupInterface, ['valid', 'ready'], obj.lib.bundle),
+            depth: 4,
+            zerodepth: 0,
+            bypass_mode: 0, 
+            interface: readDataPlusLookupInterface
+        },
+        verilogParams: {},
+        ports: {},
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        },{
+            modulePrefix: 'push_',
+            localPrefix: 'read_data_fifo_push_',
+            interface: readDataPlusLookupInterface
+        },{
+            modulePrefix: 'pop_',
+            localPrefix: 'read_data_fifo_pop_',
+            interface: readDataPlusLookupInterface
+        }],
+        portsDelimiter: '\n        '
+    })=\
+    \=bundleFunctions.assignByBundle('write_trans_fifo_push_', 'write_alloc_', obj.lib.getParam('writeTransactionInterface'), ['ready', 'valid', 'id'], obj.lib.bundle)=\
+
+    \=bundleFunctions.assignByBundle('merge_mem_data_', 'bus_return_data_', obj.lib.getParam('returnDataInterface'), ['ready', 'valid'], obj.lib.bundle)=\
+    assign merge_mem_data_valid = read_data_fifo_pop_valid & bus_return_merge_data;
+
+    \=obj.lib.instance({
+        instanceName: 'write_trans_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            width: bundleFunctions.getBundleWidth(obj.lib.getParam('writeTransactionInterface'), ['valid', 'ready'], obj.lib.bundle),
+            depth: 2,
+            zerodepth: 0,
+            bypass_mode: 0,
+            interface: obj.lib.getParam('writeTransactionInterface')
+        },
+        verilogParams: {},
+        ports: {},
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        },{
+            modulePrefix: 'push_',
+            localPrefix: 'write_trans_fifo_push_',
+            interface: obj.lib.getParam('writeTransactionInterface')
+        },{
+            modulePrefix: 'pop_',
+            localPrefix: 'write_trans_',
+            interface: obj.lib.getParam('writeTransactionInterface')
+        }],
+        portsDelimiter: '\n        '
+    })=\
+
+
+    \=obj.lib.instance({
+        instanceName: 'write_res_data_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            width: bundleFunctions.getBundleWidth(obj.lib.getParam('writeDataInterface'), ['valid', 'ready'], obj.lib.bundle),
+            depth: obj.lib.getParam('nBeats'),
+            zerodepth: 0,
+            bypass_mode: 0,
+            interface: obj.lib.getParam('writeDataInterface')
+        },
+        verilogParams: {},
+        ports: {},
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        },{
+            modulePrefix: 'push_',
+            localPrefix: 'write_res_data_',
+            interface: obj.lib.getParam('writeDataInterface')
+        },{
+            modulePrefix: 'pop_',
+            localPrefix: 'write_data_',
+            interface: obj.lib.getParam('writeDataInterface')
+        }],
+        portsDelimiter: '\n        '
+    })=\
+
+\js if(useCmc) {
+    wire merge_fill_data_sent;
+    wire merge_fill_data_sent_in;
+    wire merge_fill_data_sent_en;
+
+    \=obj.lib.dffre(1, 'merge_fill_data_sent', 'merge_fill_data_sent_in', "1'b0", 'merge_fill_data_sent_en', 'clk', 'reset_n')=\
+
+    assign merge_result_data_ready = (merge_return_data_ready | merge_return_data_sent) & (merge_fill_data_ready | merge_fill_data_sent | merge_no_fill);
+    assign merge_fill_data_sent_en  = (merge_fill_data_valid  & merge_fill_data_ready) | (merge_result_data_valid & merge_result_data_ready);
+    assign merge_fill_data_sent_in  = (merge_fill_data_valid  & merge_fill_data_ready) & ~(merge_result_data_valid & merge_result_data_ready);
+\js } else {
+    assign merge_result_data_ready = merge_return_data_ready;
+\js }
+    \=obj.lib.dffre(1, 'merge_return_data_sent', 'merge_return_data_sent_in', "1'b0", 'merge_return_data_sent_en', 'clk', 'reset_n')=\
+
+
+    assign merge_no_fill            = ~merge_result_data_fill;
+    assign merge_return_data_sent_in= (merge_return_data_valid & merge_return_data_ready) & ~(merge_result_data_valid & merge_result_data_ready);
+    assign merge_return_data_sent_en= (merge_return_data_valid & merge_return_data_ready) | (merge_result_data_valid & merge_result_data_ready);
+    // Merge data path originates from merge_engine and also feeds the merge fill
+    //  data path. 
+    // Gate off valid if beat gets sent on return data path and still waiting to be 
+    //  sent on fill path. 
+    // Ensure enough room in fill fifo for entire cacheline on first beat: 
+    //  ccp_cache_fill_fifo_avail==1
+    // If first beat sent, then there is guaranteed room for remaining cacheline. 
+    assign merge_return_data_valid  = merge_result_data_valid & 
+                                     ~merge_return_data_sent 
+\js if (useCmc) { 
+                                     & (~merge_result_data_first | 
+                                       ccp_cache_fill_fifo_avail |
+                                       merge_fill_data_sent|
+                                       merge_no_fill)
+\js }
+                                     ;
+
+\js if(useAtomic) {
+
+    assign bus_return_atomic_str = (read_data_fifo_pop_cm_type == ATM_STR);
+
+    assign dtr_sent_valid = (return_data_valid & return_data_ready & return_data_last) | 
+                            (atomic_rd_valid_q & atomic_rd_ready   & atomic_rd_last);
+
+                            assign dtr_sent_idx = (\=obj.lib.getParam('nRttCtrlEntries')=\'b1 << return_data_id) & {\=obj.lib.getParam('nRttCtrlEntries')=\{(return_data_valid & return_data_ready & return_data_last)}} | 
+                            (\=obj.lib.getParam('nRttCtrlEntries')=\'b1 << pop_atomic_hit_id) & {\=obj.lib.getParam('nRttCtrlEntries')=\{(atomic_rd_valid_q & atomic_rd_ready & atomic_rd_last & ~atomic_rd_sp)}} 
+                            \js if (useScratchpad){
+                            |(\=obj.lib.getParam('nRttCtrlEntries')=\'b1 << pop_atomic_spad_id) & {\=obj.lib.getParam('nRttCtrlEntries')=\{(atomic_rd_valid_q & atomic_rd_ready & atomic_rd_last & atomic_rd_sp)}} 
+                            \js }
+                            ;
+  
+
+\js // only present on DTR bus if theres a cacheline space available in the fill FIFO
+    assign bus_return_data_valid = bus_return_atomic_data ? (read_data_fifo_pop_valid & 
+                                                             read_data_fifo_pop_first & 
+                                                            ~bus_dtr_return_data_sent & 
+                                                            ~bus_return_atomic_str    ) : (read_data_fifo_pop_valid & 
+                                                                                          ~bus_dtr_return_data_sent & 
+                                                                                          ~bus_no_return_data       & 
+                                                                                           (~read_data_fifo_pop_first | 
+                                                                                             ccp_cache_fill_fifo_avail|
+                                                                                             bus_fill_data_sent));
+\js } else if(useCmc) {
+
+    assign dtr_sent_valid = (return_data_valid & return_data_ready & return_data_last);
+
+    assign dtr_sent_idx = (\=obj.lib.getParam('nRttCtrlEntries')=\'b1 << return_data_id) & {\=obj.lib.getParam('nRttCtrlEntries')=\{(return_data_valid & return_data_ready & return_data_last)}};
+
+    assign bus_return_data_valid = read_data_fifo_pop_valid & 
+                                  ~bus_dtr_return_data_sent & 
+                                  ~bus_no_return_data       & 
+                                   (~read_data_fifo_pop_first  | 
+                                     ccp_cache_fill_fifo_avail | 
+                                     bus_fill_data_sent        );
+
+\js } else {
+
+    assign dtr_sent_valid = (return_data_valid & return_data_ready & return_data_last);
+
+    assign dtr_sent_idx = (\=obj.lib.getParam('nRttCtrlEntries')=\'b1 << return_data_id) & {\=obj.lib.getParam('nRttCtrlEntries')=\{(return_data_valid & return_data_ready & return_data_last)}};
+
+    assign bus_return_data_valid = read_data_fifo_pop_valid & 
+                                  ~bus_dtr_return_data_sent & 
+                                  ~bus_no_return_data;
+\js }
+
+    assign bus_no_return_data = no_return(read_data_fifo_pop_cm_type) | bus_return_merge_data;
+    assign bus_no_fill = ~bus_return_data_fill;
+\js // return data valid if atomic or a non-atomic and is not a hint
+\js // bus fill data valid if fill flag asserted or atomic needs to fill result
+\js // sfi_compliant = 1 is non-interleaving. 
+
+\js if(useCmc) {
+\js var wFillDataPkt = bundleFunctions.getBundleWidth(fillInterface, ['valid', 'ready', 'last',"full"], obj.lib.bundle); 
+\js     if(useAtomic) {
+    wire [2:0] grant_fill;
+    wire [\=wFillDataPkt-1=\:0] atomic_fill_data_pkt;
+\js     } else {
+    wire [1:0] grant_fill;
+\js }
+    wire [\=wFillDataPkt-1=\:0] bus_fill_data_pkt;
+    wire [\=wFillDataPkt-1=\:0] merge_fill_data_pkt;
+    wire [\=wFillDataPkt-1=\:0] fill_data_pkt;
+
+\jsbegin
+    var fillDataMuxarbPorts = {
+            sink0_valid     : 'merge_fill_data_valid', 
+            sink0_ready     : 'merge_fill_data_ready',
+            sink0_last      : 'merge_fill_data_last',
+            sink0_data      : 'merge_fill_data_pkt',
+            sink1_valid     : 'bus_fill_data_valid',
+            sink1_ready     : 'bus_fill_data_ready',
+            sink1_last      : 'bus_fill_data_last',
+            sink1_data      : 'bus_fill_data_pkt',
+            source_valid    : 'fill_data_valid', 
+            source_ready    : 'fill_data_ready',
+            source_last     : 'fill_data_last',
+            source_data     : 'fill_data_pkt',
+            grant           : "grant_fill"
+    }; \jsend
+
+\jsbegin
+
+    var fillDataMuxarbParams = {
+            width           : wFillDataPkt,
+            sink_type       : 'RdyVld',
+            pipeline        : 0,
+            arb_priority    : 'Fixed',
+            sfi_compliant   : 1,
+            output_grant    : 1
+    };
+
+    if(useAtomic) {
+    fillDataMuxarbParams['number_of_inputs'] = 3;
+    fillDataMuxarbPorts['sink2_valid'] = 'atomic_fill_data_valid'
+    fillDataMuxarbPorts['sink2_ready'] = 'atomic_fill_data_ready'
+    fillDataMuxarbPorts['sink2_data']  = 'atomic_fill_data_pkt'
+    fillDataMuxarbPorts['sink2_last']  = 'atomic_fill_data_last'
+    } else {
+    fillDataMuxarbParams['number_of_inputs'] = 2;
+    }
+
+\jsend
+    // Fixed arbitration mux. Need to process merge with higher priority and be in sync with Return mux. 
+    \=obj.lib.instance({
+        instanceName    : 'fill_data_muxarb',
+        moduleName      : 'muxarb',
+        params          : fillDataMuxarbParams ,
+        verilogParams   : {},
+        ports           : fillDataMuxarbPorts,
+        interfaces      : [{
+            modulePrefix: '', localPrefix: '', interface: clkInterface}
+        ]
+    })=\
+
+\js     if(useAtomic) {
+    assign atomic_fill_data_pkt = \=bundleFunctions.packetizeBundle('atomic_fill_data_',  fillInterface, ['valid', 'ready', 'last',"full"], obj.lib.bundle)=\;
+    assign atomic_fill_data_valid   = atomic_result_data_valid;
+    assign atomic_fill_data_last    = atomic_result_data_last;
+    assign atomic_fill_data_id      = atomic_result_data_id;
+    assign atomic_fill_data_addr    = atomic_fill_addr;
+    assign atomic_fill_data_ns      = atomic_fill_ns;
+    assign atomic_fill_data_data    = atomic_result_data_data;
+    assign atomic_fill_data_dirty   = atomic_fill_dirty;
+    assign atomic_fill_data_poison  = atomic_result_data_poison;
+    assign bus_fill_data_valid      = read_data_fifo_pop_valid  & 
+                                     ~bus_fill_data_sent        & 
+                                      bus_return_data_fill      & 
+                                     ~bus_return_atomic_data    & 
+                                     ~bus_return_merge_data     & 
+                                    (~read_data_fifo_pop_first |
+                                      ccp_cache_fill_fifo_avail & ~merge_result_data_valid );
+\js         if(useScratchpad) {
+    assign bus_fill_data_sp         = 1'b0;
+    assign merge_fill_data_sp       = 1'b0;
+    assign atomic_fill_data_sp      = atomic_fill_sp;
+\js         }
+    assign fill_data_full = ( grant_fill == 3'b010 );
+\js     } else {
+    assign fill_data_full = ( grant_fill ==  2'b10 );
+    assign bus_fill_data_valid      = read_data_fifo_pop_valid  & 
+                                     ~bus_fill_data_sent        & 
+                                      bus_return_data_fill      & 
+                                     ~bus_return_merge_data     &
+                                     (~read_data_fifo_pop_first |
+                                      ccp_cache_fill_fifo_avail & ~merge_result_data_valid );
+\js }
+    assign bus_fill_data_pkt        = \=bundleFunctions.packetizeBundle('bus_fill_data_',     fillInterface, ['valid', 'ready', 'last',"full"], obj.lib.bundle)=\;
+    assign merge_fill_data_pkt      = \=bundleFunctions.packetizeBundle('merge_fill_data_',   fillInterface, ['valid', 'ready', 'last',"full"], obj.lib.bundle)=\;
+    assign \=bundleFunctions.packetizeBundle('fill_data_', fillInterface, ['valid', 'ready', 'last',"full"], obj.lib.bundle)=\ = fill_data_pkt;
+    assign bus_fill_data_last       = bus_return_data_last;
+    assign bus_fill_data_id         = bus_return_data_id;
+    assign bus_fill_data_addr       = read_data_fifo_pop_addr;
+    assign bus_fill_data_ns         = read_data_fifo_pop_ns;
+    assign bus_fill_data_data       = bus_return_data_data;
+    assign bus_fill_data_dirty      = 1'b0;
+    assign bus_fill_data_poison     = bus_return_data_poison;
+    // Merge data path originates from merge_engine and also feeds the merge return
+    //  data path. 
+    // Gate off valid if beat gets sent on fill data path and still waiting to be 
+    //  sent on return path. 
+    // Ensure enough room in fill fifo for entire cacheline on first beat: 
+    //  ccp_cache_fill_fifo_avail==1
+    // If first beat sent, then there is guaranteed room for remaining cacheline. 
+    assign merge_fill_data_valid    = merge_result_data_valid   & 
+                                     ~merge_fill_data_sent      & 
+                                      merge_result_data_fill    & 
+                                     (~merge_result_data_first |
+                                      ccp_cache_fill_fifo_avail);
+    assign merge_fill_data_last     = merge_result_data_last;
+    assign merge_fill_data_id       = merge_result_data_id;
+    assign merge_fill_data_addr     = merge_fill_addr;
+    assign merge_fill_data_ns       = merge_fill_ns;
+    assign merge_fill_data_data     = merge_result_data_data;
+    assign merge_fill_data_dirty    = 1'b1;
+    assign merge_fill_data_poison   = merge_result_data_poison;
+
+\js }
+
+
+\js var wReturnPkt = bundleFunctions.getBundleWidth(returnDataInterface, ['valid', 'ready', 'last'], obj.lib.bundle);
+    wire [\=wReturnPkt-1=\:0] merge_result_data_pkt;
+    wire [\=wReturnPkt-1=\:0] bus_return_data_pkt;
+    wire [\=wReturnPkt-1=\:0] return_data_pkt;
+    
+    // Fixed arbitration mux. Need to process merge with higher priority and be in sync with Fill mux. 
+    \=obj.lib.instance({
+        instanceName: 'return_data_muxarb',
+        moduleName: 'muxarb',
+        params: {
+            number_of_inputs: 2,
+            width           : wReturnPkt,
+            sink_type       : 'RdyVld',
+            pipeline        : 0,
+            arb_priority    : 'Fixed',
+            sfi_compliant   : 1,
+            output_grant    : 0
+        },
+        verilogParams: {},
+        ports: {
+            sink0_valid     : 'merge_return_data_valid',
+            sink0_ready     : 'merge_return_data_ready',
+            sink0_last      : 'merge_result_data_last',
+            sink0_data      : 'merge_result_data_pkt',
+            sink1_valid     : 'bus_return_data_valid',
+            sink1_ready     : 'bus_return_data_ready',
+            sink1_last      : 'bus_return_data_last',
+            sink1_data      : 'bus_return_data_pkt',
+            source_valid    : 'return_data_valid', 
+            source_ready    : 'return_data_ready',
+            source_last     : 'return_data_last',
+            source_data     : 'return_data_pkt'
+        },
+        interfaces: [{
+            modulePrefix: '', localPrefix: '', interface: clkInterface}
+        ]
+    })=\
+
+    assign bus_return_data_pkt   = \=bundleFunctions.packetizeBundle('bus_return_data_',    returnDataInterface, ['valid', 'ready', 'last'], obj.lib.bundle)=\;
+    assign merge_result_data_pkt = \=bundleFunctions.packetizeBundle('merge_result_data_',  returnDataInterface, ['valid', 'ready', 'last'], obj.lib.bundle)=\;
+    assign \=bundleFunctions.packetizeBundle('return_data_', returnDataInterface, ['valid', 'ready', 'last'], obj.lib.bundle)=\ = return_data_pkt;
+
+\js if(useAtomic) {
+    assign atomic_mem_data_sent_in = (atomic_bus_data_valid & atomic_bus_data_ready) & ~(read_data_fifo_pop_ready & read_data_fifo_pop_valid);
+    assign atomic_mem_data_sent_en = (read_data_fifo_pop_ready & read_data_fifo_pop_valid) | (atomic_bus_data_valid & atomic_bus_data_ready);
+    \=obj.lib.dffre(1, 'atomic_mem_data_sent', 'atomic_mem_data_sent_in', "1'b0", 'atomic_mem_data_sent_en', 'clk', 'reset_n')=\
+    assign bus_return_atomic_data = is_atomic(read_data_fifo_pop_cm_type);
+    assign read_data_fifo_pop_ready = (bus_return_merge_data  & merge_mem_data_ready                                                         )| // merge
+                                      (bus_return_atomic_data & (bus_dtr_return_data_sent |                                                     // atomic
+                                                                 bus_return_data_ready    | 
+                                                                ~read_data_fifo_pop_first | 
+                                                                 bus_return_atomic_str    ) & (atomic_mem_data_sent | 
+                                                                                               atomic_bus_data_ready)                        )|
+                                      (~bus_return_merge_data & ~bus_return_atomic_data & ((bus_dtr_return_data_sent  |                        // ~merge & ~atomic 
+                                                                                            bus_return_data_ready     | 
+                                                                                            bus_no_return_data        ) & (bus_fill_data_sent             | 
+                                                                                                                           bus_fill_data_ready & 
+                                                                                                                           (~read_data_fifo_pop_first |
+                                                                                                                             ccp_cache_fill_fifo_avail)   | 
+                                                                                                                           bus_no_fill)));
+    assign bus_return_data_last = (bus_return_atomic_data & read_data_fifo_pop_first) |  read_data_fifo_pop_last;
+    assign bus_return_data_cm_type = bus_return_atomic_data ? DT_INV : return_type(read_data_fifo_pop_cm_type);
+\js } else if(useCmc) {
+    assign bus_return_data_cm_type = return_type(read_data_fifo_pop_cm_type);
+    assign bus_return_data_last = read_data_fifo_pop_last;
+    assign read_data_fifo_pop_ready = bus_return_merge_data ? merge_mem_data_ready : 
+                                                             (bus_dtr_return_data_sent  | 
+                                                              bus_return_data_ready     |   
+                                                              bus_no_return_data        ) & (bus_fill_data_sent                                 | 
+                                                                                             bus_fill_data_ready & (~read_data_fifo_pop_first |
+                                                                                                                     ccp_cache_fill_fifo_avail) | 
+                                                                                             bus_no_fill);
+\js } else {
+    assign bus_return_data_cm_type = return_type(read_data_fifo_pop_cm_type);
+    assign bus_return_data_last = read_data_fifo_pop_last;
+    assign read_data_fifo_pop_ready = bus_return_merge_data ? merge_mem_data_ready : bus_return_data_ready;
+\js }
+
+    assign bus_dtr_return_data_sent_in = (bus_return_data_valid & bus_return_data_ready) & ~(read_data_fifo_pop_ready & read_data_fifo_pop_valid);
+    assign bus_dtr_return_data_sent_en = (read_data_fifo_pop_ready & read_data_fifo_pop_valid) | (bus_return_data_valid & bus_return_data_ready); 
+    \=obj.lib.dffre(1, 'bus_dtr_return_data_sent', 'bus_dtr_return_data_sent_in', "1'b0", 'bus_dtr_return_data_sent_en', 'clk', 'reset_n')=\
+    assign bus_return_merge_data = is_merge(read_data_fifo_pop_cm_type);
+
+\js if(useCmc) {
+    assign bus_fill_data_sent_in = (bus_fill_data_valid & bus_fill_data_ready) & ~(read_data_fifo_pop_ready & read_data_fifo_pop_valid);
+    assign bus_fill_data_sent_en = (read_data_fifo_pop_ready & read_data_fifo_pop_valid) | (fill_data_valid & bus_fill_data_ready);
+    \=obj.lib.dffre(1, 'bus_fill_data_sent', 'bus_fill_data_sent_in', "1'b0", 'bus_fill_data_sent_en', 'clk', 'reset_n')=\
+
+\js }     
+    assign bus_return_data_id           = read_data_fifo_pop_return_id;
+    assign bus_return_data_target_id    = read_data_fifo_pop_aiu_id;
+    assign bus_return_data_r_message_id = read_data_fifo_pop_aiu_trans_id;
+    assign bus_return_data_fill         = read_data_fifo_pop_fill;
+    assign bus_return_data_data         = read_data_fifo_pop_data;
+    assign bus_return_data_first        = read_data_fifo_pop_first;
+    assign bus_return_data_vz           = read_data_fifo_pop_vz;
+    assign bus_return_data_rd_type      =~bus_return_merge_data;
+\js if (wUser != 0) { 
+    assign bus_return_data_user		= read_data_fifo_pop_user;
+\js }
+\js // this is only used for DTWMrgMrd, resp buffer is pre-allocated earlier in protocol control
+\js // the field is re-assigned when merge buffer query data from wdata buffer
+    assign bus_return_data_trans_id     = read_data_fifo_pop_late_resp_id;     
+    assign bus_return_data_poison       = (read_data_fifo_pop_resp == SLVERR) | (read_data_fifo_pop_resp == DECERR);
+    assign bus_return_data_err_type     = (read_data_fifo_pop_resp == DECERR) ? 2'b10 
+                                                                              : (read_data_fifo_pop_resp == SLVERR) ? 2'b01 
+                                                                                                                    : 2'b00; 
+\js // Only send exokay if there is no error being returned
+\jsbegin
+if (obj.lib.getParam("nExclusiveEntries")>0){
+\jsend
+    assign bus_return_data_exokay       = read_data_fifo_pop_es ? (~read_data_fifo_pop_resp[1] && (read_data_fifo_pop_ex_pass )) : 1'b0;
+\jsbegin
+} else {
+\jsend
+    assign bus_return_data_exokay       = read_data_fifo_pop_es ? (~read_data_fifo_pop_resp[1] && read_data_fifo_pop_resp[0]) : 1'b0;
+\jsbegin
+}
+\jsend   
+    assign bus_return_data_tm           = read_data_fifo_pop_tm;
+    assign bus_return_data_intf_size    = read_data_fifo_pop_intf_size;
+    assign bus_return_data_size         = read_data_fifo_pop_size;
+
+\js // Atomic compare return half of the data specified in the size.
+\js // TODO: when DMI supports 64-bit width, more than one beat of return data is possible. 
+
+    assign bus_return_data_mpf1         = read_data_fifo_pop_mpf1;
+
+\js if (wQos) {
+    assign bus_return_data_qos          = read_data_fifo_pop_qos;
+\js }
+
+    // Drive Lookup
+    assign rtt_lookup_valid = rd_buffer_out_valid && rd_buffer_out_ready && rd_buffer_out_last;
+    assign rtt_lookup_id = rd_buffer_out_id;
+
+
+\js if(useAtomic) {
+    assign atomic_bus_data_valid = bus_return_atomic_data & read_data_fifo_pop_valid & ~atomic_mem_data_sent; 
+    assign atomic_ccp_data_valid = atomic_rd_valid_q; 
+    assign atomic_rd_ready = atomic_ccp_data_ready & (pop_atomic_hit_id_valid \= useScratchpad ? "& ~atomic_rd_sp | pop_atomic_spad_id_valid & atomic_rd_sp" : ""=\) ;
+    assign atomic_rd_valid_q = atomic_rd_valid & (pop_atomic_hit_id_valid \= useScratchpad ? "& ~atomic_rd_sp | pop_atomic_spad_id_valid & atomic_rd_sp" :""=\);
+    assign atomic_alloc_hit = ~read_alloc_bus_valid;
+\js } else {
+\js }
+\js // Counter for DWID from read
+\js // Set according to address on first, then counts according to data width
+    wire [\=wDwid/dwsPerBeat-1=\:0]  q_dwid;
+    wire                             dwid_en;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] dw_mask;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] dwid_wrap_boundary;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] q_dwid_wrap_boundary;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] size_aligned_dwid;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] q_size_aligned_dwid;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] next_dwid;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] trans_size_dw;
+    wire [\=wDwid/dwsPerBeat-1=\: 0] beat_first_dw;
+
+    assign dwid_en = read_data_fifo_pop_valid & read_data_fifo_pop_ready;
+
+    \=obj.lib.dffre(wDwid/dwsPerBeat, 'q_dwid',                'beat_first_dw',     '{'+wDwid/dwsPerBeat+"{1'b0}}", 'dwid_en', 'clk', 'reset_n')=\
+    \=obj.lib.dffre(wDwid/dwsPerBeat, 'q_dwid_wrap_boundary',  'dwid_wrap_boundary','{'+wDwid/dwsPerBeat+"{1'b0}}", 'dwid_en&read_data_fifo_pop_first', 'clk', 'reset_n')=\
+    \=obj.lib.dffre(wDwid/dwsPerBeat, 'q_size_aligned_dwid',   'size_aligned_dwid', '{'+wDwid/dwsPerBeat+"{1'b0}}", 'dwid_en&read_data_fifo_pop_first', 'clk', 'reset_n')=\
+
+    assign dw_mask = {\=wDwid/dwsPerBeat=\{1'b1}} << \=Math.log2(dwsPerBeat)=\;
+
+\jsbegin
+    //not supported in ncore 3.2
+    /* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if(dwsPerBeat == 1) {
+\jsend
+    assign bus_return_data_dwid = beat_first_dw;
+\js } 
+
+\js if(dwsPerBeat == 2) {
+    assign bus_return_data_dwid = {(beat_first_dw+\=wDwid/2=\'d1) , beat_first_dw};
+\js } 
+
+\js if(dwsPerBeat == 4) {
+    assign bus_return_data_dwid = {(beat_first_dw+\=wDwid/4=\'d3), (beat_first_dw+\=wDwid/4=\'d2), (beat_first_dw+\=wDwid/4=\'d1) , beat_first_dw};
+\js } 
+
+    assign bus_return_data_cdw  = read_data_fifo_pop_dwid;
+    assign next_dwid            = (q_dwid + \=wDwid/dwsPerBeat=\'d\=dwsPerBeat=\);
+    assign trans_size_dw        = is_merge(read_data_fifo_pop_cm_type) ? \=wDwid/dwsPerBeat=\'b1 << (\=wCacheLineOffset-3=\) : \=wDwid/dwsPerBeat=\'b1 << (read_data_fifo_pop_size - \=wSize=\'d3);
+    assign dwid_wrap_boundary   = size_aligned_dwid + trans_size_dw;
+    assign size_aligned_dwid    = read_data_fifo_pop_dwid & ~(trans_size_dw - 1'b1);
+    
+    assign beat_first_dw        = ((read_data_fifo_pop_dwid & dw_mask)          & {\=wDwid/dwsPerBeat=\{ read_data_fifo_pop_first}}                                      )|
+                                  (q_size_aligned_dwid                  & {\=wDwid/dwsPerBeat=\{~read_data_fifo_pop_first & (next_dwid == q_dwid_wrap_boundary)}})|
+                                  (next_dwid                            & {\=wDwid/dwsPerBeat=\{~read_data_fifo_pop_first &~(next_dwid == q_dwid_wrap_boundary)}}); 
+
+\jsbegin
+    var axiInterfaceB = obj.lib.getParam('axiInterface', 'b_');
+    var axiInterfaceBInv = {};
+    for(var signal in axiInterfaceB) {
+        axiInterfaceBInv[signal] = -axiInterfaceB[signal];
+    }
+
+\jsend
+ 
+
+    //
+    // WTT lookup
+    //
+
+    assign return_resp_valid = write_resp_fifo_pop_valid;
+    assign write_resp_fifo_pop_ready  = return_resp_ready;
+    \jsbegin
+    if(obj.lib.getParam("nExclusiveEntries")>0){
+    \jsend
+    assign return_resp_resp  = write_resp_fifo_pop_resp | {\=axiInterfaceBInv.resp-1=\'d0,return_resp_ex_pass & wtt_lookup_es & ~write_resp_fifo_pop_resp[1]};
+    \jsbegin
+    } else {
+    \jsend
+    assign return_resp_resp  = write_resp_fifo_pop_resp ;
+    \jsbegin
+    }
+   \jsend
+    \=bundleFunctions.assignByBundle('return_resp_', 'wtt_lookup_', wttLookup, ['ready', 'valid',"es","addr","ns"], obj.lib.bundle)=\
+
+    \=obj.lib.instance({
+        instanceName: 'write_resp_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            width: Math.abs(bundleFunctions.getBundleWidth(obj.lib.getParam('axiInterface', 'b_'), ['valid', 'ready'], obj.lib.bundle)),
+            depth: 2,
+            zerodepth: 0,
+            bypass_mode: 0,
+            interface: axiInterfaceBInv
+        },
+        verilogParams: {},
+        ports: {},
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        },{
+            modulePrefix: 'push_',
+            localPrefix: 'write_resp_',
+            interface: obj.lib.getParam('axiInterface', 'b_')
+        },{
+            modulePrefix: 'pop_',
+            localPrefix: 'write_resp_fifo_pop_',
+            interface: obj.lib.getParam('axiInterface', 'b_')
+        }],
+        portsDelimiter: '\n        '
+    })=\
+
+\js if(useAtomic) {
+    assign atomic_bus_data_cm_type      = read_data_fifo_pop_cm_type;
+    assign atomic_bus_data_id           = bus_return_data_id;
+    assign atomic_bus_data_poison       = bus_return_data_poison;
+    assign atomic_bus_data_target_id    = bus_return_data_target_id;
+    assign atomic_bus_data_r_message_id = bus_return_data_r_message_id;
+    assign atomic_bus_data_trans_id     = bus_return_data_trans_id;
+    assign atomic_bus_data_data         = bus_return_data_data;
+    assign atomic_bus_data_dwid         = bus_return_data_dwid;
+    assign atomic_bus_data_first        = bus_return_data_first;
+    assign atomic_bus_data_last         = read_data_fifo_pop_last;
+    assign atomic_bus_data_vz           = bus_return_data_vz;
+    assign atomic_bus_data_sp           = 1'b0;
+    assign atomic_bus_data_cdw          = \=atomicMemInterface.cdw=\'d0;
+    assign atomic_bus_data_err_type     = 2'b0;
+    assign atomic_bus_data_tm           = \=atomicMemInterface.tm=\'d0;
+    assign atomic_bus_data_rd_type      = \=atomicMemInterface.rd_type=\'d0;
+    assign atomic_bus_data_exokay       = \=atomicMemInterface.exokay=\'d0;
+\jsbegin
+    // AXI user fields not avail on w/r data channels for ncore 3.2/3.4
+    /* istanbul ignore if env ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wUser != 0) { \jsend
+    assign atomic_bus_data_user		= bus_return_data_user;
+\jsbegin
+    } \jsend
+    assign atomic_ccp_data_cm_type      = atomic_rd_cm_type;
+    assign atomic_ccp_data_id           = pop_atomic_hit_id;
+    assign atomic_ccp_data_poison       = atomic_rd_poison;
+    assign atomic_ccp_data_target_id    = atomic_rd_target_id;
+    assign atomic_ccp_data_r_message_id = atomic_rd_r_message_id;
+    assign atomic_ccp_data_trans_id     = atomic_rd_trans_id;
+    assign atomic_ccp_data_data         = atomic_rd_data;
+    assign atomic_ccp_data_dwid         = atomic_rd_dwid;
+    assign atomic_ccp_data_first        = atomic_rd_first;
+    assign atomic_ccp_data_last         = atomic_rd_last;
+    assign atomic_ccp_data_vz           = atomic_rd_vz;
+    assign atomic_ccp_data_sp           = atomic_rd_sp;
+    assign atomic_ccp_data_cdw          = \=atomicMemInterface.cdw=\'d0;
+    assign atomic_ccp_data_err_type     = 2'b0;
+    assign atomic_ccp_data_tm           = \=atomicMemInterface.tm=\'d0;
+    assign atomic_ccp_data_rd_type      = \=atomicMemInterface.rd_type=\'d0;
+    assign atomic_ccp_data_exokay       = \=atomicMemInterface.exokay=\'d0;
+\jsbegin
+    // AXI user fields not avail on w/r data channels for ncore 3.2/3.4
+    /* istanbul ignore if env ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wUser != 0 ) { \jsend
+    assign atomic_ccp_data_user		= atomic_rd_user;
+\jsbegin
+    } \jsend
+\js if ( wQos != 0 ){
+    assign atomic_ccp_data_qos          = atomic_rd_qos;
+    assign atomic_bus_data_qos          = bus_return_data_qos;
+\js }
+
+
+\js var wAtomicMemDataPkt = bundleFunctions.getBundleWidth(atomicMemInterface, ['valid', 'ready', 'last'], obj.lib.bundle); 
+
+    wire [\=wAtomicMemDataPkt-1=\:0] atomic_bus_data_pkt;
+    wire [\=wAtomicMemDataPkt-1=\:0] atomic_ccp_data_pkt;
+    wire [\=wAtomicMemDataPkt-1=\:0] atomic_mem_data_pkt;
+    \=obj.lib.instance({
+        instanceName: 'atomic_mem_data_muxarb',
+        moduleName: 'muxarb',
+        params: {
+            number_of_inputs: 2,
+            width           : wAtomicMemDataPkt,
+            sink_type       : 'RdyVld',
+            pipeline        : 0,
+            arb_priority    : 'Fixed',
+            sfi_compliant   : 0,
+            output_grant    : 0
+        },
+        verilogParams: {},
+        ports: {
+            sink1_valid     : 'atomic_bus_data_valid',
+            sink1_ready     : 'atomic_bus_data_ready',
+            sink1_data      : 'atomic_bus_data_pkt',
+            sink1_last      : 'atomic_bus_data_last',
+            sink0_valid     : 'atomic_hit_sink1_valid',
+            sink0_ready     : 'atomic_ccp_data_ready',
+            sink0_data      : 'atomic_ccp_data_pkt',
+            sink0_last      : 'atomic_ccp_data_last',
+            source_valid    : 'atomic_mem_data_valid', 
+            source_ready    : 'atomic_mem_data_ready',
+            source_last     : 'atomic_mem_data_last',
+            source_data     : 'atomic_mem_data_pkt'
+
+        },
+        interfaces: [{
+            modulePrefix: '', localPrefix: '', interface: clkInterface}
+        ]
+    })=\
+    assign atomic_bus_data_pkt = \=bundleFunctions.packetizeBundle('atomic_bus_data_',  atomicMemInterface, ['valid', 'ready', 'last'], obj.lib.bundle)=\;
+    assign atomic_ccp_data_pkt = \=bundleFunctions.packetizeBundle('atomic_ccp_data_',  atomicMemInterface, ['valid', 'ready', 'last'], obj.lib.bundle)=\;
+    assign \=bundleFunctions.packetizeBundle('atomic_mem_data_', atomicMemInterface, ['valid', 'ready', 'last'], obj.lib.bundle)=\ = atomic_mem_data_pkt;
+    \jsbegin //CONC-9137 fix. qualify the valid in the muxarb with content of the atomic buffer.
+    if(useScratchpad) {
+    \jsend
+    assign atomic_hit_sink1_valid = atomic_ccp_data_valid & ((pop_sp_hit_ptr_valid & atomic_ccp_data_sp) |(~atomic_ccp_data_sp & pop_hit_ptr_valid));
+    \jsbegin
+    } else {
+    \jsend
+        assign atomic_hit_sink1_valid = atomic_ccp_data_valid & pop_hit_ptr_valid;
+    \jsbegin
+    }
+    \jsend
+\js }
+
+\jsbegin
+ if(useAtomic) {
+   var dmi_atomic_engine_ports =    {alloc_valid     : 'atomic_alloc_valid',
+                                    alloc_ready     : 'atomic_alloc_ready',
+                                    alloc_hit       : 'atomic_alloc_hit',
+                                    alloc_rtt_id    : 'read_alloc_id',
+                                    alloc_type      : 'atomic_alloc_type',
+                                    alloc_addr      : 'read_alloc_addr',
+                                    alloc_ns        : 'read_alloc_ns',
+                                    alloc_sp        : 'read_alloc_sp',
+                                    op_drop         : 'atomic_op_drop',
+                                    op_drop_rtt_id  : 'atomic_op_drop_id',
+                                    pop_hit_ptr_valid    : 'pop_hit_ptr_valid'};
+    if (useScratchpad){
+    dmi_atomic_engine_ports["pop_sp_hit_ptr_valid"]='pop_sp_hit_ptr_valid';
+    }
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'dmi_atomic_engine',
+        moduleName: 'dmi_atomic_engine',
+        params: {
+            clkInterface            : obj.lib.getParam('clkInterface'),
+            numEntries              : numAtomicEntries,
+            wAtomicType             : wAtomicType,
+            wAtomicOpType           : wAtomicOpType,
+            dw                      : wData,
+            returnDataInterface     : obj.lib.getParam('returnDataInterface'),
+            writeProtDataInterface  : obj.lib.getParam('writeProtDataInterface'),
+            readAllocateInterface   : obj.lib.getParam('readAllocateInterface'),
+            wAddr                   : obj.lib.getParam('wAddr'),
+            useScratchpad           : useScratchpad,
+            atomicFillInterface     : atomicFillInterface,
+            atomicMemInterface      : atomicMemInterface,
+            assertOn                : assertOn
+        },
+        verilogParams: {},
+        ports: dmi_atomic_engine_ports,
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        },{
+            modulePrefix: 'alloc_',
+            localPrefix: 'read_alloc_',
+            interface: obj.lib.getParam('readAllocateInterface'), 
+            exclude:['valid','ready']
+        },{
+            modulePrefix: 'proc_data_',
+            localPrefix: 'atomic_op_',
+            interface: obj.lib.getParam('writeProtDataInterface')
+        },{
+            modulePrefix: 'mem_data_in_',
+            localPrefix: 'atomic_mem_data_',
+            interface: atomicMemInterface,
+            exclude: []
+        },{
+            modulePrefix: 'result_data_',
+            localPrefix: 'atomic_result_data_',
+            interface: obj.lib.getParam('returnDataInterface'),
+            exclude: ['intf_size', 'size', 'mpf1']
+        },{
+            modulePrefix: 'fill_',
+            localPrefix: 'atomic_fill_',
+            interface: atomicFillInterface ,
+            exclude: []
+        }],
+        portsDelimiter: '\n        '
+    })=\
+
+    assign atomic_result_data_ready = atomic_fill_data_ready;
+    assign atomic_alloc_type = atomic_decode(read_alloc_cm_type);
+    assign atomic_alloc_valid = read_alloc_bus_valid ? read_alloc_valid & rtt_alloc_ready & read_trans_fifo_ready & is_atomic(read_alloc_cm_type) 
+                                                     : read_alloc_valid & rtt_alloc_ready & is_atomic(read_alloc_cm_type);
+\js } else {
+\js }
+
+\js // merge engine instantiation
+    \=obj.lib.instance({
+        instanceName: 'dmi_merge_engine',
+        moduleName: 'dmi_merge_engine',
+        params: {
+            clkInterface            : obj.lib.getParam('clkInterface'),
+            numEntries              : numMergeEntries,
+            dw                      : wData,
+            returnDataInterface     : obj.lib.getParam('returnDataInterface'),
+            writeProtDataInterface  : obj.lib.getParam('writeProtDataInterface'),
+            readAllocateInterface   : obj.lib.getParam('readAllocateInterface'),
+            writeDataBufferInterface: obj.lib.getParam('writeDataBufferInterface'),
+            wAddr                   : obj.lib.getParam('wAddr'),
+            wSize                   : obj.lib.getParam('rttLookup', 'size'),
+            wCacheLineOffset        : obj.lib.getParam('wCacheLineOffset'),
+            wBeat                   : wBeat,
+            cmType                  : cmType
+        },
+        verilogParams: {},
+        ports: {
+                ns_in       : 'read_data_fifo_pop_ns',
+                addr_in     : 'read_data_fifo_pop_addr',
+                size_in     : 'read_data_fifo_pop_size',
+                fill_in     : 'bus_return_data_fill',
+                fill_out    : 'merge_result_data_fill',
+                vz_out      : 'merge_vz',
+                fill_addr   : 'merge_fill_addr',
+                fill_ns     : 'merge_fill_ns',
+                req_id_in   : 'read_data_fifo_pop_trans_id'
+                },
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        },{
+            modulePrefix: 'mrg_',
+            localPrefix: 'mrg_',
+            interface: obj.lib.getParam('writeDataBufferInterface')
+        },{
+            modulePrefix: 'mem_data_in_',
+            localPrefix: 'merge_mem_data_',
+            interface: obj.lib.getParam('returnDataInterface')
+        },{
+            modulePrefix: 'result_data_',
+            localPrefix: 'merge_result_data_',
+            interface: obj.lib.getParam('returnDataInterface')
+        }],
+        portsDelimiter: '\n        '
+    })=\
+
+\js if(useAtomic) {
+    assign push_atomic_hit_id_valid = read_alloc_valid & \=useScratchpad ? "~read_alloc_sp &" : ""=\ ~read_alloc_bus_valid & is_atomic(read_alloc_cm_type) & read_alloc_ready;
+    assign push_atomic_hit_id = read_alloc_id;
+    assign pop_atomic_hit_id_ready = atomic_rd_ready & atomic_rd_last \=useScratchpad? "& ~atomic_rd_sp" : ""=\;
+    
+    \=obj.lib.instance({
+        instanceName: 'atomic_hit_id_fifo',
+        moduleName: 'fifo',
+        params: {
+            width: wId,
+            depth: nRttEntries,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        interfaces: [{ modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface') }],
+        ports: {
+            push_valid: 'push_atomic_hit_id_valid',
+            push_ready: 'push_atomic_hit_id_ready',
+            push_data:  'push_atomic_hit_id',
+            pop_valid:  'pop_atomic_hit_id_valid',
+            pop_ready:  'pop_atomic_hit_id_ready',
+            pop_data:   'pop_atomic_hit_id'
+        },
+        portsDelimiter: '\n        '
+    })=\
+
+
+
+\js if (useScratchpad){
+        assign push_atomic_spad_id_valid = read_alloc_sp & read_alloc_valid & ~read_alloc_bus_valid & is_atomic(read_alloc_cm_type) & read_alloc_ready;
+        assign push_atomic_spad_id = read_alloc_id;
+        assign pop_atomic_spad_id_ready = atomic_rd_ready & atomic_rd_last & atomic_rd_sp;
+
+        \=obj.lib.instance({
+            instanceName: 'atomic_spad_id_fifo',
+            moduleName: 'fifo',
+            params: {
+                width: wId,
+                depth: nRttEntries,
+                zerodepth: 0,
+                bypass_mode: 0
+            },
+            interfaces: [{ modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface') }],
+            ports: {
+                push_valid: 'push_atomic_spad_id_valid',
+                push_ready: 'push_atomic_spad_id_ready',
+                push_data:  'push_atomic_spad_id',
+                pop_valid:  'pop_atomic_spad_id_valid',
+                pop_ready:  'pop_atomic_spad_id_ready',
+                pop_data:   'pop_atomic_spad_id'
+            },
+            portsDelimiter: '\n        '
+        })=\
+\js }
+
+\js }
+    function automatic [\=wAtomicType-1=\:0] atomic_decode;
+        input [\=obj.lib.getParam('readAllocateInterface', 'cm_type')-1=\:0] cm_type;
+        begin
+            atomic_decode  = (STR     & {\=wAtomicType=\{(cm_type == ATM_STR)}})|
+                             (LD      & {\=wAtomicType=\{(cm_type == ATM_LD)}})|
+                             (SWAP    & {\=wAtomicType=\{(cm_type == ATM_SWAP)}})|
+                             (COMPARE & {\=wAtomicType=\{(cm_type == ATM_COMP)}});
+        end 
+    endfunction
+
+
+    function automatic is_atomic;
+        input [\=obj.lib.getParam('readAllocateInterface', 'cm_type')-1=\:0] cm_type;
+        begin
+            is_atomic = (cm_type == ATM_STR)|
+                        (cm_type == ATM_LD)|
+                        (cm_type == ATM_SWAP)|
+                        (cm_type == ATM_COMP);
+        end
+    endfunction
+
+
+    function automatic is_merge;
+        input [\=obj.lib.getParam('readAllocateInterface', 'cm_type')-1=\:0] cm_type;
+        begin
+            is_merge  = (cm_type == MRG_INV)|
+            //            (cm_type == MRG_SCLN)|
+            //            (cm_type == MRG_SDTY)|
+                        (cm_type == MRG_UCLN)|
+                        (cm_type == MRG_UDTY);
+        end
+    endfunction
+
+    function automatic is_rd;
+        input [\=obj.lib.getParam('readAllocateInterface', 'cm_type')-1=\:0] cm_type;
+        begin
+            is_rd  = (cm_type==RD_WSCLN) |
+                     (cm_type==RD_WUCLN) |
+                     (cm_type==RD_WUNIQ) |
+                     (cm_type==RD_WINV)  |
+                     (cm_type==NC_CMDRD) ;
+        end
+    endfunction
+
+
+    function automatic no_return;
+        input [\=obj.lib.getParam('readAllocateInterface', 'cm_type')-1=\:0] cm_type;
+        begin
+            no_return  = /*(cm_type == RD_HNT)|*/
+                         (cm_type == RD_PRF)|
+                         (cm_type == CMD_PRF);
+        end
+    endfunction
+
+
+    function automatic [\=wCmType-1=\:0] return_type;
+        input [\=wCmType-1=\:0] cm_type;
+        begin
+            return_type = DT_SCLN & {\=wCmType=\{(cm_type==RD_WSCLN)}}                                         | //| cm_type==MRG_SCLN)}} |
+                          DT_UCLN & {\=wCmType=\{(cm_type==RD_WUCLN | cm_type==MRG_UCLN | cm_type==RD_WUNIQ)}} |
+                          DT_INV  & {\=wCmType=\{(cm_type==RD_WINV  | cm_type==MRG_INV  | cm_type==NC_CMDRD)}} |
+//                          DT_SDTY & {\=wCmType=\{cm_type==MRG_SDTY}}                                           |
+                          DT_UDTY & {\=wCmType=\{(cm_type==MRG_UDTY)}}                                         |
+                          cm_type & {\=wCmType=\{~is_merge(cm_type) & ~is_rd(cm_type)}};
+        end
+    endfunction
+\jsbegin
+// TODO: 
+// Assertions:
+// 1. should never have case where read_alloc_bus_valid == 1 and read alloc_valid == 0
+// Assumptions: 
+// 1. readTransactionInterface.id width is always same as axi arid width
+\jsend
+endmodule

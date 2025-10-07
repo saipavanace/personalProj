@@ -1,0 +1,186 @@
+<h2 id="Ncore3.6FSYS_SCB:2024w14-BlockingProgress:"><strong>Blocking Progress:</strong></h2><ol start="1"><li><p>N/A</p></li></ol><h2 id="Ncore3.6FSYS_SCB:2024w14-Highlights:"><strong>Highlights:</strong></h2><ol start="1"><li><p>Release JIRAs debug &amp; fixes.</p></li><li><p>Sequence restructure task for FSYS tests. Details <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/461668395/Sequence+reusability+support" data-linked-resource-id="461668395" data-linked-resource-version="34" data-linked-resource-type="page">HERE</a></p></li><li><p>Address manager improvements.</p></li></ol><h2 id="Ncore3.6FSYS_SCB:2024w14-Activities:"><strong>Activities:</strong></h2><ol start="1"><li><p><strong>Memory Consistency Checker</strong></p><ol start="1"><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14176" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14176?src=confmacro" class="jira-issue-key">CONC-14176</a>
+                            </span>
+ Needed to check addr falling in scratchpad boundary and data=0x0 when addr was getting accessed again(not only for the first access, as understood during initial updates). After this fix test passed, ran mini regression and checked in the fix.</p></li></ol></li><li><p><strong>Coherency checker</strong></p><ol start="1"><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13954" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13954?src=confmacro" class="jira-issue-key">CONC-13954</a>
+                            </span>
+  </p><ol start="1"><li><p>This was stimulus issue. Root caused and re-assigned to stimulus owner.</p></li><li><p>Hema will also add a check in IOAIU scoreboard to make future fails more accurate &amp; save debug efforts.</p></li></ol></li></ol></li><li><p><strong>FSYS Scoreboard</strong></p><ol start="1"><li><p>No efforts.</p></li></ol></li><li><p><strong>Addr Manager</strong></p><ol start="1"><li><p>FIXED: 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14173" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14173?src=confmacro" class="jira-issue-key">CONC-14173</a>
+                            </span>
+ DMI didn’t have any COH region. I had added a fix for non-coh region address access in DMI, I added similar fix for coh region as well. But this wouldn’t fix the test, test will need to make sure it only asks for and uses an address if there is a coherent region programmed for a DMI. Assigned the Jira back to test owner to add relevant changes.</p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14119" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14119?src=confmacro" class="jira-issue-key">CONC-14119</a>
+                            </span>
+  - Addr MGR improvements JIRA</p><ol start="1"><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14197" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14197?src=confmacro" class="jira-issue-key">CONC-14197</a>
+                            </span>
+ - Subtask executed by <a class="confluence-userlink user-mention" data-account-id="712020:8f1e1572-cdc5-4487-b043-1a0e740fd71a" href="https://arterisip.atlassian.net/wiki/people/712020:8f1e1572-cdc5-4487-b043-1a0e740fd71a?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Aatman Kansagra (Deactivated)</a> . </p></li><li><p>Further planning and execution will happen in following weeks.</p></li></ol></li></ol></li><li><p><strong>Sequence restructure:</strong></p><ol start="1"><li><p>Details: <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/461668395/Sequence+reusability+support" data-linked-resource-id="461668395" data-linked-resource-version="34" data-linked-resource-type="page">Sequence reusability support</a> </p></li><li><p>Filed a Jira on evaluating how addresses are constrained in sequences: <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-14120" rel="nofollow">CONC-14120</a></p></li><li><p>Filed a Jira on methodology related improvement about top level config object to encapsulate block level config objects: <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-14153" rel="nofollow">CONC-14153</a></p></li><li><p>Helped Hema and Sanjeev with figuring out package import issues. The compile order of packages were not maintained and hence they were running into never ending compilation issues.</p></li></ol></li></ol>

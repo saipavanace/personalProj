@@ -1,0 +1,225 @@
+<p><strong>STEPS TO GET STARTED:</strong></p><p><br/></p><p><strong>SIGNALS USED FOR DEBUG:</strong></p><p><br/></p><p>Concerto MUX signals to probe:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">cmd_req_*, cmd_rsp_*
+snp_req_*, snp_rsp_*
+str_req_*, str_rsp_*
+mrd_req_*, mrd_rsp_*
+rbr_req_*, rbr_rsp_*</pre>
+</div></div><p><br/></p><p>Transaction Manager (dce_tm) signals to probe:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">att_valid
+att_rb_id_req, att_rb_id_grant
+att_rb_id_void_valid, att_rb_id_void_ready
+att_mrd_credit_req, att_mrd_credit_grant
+att_snp_credit_req, att_snp_credit_grant</pre>
+</div></div><p><br/></p><p>Directory Manager (dce_dm) signals to probe:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">t_p0_sel
+t_rs_sel
+t_wr_sel
+w_rc_sel
+w_p0_valid, n_p0_ready
+w_p1_valid, n_p1_ready
+w_p2_valid, n_p2_ready
+w_wr_valid
+idle_o
+dm_upd_*     input  interface signals
+dm_cmd_req_* input  interface signals
+dm_cmd_rsp_* output interface signals
+dm_rtr_*     output interface signals
+dm_recall_*  output interface signals
+dm_write_*   input  interface signals
+dm_error_*   output interface signals</pre>
+</div></div><p>The input of the pipeline for Directory Manager is controlled by the<span> </span><strong>t_p0_sel</strong><span> </span>signal which is the select signal of the <strong>req_mux</strong>. See code block below.</p><p>When t_p0_sel == 2'b00, the input of the pipeline is gated off, i.e. nothing is allowed to enter the pipeline stage P0.</p><p>When t_p0_sel == 2'b01, the dm_upd_req (from the input interface for directory update request) is selected to enter the pipeline stage P0.</p><p>When t_p0_sel == 2'b10, the dm_cmd_req (from the input interface for command request) is selected to enter the pipeline stage P0.</p><p>NOTE: t_p0_sel is a onehot0 signal.</p><p>When (w_p0_valid &amp; n_p0_ready) is true, then the P0 request is accepted.</p><p>Directory Manager is servicing 3 requests coming from the request input interfaces:</p><p>  - Directory Write request (from dm_write interface, has the highest priority, and causes t_p0_sel==2'b00)</p><p>  - Directory Update request (from upd_req interface, has the second highest priority, and causes t_p0_sel==2'b01)</p><p>  - Directory Lookup request (from cmd_req interface, has the third highest priority, and causes t_p0_sel==2'b10)</p><p><br/></p><p class="auto-cursor-target">The output of the <strong>req_mux</strong> flows through two pipeline stages P1 and P2. </p><p class="auto-cursor-target">The output of P2 goes to a demux. The select of the demux is controlled by the<span> </span><strong>t_rs_sel</strong><span> </span>signal.</p><p class="auto-cursor-target">When t_rs_sel==3'b000, it indicates t_p2_stall is asserted and hence the pipeline is stalled.</p><p class="auto-cursor-target">When t_rs_sel==3'b001, it indicates the output of P2 goes to dm_cmd_rsp interface that delivers the directory lookup response.</p><p class="auto-cursor-target">When t_rs_sel==3'b010, it indicates the output of P2 goes to the Retry pipestage rr that drives the dm_rtr interface for Retry.</p><p class="auto-cursor-target">When t_rs_sel==3'b100, it indicates the output of P2 reaches the completion for update request.</p><p class="auto-cursor-target">NOTE: t_rs_sel is a onehot0 signal.</p><p><br/></p><p><strong>Directory Manager pipeline diagram</strong>:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">                      MUX             PipeStage            PipeStage           DEMUX
+                     +---+             +-----+             +-----+             +---+
+                     | r |             |     |             |     |             | r |  
+dm_upd_req_valid_i -&gt;| e | w_p0_valid  |  p  | w_p1_valid  |  p  | w_p2_valid  | r | {n_up_valid, n_rr_valid, dm_cmd_rsp_valid_o}
+dm_upd_req_ready_o &lt;-| q |------------&gt;|  1  |------------&gt;|  2  |------------&gt;|   |---------------------------------------------&gt;
+                     |   |             |     |             |     |             | d |
+dm_cmd_req_valid_i -&gt;| m | n_p0_ready  |     | n_p1_ready  |     | n_p2_ready  | e | {1&#39;b1,       w_rr_ready, dm_cmd_rsp_ready_i}
+dm_cmd_req_ready_o &lt;-| u |&lt;------------|     |&lt;------------|     |&lt;------------| m |&lt;---------------------------------------------
+                     | x |             |     |             |     |             | u |
+                     |   |             |  .  |             |  .  |             | x |
+                     +___+             +-/ \-+             +-/ \-+             +---+
+                       |                                                         |
+                    t_p0_sel                                                   t_rs_sel
+</pre>
+</div></div><p><br/></p><p>Directory Manager at the pipeline output asserts the Retry Interface to indicate it's not able to process the request.</p><p><strong>Directory Manager retry interface diagram:</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">                 +-----+
+   n_rr_valid --&gt;|  r  |--&gt; w_rr_valid --&gt; dm_rtr_valid_o
+                 |  r  |
+   w_rr_ready &lt;--|     |&lt;-- n_rr_ready &lt;-- dm_rtr_ready_i
+                 |  .  |
+                 +-/ \-+</pre>
+</div></div><p><br/></p><p class="auto-cursor-target">The directory write interface goes through the <strong>wr_mux</strong> shown as below, before reaching all the snoop filters.</p><p class="auto-cursor-target">The select of the wr_mux is controlled by the<span> </span><strong>t_wr_sel</strong><span> </span>signal.</p><p class="auto-cursor-target">When t_wr_sel==2'b00, the output of the mux is inactive, effectively the dm_write interface is blocked.</p><p class="auto-cursor-target">When t_wr_sel==2'b10, the output of the mux is the dm_write request. The output of the mux goes to all the snoop filters.</p><p class="auto-cursor-target"><strong>Directory Maneger write interface diagram</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">The output of the write_mux below goes to all the snoop filters.
+ 
+                          +---+
+      dm_write_*       --&gt;| w |--&gt; w_wr_*     
+                          | r |
+      dm_write_valid_i --&gt;|   |
+      dm_write_ready_o &lt;--| m |--&gt; w_wr_valid
+                          | u |&lt;-- n_wr_ready &lt;-- 1&#39;b1
+               1&#39;b0    --&gt;| x |
+                       &lt;--|   |
+                          +---+
+                            |
+                          t_wr_sel
+</pre>
+</div></div><p class="auto-cursor-target">Directory Manager will assert the Recall Interface when it picks an victim entry in the Snoop Filter for Recall.</p><p class="auto-cursor-target"><strong>Directory Manager recall interface diagram</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">NOTE: n_rc_valids is the recall request valid bit vector, each bit comes from each Snoop Filter in the Directory Manager.
+NOTE: w_rc_readys is the recall request ready bit vector, each bit goes to each Snoop Filter in the Directory Manager.
+ 
+                                     +---+
+                      n_rc_owners    |   |    dm_recall_owner_num_o
+                      n_rc_sbvs      | m |    dm_recall_sharer_vec_o         
+                      n_rc_addrs     | u |    {dm_recall_ns_o, dm_recall_addr_o}
+                      n_rc_ovals  --&gt;| x |--&gt; dm_recall_onwer_val_o
+                                     |   |
+                      n_rc_valids --&gt;|   |--&gt; dm_recall_valid_o
+                                     |   |
+                      w_rc_readys &lt;--|   |&lt;-- dm_recall_ready_i
+                                     +---+
+                                       |
+                                    w_rc_sel
+ 
+                     +--------+
+n_rc_valids       --&gt;| rc_arb |---&gt; w_rc_sel
+                     |        |
+                     |   .    |&lt;--- dm_recall_ready_i
+                     +--/ \---+
+</pre>
+</div></div><p class="auto-cursor-target">Directory Manager Snoop Filter (dce_dir) signals to probe:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">//Update interface for directory invalidate
+in_valid_i, in_addr_i
+
+//Write interface for directory commit
+INPUT: wr_valid_i, wr_addr_i, wr_ways_i, wr_oval_i, wr_owner_i, wr_sbv_i, wr_change_i
+
+//Lookup interface for directory lookup
+INPUT: lu_valid_i, lu_addr_i, lu_iid_i, lu_upd_i, lu_wakeup_i
+OUTPUT: lu_home_o
+
+//P1 interface
+OUTPUT: p1_home_o, p1_rc_hit_o
+INPUT: p1_busy_i, p1_alloc_i, p1_rc_hit_i
+
+//P2 interface
+INPUT: p2_cancel_i, p2_iid_i, p2_vretry_i, p2_stall_i, p2_rc_hit_i
+OUTPUT: p2_vretry_o, p2_retry_o, p2_sbv_o, p2_oval_o, p2_owner_o, p2_ways_o, p2_alloc_o, p2_wb_o, p2_vhit_o, p2_stall_o, p2_up_hit_o, p2_rc_hit_o
+
+OUTPUT: p2_error_o, p2_uerrs_o, p2_cerrs_o, p2_uindex_o, p2_cindex_o
+
+//Recall interface
+INPUT: rc_ready_i
+OUTPUT: rc_valid_o, rc_addr_o, rc_sbv_o, rc_oval_o, rc_owner_o</pre>
+</div></div><p class="auto-cursor-target"><strong>Directory Manager Snoop Filter pipeline diagram</strong>:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">                                                       Per Way
+                  PipeStage                            PipeStage                  
+                  +-----+                              +-----+                      
+                  |     |                              |     |                  
+      n_p1_valid  |  p  | w_p1_valid    n_p2_valid[w]  |  p  | w_p2_valid[w]  
+     ------------&gt;|  1  |------------&gt;  --------------&gt;|  2  |---------------&gt;
+                  |     |                              |     |                
+      w_p1_ready  |     | n_p1_ready    w_p2_ready[w]  |     | n_p2_ready[w]  
+     &lt;------------|     |&lt;------------  &lt;--------------|     |&lt;---------------
+                  |     |                              |     |                
+                  |  .  |                              |  .  |                
+                  +-/ \-+                              +-/ \-+                
+                                                                           
+                                                                        
+     ------------&gt;       -----------&gt;   --------------&gt;       ---------------&gt;
+    {n_p1_home,         {w_p1_home,     n_p2_rentry[w]        w_p2_rentry_raw
+     lu_upd_i,           w_p1_upd,
+     lu_wakeup_i,        w_p1_wakeup,
+     n_p1_ltag,          w_p1_ltag,
+     t_p0_rindex,        w_p1_rindex,
+     t_p0_res}           w_p1_res}
+
+NOTE: Snoop Filter SRAM is accessed in the P0 cycle for SRAM read/write. SRAM output is flopped at the end of P1 cycle. The flopped SRAM output is ECC corrected in P2 cycle. The ECC corrected output is never written back to Snoop Filter SRAM.</pre>
+</div></div><p class="auto-cursor-target"><strong>Directory Manager Snoop Filter Victim Buffer and Recall Interface diagram:</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">                                                                              Per Way
+                                                                              Register
+                                                                              +-----+
+                                                                              |     |                         +---+
+                                                                    P2     --&gt;|  v  |--&gt; q_vb_tag[w]       --&gt;| m |--&gt; n_rc_tag
+                                                                              |  b  |    q_vb_index[w]        | u |    n_rc_index
+                                                                              |     |    q_vb_sbv[w]          | x |    n_rc_sbv
+                                                                              |     |    q_vb_oval[w]         +---+    n_rc_oval
+                                                                              |     |    q_vb_owner[w]          |       n_rc_owner
+                                                                              |  .  |                           |
+                                                                              +-/ \-+                           |
+                                                                                                  +---+         |
+                                                                                                  | a |-----&gt;w_bv_rbv
+                                                                                     t_vb_rvals--&gt;| r |   
+                                                                                     t_vb_arb     | b |
+                                                                                                  +---+
+                                                                              +-----+
+                                                                              |     |
+                                                                n_rc_valid --&gt;|  r  |--&gt; w_rc_valid --&gt; rc_valid_o
+                                                                              |  c  |
+                                                                w_rc_ready &lt;--|     |&lt;-- n_rc_ready &lt;-- rc_ready_i
+                                                                              |  .  |
+                                                                              +-/ \-+
+
+
+                                                                 ------------&gt;       -----------&gt;   --&gt;
+                                                                 {n_rc_tag,          {w_rc_tag,         {rc_addr_o,
+                                                                  n_rc_index,         w_rc_index,        
+                                                                  n_rc_sbv,           w_rc_sbv,          rc_sbv_o,
+                                                                  n_rc_oval,          w_rc_oval,         rc_oval_o,
+                                                                  n_rc_owner}         w_rc_owner}        rc_owner_o}
+
+NOTE: t_vb_rvals is a bit vector that indicates victim buffer valid entries that are eligible for recall. Any victim buffer entries currently in use in the pipeline is excluded.
+
+assign n_rc_valid = (| t_vb_rvals) &amp; (&amp; t_vb_vals);
+
+assign t_vb_vals[w] = (| q_vb_sbv[w]) | q_vb_oval[w];
+assign t_vb_rvals = t_vb_vals &amp; ~({VBN{t_vb_save}} &amp; w_vb_shits) &amp; ~t_vb_hits;
+
+assign t_vb_arb = n_rc_valid &amp; w_rc_ready;</pre>
+</div></div><p class="auto-cursor-target"><strong>DCE Snoop Filter Victim Buffer operations are vb_swapok, vb_moveok, vb_save(i.e. vb recovery).</strong></p><p class="auto-cursor-target">vb_swapok happens when the snoop filter lookup is a victim buffer hit and all tag filter ways are full.</p><p class="auto-cursor-target">vb_swapok operation is carried out in 2 phases. The first phase is transferring an entry from tag filter to victim buffer, and the second phase is directory write from Transaction Manager.</p><p class="auto-cursor-target">vb_moveok happens when the snoop filter lookup is a victim buffer hit and either all tag filter ways are not full or it's an Update invalidate.</p><p class="auto-cursor-target">vb_moveok operation is transferring an entry from victim buffer to tag filter.</p><p class="auto-cursor-target">vb_save (i.e. vb recovery) happens when victim buffer is not hit: when it's a Directory Write without owner &amp; sharer, with available way; or when it's a Directory Update with TagFilter hit.</p><p class="auto-cursor-target">vb_save operation is transferring an entry from victim buffer to tag filter.</p><p class="auto-cursor-target"><strong>DCE Transaction Manager</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">CMDreq          Owner SNPreq Sharer SNPreq  Target SNPreq AIUs to snoop                                    MRDreq                        RBID Alloc
+=============== ============ =============  ============= =============                                    ======                        ==== =====
+CmdRdCln        SnpClnDtr     -             N/A           Owner(if present)                                MrdRdClnWU,MrdRdClnWS         Yes  Yes
+CmdRdVld        SnpVldDtr     -             N/A           Owner(if present)                                MrdRdClnWU,MrdRdClnWS         Yes  Yes
+CmdRdUnq        SnpInvDtr     SnpInvDtr     N/A           All Valid                                        MrdRdWU                       Yes  Yes
+CmdClnVld       SnpClnDtw     -             N/A           Owner(if present)                                MrdCln                        Yes  No
+CmdClnShPsist   SnpClnDtw     -             N/A           Owner(if present)                                MrdCln                        Yes  No
+CmdClnInv       SnpInvDtw     SnpInvDtw     N/A           All Valid                                        MrdFlush                      Yes  No
+CmdClnUnq       SnpInvDtw     SnpInvDtw     N/A           All Valid                                        N/A no mrd                    Yes  Yes
+CmdWrUnqPtl     SnpInvDtw     SnpInvDtw     N/A           All Valid                                        N/A no mrd                    Yes  No
+-----------------------------------------------------------------------------------------------------------------------------------------------
+Cmd*Atm         SnpInvDtw     SnpInvDtw     N/A           All Valid                                        N/A no mrd                    Yes  No
+-----------------------------------------------------------------------------------------------------------------------------------------------
+CmdMkInv        SnpInv        SnpInv        N/A           All Valid                                        MrdInv                        No   No
+CmdMkUnq        SnpInv        SnpInv        N/A           All Valid                                        N/A no mrd                    No   Yes
+CmdWrUnqFull    SnpInv        SnpInv        N/A           All Valid                                        N/A no mrd                    Yes  No
+CmdRdNITC       SnpNITCDtr    -             N/A           Owner(if present)                                MrdRdWInv                     Yes  No
+CmdRdNShDty     SnpNoSDIntDtr -             N/A           Owner(if present)                                MrdRdClnWU,MrdRdClnWS         Yes  Yes
+CmdWrStshFull   SnpInvStsh    SnpInvStsh    SnpInvStsh    Target AIU + All Valid                           N/A no mrd                    Yes  Yes(if Target identified)
+CmdWrStshPtl    SnpUnqStsh    SnpUnqStsh    SnpUnqStsh    Target AIU + All Valid                           N/A no mrd                    Yes  Yes(if Target identified)
+CmdLdCchShd     SnpStshShd    -             SnpStshShd    Target AIU + Owner(if Owner present &amp;&amp; Snarf==1) MrdRdClnWU,MrdRdClnWS;MrdPref Yes  Yes(if Target identified)
+CmdLdCchUnq     SnpStshUnq    SnpStshUnq    SnpStshUnq    Target AIU + All Valid(if Snarf==1)              MrdRdClnWU;MrdPref            Yes  Yes(if Target identified)
+CmdRdNITCClnInv SnpNITCCIDtr  SnpNITCCIDtr  N/A           All Valid                                        MrdRdWInv                     Yes  No
+CmdRdNITCMkInv  SnpNITCMIDtr  SnpNITCMIDtr  N/A           All Valid                                        MrdRdWInv                     Yes  No
+CmdWrEvict      N/A no snoops                                                                              N/A no mrd                    Yes  No
+CmdWrClnFull    N/A no snoops                                                                              N/A no mrd                    Yes  No
+CmdWrClnPtl     N/A no snoops                                                                              N/A no mrd                    Yes  No
+CmdWrBkFull     N/A no snoops                                                                              N/A no mrd                    Yes  No
+CmdWrBkPtl      N/A no snoops                                                                              N/A no mrd                    Yes  No
+-----------------------------------------------------------------------------------------------------------------------------------------------
+CmdEvict        N/A no snoops                                                                              N/A no mrd                    No   No
+-----------------------------------------------------------------------------------------------------------------------------------------------</pre>
+</div></div><p class="auto-cursor-target"><strong>DCE INTAKE HANDLER</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">                                      INTAKE HANDLER     
+           +--------+                 +------------+     
+           |        |                 |            |      
+ UPDreq --&gt;|        |--&gt; SB_UPDreq --&gt;------------------&gt; TO TM dm_upd_req (P0 signal)
+           |  Skid  |                 |  +---+     |
+ CMDreq --&gt;| Buffer |--&gt; SB_CMDreq --&gt;|-&gt;|   |     |
+           |        |                 |  |ARB|----&gt;|----&gt; TO TM dm_cmd_req (P0 signal)
+           |        |    TM_WAKEreq--&gt;|-&gt;|   |     |----&gt; tm_req_alloc_valid (SB_CMDreq valid ready)
+           |        |                 |  +---+&lt;----|&lt;---- tm_req_alloc_ready (TM att_count &lt; ALMOSTFULL)
+           +--------+                 +------------+      tm_req_alloc_vec   (TM find_first(ATT invalid entry vector))
+
+NOTE: The allocate signal to the DCE Transaction Manager ATT Entry is (tm_req_alloc_valid &amp; tm_req_alloc_ready) which is a P0 signal.</pre>
+</div></div><p class="auto-cursor-target">There are 5 different types of requests that are entering the Directory Manager pipeline:<br/>(1)Directory Write request from TM has the highest priority<br/>(2)Directory Update request from SkidBuffer has the second highest priority<br/>(3)Directory Lookup request for Directory Retry request has the third highest priority<br/>(4)Directory Lookup request for ATT Entry Wakeup requests has the fourth highest priority<br/>(5)Directory Lookup request for SkidBuffer Command request has the fifth highest priority</p><p><strong style="letter-spacing: 0.0px;">LOGS USED FOR DEBUG:</strong></p><p><br/></p><p><strong>NOTES:</strong></p><p><br/></p><p><strong>EXAMPLES:</strong></p><p><br/></p><p><strong>IMPROVEMENT REQUESTS TO DV:</strong></p>

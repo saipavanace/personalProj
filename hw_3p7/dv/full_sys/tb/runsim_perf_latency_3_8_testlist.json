@@ -1,0 +1,1873 @@
+{
+   "version": "0.1",
+    "iter": "1",
+	"project":{"name":"Ncore","version":"3.2"},
+	"envlist":{"fsys":"$WORK_TOP/dv/full_sys/tb/runsim_perf_latency_3_8_testlist.json"},
+
+    "plusargs": {
+	"+UVM_MAX_QUIT_COUNT"						: "100",
+	"+UVM_VERBOSITY"							: "UVM_NONE",
+	"+RDY_NOT_ASSERTED_TIMEOUT"					: "5000000",
+	"+UVM_TIMEOUT"								: "200_000_000_000",
+	"+k_targ_src_id_chk_en"						: "1",
+	"+k_sim_timeout"							: "5",
+	"+k_timeout"								: "200_000",
+
+	"+legato_scb_dis"							: "1",
+	"+chiaiu_scb_en"							: "1",
+	"+ioaiu_scb_en"								: "1",
+	"+dce_scb_en"								: "1",
+	"+dmi_scb_en"								: "1",
+	"+dii_scb_en"								: "1",
+	"+dve_scb_en"								: "1",
+	"+newperf_test_scb"							: "1",
+
+	"+EN_FSYS_SCB"								: "1",
+	"+FSYS_TIME_DECAY"							: "9_000_000_000",
+
+	"+is_dve_dtwdbg_reader"                     : "0",
+
+	"+prob_ace_wr_ix_start_state"				: "100",
+	"+prob_ace_rd_ix_start_state"				: "100",
+
+	"+wt_expected_end_state"					: "100",
+	"+wt_legal_end_state_with_sf"				: "0",
+	"+wt_legal_end_state_without_sf"			: "0",
+
+	"+wt_expected_start_state"					: "100",
+	"+wt_legal_start_state"						: "0",
+	
+	"+wt_lose_cache_line_on_snps"				: "0",
+
+	"+k_enable_domain_based_addr_gen"			: "0",
+
+	"+k_ace_master_write_addr_chnl_burst_pct"	: "100",
+	"+k_ace_master_write_data_chnl_burst_pct"	: "100",
+	"+k_ace_master_write_resp_chnl_burst_pct"	: "100",
+
+	"+k_ace_master_read_addr_chnl_burst_pct"	: "100",
+	"+k_ace_master_read_data_chnl_burst_pct"	: "100",
+
+	"+k_ace_slave_read_data_reorder_size"		: "0",
+	"+k_ace_slave_read_data_dly_after_rlast"	: "0",
+	"+k_ace_slave_read_data_interbeatdly_dis"	: "1", 
+	"+k_ace_slave_read_data_interleave_dis"     : "1",
+	
+	"+k_ace_slave_write_addr_chnl_wait_for_vld"	: "0",
+	"+k_ace_slave_write_data_chnl_wait_for_vld"	: "0",
+	"+k_ace_slave_read_addr_chnl_wait_for_vld"	: "0",
+
+	
+	"+k_ace_slave_write_addr_chnl_burst_pct"	: "100",
+	"+k_ace_slave_write_data_chnl_burst_pct"	: "100",
+	"+k_ace_slave_write_resp_chnl_burst_pct"	: "100",
+	"+k_ace_slave_read_addr_chnl_burst_pct"		: "100",
+	"+k_ace_slave_read_data_chnl_burst_pct"		: "100",
+
+	"+k_ace_slave_write_addr_chnl_delay_min" 	: 0,
+	"+k_ace_slave_write_addr_chnl_delay_max" 	: 0,
+	"+k_ace_slave_write_data_chnl_delay_min" 	: 0,
+	"+k_ace_slave_write_data_chnl_delay_max" 	: 0,
+	"+k_ace_slave_write_resp_chnl_delay_min" 	: 0,
+	"+k_ace_slave_write_resp_chnl_delay_max" 	: 0,
+	"+k_ace_slave_read_addr_chnl_delay_min"  	: 0,
+	"+k_ace_slave_read_addr_chnl_delay_max"  	: 0,
+	"+k_ace_slave_read_data_chnl_delay_min"  	: 0,
+	"+k_ace_slave_read_data_chnl_delay_max"  	: 0,
+
+	"+no_bfm_delays"            : "1",		
+
+	"+aiu_qos"				    : 0,				
+	"+qos_threshold"		    : 0,
+	"+aiu_qos_threshold"	    : 0,
+	"+dce_qos_threshold"	    : 0,
+	"+dmi_qos_threshold"	    : 0,
+
+
+	"+dump_bw_results_csv"		: 1,
+	"+dump_latency_results_csv" : 1,
+	"check_ref_csv_bw" 			: 1,
+	"check_latency_ref_csv" 	: 1,
+	
+	"+chi_num_trans"			: "1",
+	"+ioaiu_num_trans"			: "1",
+		
+	"+use_large_memregion"		: "1",
+	"+use_dmi_ig_id"			: "0",
+
+	"+all_gpra_ncmode"			: "1",
+	"+noncoh_region_pct"		: "100",
+		
+	"+no_way_partitioning"		: "1",
+	"+all_ways_for_cache"		: "1",
+
+	"+dmi_mem_order"			: "B",
+	"+dii_mem_order"			: "B",
+	"+ace_transorder_mode"		: "2",
+	
+	
+	"+chi_txn_seq_name"			: "chi_subsys_regular_perf_item",
+	"+chi_subsys_vseq_name"		: "chi_subsys_perf_vseq",
+	
+	"+print_latency_delay"		: "1"
+	
+	
+    },
+    "defines": "ASSERT_ON,INHOUSE_APB_VIP,DATA_ADEPT,FSYS_COVER_ON,FSYS_SCB_COVER_ON,RESILIENCY_TESTING",
+    "tbTopTachl": "$WORK_TOP/../hw-lib/rtl/lib/src/gen_wrapper.tachl",
+    "pkgPath" : "full_sys/tb/dvPkg.json",
+    "configlist": {
+		"hw_cfg_2_snps": {
+			"purpose": "nightly regression: 2 CHI-B, ACE-Lite-E w/ DVM, 2 AXI4 w/ PC",
+			"tcl_lib": "hw_config_02",
+			"tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_2",
+			"defines": "USE_VIP_SNPS_CHI,CHI_B2B_INTF",
+			"label"  : [ "all","perf_regr","custom" ],
+			"compile_args": ""
+		},
+		"hw_cfg_perf_snps": {
+			"purpose": " 2 CHI-B, ACE-Lite-E w/ DVM, 2 AXI4 w/ PC",
+			"tcl_lib": "hw_config_perf",
+			"tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_perf",
+			"defines": "USE_VIP_SNPS_CHI,CHI_B2B_INTF",
+			"label"  : [ "all","perf_regr","custom" ],
+			"compile_args": ""
+		},
+		"hw_cfg_nxpauto": {
+			"purpose": "nightly regression: NXP auto config",
+			"tcl_lib": "hw_config_nxpauto_mpf",
+			"tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_nxpauto",
+			"defines" : "USE_VIP_SNPS_CHI,CHI_B2B_INTF",
+			"label"  : [ "all","perf_regr","custom" ],
+			"compile_args": ""
+		},	
+		"hw_cfg_perf_1": {
+			"purpose": " TB added",
+			"tcl_lib": "hw_config_perf_1",
+			"tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_perf_1",
+			"defines": "USE_VIP_SNPS_CHI,CHI_B2B_INTF",
+			"label"  : [ "all","perf_regr","custom" ],
+			"compile_args": ""
+		},
+		"hw_cfg_perf_2": {
+			"purpose": " TB added",
+			"tcl_lib": "hw_config_perf_2",
+			"tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_perf_2",
+			"defines": "USE_VIP_SNPS_CHI,CHI_B2B_INTF",
+			"label"  : [ "all","perf_regr","custom"],
+			"compile_args": ""
+		}
+
+    },
+    "testlist": {
+		"perf_test": {
+			"name": "concerto_fullsys_performance_test",
+			"purpose": "Performance test with customer configurations to test BW",
+			"config": {
+				"hw_cfg_2_snps":{"plusargs":{}},
+				"hw_cfg_perf_snps":{"plusargs":{}},
+				"hw_cfg_nxpauto":{"plusargs":{}},				
+				"hw_cfg_perf_1":{"plusargs":{"+ref_perf_file_path":"$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_perf_1"}},
+				"hw_cfg_perf_2":{"plusargs":{"+ref_perf_file_path":"$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_perf_2"}}
+			},
+			"iter": 1,
+			"qrsimoptions": "-P",
+			"plusargs": {
+				"+perf_test":"1",		
+
+				"+force_perf_test_coherent_txn": "0",
+				"+noncoherent_test":"1",
+
+				"+use_burst_incr": "1",
+				"+incrementing_axid": "1",
+				"+perf_txn_size": "64",
+				"+force_cacheable_txn": "1",
+
+				"+use_seq_user_addrq":"1",
+				"+use_user_addrq":"25000",
+
+				
+				"+force_perf_test_exclusive": "0",
+				"+force_size": "6",
+
+				"+prob_of_dmi_dii_addr": "100"
+			},
+			"flavors":{			
+				"flav_r_nc_seq_wocache_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_nc_seq_wocache_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_perf_test_mem_attr_cacheable": "0",
+
+						"+force_non_allocate_txn": "1",
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_wocache_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_wocache_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_perf_test_mem_attr_cacheable": "0",
+						"+force_perf_test_mem_attr_ewa": "0",
+
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","regr","custom"]
+				},
+				"flav_rw_nc_seq_wocache_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_nc_seq_wocache_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_perf_test_mem_attr_cacheable": "0",
+						"+force_perf_test_mem_attr_ewa": "0",
+
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"					
+					},
+					"label"  : [ "all","perf_regr","custom","valid_auto_check" ]
+				},
+				"flav_r_nc_seq_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_r_nc_seq_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+init_all_cache"   : "1",
+						
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_dii_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_r_nc_seq_dii_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+use_dii_intrlv_grp": "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+tmp_force_perf_test_mem_attr_device": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_non_allocate_txn": "1",
+						
+						
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_dii_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_dii_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+use_dii_intrlv_grp": "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+tmp_force_perf_test_mem_attr_device": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_dii_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_dii_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+use_dii_intrlv_grp": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+tmp_force_perf_test_mem_attr_device": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_wocache_32_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_nc_seq_wocache_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size" : "32",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_wocache_32_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_wocache_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size" : "32",
+
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_wocache_32_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_wocache_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+						
+						"+perf_txn_size" : "32",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"							
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_32_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_r_nc_seq_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+					
+						"+perf_txn_size" : "32",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_32_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						
+						"+perf_txn_size" : "32",
+						"+init_all_cache"   : "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_32_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+					
+						"+perf_txn_size" : "32",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_wocache_unaligned_32_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_nc_seq_wocache_unaligned_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+
+						"+perf_txn_size" : "32",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_wocache_unaligned_32_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_wocache_unaligned_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+perf_txn_size" : "32",
+						"+perf_unaligned_txn" : "16",
+						
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_wocache_unaligned_32_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_wocache_unaligned_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+						
+						"+perf_txn_size" : "32",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","regr","custom"]
+				},
+				"flav_r_nc_seq_unaligned_32_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_r_nc_seq_unaligned_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+					
+						"+chi_num_trans" : "0",
+						"+perf_txn_size" : "32",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_unaligned_32_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_unaligned_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+						
+						"+perf_txn_size" : "32",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_unaligned_32_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_unaligned_32_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+					
+						"+perf_txn_size" : "32",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_wocache_128_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_nc_seq_wocache_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_wocache_128_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_wocache_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_wocache_128_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_wocache_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_128_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_r_nc_seq_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_128_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+						
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_128_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+			
+						"+chi_num_trans" : "0",
+						"+ioaiu_num_trans"	     : "2",
+						"+perf_txn_size": "128",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_wocache_unaligned_128_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_nc_seq_wocache_unaligned_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_wocache_unaligned_128_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_wocache_unaligned_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+						
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_wocache_unaligned_128_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_wocache_unaligned_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+ioaiu_num_trans"	     : "2",
+						"+perf_txn_size": "128",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_unaligned_128_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_r_nc_seq_unaligned_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_unaligned_128_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_unaligned_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "128",
+						"+perf_unaligned_txn" : "16",
+						
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_unaligned_128_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_unaligned_128_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+				
+						"+chi_num_trans" : "0",
+						"+ioaiu_num_trans"	     : "2",
+						"+perf_txn_size": "128",
+						"+perf_unaligned_txn" : "16",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_wocache_256_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_nc_seq_wocache_256_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "256",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_wocache_256_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_wocache_256_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "256",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_wocache_256_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_wocache_256_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+chi_num_trans" : "0",
+						"+ioaiu_num_trans"	     : "2",
+						"+perf_txn_size": "256",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"					
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_seq_256_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_r_nc_seq_256_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "256",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_w_nc_seq_256_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_seq_256_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+chi_num_trans" : "0",
+						"+perf_txn_size": "256",
+						
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+			
+						"+write_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_rw_nc_seq_256_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_seq_256_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+			
+						"+chi_num_trans" : "0",
+						"+ioaiu_num_trans"	     : "2",
+						"+perf_txn_size": "256",
+						
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+					},
+					"label":[ "all","perf_regr","custom"]
+				},
+				"flav_r_nc_paral_wocache_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_nc_paral_wocache_0ns_0",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_nc_paral_wocache_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_nc_paral_wocache_0ns_0",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_nc_paral_wocache_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_nc_paral_wocache_0ns_0",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				},
+				"flav_r_nc_paral_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_r_nc_paral_0ns_0",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_nc_paral_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_nc_paral_0ns_0",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_nc_paral_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_nc_paral_0ns_0",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				},
+				"flav_r_c_seq_wocache_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_c_seq_wocache_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom","c_perf_regr"]
+				},
+				"flav_w_c_seq_wocache_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_c_seq_wocache_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+en_all_coherent_aiu":"1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+							
+						"+write_test": "1"
+						},
+						"label":[ "all","perf_regr","custom","c_perf_regr"]
+				},
+				"flav_rw_c_seq_wocache_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_c_seq_wocache_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+en_all_coherent_aiu":"1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+							
+						},
+						"label":[ "all","perf_regr","custom","c_perf_regr"]
+				},
+				"flav_r_c_seq_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_r_c_seq_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+en_all_coherent_aiu":"1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+
+						"+read_test":"1"
+					},
+					"label":[ "all","perf_regr","custom","c_perf_regr"]
+				},
+				"flav_w_c_seq_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_c_seq_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+en_all_coherent_aiu":"1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+							
+						"+write_test": "1"
+						},
+						"label":[ "all","perf_regr","custom","c_perf_regr"]
+				},
+				"flav_rw_c_seq_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_c_seq_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+						
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+						
+						"+en_all_coherent_aiu":"1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+
+						"+duty_cycle_enable_perf_test": "1"
+						},
+						"label":[ "all","perf_regr","custom","c_perf_regr"]
+				},
+				"flav_r_c_seq_wocache_128_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"perf_test_flav_r_c_seq_wocache_128_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+perf_txn_size": "128",
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_c_seq_wocache_128_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_w_c_seq_wocache_128_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+perf_txn_size": "128",
+						"+en_all_coherent_aiu":"1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_c_seq_wocache_128_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"perf_test_flav_rw_c_seq_wocache_128_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "0",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+perf_txn_size": "128",
+						"+en_all_coherent_aiu":"1",
+						
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				},
+
+				"flav_r_c_paral_wocache_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"latency_perf_test_flav_r_c_paral_wocache_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_c_paral_wocache_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_c_paral_wocache_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_c_paral_wocache_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_c_paral_wocache_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "0",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				},
+				"flav_r_c_paral_0ns":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_r_c_paral_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_c_paral_0ns":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_c_paral_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+individual_initiator_addrq": "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_c_paral_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_c_paral_0ns_0",
+						"+all_gpra_ncmode"		: "ignore",
+						"+all_gpra_cmode"		: "1",
+						"+noncoh_region_pct"	: "0",
+						"+individual_initiator_addrq": "1",
+						"+init_all_cache"   : "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+en_all_coherent_aiu":"1",
+		
+						"+force_perf_test_coherent_txn": "1",
+						"+coherent_test":"1",
+						"+noncoherent_test":"ignore",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				},
+				"flav_r_nc_seq_wocache_nint_0ns":   {
+					"purpose": "100% readnosnp DMI address Non Interleaved",
+					"plusargs":{										
+						"+label":"latency_perf_test_flav_r_nc_seq_wocache_nint_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_nc_seq_wocache_nint_0ns":   {
+					"purpose": "100% writenosnp DMI address Non Interleaved",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_nc_seq_wocache_nint_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_nc_seq_wocache_nint_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp DMI address Non Interleaved",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_nc_seq_wocache_nint_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+
+						"+duty_cycle_enable_perf_test": "1"
+							
+						}
+				},
+				"flav_r_nc_seq_nint_0ns":   {
+					"purpose": "100% readnosnp DMI address Non Interleaved",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_r_nc_seq_nint_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+						"+init_all_cache"   : "1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_nc_seq_nint_0ns":   {
+					"purpose": "100% writenosnp DMI address Non Interleaved",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_nc_seq_nint_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_nc_seq_nint_0ns":   {
+					"purpose": "50% readnosnp / 50% writenosnp DMI address Non Interleaved",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_nc_seq_nint_0ns_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+						"+init_all_cache"   : "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+force_perf_test_mem_attr_allocate": "1",
+						"+force_perf_test_mem_attr_cacheable": "1",
+						"+force_perf_test_mem_attr_ewa": "1",
+
+						"+force_allocate_txn": "1",
+						"+force_cacheable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				},
+				"flav_r_nc_seq_wocache_del":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{										
+						"+label":"latency_perf_test_flav_r_nc_seq_wocache_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_nc_seq_wocache_del":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_nc_seq_wocache_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_nc_seq_wocache_del":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_nc_seq_wocache_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+							
+						}
+				},
+				"flav_r_nc_seq_wocache_nint_del":   {
+					"purpose": "100% readnosnp DMI address Non Interleaved",
+					"plusargs":{										
+						"+label":"latency_perf_test_flav_r_nc_seq_wocache_nint_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_nc_seq_wocache_nint_del":   {
+					"purpose": "100% writenosnp DMI address Non Interleaved",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_nc_seq_wocache_nint_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+							
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_nc_seq_wocache_nint_del":   {
+					"purpose": "50% readnosnp / 50% writenosnp DMI address Non Interleaved",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_nc_seq_wocache_nint_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+non_dmi_intlv":"1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+force_non_allocate_txn": "1",
+
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				},
+				"flav_r_nc_seq_dii_del":   {
+					"purpose": "100% readnosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_r_nc_seq_dii_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+use_dii_intrlv_grp": "1",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						
+						"+tmp_force_perf_test_mem_attr_ewa": "ignore",
+						"+tmp_force_perf_test_mem_attr_device": "1",
+
+						"+force_non_allocate_txn": "1",
+						"+force_unbufferable_txn": "1",
+
+						"+read_test":"1"
+					}
+				},
+				"flav_w_nc_seq_dii_del":   {
+					"purpose": "100% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_w_nc_seq_dii_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+use_dii_intrlv_grp": "1",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+tmp_force_perf_test_mem_attr_ewa": "ignore",
+						"+tmp_force_perf_test_mem_attr_device": "1",
+
+						"+force_non_allocate_txn": "1",
+						"+force_unbufferable_txn": "1",
+
+						"+write_test": "1"
+						}
+				},
+				"flav_rw_nc_seq_dii_del":   {
+					"purpose": "50% readnosnp / 50% writenosnp",
+					"plusargs":{					
+						"+label":"latency_perf_test_flav_rw_nc_seq_dii_del_0",
+						"+sequential": "1",
+						"+individual_initiator_addrq": "1",
+						"+use_dii_intrlv_grp": "1",
+						"+chi_num_trans"	     : "2",
+						"+ioaiu_num_trans"	     : "2",
+
+						"+k_ace_slave_write_addr_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_data_chnl_burst_pct"	: "0",
+						"+k_ace_slave_write_resp_chnl_burst_pct"	: "0",
+						"+k_ace_slave_read_addr_chnl_burst_pct"		: "0",
+						"+k_ace_slave_read_data_chnl_burst_pct"		: "0",
+					
+						"+k_ace_slave_write_addr_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_addr_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_data_chnl_delay_max" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_min" 	: 15,
+						"+k_ace_slave_write_resp_chnl_delay_max" 	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_addr_chnl_delay_max"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_min"  	: 15,
+						"+k_ace_slave_read_data_chnl_delay_max"  	: 15,
+						"+k_ace_slave_random_dly_dis"    		 	: "1",
+
+						"+force_perf_test_mem_attr_allocate": "0",
+						"+tmp_force_perf_test_mem_attr_ewa": "ignore",
+						"+tmp_force_perf_test_mem_attr_device": "1",
+
+						"+force_non_allocate_txn": "1",
+						"+force_unbufferable_txn": "1",
+
+						"+duty_cycle_enable_perf_test": "1"
+						}
+				}
+			},			
+			"label": ["all"]
+		}	
+    }
+}

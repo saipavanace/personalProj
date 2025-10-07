@@ -1,0 +1,518 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// CHI AIU Link. Responsible for link activation/deactivation, flow control,
+// and flit packet transfer on the CHI channel-based interface.
+//
+// Author: Boon Chuan
+// Filename: chi_aiu_chi_slave_if.tachl
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = m.bundleFunctions;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Parameters
+//=============================================================================
+var assertOn               = u.getParam('assertOn');
+
+var wData                  = u.getParam('wData');
+var nCHIReqInFlight        = u.getParam('nCHIReqInFlight');
+var nOttCtrlEntries        = u.getParam('nOttCtrlEntries');
+var nArbFifoEntries        = u.getParam('nArbFifoEntries');
+var nRobEntries            = u.getParam('nRobEntries');
+var wRobEntries            = u.getParam('wRobEntries');
+
+var chiInt                 = u.getParam('chiInt'); //interfaces.chiInt
+
+var chiInterface           = u.getParam('chiInterface');
+var chiInterfaceName       = u.getParam('chiInterfaceName');
+
+var req_flit_interface     = u.getParam('req_flit_interface');
+var rsp_flit_interface     = u.getParam('rsp_flit_interface');
+var dat_flit_interface     = u.getParam('dat_flit_interface');
+var snp_flit_interface     = u.getParam('snp_flit_interface');
+var chkErrInterface        = u.getParam('chkErrInterface');
+
+var dat_flit_width_with_poison = u.getParam('dat_flit_width_with_poison');
+
+var wFlit_Qos              = chiInt.params.wQos;
+var wFlit_TgtID            = chiInt.params.TgtID;
+var wFlit_SrcID            = chiInt.params.SrcID;
+var wFlit_TxnID            = chiInt.params.TxnID;
+var wFlit_Addr             = chiInt.params.wAddr;
+var wFlit_Addr_snp         = wFlit_Addr - 3
+var wFlit_NS               = chiInt.params.NS;
+var wFlit_Data             = chiInt.params.wData;
+ 
+var wReqFlit_ReturnNID     = chiInt.params.ReturnNID;
+var wReqFlit_StashNIDValid = chiInt.params.StashNIDValid;
+var wReqFlit_ReturnTxnID   = chiInt.params.ReturnTxnID;
+var wReqFlit_Opcode        = chiInt.params.REQ_Opcode;
+var wReqFlit_Size          = chiInt.params.Size;
+var wReqFlit_LikelyShared  = chiInt.params.LikelyShared;
+var wReqFlit_AllowRetry    = chiInt.params.AllowRetry;
+var wReqFlit_Order         = chiInt.params.Order;
+var wReqFlit_PCrdType      = chiInt.params.PCrdType;
+var wReqFlit_MemAttr       = chiInt.params.MemAttr;
+var wReqFlit_SnpAttr       = chiInt.params.SnpAttr;
+var wReqFlit_LPID          = chiInt.params.LPID;
+var wReqFlit_Excl          = chiInt.params.Excl;
+var wReqFlit_ExCompAck     = chiInt.params.ExCompAck;
+var wReqFlit_TraceTag      = chiInt.params.TraceTag;
+var wReqFlit_Rsvdc         = chiInt.params.REQ_RSVDC;
+
+var wReqFlit_ReturnNID_local     = (wReqFlit_ReturnNID > 0)     ? wReqFlit_ReturnNID : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wReqFlit_StashNIDValid_local = (wReqFlit_StashNIDValid > 0) ? wReqFlit_StashNIDValid : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wReqFlit_ReturnTxnID_local   = (wReqFlit_ReturnTxnID > 0)   ? wReqFlit_ReturnTxnID : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wReqFlit_TraceTag_local      = (wReqFlit_TraceTag > 0)      ? wReqFlit_TraceTag : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+
+var wRspFlit_Opcode        = chiInt.params.RSP_Opcode;
+var wRspFlit_RespErr       = chiInt.params.RespErr;
+var wRspFlit_Resp          = chiInt.params.Resp;
+var wRspFlit_FwdState      = chiInt.params.FwdState;
+var wRspFlit_DBID          = chiInt.params.DBID;
+var wRspFlit_PCrdType      = chiInt.params.PCrdType;
+var wRspFlit_TraceTag      = chiInt.params.TraceTag;
+
+var wRspFlit_FwdState_local = (wRspFlit_FwdState > 0) ? wRspFlit_FwdState : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wRspFlit_PCrdType_local = (wRspFlit_PCrdType > 0) ? wRspFlit_PCrdType : /* istanbul ignore next env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 0;
+var wRspFlit_TraceTag_local = (wRspFlit_TraceTag > 0) ? wRspFlit_TraceTag : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+
+var wSnpFlit_FwdNID        = chiInt.params.FwdNID;
+var wSnpFlit_FwdTxnID      = chiInt.params.FwdTxnID;
+var wSnpFlit_Opcode        = chiInt.params.SNP_Opcode;
+var wSnpFlit_DoNotGoToSD   = chiInt.params.DoNotGoToSD;
+var wSnpFlit_RetToSrc      = chiInt.params.RetToSrc;
+var wSnpFlit_TraceTag      = chiInt.params.TraceTag;
+
+var wSnpFlit_FwdNID_local      = (wSnpFlit_FwdNID > 0)      ? wSnpFlit_FwdNID : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wSnpFlit_FwdTxnID_local    = (wSnpFlit_FwdTxnID > 0)    ? wSnpFlit_FwdTxnID : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wSnpFlit_DoNotGoToSD_local = (wSnpFlit_DoNotGoToSD > 0) ? wSnpFlit_DoNotGoToSD : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wSnpFlit_RetToSrc_local    = (wSnpFlit_RetToSrc > 0)    ? wSnpFlit_RetToSrc : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wSnpFlit_TraceTag_local    = (wSnpFlit_TraceTag > 0)    ? wSnpFlit_TraceTag : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+
+var wDatFlit_Homenode_ID   = chiInt.params.Homenode_ID;
+var wDatFlit_Opcode        = chiInt.params.DAT_Opcode;
+var wDatFlit_RespErr       = chiInt.params.RespErr;
+var wDatFlit_Resp          = chiInt.params.Resp;
+var wDatFlit_FwdState      = chiInt.params.FwdState;
+var wDatFlit_DBID          = chiInt.params.DBID;
+var wDatFlit_CCID          = chiInt.params.CCID;
+var wDatFlit_DataID        = chiInt.params.DataID;
+var wDatFlit_TraceTag      = chiInt.params.TraceTag;
+var wDatFlit_Rsvdc         = chiInt.params.DAT_RSVDC;
+var wDatFlit_BE            = chiInt.params.BE;
+var wDatFlit_Poison        = wDatFlit_BE/8 ; 
+var enPoison               = chiInt.params.enPoison;
+var wDatFlit_Poison        = (enPoison == true) ? wDatFlit_BE/8 : 0;
+ 
+var wDatFlit_Homenode_ID_local = (wDatFlit_Homenode_ID > 0) ? wDatFlit_Homenode_ID : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wDatFlit_FwdState_local    = (wDatFlit_FwdState > 0)    ? wDatFlit_FwdState : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+var wDatFlit_TraceTag_local    = (wDatFlit_TraceTag > 0)    ? wDatFlit_TraceTag : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 0;
+
+var nArbFifoEntries = Math.min(nOttCtrlEntries, Math.max(nCHIReqInFlight, 24));
+var wArbFifoEntries = Math.max(log2ceil(nArbFifoEntries), 1);
+var wArbFifoEntriesplusone = wArbFifoEntries + 1;
+
+var wOttCtrlEntries =  Math.max(log2ceil(nOttCtrlEntries),1);
+var wOttCtrlEntriesplusone = wOttCtrlEntries + 1;
+
+var wBE    = wFlit_Data / 8;
+var nBeats = 512 / wFlit_Data;
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'clk',     1);
+u.port('input',  'reset_n', 1);
+u.port('input',  'sync_reset_n', 1);
+u.port('output', 'rob_interleaved_num', wRobEntries);
+
+u.interface(chiInterfaceName, 'slave' , chiInterface);
+
+u.port('input',  'ott_busy', 1);
+u.port('input',  'stt_busy', 1);
+
+u.port('input',  'num_free_entries',     wOttCtrlEntriesplusone);
+u.port('input',  'num_free_entries_arb', wArbFifoEntriesplusone);
+
+// CHI RX REQ channel handler interface
+
+u.port('output', 'req_valid', 1);
+
+u.interface('RXREQFLIT_', 'master', req_flit_interface);
+
+// CHI RX RSP channel handler interface
+
+u.port('output', 'rx_rsp_valid', 1);
+
+u.interface('RXRSPFLIT_', 'master', rsp_flit_interface);
+
+u.interface('chk_', 'slave', chkErrInterface);
+
+// CHI RX RAT channel handler interface
+
+u.port('output', 'chi_rx_dat_valid',              1);
+u.port('output', 'chi_rx_dat_flitv_org',          1);
+u.port('output', 'chi_rx_dat_flit_org',           dat_flit_width_with_poison);
+u.port('input',  'chi_rx_dat_flitv_backpressure', 1);
+
+u.port('output', 'RXDATFLIT_pre_TxnID',           wFlit_TxnID);
+u.port('input',  'ott_pre_trans_size',            3);
+
+//u.interface('RXDATFLIT_' , 'master', dat_flit_interface);
+
+// CHI TX RSP channel handler interface
+
+u.port('input',  'rn_rsp_valid', 1);
+u.port('output', 'rn_rsp_ready', 1);
+
+u.interface('TXRSPFLIT_', 'slave', rsp_flit_interface);
+
+// CHI TX SNP channel handler interface
+
+u.port('input',  'chi_tx_snp_req_valid', 1);
+u.port('output', 'chi_tx_snp_req_ready', 1);
+
+u.interface('TXSNPFLIT_', 'slave', snp_flit_interface);
+
+u.port('output', 'chi_tx_snp_flitv_a1',  1);
+
+// CHI TX DAT channel handler interface
+
+u.port('input',  'txdat_valid', 1);
+u.port('output', 'txdat_ready', 1);
+
+u.interface('TXDATFLIT_', 'slave', dat_flit_interface);
+
+// PMA
+u.port('input',  'asleep', 1);
+
+// CHI System Coherency
+u.port('output', 'co_state_disabled', 1);
+u.port('output', 'co_state_connect', 1);
+u.port('output', 'co_state_enabled', 1);
+u.port('output', 'co_state_disconnect', 1);
+
+u.port('input',  'co_state_connect_ready',    1);
+u.port('input',  'co_state_disconnect_ready', 1);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+//=============================================================================
+// Wires
+//=============================================================================
+wire rxreq_all_credits_returned;
+wire rxrsp_all_credits_returned;
+wire rxdat_all_credits_returned;
+wire txsnp_all_credits_returned;
+wire txrsp_all_credits_returned;
+wire txdat_all_credits_returned;
+wire rx_state_stop;
+wire rx_state_act;
+wire rx_state_run;
+wire rx_state_deact;
+wire tx_state_stop;
+wire tx_state_act;
+wire tx_state_run;
+wire tx_state_deact;
+wire all_busy;
+wire dff_enable = 1'b1;
+wire tie0       = 1'b0;
+
+//=============================================================================
+// Synchronizers instantiated outside
+//=============================================================================
+
+wire TXLINKACTIVEACK_sync = \=chiInterfaceName=\tx_link_active_ack;
+wire RXLINKACTIVEREQ_sync = \=chiInterfaceName=\rx_link_active_req;
+
+wire SYSCOREQ_sync = \=chiInterfaceName=\sysco_req;
+
+//=============================================================================
+// CHI RX TX Link Controller
+//=============================================================================
+
+\=u.instance({
+    instanceName: 'rx_tx_link_ctrl' ,
+    moduleName: 'rx_tx_link_ctrl',
+    params: {
+        wData : wData
+    },
+    ports: {
+        clk                        : 'clk',
+        reset_n                    : 'reset_n',
+        RXLINKACTIVEREQ_sync       : 'RXLINKACTIVEREQ_sync',
+        RXLINKACTIVEACK            : chiInterfaceName+'rx_link_active_ack',
+        TXLINKACTIVEREQ            : chiInterfaceName+'tx_link_active_req',
+        TXLINKACTIVEACK_sync       : 'TXLINKACTIVEACK_sync',
+        SYSCOREQ_sync              : 'SYSCOREQ_sync',
+        SYSCOACK                   : chiInterfaceName+'sysco_ack',
+        rx_state_stop              : 'rx_state_stop',
+        rx_state_act               : 'rx_state_act',
+        rx_state_run               : 'rx_state_run',
+        rx_state_deact             : 'rx_state_deact',
+        tx_state_stop              : 'tx_state_stop',
+        tx_state_act               : 'tx_state_act',
+        tx_state_run               : 'tx_state_run',
+        tx_state_deact             : 'tx_state_deact',
+        co_state_disabled          : 'co_state_disabled',
+        co_state_connect           : 'co_state_connect',
+        co_state_enabled           : 'co_state_enabled',
+        co_state_disconnect        : 'co_state_disconnect',
+        co_state_connect_ready     : 'co_state_connect_ready',
+        co_state_disconnect_ready  : 'co_state_disconnect_ready',
+        rxreq_all_credits_returned : 'rxreq_all_credits_returned',
+        rxrsp_all_credits_returned : 'rxrsp_all_credits_returned',
+        rxdat_all_credits_returned : 'rxdat_all_credits_returned',
+        txsnp_all_credits_returned : 'txsnp_all_credits_returned',
+        txrsp_all_credits_returned : 'txrsp_all_credits_returned',
+        txdat_all_credits_returned : 'txdat_all_credits_returned',
+        local_transmit_intent      : 'all_busy',
+        chk_rx_link_perr           : 'chk_rx_link_perr',
+        chk_tx_link_perr           : 'chk_tx_link_perr'
+    },
+    portsDelimiter: '\n    '
+})=\
+
+//=============================================================================
+// CHI RX REQ Channel Handler
+//=============================================================================
+
+\=u.instance({
+    instanceName: 'req_chan_handler' ,
+    moduleName: 'req_chan_handler',
+    params: {
+        wData            : wData,
+        ReqInterface     : req_flit_interface,
+        chiInterface     : chiInterface,
+        nOttCtrlEntries  : nOttCtrlEntries,
+        nCHIReqInFlight  : nCHIReqInFlight,
+        nArbFifoEntries  : nArbFifoEntries
+    },
+    ports: { 
+        clk                  : 'clk',
+        reset_n              : 'reset_n',
+        sync_reset_n         : 'sync_reset_n',
+        req_valid            : 'req_valid',
+        rx_state_run         : 'rx_state_run',
+        rx_state_deact       : 'rx_state_deact',
+        pma_asleep           : 'asleep',
+        all_credits_returned : 'rxreq_all_credits_returned',
+        num_free_entries     : 'num_free_entries',
+        num_free_entries_arb : 'num_free_entries_arb',
+        chk_err              : 'chk_rx_req_perr'
+    },
+    interfaces : [ 
+        {modulePrefix : 'RXREQFLIT_' ,  localPrefix : 'RXREQFLIT_',                interface : req_flit_interface},
+        {modulePrefix : 'chi_rx_req_',  localPrefix : chiInterfaceName+'rx_req_' , interface : chiInterface.rx_req_},
+    ],
+    portsDelimiter: '\n    '
+})=\
+
+//=============================================================================
+// CHI RX RSP Channel Handler
+//=============================================================================
+
+\=u.instance({
+    instanceName: 'rxrsp_chan_handler' ,
+    moduleName: 'rxrsp_chan_handler',
+    params: {
+        RspInterface : rsp_flit_interface,
+        chiInterface : chiInterface,
+        nCredits     : nCHIReqInFlight 
+    },
+    ports: { 
+        clk                  : 'clk',
+        reset_n              : 'reset_n',
+        sync_reset_n         : 'sync_reset_n',
+        rsp_valid            : 'rx_rsp_valid',
+        rx_state_run         : 'rx_state_run',
+        rx_state_deact       : 'rx_state_deact',
+        pma_asleep           : 'asleep',
+        all_credits_returned : 'rxrsp_all_credits_returned',
+        chk_err              : 'chk_rx_rsp_perr'
+    },
+    interfaces : [ 
+        {modulePrefix : 'RXRSPFLIT_',  localPrefix : 'RXRSPFLIT_',               interface : rsp_flit_interface},
+        {modulePrefix : 'chi_rx_rsp_', localPrefix : chiInterfaceName+'rx_rsp_', interface : chiInterface.rx_rsp_}
+    ],
+    portsDelimiter: '\n    '
+})=\
+
+//=============================================================================
+// CHI RX DAT Channel Handler
+//=============================================================================
+
+wire [\=nRobEntries-1=\:0] rob_interleaved_vec;
+
+\=u.instance({
+    instanceName: 'rxdat_chan_handler' ,
+    moduleName: 'rxdat_chan_handler',
+    params: {
+        assertOn        : assertOn,
+        nRobEntries     : nRobEntries,
+        DatInterface    : dat_flit_interface,
+        chiInterface    : chiInterface,
+        wTxnID          : wFlit_TxnID,
+        nCredits        : nCHIReqInFlight,
+        wBE             : wBE,
+        nBeats          : nBeats
+    },
+    ports: { 
+        clk                  : 'clk',
+        reset_n              : 'reset_n',
+        sync_reset_n         : 'sync_reset_n',
+        rob_interleaved_vec  : 'rob_interleaved_vec',
+
+        chi_rx_dat_flit_org  : 'chi_rx_dat_flit_org',
+        chi_rx_dat_flitv_org : 'chi_rx_dat_flitv_org',
+        chi_rx_dat_flitv_backpressure : 'chi_rx_dat_flitv_backpressure',
+        chi_rx_dat_valid     : 'chi_rx_dat_valid',
+
+        RXDATFLIT_pre_TxnID  : 'RXDATFLIT_pre_TxnID',
+        ott_pre_trans_size   : 'ott_pre_trans_size',
+
+        rx_state_run         : 'rx_state_run',
+        rx_state_deact       : 'rx_state_deact',
+        pma_asleep           : 'asleep',
+        all_credits_returned : 'rxdat_all_credits_returned',
+        chk_err              : 'chk_rx_dat_perr'
+    },
+    interfaces : [
+        {modulePrefix : 'chi_rx_dat_', localPrefix : chiInterfaceName+'rx_dat_', interface : chiInterface.rx_dat_}
+    ],
+    portsDelimiter: '\n    '
+})=\
+
+assign rob_interleaved_num =
+           { \=wRobEntries-1=\'b0 , rob_interleaved_vec[0] }
+\js for (var i = 1; i < nRobEntries ; i++ ) {
+         + { \=wRobEntries-1=\'b0 , rob_interleaved_vec[\=i=\] }
+\js }
+         ;
+
+//=============================================================================
+// CHI TX SNP Channel Handler
+//=============================================================================
+
+assign chi_tx_snp_flitv_a1 = chi_tx_snp_req_valid & chi_tx_snp_req_ready;
+
+\=u.instance({
+    instanceName: 'tx_snp_chan_handler' ,
+    moduleName: 'snp_chan_handler',
+    params: { 
+        SnpInterface : snp_flit_interface,
+        chiInterface : chiInterface
+    },
+    ports: { 
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sync_reset_n        : 'sync_reset_n',
+        rx_state_deact      : 'rx_state_deact',
+        tx_state_deact      : 'tx_state_deact',
+        tx_state_run        : 'tx_state_run',
+        all_credits_returned: 'txsnp_all_credits_returned',
+        valid               : 'chi_tx_snp_req_valid',
+        ready               : 'chi_tx_snp_req_ready',
+        chk_err             : 'chk_tx_snp_perr'
+    },
+    interfaces : [
+        {modulePrefix : '' ,           localPrefix : 'TXSNPFLIT_',               interface : snp_flit_interface},
+        {modulePrefix : 'chi_tx_snp_', localPrefix : chiInterfaceName+'tx_snp_', interface : chiInterface.tx_snp_}
+    ],
+    portsDelimiter: '\n    '
+})=\
+
+//=============================================================================
+// CHI TX RSP Channel Handler
+//=============================================================================
+
+\=u.instance({
+    instanceName: 'tx_rsp_chan_handler' ,
+    moduleName: 'txrsp_chan_handler',
+    params: {
+        RspInterface : rsp_flit_interface,
+        chiInterface : chiInterface
+    },
+    ports: { 
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sync_reset_n        : 'sync_reset_n',
+        tx_state_deact      : 'tx_state_deact',
+        tx_state_run        : 'tx_state_run',
+        all_credits_returned: 'txrsp_all_credits_returned',
+        valid               : 'rn_rsp_valid',
+        ready               : 'rn_rsp_ready',
+        chk_err             : 'chk_tx_rsp_perr'
+    },
+    interfaces : [
+        {modulePrefix : ''       ,     localPrefix : 'TXRSPFLIT_',               interface : rsp_flit_interface},
+        {modulePrefix : 'chi_tx_rsp_', localPrefix : chiInterfaceName+'tx_rsp_', interface : chiInterface.tx_rsp_}
+    ],
+    portsDelimiter: '\n    '
+})=\
+
+//=============================================================================
+// CHI TX DAT Channel Handler
+//=============================================================================
+
+\=u.instance({
+    instanceName: 'tx_dat_chan_handler' ,
+    moduleName: 'txdat_chan_handler',
+    params: {
+        DatInterface  : dat_flit_interface ,
+        chiInterface  : chiInterface
+    },
+    ports: { 
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sync_reset_n        : 'sync_reset_n',
+        tx_state_deact      : 'tx_state_deact',
+        tx_state_run        : 'tx_state_run',
+        all_credits_returned: 'txdat_all_credits_returned',
+        valid               : 'txdat_valid',
+        ready               : 'txdat_ready',
+        chk_err             : 'chk_tx_dat_perr'
+    },
+    interfaces : [ 
+        {modulePrefix : '',            localPrefix : 'TXDATFLIT_',               interface : dat_flit_interface},
+        {modulePrefix : 'chi_tx_dat_', localPrefix : chiInterfaceName+'tx_dat_', interface : chiInterface.tx_dat_}
+    ],
+    portsDelimiter: '\n    '
+})=\
+
+//=============================================================================
+// SACTIVE
+//=============================================================================
+
+assign \=chiInterfaceName=\tx_sactive = all_busy;
+
+wire busy, busy_q0, busy_q1, busy_q2, busy_q3;
+
+assign all_busy = busy | busy_q0 | busy_q1 | busy_q2 | busy_q3;
+
+assign busy = ott_busy | stt_busy;
+
+\=u.dffre(1, 'busy_q0', 'busy',    "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'busy_q1', 'busy_q0', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'busy_q2', 'busy_q1', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'busy_q3', 'busy_q2', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+endmodule
+

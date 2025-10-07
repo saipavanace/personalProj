@@ -1,0 +1,72 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU Unit
+// Author: Benjamin Madon
+// This module takes two CXS interfaces and muxes them down to one
+// No complicated logic to handle REQ/ACK state machine or credit returns
+// A link must be stopped before it can switch to the other one. 
+// If not the behavior will be undefined
+// slave interfaces : - cxs_tx_in_ (slave InterfaceCXS)
+//                    - cxs_rx_in_ (slave InterfaceCXS)
+//          
+// master interfaces :- cxs_tx_out_ (master InterfaceCXS)
+//                    - cxs_rx_out_ (master InterfaceCXS)
+//                    - sel (master generic interface : in [sel] )
+//=============================================================================
+
+
+
+var m = obj.userLib;
+var u=obj.lib;
+var newToOldStyleInterface	= m.newToOldStyleInterface.bind( null, m );
+var utilFunctions   = m.lib_utils;
+
+var p =u.getParam();
+
+var cxs_lb = m.deepCopy(p.interfaces["cxs_tx_out_"]);
+cxs_lb.name = "cxs_lb_";
+
+u.nInterfaces(p.interfaces);
+
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+\=m.bundleFunctions.wiresFromInterface(cxs_lb.name,        newToOldStyleInterface(cxs_lb).signals,       [],  u.bundle)=\
+
+\jsbegin
+for (var sig in newToOldStyleInterface(p.interfaces["cxs_tx_out_"]).signals){
+
+  if (newToOldStyleInterface(p.interfaces["cxs_tx_out_"]).signals[sig]> 0){
+\jsend
+
+
+    assign \=cxs_lb.name+sig=\ = {\=newToOldStyleInterface(p.interfaces["cxs_tx_out_"]).signals[sig]=\ {\=p.interfaces["sel"].name=\sel }} & \=p.interfaces["cxs_rx_in_"].name+sig=\ ;
+    assign \=p.interfaces["cxs_rx_out_"].name+sig=\ = {\=newToOldStyleInterface(p.interfaces["cxs_tx_out_"]).signals[sig]=\ {~\=p.interfaces["sel"].name=\sel }} & \=p.interfaces["cxs_rx_in_"].name+sig=\ ;
+    
+    assign \=p.interfaces["cxs_tx_out_"].name+sig=\ = \=p.interfaces["sel"].name=\sel ?  \=cxs_lb.name+ sig=\: 
+                                                                                        \=p.interfaces["cxs_tx_in_"].name + sig=\;                  
+\jsbegin
+  } else {
+\jsend
+
+    assign \=cxs_lb.name+sig=\ = {\=-newToOldStyleInterface(p.interfaces["cxs_tx_out_"]).signals[sig]=\ {~\=p.interfaces["sel"].name=\sel }} & \=p.interfaces["cxs_tx_out_"].name+sig=\;
+    assign \=p.interfaces["cxs_tx_in_"].name+sig=\ = {\=-newToOldStyleInterface(p.interfaces["cxs_tx_out_"]).signals[sig]=\ {~\=p.interfaces["sel"].name=\sel }} & \=p.interfaces["cxs_tx_out_"].name+sig=\;
+
+                                                                                        
+    assign \=p.interfaces["cxs_rx_in_"].name+sig=\ = \=p.interfaces["sel"].name=\sel ?  \=cxs_lb.name + sig=\: 
+                                                                                        \=p.interfaces["cxs_rx_out_"].name + sig=\;
+
+
+\jsbegin
+  }
+}
+\jsend
+
+assign \=p.interfaces["active"].name=\active = 1'b1;
+
+endmodule

@@ -1,0 +1,188 @@
+<p>Tool for analysis, debug, visualization of genwrapper json/s and collateral generation</p><p>To see how it fits in the Maestro flow - see these slides</p><p><a href="/wiki/spaces/ENGR/pages/16163129/Aria?preview=%2F16163129%2F16253419%2FAria.v1.pptx"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-presentation.png'); width: 333px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">Aria.v1.pptx</span></a></p><p>Basic stuff</p><p><style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759723810935 {padding: 0px;}
+div.rbtoc1759723810935 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759723810935 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759723810935'>
+<ul class='toc-indentation'>
+<li><a href='#Aria-Launchingthetool'>Launching the tool</a></li>
+<li><a href='#Aria-Commandlineoptions'>Command line options</a></li>
+<li><a href='#Aria-Sourcingscripts'>Sourcing scripts</a></li>
+<li><a href='#Aria-RunningAriainGUImode'>Running Aria in GUI mode</a></li>
+<li><a href='#Aria-UsingAriafunctionalityfromotherJSscripts'>Using Aria functionality from other JS scripts</a></li>
+<li><a href='#Aria-Ariacheckerfunctionality'>Aria checker functionality</a></li>
+<li><a href='#Aria-Arialogger'>Aria logger</a></li>
+</ul>
+</div></p><p>Advanced</p><p style="margin-left: 30.0px;"><a class="external-link" href="https://confluence.arteris.com/display/ENGR/Generation+of+signal+mapping+table+for+Ncore+DV" rel="nofollow">Generation of RTL-TB signal mapping table for Ncore-DV</a></p><p style="margin-left: 30.0px;"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16166658/Aria+developer+guide" data-linked-resource-id="16166658" data-linked-resource-version="12" data-linked-resource-type="page">Aria developer guide</a></p><p style="margin-left: 30.0px;"><a class="external-link" href="https://confluence.arteris.com/display/ENGR/Maestro+logic+synthesis+flow" rel="nofollow">Generating synthesis scripts and constraints</a></p><h2 id="Aria-Launchingthetool">Launching the tool</h2><p>If you do   <code>module load dev/maestro_test</code>    tool will be in your search path:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; which aria
+/engr/dev/releases/utils/aria/latest/aria-linux-x64/aria</pre>
+</div></div><p> </p><p>Two things to keep in mind:</p><ol><li>Aria only works on RH7. </li><li>By default it starts in terminal mode, but $DISPLAY must still be defined! This is a quirk of electron platform on which aria is built. If you need to use it in a truly &quot;headless&quot; environment here is a trick with virtual display server:</li></ol><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">/usr/bin/Xvfb :888 &amp; 
+setenv DISPLAY :888</pre>
+</div></div><p> </p><p>When started tool prints version/build info and then gives you the prompt, where you can type interactive commands. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">****************************************************************************
+Genwrapper analysis utility. Version 0.7.0
+Build id: 35, built at: 2019-06-26 16:25:48 PDT
+****************************************************************************
+aria&gt;</pre>
+</div></div><p><br/>Aria commands are javascript functions -  they all end with<span class="legacy-color-text-blue4"><span class="legacy-color-text-purple1"> ()</span><br/></span>So typing <span class="legacy-color-text-blue1"><code>help </code></span>is wrong - it will print the source code of <code>help </code>function. Instead you should type<span class="legacy-color-text-blue1"> <code>help()</code></span></p><p>To quit the tool use<span class="legacy-color-text-blue1"> <code>exit()</code></span>. You can specify a number to exit with non-zero status, which can be queried in unix shell, for ex <span class="legacy-color-text-blue1"><code>exit(1)</code></span>. This can be useful for automated testing.</p><h2 id="Aria-Commandlineoptions">Command line options</h2><p><code>-v, --version       Show the version and build number</code><br/><code> -p, --params &lt;file&gt; Top level genwrapper json file</code><br/><code> -s, --source &lt;file&gt; Source script upon startup</code><br/><code> -g, --gui           Start in GUI mode</code><br/><code> -d, --verbosity &lt;string&gt; error,warn,[info],debug</code><br/><code> -j, --jou &lt;file&gt;    Journal file</code><br/><code> -l, --log &lt;file&gt;    Log file</code><br/><code> -h, --help          Print this help message</code></p><h2 id="Aria-Sourcingscripts">Sourcing scripts</h2><p>One of the main goals of Aria is to be able to write JS scripts detecting errors in Maestro-generated Jsons.  Below is one simple example - check_smi_inconsistency.js. <br/>This script checks that within one network, such as yellow, the value of each SMI parameter is identical across all SMI interfaces </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">// Read genwrapper json
+readRtlJson(&#39;output/debug/top.level.rtl.gw.csr.json&#39;);
+
+// These parameters must be identical across all packetizers and depacketizers in a network
+const paramNames = [&#39;nSmiDPvc&#39;,&#39;nSmiVC&#39;,&#39;wSmiDPdata&#39;,&#39;wSmiDPlast&#39;,&#39;wSmiDPuser&#39;,&#39;wSmiId&#39;,&#39;wSmiNDP&#39;,&#39;wSmiNDPLen&#39;,&#39;wSmiSid&#39;,&#39;wSmiTid&#39;,&#39;wSmiType&#39;,&#39;wSmiUser&#39;];
+
+// Initialize error count
+var errCnt = 0;
+ 
+// Iterate over all networks
+for (let network of getOneObj({type:&#39;chip&#39;}).getObjs({type:&#39;instance&#39;}).filter(o =&gt; o.module===&#39;gen_wrapper&#39;)) {  
+  // Container for all SMI ports found in one network
+  let smiPorts = [];
+  
+  // Iterate over all packetizers and depaketizers of a network and push their SMI ports to array
+  for (let pkt of network.getObjs({type:&#39;instance&#39;}).filter(o =&gt; o.module===&#39;smi_pkt&#39; || o.module===&#39;smi_depkt&#39;)) {
+    // Get input (SMI) port of the packetizer and save it
+    smiPorts.push(pkt.getObjs({type:&#39;interface&#39;}).filter(o =&gt; o.model===&#39;InterfaceSMI&#39;)[0]);
+  }
+  // Check all SMI ports of one network for param value consistency
+  for (let paramName of paramNames) {
+    let paramValues = smiPorts.map(o=&gt;o.params[paramName]);
+    if (!paramValues.every( (elem, i, arr) =&gt; elem === arr[0])) {
+      errCnt++;
+      console.log(`Values of parameter ${paramName} are different for the following packetizers/depacketizers:`);
+      for (let i = 0; i&lt; smiPorts.length; i++) {
+        console.log(`  ${smiPorts[i].getHierPath()} - ${paramValues[i]}`);
+      }
+    }
+  }
+} 
+exit(errCnt)</pre>
+</div></div><p> </p><p> To generate json from Maestro and test it with aria, do:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">module load dev/maestro_test
+run_maestro
+aria -s check_smi_inconsistency.js</pre>
+</div></div><p> </p><p>It generates following output and exits with non-zero status 3 , which is stored in $? variable, if you use bash or $status for tcsh</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Values of parameter wSmiNDP are different for the following packetizers/depacketizers:
+  myChip/yellow/pkt0/I0_ - 132
+  myChip/yellow/dpkt0/Z0_ - 126
+  myChip/yellow/pkt0_0/I0_ - 54
+  myChip/yellow/pkt2/I0_ - 36
+  myChip/yellow/dpkt0_0/Z0_ - 132
+ ...
+Values of parameter wSmiNDP are different for the following packetizers/depacketizers:
+  myChip/green/pkt1/I0_ - 46
+  myChip/green/dpkt1/Z0_ - 36
+ ...
+Values of parameter wSmiNDP are different for the following packetizers/depacketizers:
+  myChip/blue/pkt2/I0_ - 56
+  myChip/blue/dpkt2/Z0_ - 51
+...</pre>
+</div></div><p>You can find more script examples <u><strong><a class="external-link" href="http://gitlab.arteris.com/maestro-dev/services/m-phys/tree/master/scripts" rel="nofollow">here</a></strong></u></p><p>Tip: When you're in interactive Aria session, you can source the script with a special command:  <span class="legacy-color-text-blue1"><code>.load &lt;path_to_js_script&gt; </code></span> </p><h2 id="Aria-RunningAriainGUImode">Running Aria in GUI mode </h2><p>Simply start aria <span class="legacy-color-text-blue1"><code>-g</code></span>  , if you also specify <span class="legacy-color-text-blue1"><code>-s &lt;script&gt;</code></span>, script gets executed first and then gui starts. You can also start with <span class="legacy-color-text-blue1">-p output/debug/<a class="external-link" href="http://top.level.rtl.gw" rel="nofollow"><span class="legacy-color-text-blue1">top.level.rtl.gw</span></a>.csr.json</span> <span class="legacy-color-text-default">to load genwrapepr json upfront.</span></p><p><span class="legacy-color-text-default">GUI window consists of 4 panels:</span></p><p><span class="legacy-color-text-default"> </span><span class="legacy-color-text-default">&lt;Hierarchy browser&gt; &lt;Parameter viewer&gt; &lt;Schematic viewer&gt;<br/></span><span class="legacy-color-text-default">&lt;                          message   area                                              &gt;<br/></span><span class="legacy-color-text-default">&lt;                           command line                                               &gt;  </span></p><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" width="800" src="https://arterisip.atlassian.net/wiki/download/attachments/16163129/image2019-6-27%2016:56:24.png?api=v2"></span></p><h2 id="Aria-UsingAriafunctionalityfromotherJSscripts">Using Aria functionality from other JS scripts</h2><p>In previous examples commands were either typed interactively at command line prompt or entire scripts were sourced when tool is invoked with '-s &lt;script&gt;' option.</p><p>Per requirement of DV team, selected Aria functionality can also be accessed by requiring it as a package from a higher-level javascript. For example here is the most basic script generating Symphony Testbench json:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">// Require index.js file from Aria install dir and expose necessary functions
+var {genSymphonyTbJson} = require(&#39;/engr/dev/releases/utils/aria/latest/aria-linux-x64/resources/app/index&#39;);
+ 
+// Generate TB json
+genSymphonyTbJson({
+  rtlJsonFile: &#39;&lt;full path to genwrapper rtl json&gt;&#39;,  
+  outputFile: &#39;tb.json&#39;,
+  importantPkgParams: [&#39;interfaces.axiInterface&#39;, &#39;pamTid&#39;,&#39;pamBaseMask&#39;,&#39;pamBaseAddr&#39;]
+});</pre>
+</div></div><h2 id="Aria-Ariacheckerfunctionality">Aria checker functionality</h2><p>To simplify adding custom checks to the system tool now includes a checker infrastructure. Checker is a container for callback procedures, each one of them tests some particular condition. Multiple checker containers can exist in the system. At the moment we have two - one empty Checker object and pre-populated symphonyChecker.</p><p>Here is an example based on symphonyChecker. If you use Aria interactively or source a script, then symphonyCheker variable is already accessible. If you 'require' Aria as a library, make sure to include it in the de-referencing list to expose.</p><p><code> let {genSymphonyTbJson,readCpr,readRtlJson,getObjs,<strong>symphonyChecker</strong>} = require(ariaRequireFile);</code></p><p>To run the checker after rtl json is loaded simply do:</p><p>  <code>let results = symphonyChecker.run();</code></p><p>For now symphonyChecker only includes one check and here is how the output looks like</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">==========================================
+  Symphony genwrapper checker
+==========================================
+pam_base_addr (error)..............failed
+ (i) Basic pamBaseAddr check
+==========================================
+fatals:0 errors:1 warnings:0</pre>
+</div></div><p>results variable will be set to: { warning: 0, error: 1, fatal: 0, total: 1 }</p><p>Adding custom callback functions to the checker is straightforward. Check is a function which should return either true (if test passed) or false. For ex:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">symphonyChecker.addCheck({
+  name:&#39;test1&#39;,
+  callback:function(){return true},
+  description:&#39;This test always passes&#39;
+});
+</pre>
+</div></div><p>now running symphonyChecker.run() shows this:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">==========================================
+  Symphony genwrapper checker
+==========================================
+pam_base_addr (error)..............failed
+ (i) Basic pamBaseAddr check
+test1 (error)......................passed
+ (i) This test always passes
+==========================================
+fatals:0 errors:1 warnings:0</pre>
+</div></div><p> </p><h2 id="Aria-Arialogger">Aria logger</h2><p>While it's perfectly legal to use console.log in your script, logger mechanism provides few benefits:</p><ul><li>Messages are also printed to aria.log file </li><li>User can set a verbosity threshold, for ex 'warning' - then all messages labeled as 'info' will be omitted</li><li>Can add prefix and indent</li></ul><p>Configuration is done through a <strong><code>logger</code> </strong>object and actual printing is performed with <code><strong>print</strong> </code>function which is basically a wrapper around logger.log <br/>Below is an example of Aria script using a logger. It shows how logging can be changed inside a function and then restored back to original settings</p><div class="code panel pdl" style="border-width: 1px;">
+ <div class="codeHeader panelHeader pdl hide-border-bottom">
+  <b class="code-title"></b><span class="collapse-source expand-control" style="display:none;"><span class="expand-control-icon icon">&nbsp;</span><span class="expand-control-text">Expand source</span></span><span class="collapse-spinner-wrapper"></span>
+ </div>
+ <div class="codeContent panelContent pdl hide-toolbar">
+  <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence; collapse: true" data-theme="Confluence">// If running under node require Aria index.js
+if (process.argv[0].split('/').pop() === 'node') {
+  var {print,logger} = require('/engr/dev/releases/utils/aria/latest/aria-linux-x64/resources/app/index.js');
+}
+const messageLevels = ['fatal','error','warning','info','plain','verbose','debug'];
+function A() {  
+  // Save original logger settings 
+  const origSettings = ({level,prefix,indent} = logger, {level,prefix,indent});
+  
+  // Now change severity level to verbose, set prefix and indent and rerun the same messages
+  logger.level = 'verbose';
+  logger.prefix = '[function A] ';
+  logger.indent = 4;
+  for (let level of messageLevels) {
+    print(`this is message of level '${level}'`,level);
+  }
+  // Restore original logger settins
+  for (let parm of ['level','prefix','indent']) {
+    logger[parm] = origSettings[parm];
+  }
+}
+// Print messages of different severity levels. Notice that default threshold is info/plain,
+// so debug and verbose levels are not printed 
+logger.indent = 2;
+console.log('\n1. We are outside of the function');
+for (let level of messageLevels) {
+  print(`this is message of level '${level}'`,level);
+}
+console.log('\n2. Calling function A');
+A();
+console.log('\n3.We are outside of the function again');
+for (let level of messageLevels) {
+  print(`this is message of level '${level}'`,level);
+}
+&nbsp;
+// If running as Aria exec script - exit from application  
+if (process.argv[0].split('/').pop() !== 'node') {
+  exit();
+}</pre>
+ </div>
+</div><p>And this is the output of this script</p><div class="code panel pdl" style="border-width: 1px;">
+ <div class="codeHeader panelHeader pdl hide-border-bottom">
+  <b class="code-title"></b><span class="collapse-source expand-control" style="display:none;"><span class="expand-control-icon icon">&nbsp;</span><span class="expand-control-text">Expand source</span></span><span class="collapse-spinner-wrapper"></span>
+ </div>
+ <div class="codeContent panelContent pdl hide-toolbar">
+  <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence; collapse: true" data-theme="Confluence">1. We are outside of the function
+  fatal: this is message of level 'fatal'
+  error: this is message of level 'error'
+  warning: this is message of level 'warning'
+  info: this is message of level 'info'
+  this is message of level 'plain'
+2. Calling function A
+    [function A]  fatal: this is message of level 'fatal'
+    [function A]  error: this is message of level 'error'
+    [function A]  warning: this is message of level 'warning'
+    [function A]  info: this is message of level 'info'
+    [function A]  this is message of level 'plain'
+    [function A]  this is message of level 'verbose'
+3.We are outside of the function again
+  fatal: this is message of level 'fatal'
+  error: this is message of level 'error'
+  warning: this is message of level 'warning'
+  info: this is message of level 'info'
+  this is message of level 'plain'
+
+</pre>
+ </div>
+</div><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p>

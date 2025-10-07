@@ -1,0 +1,791 @@
+{
+  "name": "dii",
+  "version": "3.0",
+  "csr": {
+    "addressWidth": "12",
+    "width": 32,
+    "spaceBlock": [
+      {
+        "baseAddress": "0x0",
+        "registers": [
+          {
+            "name": "DIIUIDR",
+            "description": "DIIU Identification Register",
+            "csrDescription": "DIIU Identification Register",
+            "addressOffset": "0x0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "RPN",
+                "bitOffset": 0,
+                "bitWidth": "8",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "DIIU Register Page Number (within its NRR)",
+                "resetOverloadFn": "return (Array.isArray(primary.rpn) && primary.rpn.length === 1) ? primary.rpn[0] : primary.rpn",
+                "reset": "0x0"
+              },
+              {
+                "name": "NRRI",
+                "bitOffset": 8,
+                "bitWidth": "4",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Identifier of the Ncore 3 Register Region\nin which this DIIU resides",
+                "resetOverloadFn": "return primary.nrri;",
+                "reset": "0x0"
+              },
+              {
+                "name": "NUnitId",
+                "bitOffset": 12,
+                "bitWidth": "12",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Ncore 3 Unit identifier. ",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.nUnitId;"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Value of 1 validates this register. This bit\nis set to 1 if the DIIU is implemented.",
+                "reset": "0x1"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUFUIDR",
+            "description": "DIIU Fabric Unit Identification Register",
+            "csrDescription": "DIIU Fabric Unit Identification Register",
+            "addressOffset": "0x4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "FUnitId",
+                "bitOffset": 0,
+                "bitWidth": "16",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.fUnitId;",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Fabric Unit Identifier of the unit"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUTAR",
+            "description": "DIIU Transaction Activity Register",
+            "csrDescription": "DIIU Transaction Activity Register",
+            "addressOffset": "0x44",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "TransActv",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "This bit is set when there is one or more active transactions inside the DIIU."
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUCECR",
+            "description": "DIIU Correctable Error Control Register",
+            "csrDescription": "DIIU Correctable Error Control Register",
+            "addressOffset": "0x100",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCECR"
+            },
+            "condition": "return ((derived.CMDOverflowBufInSRAM == 1) | (derived.useExternalMemory == 1 & derived.fnErrDetectCorrect == \"ecc\") | (derived.useResiliency == 1 & derived.ResilienceInfo.fnResiliencyProtectionType == \"ecc\")) ? true : false"
+          },
+          {
+            "name": "DIIUCESR",
+            "description": "DIIU Correctable Error Status Register",
+            "csrDescription": "DIIU Correctable Error Status Register",
+            "addressOffset": "0x108",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Correctable Error Valid bit is set.\n0x00: Data SRAM uncorrectable error\n0x08: Transport error\nAll other encodings are reserved"
+                }
+			  ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESR"
+            },
+            "condition": "return ((derived.CMDOverflowBufInSRAM == 1) | (derived.useExternalMemory == 1 & derived.fnErrDetectCorrect == \"ecc\") | (derived.useResiliency == 1 & derived.ResilienceInfo.fnResiliencyProtectionType == \"ecc\")) ? true : false"
+          },
+          {
+            "name": "DIIUCELR0",
+            "description": "DIIU Correctable Error Location Registers 0",
+            "csrDescription": "DIIU Correctable Error Location Registers 0",
+            "addressOffset": "0x10c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return ((derived.CMDOverflowBufInSRAM == 1) | (derived.useExternalMemory == 1 & derived.fnErrDetectCorrect == \"ecc\") | (derived.useResiliency == 1 & derived.ResilienceInfo.fnResiliencyProtectionType == \"ecc\")) ? true : false"
+          },
+          {
+            "name": "DIIUCELR1",
+            "description": "DIIU Correctable Error Location Registers 1",
+            "csrDescription": "DIIU Correctable Error Location Registers 1",
+            "addressOffset": "0x110",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR1"
+            },
+            "condition": "return ((derived.CMDOverflowBufInSRAM == 1) | (derived.useExternalMemory == 1 & derived.fnErrDetectCorrect == \"ecc\") | (derived.useResiliency == 1 & derived.ResilienceInfo.fnResiliencyProtectionType == \"ecc\")) ? true : false"
+          },
+          {
+            "name": "DIIUCESAR",
+            "description": "DIIU Correctable Error Status Alias Register",
+            "csrDescription": "DIIU Correctable Error Status Alias Register",
+            "addressOffset": "0x114",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESAR"
+            },
+            "condition": "return ((derived.CMDOverflowBufInSRAM == 1) | (derived.useExternalMemory == 1 & derived.fnErrDetectCorrect == \"ecc\") | (derived.useResiliency == 1 & derived.ResilienceInfo.fnResiliencyProtectionType == \"ecc\")) ? true : false"
+          },
+          {
+            "name": "DIIUUEDR",
+            "description": "DIIU Uncorrectable Error Detect Register",
+            "csrDescription": "DIIU Uncorrectable Error Detect Register",
+            "addressOffset": "0x118",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ProtErrDetEn",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Protocol error detect enable: When set, errors will be detected from the protocol interface."
+              },
+              {
+                "name": "TransErrDetEn",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+              },
+              {
+                "name": "MemErrDetEn",
+                "bitOffset": 2,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+              },
+	      {
+                "name": "TimeoutErrDetEn",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Timeout protection error detection enable: When set, timeout errors will be detected."
+              }
+            ]
+          },
+          {
+            "name": "DIIUUEIR",
+            "description": "DIIU Uncorrectable Error Interrupt Register",
+            "csrDescription": "DIIU Uncorrectable Error Interrupt Register",
+            "addressOffset": "0x11c",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ProtErrIntEn",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Protocol uncorrectable error interrupt enable."
+              },
+              {
+                "name": "TransErrIntEn",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Concerto Transport uncorrectable error interrupt enable."
+              },
+              {
+                "name": "MemErrIntEn",
+                "bitOffset": 2,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "RAM memory uncorrectable error interrupt enable."
+              },
+              {
+                "name": "TimeoutErrIntEn",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Timeout uncorrectable error interrupt enable."
+              }
+            ]
+          },
+          {
+            "name": "DIIUUESR",
+            "description": "DIIU Uncorrectable Error Status Register",
+            "csrDescription": "DIIU Uncorrectable Error Status Register",
+            "addressOffset": "0x120",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Uncorrectable Error Valid bit is set.\n0x00: Data SRAM uncorrectable error\n0x02: Native interface write response error\n0x03: Native interface read response error \n0x08: Transport error\nAll other encodings are reserved"
+                },
+                {
+                  "name": "ErrInfo",
+                  "description": "This field indicates additional information about logged error type, if the Uncorrectable Error Valid bit is set.\nIf it is a native interface write response error then\nbits 1:0   Response from the interface \nbit  2     Security attirbute 15:3  Reserved\n\nIf it is a native interface read response error then \nbits 1:0   Response from the interface \nbit  2     Security attirbute \nbits 15:3  Reserved \n\nIf it is a transport error then \nbit  0     1'b0 represents wrong target ID; 1'b1 Reserved \nbits 5:1   Reserved \nbits 15:6  Represents source ID"
+                }
+              ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUUELR0",
+            "description": "DIIU Uncorrectable Error Location Registers 0",
+            "csrDescription": "DIIU Uncorrectable Error Location Registers 0",
+            "addressOffset": "0x124",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUUELR1",
+            "description": "DIIU Uncorrectable Error Location Registers 1",
+            "csrDescription": "DIIU Uncorrectable Error Location Registers 1",
+            "addressOffset": "0x128",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR1"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUUESAR",
+            "description": "DIIU Uncorrectable Error Status Alias Register",
+            "csrDescription": "DIIU Uncorrectable Error Status Alias Register",
+            "addressOffset": "0x12c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESAR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUCRTR",
+            "description": "DIIU Correctable Resiliency Threshold Register",
+            "csrDescription": "DIIU Correctable Resiliency Threshold Register",
+            "addressOffset": "0x180",
+            "condition": "return (derived.useResiliency == 1) ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/errCSR.json#xCRTR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DIIUATER",
+            "description": "DIIU Address Translation Enable Register",
+            "csrDescription": "DIIU Address Translation Enable Register",
+            "addressOffset": "0x4c0",
+            "condition": "return derived.useAddrTranslation?derived.nAddrTransRegisters:0",
+            "offsetStep": 12,
+            "fields": [
+              {
+                "name": "Mask",
+                "bitOffset": 0,
+                "bitWidth": "4",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Treated as binary number from 0 to 15.\nActuall bit mast covers (Mask + 20) bits of address, with a maximum of 35 bits.\nThis enable a block of up to 2^(Mask + 20) bytes to be relocated."
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "0: Address translation triplet does not have a valid translation\n1: Address translation triplet has a valid translation and translation is enabled"
+              }
+            ]
+          },
+          {
+            "name": "DIIURFAR",
+            "description": "DIIU Reallocate From Address Register",
+            "csrDescription": "DIIU Reallocate From Address Register",
+            "addressOffset": "0x4c4",
+            "condition": "return derived.useAddrTranslation?derived.nAddrTransRegisters:0",
+            "offsetStep": 12,
+            "fields": [
+              {
+                "name": "FromAddr",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Bits 51 down to 20 of incoming address."
+              }
+            ]
+          },
+          {
+            "name": "DIIURTAR",
+            "description": "DIIU Reallocate To Address Register",
+            "csrDescription": "DIIU Reallocate To Address Register",
+            "addressOffset": "0x4c8",
+            "condition": "return derived.useAddrTranslation?derived.nAddrTransRegisters:0",
+            "offsetStep": 12,
+            "fields": [
+              {
+                "name": "ToAddr",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Bits 51 down to 20 of outgoing address."
+              }
+            ]
+          },
+	  {
+            "name": "DIICCTRLR",
+            "description": "DIIU Capture Control Register",
+            "csrDescription": "DIIU Capture Control Register",
+            "addressOffset": "0x900",
+            "condition": "return true",
+            "offsetStep": 0,
+	    "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_capture_CSR.json#xCCTRLR"
+            }
+          },
+	   {
+            "name": "DIIUTOCR",
+            "description": "Timeout Control Register.\nControls timeout for transactions that are allocated in the transaction table.",
+            "csrDescription": "Timeout Control Register",
+            "addressOffset": "0x190",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+        },
+        {
+            "name": "DIIUSEPTOCR",
+            "description": "DIIU System Event Protocol Timeout Control Register.\nControls timeout for receiving responses to system event messages that are issued to the network from this DII.",
+            "csrDescription": "DIIU System Event Protocol Timeout Control Register",
+            "addressOffset": "0x194",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+       },
+	   {
+            "name": "DIIUTCR",
+            "description": "DIIU Transaction Control Register",
+            "csrDescription": "DIIU Transaction Control Register",
+            "addressOffset": "0x40",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EventDisable",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Setting this disables Event handling."
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DIICNTCR",
+            "description": "PMON Counter Control Register",
+            "csrDescription": "PMON Counter Control Register",
+            "addressOffset": "0xB00",
+	    "offsetStep" : 16,
+            "fields": {
+	    	      "descFields":[],
+		      "reference" : "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTCR"
+	    },
+            "condition": "return derived.nPerfCounters"
+          },
+          {
+            "name": "DIICNTVR",
+            "description": "PMON Counter Value Register",
+            "csrDescription": "PMON Counter Value Register",
+            "addressOffset": "0xB04",
+	    "offsetStep" : 16,
+            "fields": {
+	    	      "descFields":[],
+		      "reference" : "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTVR"
+	    },
+            "condition": "return derived.nPerfCounters"
+          },
+          {
+            "name": "DIICNTSR",
+            "description": "PMON Counter Saturation Register",
+            "csrDescription": "PMON Counter Saturation Register",
+            "addressOffset": "0xB08",
+	    "offsetStep" : 16,
+            "fields": {
+	    	      "descFields":[],
+		      "reference" : "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTSR"
+	    },
+            "condition": "return derived.nPerfCounters"
+          },
+	  {
+            "name": "DIIBCNTFR",
+	    "description": "PMON BandWidth Counter Filter Register",
+	    "csrDescription": "PMON BW Counter Filter Register",
+            "addressOffset": "0xc00",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 8,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xBCNTFR"
+            }
+          },
+	{
+            "name": "DIIBCNTMR",
+	    "description": "PMON BandWidth Counter Mask Register",
+	    "csrDescription": "PMON BW Counter Mask Register",
+            "addressOffset": "0xc04",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 8,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xBCNTMR"
+            }
+          },
+	  {
+            "name": "DIILCNTCR",
+	    "description": "PMON Latency Conter Control Register",
+	    "csrDescription": "PMON Latency Counter Control Register",
+            "addressOffset": "0xc80",
+            "condition": "return derived.nPerfCounters ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xLCNTCR"
+            }
+          }, 
+	  {
+            "name": "DIIMCNTCR",
+	    "description": "PMON Main Conter Control Register",
+	    "csrDescription": "PMON Main Counter Control Register",
+            "addressOffset": "0xc84",
+            "condition": "return derived.nPerfCounters ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xMCNTCR"
+            }
+          },
+          {
+            "name": "DIIUENGDBR",
+            "description": "DII Engineering Debug Register",
+            "csrDescription": "DII Engineering Debug Register",
+            "addressOffset": "0xF00",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ExcludeInitiatorFromOrdering",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit when set to 1 excludes initiator from ordering checks; otherwise includes.",
+                "scope": "Engg"
+              },
+              {
+                "name": "ExcludeROWriteFromWO",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit when set to 1 excludes Request Ordered (RO) Write from the Write Order (WO) chain; otherwise includes.",
+                "scope": "Engg"
+              },
+              {
+                "name": "ForceEOLateWriteResponse",
+                "bitOffset": 2,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit when set to 1 force Endpoint Ordered request to have late write response (overriding VZ to 1) otherwise don't force.",
+                "scope": "Engg"
+              },
+              {
+                "name": "ForceROLateWriteResponse",
+                "bitOffset": 3,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit when set to 1 force Request Ordered request to have late write response (overriding VZ to 1); otherwise don't force.",
+                "scope": "Engg"
+              },
+              {
+                "name": "ForceAwIdZeros",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit when set to 1 force AWID to all zeros; otherwise don't force.",
+                "scope": "Engg"
+              },
+              {
+                "name": "ForceArIdZeros",
+                "bitOffset": 5,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit when set to 1 force ARID to all zeros; otherwise don't force.",
+                "scope": "Engg"
+              }
+            ]
+          },
+          {
+            "name": "DIIUUEVIR",
+            "description": "DIIU Unit Engineering Version Id Register",
+            "csrDescription": "DIIU Unit Engineering Version Id Register",
+            "addressOffset": "0xff4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EngVerId",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "The Engineering Version Identifier is a concatenation of two fields: {MPFHash[18:0], CHIP_ID[12:0]}. The CHIP_ID is obtained from a license file and the MPFHash is the last 19 bits obtained from the 128bit MD5 Hash.",
+                "scope": "Engg",
+                "reset": "return derived.engVerId"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUSBSIR",
+            "description": "DIIU Skid Buffer Size Info Register ",
+            "csrDescription": "DIIU Skid Buffer Size Info Register ",
+            "addressOffset": "0xff0",
+            "offsetStep": 0,
+            "fields": [
+                   {
+                    "name": "SkidBufArb",
+                    "bitOffset": 0,
+                    "bitWidth": "9",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": "return derived.nCMDSkidBufArb",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Depth of skid buffer visible to arbitration. This value determines the size of the arbitration window within which arriving requests are selected based on QoS, priority and arrival time. It is recommended to start with a reasonably value for performance analysis - the area of a skid buffer grows with the square of this number and larger options will also significantly impact timing",
+                    "scope": "All",
+                    "link": ""
+                  },
+                  {
+                    "name": "SkidBufSize",
+                    "bitOffset": 16,
+                    "bitWidth": "10",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": "return derived.nCMDSkidBufSize",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Total depth of skid buffer for CMD commands of DII. The skid buffer is used to stage transaction requests from initiator agents. The number of required entries may be determined by traffic requirements and analysis using performance modeling. This value sets the total budget of protocol credits available for distribution",
+                    "scope": "All",
+                    "link": ""
+                  },
+                  {
+                    "name": "Valid",
+                    "bitOffset": 31,
+                    "bitWidth": "1",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": "return 0x1",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Valid bit, indicates presence of the register",
+                    "scope": "All",
+                    "link": ""
+                  }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DIIUINFOR",
+            "description": "DIIU Information Register ",
+            "csrDescription": "DIIU Information Register ",
+            "addressOffset": "0xffc",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ImplVer",
+                "bitOffset": 0,
+                "bitWidth": 16,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Implementation Version",
+                "scope": "All",
+                "reset": "return derived.implVerId"
+              },
+              {
+                "name": "UT",
+                "bitOffset": 16,
+                "bitWidth": 4,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Unit Type: specifies the Ncore unit type\n0x0 - CAIU\n0x1 - NCAIU\n0x2 - NCAIU with proxy cache\n0x3 - 0x7 - Reserved\n0x8 - DCE\n0x9 - DMI\n0xA - DII\n0xB - DVE \n0xC - 0xF - Reserved\n",
+                "scope": "All",
+                "reset": "0xa"
+              },
+              {
+                "name": "UST",
+                "bitOffset": 20,
+                "bitWidth": 4,
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Unit sub Type: specifies the Ncore unit native interface type\n0x0 - AXI\n0x1 - ACE-Lite\n0x2 - ACE-Lite E\n0x3 - ACE \n0x4 - 0x7 - Reserved \n0x8 - CHI-A\n0x9 - CHI-B\n0xA - 0xF - Reserved\n"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Implemented",
+                "scope": "All",
+                "reset": "0x1\n"
+              }
+            ],
+            "condition": "return true"
+          }
+        ]
+      }
+    ]
+  }
+}

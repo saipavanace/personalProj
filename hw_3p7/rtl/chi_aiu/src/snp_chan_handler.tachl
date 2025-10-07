@@ -1,0 +1,109 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// This module defines CHI TX SNP channel handler 
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+//=============================================================================
+// Parameters
+//=============================================================================
+
+var chiInterface          = u.getParam('chiInterface');
+var snp_flit_interface    = u.getParam('SnpInterface');
+
+var snp_flit_bundle_width = bundleFunctions.getBundleWidth(snp_flit_interface, [], obj.lib.bundle);
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'clk',          1);
+u.port('input',  'reset_n',      1);
+
+u.port('input',  'sync_reset_n',        1);
+u.port('input',  'rx_state_deact',      1);
+u.port('input',  'tx_state_deact',      1);
+u.port('input',  'tx_state_run',        1);
+u.port('output', 'all_credits_returned', 1);
+
+obj.lib.interface('',            'slave', snp_flit_interface);
+obj.lib.interface('chi_tx_snp_', 'slave', chiInterface.tx_snp_);
+
+u.port('input',  'valid', 1);
+u.port('output', 'ready', 1);
+
+u.port('input',  'chk_err', 1);
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\); 
+
+wire dff_enable = 1'b1;
+wire chi_tx_snp_flitv_a1;
+wire cred_return_ready;
+wire txlink_snp_cred_return;
+
+//=============================================================================
+// Link Credit Counters
+//=============================================================================
+
+wire [4:0] current_credit_count ;
+
+wire credit_counter_en = chi_tx_snp_lcrdv | chi_tx_snp_flitv_a1;
+
+wire [4:0] credit_counter_in = current_credit_count + {4'b0, chi_tx_snp_lcrdv} - {4'b0, chi_tx_snp_flitv_a1};
+
+\=u.dffre(5, 'current_credit_count', 'credit_counter_in', "5'b0", 'credit_counter_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// Flit valid
+//=============================================================================
+
+\=u.dffre(1, 'chi_tx_snp_flitv', 'chi_tx_snp_flitv_a1', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign chi_tx_snp_flitv_a1 = ((valid & ready) | (txlink_snp_cred_return & cred_return_ready)) & sync_reset_n;
+
+assign ready = tx_state_run & ~rx_state_deact ? (current_credit_count != 5'b0) : 1'b0;
+
+assign cred_return_ready = tx_state_run ? 1'b0 : (current_credit_count != 5'b0);
+
+//=============================================================================
+// Flit pending
+//=============================================================================
+
+assign chi_tx_snp_flit_pend = chi_tx_snp_flitv_a1;
+
+//=============================================================================
+// Packing CHI bit fields to Flit
+//=============================================================================
+
+\jsbegin
+var reversed_snp_intf = Object.keys(snp_flit_interface).reverse().reduce(function (acc,val){ acc[val] = snp_flit_interface[val]; return acc ; },{});
+\jsend
+
+wire [\=snp_flit_bundle_width=\-1:0] chi_tx_snp_flit_a1;
+
+assign chi_tx_snp_flit_a1 = tx_state_run ? \=bundleFunctions.packetizeBundle('', reversed_snp_intf, [], obj.lib.bundle)=\ : 'b0;
+
+\=u.dffre(snp_flit_bundle_width, 'chi_tx_snp_flit', 'chi_tx_snp_flit_a1', snp_flit_bundle_width+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// all_credits_returned
+//=============================================================================
+
+assign all_credits_returned = tx_state_deact & (current_credit_count == 5'd0);
+
+//=============================================================================
+// txlink_snp_cred_return
+//=============================================================================
+
+assign txlink_snp_cred_return = tx_state_deact & cred_return_ready;
+
+endmodule

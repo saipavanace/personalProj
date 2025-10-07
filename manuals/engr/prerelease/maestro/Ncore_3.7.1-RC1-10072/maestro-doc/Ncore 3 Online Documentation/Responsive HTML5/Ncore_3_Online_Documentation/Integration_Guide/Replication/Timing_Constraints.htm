@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Timing_Constraints</title>
+<meta content="Timing Constraints" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Integration_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "2.6.0_1";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Integration_Guide/Replication/Replication.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Integration_Guide/Replication/CDC_Considerations.htm">
+ <meta name="topic-breadcrumbs" content="Integration Guide > Implementation Considerations" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1049329"><a id="976_Heading1_1049329" name="976_Heading1_1049329"></a>7.1 Timing Constraints</p><p class="Body" id="1049330">Implementation timing requirements and characteristics for a block are provided via the usage of two scenarios (aka views). The first scenario (e.g., <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">gen_wrapper.func.sdc</span>) represents the functional mode timing. Given the ncore is highly single cycle synchronous, these constraints are straightforward. </p><p class="Body" id="1049331">The second scenario (e.g., <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">gen_wrapper.cdc.sdc</span>) represents timing exceptions involving clock domain crossings (i.e., CDC). An attempt has been made to explicitly constrain all expected exceptions paths. If an asynchronous path is encountered that cannot be identified in <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;&#x3E;.cdc.sdc</span>, contact Arteris support.</p><p class="Body" id="1049332">Based on the configuration of the ncore, there are multiple different types of exceptions that could be present in the <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;&#x3E;.cdc.sdc</span>. The exception types are written out in groups in the SDC; each group is preceded by basic comments for end&#x2D;user benefit as well as group&#x2D;specific tuning variable(s). The exceptions should be a subset of the following (applicable tuning variable(s)).</p><p class="Bullet_1" id="1049333"><span class="BulletSymbol">&#x2022; </span>Write pointer, of asynchronous clock adapter (CDC_Scaler)</p><p class="Bullet_1" id="1049334"><span class="BulletSymbol">&#x2022; </span>Read pointer of asynchronous clock adapter (CDC_Scaler)</p><p class="Bullet_1" id="1049335"><span class="BulletSymbol">&#x2022; </span>DataPath of asynchronous clock adapter (CDC_Scaler, CDC_DataPathRatio)</p><p class="Bullet_1" id="1049336"><span class="BulletSymbol">&#x2022; </span>Functional Safety Controller (FSDC_CDC_Delay)</p><p class="Bullet_1" id="1049337"><span class="BulletSymbol">&#x2022; </span>Externally Driven Control (EDC_CDC_Delay)</p><p class="Bullet_1" id="1049338"><span class="BulletSymbol">&#x2022; </span>Trigger Control (TRIG_CDC_Delay)</p><p class="Bullet_1" id="1049339"><span class="BulletSymbol">&#x2022; </span>Event Control (EVT_CDC_Delay)</p><p class="Bullet_1" id="1049340"><span class="BulletSymbol">&#x2022; </span>Interrupt Signals (IRQ_CDC_Delay)</p><p class="Bullet_1" id="1049341"><span class="BulletSymbol">&#x2022; </span>PMA handshake (PWR_CDC_Delay)</p><p class="Body" id="1049342">One form of exception timing includes explicit set_max_delay constraints on gray code pointers. These pointers must meet these constraints to ensure proper operation. Other exception timing includes explicit set_max_delay constraints on various asynchronous control signals. Often timing on these signals can be relaxed, and by default the delay is often a function of the slowest clock in the system. These can easily be relaxed or tightened by the end&#x2D;user by the modification of a variable in the SDC.</p><p class="Body" id="1050871">The previously mentioned internal asynchronous paths are architected to be asynchronous. It may turn out that the source and destination clocks are the same. That being the case these paths will get timed in the func scenario as synchronous. If these turn out to be problematic the end&#x2D;user is free to add a false path or multi&#x2D;cycle path in the func scenario address. It is expected this will be addressed in a future release with an improvement to <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;&#x3E;.func.sdc</span> (MAES&#x2D;7356).</p><p class="Body" id="1050872">Some of the fore mentioned asynchronous paths travel through an output (&#47;input) ports of the ncore. It may turn out that when the ncore is instantiated in the context of an SoC, the source and destination FFs are clocked by the same functional clock. If the end&#x2D;user wishes to treat these paths as multi&#x2D; cycle paths, they are free to modify the constraints to do so.</p><p class="Body" id="1050873">All generated SDC are full flat SDC (i.e., without hierarchy). The top level (e.g., <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">gen_wrapper</span>) is the most complete and robust SDC and should be used for any partitioning and budgeting needed. Without a budgeting process, expect problems with top level constraints referencing items inside blocks, when integrating blocks back into the top level.</p><p class="Body" id="1050875">There are <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;unit&#x3E;.func.sdc</span> and <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;unit&#x3E;.cdc.sdc</span>  for all units (e.g., dce, ioaiu_top, ndn1, gen_wrapper). The SDC associated with these units may be slightly less accurate and complete due to nuances of RTL budgeting, the ability to characterize, etc. These SDC are suitable for debug and exploration. Blocks are best implemented with budgeted constraints derived from the top level (e.g., <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">gen_wrapper</span>).</p></div>
+</body>
+</html>

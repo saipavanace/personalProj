@@ -1,0 +1,304 @@
+<p><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156655/HW-CTF+sym_vc_firewall_adapter" data-linked-resource-id="16156655" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF sym_vc_firewall_adapter</a> is used as an example. It instantiates multiple <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156329/HW-CTF+sym_firewall_adapter" data-linked-resource-id="16156329" data-linked-resource-version="5" data-linked-resource-type="page">HW-CTF sym_firewall_adapter</a>, an <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16160510/interrupt" data-linked-resource-id="16160510" data-linked-resource-version="22" data-linked-resource-type="page">interrupt</a>, and an <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16169247/apb_demux" data-linked-resource-id="16169247" data-linked-resource-version="7" data-linked-resource-type="page">apb_demux</a>.</p><p>The instances of <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156329/HW-CTF+sym_firewall_adapter" data-linked-resource-id="16156329" data-linked-resource-version="5" data-linked-resource-type="page">HW-CTF sym_firewall_adapter</a> and <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16160510/interrupt" data-linked-resource-id="16160510" data-linked-resource-version="22" data-linked-resource-type="page">interrupt</a> have <strong>reduced APB address width </strong>compared to the APB address of the <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156655/HW-CTF+sym_vc_firewall_adapter" data-linked-resource-id="16156655" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF sym_vc_firewall_adapter</a>.</p><p>The CSR object for sym_vc_firewall_adapter has a spaceBlock array, each spaceBlock array entry contains a baseAddress and an array of registers.</p><p>For sym_vc_firewall_adapter configured with numVc=2:</p><p>  spaceBlock[0] is assigned to sym_firewall_adapter@VC=0.</p><p>  spaceBlock[1] is assigned to sym_firewall_adapter@VC=1.</p><p>  spaceBlock[2] is assigned to interrupt.</p><p>Becasue of the reduced APB address width approach, all spaceBlock entry has the same address block size.</p><p>Any module that calls the generate*CSR function in sym_csr_lib.js needs to pass its APB address width as the addressWidth parameter.</p><p><br/></p><p>hw-sym/js/sym_lib_utils.js</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">module.exports = {
+    symLib: {
+        generateInterruptCSR               : symCsr.generateInterruptCSR,
+        generateFirewallCSR                : symCsr.generateFirewallCSR,
+        generateVcFirewallCSR              : symCsr.generateVcFirewallCSR,
+        generateVcFirewallApbBaseAddresses : symCsr.generateVcFirewallApbBaseAddresses,
+        generateVcFirewallApbBaseMasks     : symCsr.generateVcFirewallApbBaseMasks,
+        generateVcFirewallSpaceBlockOffset : symCsr.generateVcFirewallSpaceBlockOffset,</pre>
+</div></div><p><br/></p><p>hw-lib/js/sym_csr_lib.js</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">module.exports = {
+        generateInterruptCSR               : generateInterruptCSR,
+        generateFirewallCSR                : generateFirewallCSR,
+        generateVcFirewallCSR              : generateVcFirewallCSR,
+        generateVcFirewallApbBaseAddresses : generateVcFirewallApbBaseAddresses,
+        generateVcFirewallApbBaseMasks     : generateVcFirewallApbBaseMasks,
+        generateVcFirewallSpaceBlockOffset : generateVcFirewallSpaceBlockOffset,</pre>
+</div></div><p><br/></p><p>hw-lib/js/sym_csr_lib.js</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">// Function to return the size in bytes for a csr.spaceBlock array element, assuming all elements have the same size.
+function generateVcFirewallSpaceBlockOffset () { return 256; }</pre>
+</div></div><p><br/></p><p>hw-lib/js/sym_csr_lib.js</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">// Function to generate CSR for VC Firewall
+function generateVcFirewallCSR (
+    numVc,
+    csrMoreParams = {
+        &quot;addressWidth&quot; : 12,
+        &quot;width&quot;        : 32,
+        &quot;baseAddress&quot;  :  0,
+    }
+)
+{
+    if (csrMoreParams.addressWidth) { } else { csrMoreParams.addressWidth = 12 };
+    if (csrMoreParams.width)        { } else { csrMoreParams.width = 32 };
+    if (csrMoreParams.baseAddress)  { } else { csrMoreParams.baseAddress = 0 };
+    var csr = {
+        &quot;addressWidth&quot;: csrMoreParams.addressWidth,
+        &quot;width&quot;: csrMoreParams.width,
+        &quot;spaceBlock&quot;: []
+    };
+    var apbBaseAddressOffset = generateVcFirewallSpaceBlockOffset();
+    var firewallCsr = generateFirewallCSR(csrMoreParams);
+    var interruptCsr = generateInterruptCSR(numVc, csrMoreParams);
+    //
+    // Creating spaceBlock array elements for Firewall instances
+    //
+    for (var i = 0; i &lt; numVc; i++) {
+        csr.spaceBlock.push({&quot;baseAddress&quot;: i*apbBaseAddressOffset, &quot;registers&quot;: firewallCsr.spaceBlock[0].registers});
+    }
+    //
+    // Creating spaceBlock array element for Interrupt accumulator instance
+    //
+    csr.spaceBlock.push({&quot;baseAddress&quot;: numVc*apbBaseAddressOffset, &quot;registers&quot;: interruptCsr.spaceBlock[0].registers});
+
+  return csr;
+}</pre>
+</div></div><p><br/></p><p>hw-lib/js/sym_csr_lib.js</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">//
+// Calculating APB base addresses for apb_demux
+//
+function generateVcApbBaseAddresses (
+    numVc,
+    wPAddr,
+    apbBaseAddressOffset
+)
+{
+    var apbBaseAddresses = [];
+    var apbBaseAddress = 0;
+    for (var i=0; i &lt; numVc+1; i++) {
+        apbBaseAddress = i * apbBaseAddressOffset;
+        apbBaseAddresses.push(wPAddr + &quot;&#39;h&quot; + apbBaseAddress.toString(16));
+    }
+    return apbBaseAddresses;
+}
+
+function generateVcFirewallApbBaseAddresses (
+    numVc,
+    wPAddr
+)
+{
+    var apbBaseAddressOffset = generateVcFirewallSpaceBlockOffset();
+    return generateVcApbBaseAddresses(numVc, wPAddr, apbBaseAddressOffset);
+}
+ 
+//
+// Calculating APB base masks for apb_demux
+//
+function generateVcApbBaseMasks (
+    numVc,
+    wPAddr,
+    apbBaseAddressOffset
+)
+{
+    var apbBaseMasks = [];
+    var apbBaseMask = (Math.pow(2, wPAddr) - 1) - (apbBaseAddressOffset - 1);
+    for (var i=0; i &lt; numVc+1; i++) {
+        apbBaseMasks.push(wPAddr + &quot;&#39;h&quot; + apbBaseMask.toString(16));
+    }
+    return apbBaseMasks;
+}
+
+
+function generateVcFirewallApbBaseMasks (
+    numVc,
+    wPAddr
+)
+{
+    var apbBaseAddressOffset = generateVcFirewallSpaceBlockOffset();
+    return generateVcApbBaseMasks(numVc, wPAddr, apbBaseAddressOffset);
+}</pre>
+</div></div><p><br/></p><p>hw-lib/js/sym_csr_lib.js</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">// Function to generate CSR for Firewall
+function generateFirewallCSR (
+    csrMoreParams = {
+        &quot;addressWidth&quot; : 12,
+        &quot;width&quot;        : 32,
+        &quot;baseAddress&quot;  :  0,
+    }
+)
+{
+    if (csrMoreParams.addressWidth) { } else { csrMoreParams.addressWidth = 12 };
+    if (csrMoreParams.width)        { } else { csrMoreParams.width = 32 };
+    if (csrMoreParams.baseAddress)  { } else { csrMoreParams.baseAddress = 0 };
+    var csr = {
+        &quot;addressWidth&quot; : csrMoreParams.addressWidth,
+        &quot;width&quot; : csrMoreParams.width,
+        &quot;spaceBlock&quot;:[{
+            &quot;baseAddress&quot; : csrMoreParams.baseAddress,
+            &quot;registers&quot; : [
+            ]
+        }
+        ]
+    };
+    var register = {};
+    register = {
+                        &quot;name&quot; : &quot;ENABLE_reg&quot;,
+                        &quot;addressOffset&quot; : 0,
+                        &quot;description&quot; : &quot;Register to enable fire wall check&quot;,
+                        &quot;fields&quot;:[
+                            {
+                                &quot;name&quot; : &quot;enable&quot;,
+                                &quot;bitOffset&quot;: 0,
+                                &quot;bitWidth&quot; : 1,
+                                &quot;access&quot; : &quot;RW&quot;,
+                                &quot;hardware&quot; : &quot;RO&quot;,
+                                &quot;opOrder&quot; : &quot;SW&quot;,
+                                &quot;reset&quot;: 1
+                            }
+                        ]
+               };
+    csr.spaceBlock[0].registers.push(register);
+    if (csrMoreParams.id) { // id field exists, so generate ID Register
+        var id = csrMoreParams.id;
+        var addressOffsetIDR = Math.pow(2, csr.addressWidth) - (csr.width/8);
+        register = generateRegisterIDR(id, addressOffsetIDR);
+        csr.spaceBlock[0].registers.push(register);
+    }
+    return csr;
+}</pre>
+</div></div><p><br/></p><p>hw-lib/js/sym_csr_lib.js</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">// Function to generate CSR for Interrupt
+function generateInterruptCSR (
+    numIn,
+    csrMoreParams = {
+        &quot;addressWidth&quot; : 12,
+        &quot;width&quot;        : 32,
+        &quot;baseAddress&quot;  :  0,
+    }
+)
+{
+    if (csrMoreParams.addressWidth) { } else { csrMoreParams.addressWidth = 12 };
+    if (csrMoreParams.width)        { } else { csrMoreParams.width = 32 };
+    if (csrMoreParams.baseAddress)  { } else { csrMoreParams.baseAddress = 0 };
+    var csr = {
+        &quot;addressWidth&quot; : csrMoreParams.addressWidth,
+        &quot;width&quot; : csrMoreParams.width,
+        &quot;spaceBlock&quot;:[{
+            &quot;baseAddress&quot; : csrMoreParams.baseAddress,
+            &quot;registers&quot; : [
+            ]
+        }
+        ]
+    };
+    var register = {};
+    register = {
+        &quot;name&quot;: &quot;INTVR&quot;,
+        &quot;description&quot;: &quot;Interrupt Valid Register&quot;,
+        &quot;csrDescription&quot;: &quot;Interrupt Valid Register&quot;,
+        &quot;addressOffset&quot;: 0,
+        &quot;fields&quot;: [
+            {
+                &quot;name&quot;: &quot;valid&quot;,
+                &quot;bitOffset&quot;: 0,
+                &quot;bitWidth&quot;: numIn,
+                &quot;access&quot;: &quot;RW&quot;,
+                &quot;hardware&quot;: &quot;RW&quot;,
+                &quot;linkOp&quot;: &quot;NULL&quot;,
+                &quot;opOrder&quot;: &quot;NULL&quot;,
+                &quot;description&quot;: &quot;Interrupt Valid register. One status bit for every interrupt valid bit. Interrupt valid bit goes to 1 when state is 0, and input is 1. Interrupts are cleared by writing 0 to bit corresponding to that interrupt valid bit.&quot;,
+                &quot;reset&quot;: 0
+            }
+        ],
+        &quot;specialImplementation&quot;: false
+    };
+    csr.spaceBlock[0].registers.push(register);
+    register = {
+        &quot;name&quot;: &quot;INTMR&quot;,
+        &quot;description&quot;: &quot;Interrupt Mask Register&quot;,
+        &quot;csrDescription&quot;: &quot;Interrupt Mask Register&quot;,
+        &quot;addressOffset&quot;: 4,
+        &quot;fields&quot;: [
+            {
+                &quot;name&quot;: &quot;mask&quot;,
+                &quot;bitOffset&quot;: 0,
+                &quot;bitWidth&quot;: numIn,
+                &quot;access&quot;: &quot;RW&quot;,
+                &quot;hardware&quot;: &quot;RO&quot;,
+                &quot;linkOp&quot;: &quot;NULL&quot;,
+                &quot;opOrder&quot;: &quot;NULL&quot;,
+                &quot;description&quot;: &quot;Interrupt Mask register. One mask bit for every interrupt valid bit. 1 indicates interrupt is enabled. 0 indicates interrupt is disabled. 0 is default value.&quot;,
+                &quot;reset&quot;: 0
+            }
+        ],
+        &quot;specialImplementation&quot;: false
+    };
+    csr.spaceBlock[0].registers.push(register);
+    if (csrMoreParams.id) { // id field exists, so generate ID Register
+        var id = csrMoreParams.id;
+        var addressOffsetIDR = Math.pow(2, csr.addressWidth) - (csr.width/8);
+        register = generateRegisterIDR(id, addressOffsetIDR);
+        csr.spaceBlock[0].registers.push(register);
+    }
+    return csr;
+}</pre>
+</div></div><p><br/></p><p><br/></p><p>hw-sym/rtl/lib/src/sym_vc_firewall_adapter.tachl</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">\jsbegin
+  // VC Firewall module that has numVc Firewall instances and an Interrupt Accumulator instance.
+  // VC Firewall has a APB interface (cfgInterface).
+  // VC Firewall instantiates an apb_demux to drive the local APB interfaces of the Firewall
+  // instances and the Interrupt Accumulator instance.
+  u.paramDefault(&#39;csr&#39;,&#39;object&#39;,null);
+  u.paramDefault(&quot;id&quot;, &quot;int&quot;, -1);
+  var id        = u.getParam(&#39;id&#39;);
+  var numVc = inInterface.signals.valid;
+  //
+  // Call symLib.generateVcFirewallSpaceBlockOffset that returns the number of bytes per CSR spaceBlock
+  //
+  // Calculate the local address width. 
+  // This is the address width of the master APB interfaces of the apb_demux.
+  // This is the address width of the slave APB interfaces of sym_firewall_adapter and interrupt.
+  //
+  // Calculate the address width reduction.
+  //
+  var local_addressWidth = Math.ceil(Math.log2(symLib.generateVcFirewallSpaceBlockOffset()));
+  var addressWidthReduce = interfaces.cfgInterface.params.wAddr - local_addressWidth;
+  //
+  // This is the cfgInterface for this VC Firewall module.
+  // It&#39;s connected to the slave APB interface of the apb_demux inside VC Firewall module.
+  //
+  var cfgInterface = {};
+  var cfgInterfaceFunc = new obj.userLib[interfaces.cfgInterface.interface];
+  cfgInterface.signals = cfgInterfaceFunc.getSignalsBundle(interfaces.cfgInterface.params);
+  cfgInterface.name    = interfaces.cfgInterface.name;
+  //
+  // Clone the cfgInterface but reduce the address width.
+  //
+  var local_cfgInterfaceJson = utilFunctions.deepCopy(interfaces.cfgInterface);
+  local_cfgInterfaceJson.params.wAddr = interfaces.cfgInterface.params.wAddr - addressWidthReduce;
+  var local_cfgInterface = {};
+  var local_cfgInterfaceFunc = new obj.userLib[local_cfgInterfaceJson.interface];
+  local_cfgInterface.signals = local_cfgInterfaceFunc.getSignalsBundle(local_cfgInterfaceJson.params);
+  local_cfgInterface.name    = local_cfgInterfaceJson.name;
+  //
+  // VC Firewall, like Firewall, must have a CSR parameter because of the UDV (user defined verilog module) needs CSR to enable UDV Firewall check.
+  //
+  var csr                  = utilFunctions.hierGetParam(&#39;csr&#39;, u.getParam);
+  var empty_csr = (csr == null) || (csr == undefined) || (csr === &quot;&quot;) ? 1 : (Object.keys(csr).length === 0 &amp;&amp; csr.constructor === Object) ? 1 : 0;
+  //
+  // If the CSR parameter object is empty, then self create a CSR object by calling symLib.generateVcFirewallCSR.
+  //
+  // Before calling symLib.generateVcFirewallCSR, creates a csrMoreParams. Put APB interface address width in the addressWidth field.
+  // csrMoreParams.id carries the id of this VC Firewall module if id is a positive number, so as to create an ID Register.
+  //
+  if (empty_csr) {
+      var csrMoreParams = {};
+      if (id &gt;= 0) {
+          csrMoreParams[&quot;id&quot;] = id;
+      }
+      csrMoreParams[&quot;addressWidth&quot;] = interfaces.cfgInterface.params.wAddr;
+      csr = symLib.generateVcFirewallCSR(numVc, csrMoreParams);
+  }
+  //
+  // Create apbBaseAddresses for apb_demux by calling symLib.generateVcFirewallApbBaseAddresses
+  //
+  var apbBaseAddresses = symLib.generateVcFirewallApbBaseAddresses(numVc, cfgInterface.signals.paddr);
+  //
+  // Create apbBaseMasks for apb_demux by calling symLib.generateVcFirewallApbBaseMasks
+  //
+  var apbBaseMasks = symLib.generateVcFirewallApbBaseMasks(numVc, cfgInterface.signals.paddr);
+  //
+  // VC Firewall always writes out the CSR object to attribute file for software.
+  //
+  obj.lib.setAttribute(&quot;csr&quot;, csr)
+\jsend</pre>
+</div></div><p><br/></p><p><br/></p><p><br/></p>

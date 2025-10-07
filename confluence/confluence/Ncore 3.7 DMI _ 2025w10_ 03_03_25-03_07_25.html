@@ -1,0 +1,112 @@
+<h2 id="Ncore3.7DMI:2025w10:03/03/25-03/07/25-Highlights:">Highlights:</h2><h2 id="Ncore3.7DMI:2025w10:03/03/25-03/07/25-Activities:">Activities:</h2><ul><li><p>Code Coverage Done</p><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-16661" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-16661?src=confmacro" class="jira-issue-key">CONC-16661</a>
+                            </span>
+</p><ul><li><p>This one was tricky and took a while, the timeout tests existing were only triggering on index 0. </p></li><li><p>I wrote a new sequence and created a new test to populate the TT and inject the timeout delay randomly. Although this was not succeeding 100%, depending on which index was randomized, the sequence waits for the TT to fill up. Which proves to be extremely difficult due to how the sequence is coded. There are constraints that don’t allow it. </p></li><li><p>I had to force the randomization between 0-3 to get the regression clean. For now, this is all we can test. But now at least we have timeout on RTT/WTT and both ON together to exercise code coverage case statements. </p></li></ul></li></ul></li><li><p>Functional Coverage Done</p></li><li><p>3.7 Release regression: Triaged and fixed most remaining DV issues. Next regression should have low failure values</p></li><li><p>3.7 Regression</p><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-16639" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-16639?src=confmacro" class="jira-issue-key">CONC-16639</a>
+                            </span>
+</p><ul><li><p>Difficult to trace issue with multiple IDs with the same value.</p></li><li><p>Added a hardcoded delay due to lack of access to clock from sequence and lack of using virtual sequences in old methodology. This should avoid sending response immediately on receiving a DTR request</p></li></ul></li></ul></li></ul><h2 id="Ncore3.7DMI:2025w10:03/03/25-03/07/25-Amee:">Amee: <a class="confluence-userlink user-mention" data-account-id="712020:8f1e1572-cdc5-4487-b043-1a0e740fd71a" href="https://arterisip.atlassian.net/wiki/people/712020:8f1e1572-cdc5-4487-b043-1a0e740fd71a?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Aatman Kansagra (Deactivated)</a></h2><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-16653" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-16653?src=confmacro" class="jira-issue-key">CONC-16653</a>
+                            </span>
+ </p><ul><li><p>This is a development Jira on the new main sequence to enable AXI delays and fill up the TT. Backpressure should be randomly decided in a test and applied from dmi_env_config uvm_object. The randomization should be distributed. There are no credit constraints in the new sequence, they are released immediately after receiving a response, so there should be no problem in filling up the TT or the skid buffer.</p></li></ul></li></ul>

@@ -1,0 +1,186 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// DII Control 
+//=============================================================================
+\jsend
+
+\jsbegin
+    var u = obj.lib;
+
+//    var memFunctions = obj.lib.libImport('/home/thbj/Working/memgen').memCalc;
+
+    var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+    var wAddr               = u.getParam('wAddr');
+    var rtt_num_entries     = u.getParam('nRttEntries');
+    var wtt_num_entries     = u.getParam('nWttEntries');
+    var rtt_id_width        = log2ceil(rtt_num_entries);
+    var wtt_id_width        = log2ceil(wtt_num_entries);
+    var tt_id_width         = Math.max(rtt_id_width, wtt_id_width);
+    var tt_num_entries      = Math.max(rtt_num_entries, wtt_num_entries);
+    var axi_id_width        = u.getParam('axi_id_width');
+    var awid_width          = u.getParam('awid_width');
+    var axi_id_num          = u.getParam('axi_id_num');
+    var wMpf2               = u.getParam('wMpf2');
+    var wChipletId          = u.getParam('wChipletId');
+    var wFUnitId            = u.getParam('wFUnitId');
+    var nExclusiveEntries = u.getParam('nExclusiveEntries');
+    var wCacheLineOffset    = u.getParam('wCacheLineOffset');
+    var wLargestEndpoint    = u.getParam('wLargestEndpoint');
+    var addressIdMap        = u.getParam('addressIdMap');
+\jsend
+
+\jsbegin
+//=============================================================================
+// ports
+//=============================================================================
+    u.port('input', 'clk', 1);
+    u.port('input', 'reset_n', 1);
+    u.port('input', 'csr_force_awid_low', 1);
+
+//TT ID
+    u.port('input', 'wtt_allocate_new_entry'  , 1);
+    u.port('input', 'wtt_valid_entries'       , wtt_num_entries);
+    u.port('input', 'wr_axi_id_retire'        , 1);
+    u.port('input', 'use_new_axi_id'          , 1);
+    u.port('input', 'tt_addr'                 , wAddr);        
+    u.port('input', 'tt_or'                   , 2);    
+    u.port('input', 'tt_lock'                 , 1);
+    u.port('input', 'tt_mpf2'                 , wMpf2);    
+    u.port('input', 'tt_init_id'              , wChipletId + wFUnitId);
+    u.port('input', 'wr_axi_id_comp'          , axi_id_width);
+    u.port('input', 'wtt_axi_id'              , axi_id_width);
+    u.port('input', 'wr_ro_depnd_set'         , 1);
+    u.port('input', 'wr_eo_depnd_set'         , 1);
+    u.port('input', 'wr_wo_depnd_set'         , 1);
+
+    u.port('output', 'wtt_new_axi_id'         , axi_id_width);
+    u.port('output', 'wtt_new_wr_entry'       , wtt_num_entries);
+    u.port('output', 'no_more_wr_axi_id'       , 1);    
+
+
+\jsend
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+wire [\=wtt_num_entries-1=\:0] wtt_invalid_entries;
+wire [\=wtt_num_entries-1=\:0] wtt_invalid_entry_sel;
+wire [\=axi_id_num-1=\:0]      valid_axi_ids;
+wire [\=axi_id_num-1=\:0]      valid_axi_ids_in;
+wire [\=axi_id_num-1=\:0]      axi_id_next;
+wire [\=axi_id_num-1=\:0]      comp_axi_id_num;
+wire [\=axi_id_num-1=\:0]      wtt_entry_axi_id;
+wire [\=axi_id_width-1=\:0]    last_wtt_new_axi_id_p1;
+wire                           update_valid_axi_ids;
+wire [\=axi_id_width-1=\:0]    last_selected_id_in;
+wire                           reset_selected_id;
+wire                           no_more_wr_axi_id_in;
+
+wire [\=awid_width-1=\:0]      new_axi_id;
+
+
+\jsbegin
+//=============================================================================
+// instantiations
+//=============================================================================
+\jsend
+
+assign no_more_wr_axi_id = 1'b0;
+
+assign wtt_invalid_entries =  ~(wtt_valid_entries[\=wtt_num_entries-1=\:0] );
+
+\jsbegin
+// 3.4 constrained not having<2 entries
+/* istanbul ignore else env ncore_3p4,ncore_3p6,ncore_3p7 */
+if (wtt_num_entries > 2) { \jsend
+wire [\=wtt_num_entries=\-1:0] wtt_sel_mask, wtt_sel_mask_next, wtt_invalid_entries_masked_s1, wtt_invalid_entries_masked;
+
+assign wtt_sel_mask_next = (wtt_sel_mask[\=wtt_num_entries=\-1:\=wtt_num_entries=\-2] == 2'b10) ? {\=wtt_num_entries=\{1'b1}} : (wtt_sel_mask << 1);
+
+\=u.dffre(       wtt_num_entries
+              , 'wtt_sel_mask'
+	      , 'wtt_sel_mask_next'
+	      , '{'+wtt_num_entries+'{1\'b1}}'
+	      , '(wtt_allocate_new_entry)' 
+	      , 'clk'
+	      , 'reset_n')=\
+
+assign wtt_invalid_entries_masked_s1 = wtt_invalid_entries & wtt_sel_mask;
+
+assign wtt_invalid_entries_masked = (|wtt_invalid_entries_masked_s1) ? wtt_invalid_entries_masked_s1 : wtt_invalid_entries;
+\jsbegin
+} else { \jsend
+assign wtt_invalid_entries_masked = wtt_invalid_entries;
+\jsbegin
+} \jsend
+
+\=u.instance({
+    instanceName: 'u_find_first_one',
+    moduleName: 'find_first_one',
+    params: { width : wtt_num_entries},
+    verilogParams: { WIDTH : wtt_num_entries},
+    ports: {
+        invec  : 'wtt_invalid_entries_masked', 
+        outvec : 'wtt_invalid_entry_sel'
+    }
+})=\
+
+\jsbegin
+var addressBits = addressIdMap.addressBits;
+var bitNum = 0;
+/* istanbul ignore next env ncore_3p7 */
+if ( addressBits != undefined ) {
+  // Fill in assigned bits first. (Order doesnt matter)
+  for (let i = 0; i < addressBits.length; i++) {
+	/* istanbul ignore if env ncore_3p7 */
+    if (bitNum >= awid_width) {break;} \jsend  
+    assign new_axi_id[\=bitNum=\] = tt_addr[\=addressBits[i]=\];
+  \jsbegin
+    bitNum = bitNum + 1;
+  }
+}
+
+// Fill in the rest of the bits with what was used before
+for ( let bit = bitNum; bit < awid_width; bit=bit+1) { \jsend
+    assign new_axi_id[\=bit=\] = tt_addr[\=wCacheLineOffset+(bit-bitNum)+3=\];
+    \jsbegin
+}
+\jsend
+
+wire [\=wChipletId+wFUnitId+wMpf2-1-1=\:0] tt_init_id_mpf2 = {tt_mpf2[\=wMpf2-2=\:0], tt_init_id};
+
+\js if (awid_width > (wChipletId+wFUnitId+wMpf2-1)) {
+wire [\=awid_width-1=\:0] axi_tt_init_id_mpf2 = { {\=awid_width-(wChipletId+wFUnitId+wMpf2-1)=\{1'b0}}, tt_init_id_mpf2 };
+\js } else {
+wire [\=awid_width-1=\:0] axi_tt_init_id_mpf2 = tt_init_id_mpf2[\=awid_width-1=\:0];
+\js }
+
+\js if (nExclusiveEntries== 0){
+ wire [\=awid_width-1=\:0] pre_wtt_new_axi_id = (tt_lock) ? axi_tt_init_id_mpf2 : csr_force_awid_low ? \=awid_width=\'h0 : new_axi_id;
+\js } else {
+ wire [\=awid_width-1=\:0] pre_wtt_new_axi_id = csr_force_awid_low ? \=awid_width=\'h0 : new_axi_id;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (axi_id_width > awid_width) { \jsend
+assign wtt_new_axi_id = {{\=axi_id_width-awid_width=\{1'b0}},pre_wtt_new_axi_id};
+\js } else {
+assign wtt_new_axi_id = pre_wtt_new_axi_id;
+\js }
+
+// Entry Write enable Logic
+assign wtt_new_wr_entry[\=wtt_num_entries-1=\:0] =  wtt_invalid_entry_sel[\=wtt_num_entries-1=\:0] & {\=wtt_num_entries=\{wtt_allocate_new_entry}}; 
+
+
+endmodule
+
+
+
+

@@ -1,0 +1,107 @@
+<div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">module age_link_arb_a (
+    input       push_en,
+    input       pop_en,
+    input       [30:0]  push_data,
+    input       [30:0]  req_vec,
+    output      [30:0]  grant_vec,
+    input       clk,
+    input       reset_n);
+
+assign qual_age_vec[0] = |(req_vec &amp; index_dec0) &amp; valid[0];
+assign qual_age_vec[1] = |(req_vec &amp; index_dec1) &amp; valid[1];
+assign qual_age_vec[2] = |(req_vec &amp; index_dec2) &amp; valid[2];
+assign qual_age_vec[3] = |(req_vec &amp; index_dec3) &amp; valid[3];
+...
+assign qual_age_vec[29] = |(req_vec &amp; index_dec29) &amp; valid[29];
+assign qual_age_vec[30] = |(req_vec &amp; index_dec30) &amp; valid[30];
+
+assign pop_vec[0] = qual_age_vec[0] &amp; ~older_qual_req0; //BOON: = qual_age_vec[0] &amp; ~qual_age_vec[1] &amp; ~qual_age_vec[2] &amp; ~qual_age_vec[3] &amp; ... &amp; ~qual_age_vec[30];
+assign pop_vec[1] = qual_age_vec[1] &amp; ~older_qual_req1; //BOON: =                    qual_age_vec[1] &amp; ~qual_age_vec[2] &amp; ~qual_age_vec[3] &amp; ... &amp; ~qual_age_vec[30];
+assign pop_vec[2] = qual_age_vec[2] &amp; ~older_qual_req2; //BOON: =                                       qual_age_vec[2] &amp; ~qual_age_vec[3] &amp; ... &amp; ~qual_age_vec[30];
+assign pop_vec[3] = qual_age_vec[3] &amp; ~older_qual_req3;
+...
+assign pop_vec[29] = qual_age_vec[29] &amp; ~older_qual_req29; //BOON: = qual_age_vec[29] &amp; ~qual_age_vec[30];
+assign pop_vec[30] = qual_age_vec[30] &amp; ~older_qual_req30; //BOON: = qual_age_vec[30];
+
+assign index_dec0 = 31&#39;b1 &lt;&lt; index0;
+assign index_dec1 = 31&#39;b1 &lt;&lt; index1;
+assign index_dec2 = 31&#39;b1 &lt;&lt; index2;
+assign index_dec3 = 31&#39;b1 &lt;&lt; index3;
+...
+assign index_dec29 = 31&#39;b1 &lt;&lt; index29;
+assign index_dec30 = 31&#39;b1 &lt;&lt; index30;
+
+assign older_qual_req30 = 1&#39;b0;
+assign older_qual_req29 = older_qual_req30 | qual_age_vec[30];
+...
+assign older_qual_req3 = older_qual_req4 | qual_age_vec[4];
+assign older_qual_req2 = older_qual_req3 | qual_age_vec[3];
+assign older_qual_req1 = older_qual_req2 | qual_age_vec[2];
+assign older_qual_req0 = older_qual_req1 | qual_age_vec[1];
+
+assign grant_vec = index_dec0 &amp; {31{pop_vec[0]}}
+                 | index_dec1 &amp; {31{pop_vec[1]}}
+                 | index_dec2 &amp; {31{pop_vec[2]}}
+                 | index_dec3 &amp; {31{pop_vec[3]}}
+...
+                 | index_dec29 &amp; {31{pop_vec[29]}}
+                 | index_dec30 &amp; {31{pop_vec[30]}}
+                 ;
+
+
+dffre #(5) index0_dffre (.q(index0), .d(index_d0), .resetVal(5&#39;d0), .clk(clk), .reset_n(reset_n), .en(valid_set[0]));
+dffre #(5) index1_dffre (.q(index1), .d(index_d1), .resetVal(5&#39;d0), .clk(clk), .reset_n(reset_n), .en(valid_set[1]));
+dffre #(5) index2_dffre (.q(index2), .d(index_d2), .resetVal(5&#39;d0), .clk(clk), .reset_n(reset_n), .en(valid_set[2]));
+dffre #(5) index3_dffre (.q(index3), .d(index_d3), .resetVal(5&#39;d0), .clk(clk), .reset_n(reset_n), .en(valid_set[3]));
+...
+dffre #(5) index29_dffre (.q(index29), .d(index_d29), .resetVal(5&#39;d0), .clk(clk), .reset_n(reset_n), .en(valid_set[29]));
+dffre #(5) index30_dffre (.q(index30), .d(index_d30), .resetVal(5&#39;d0), .clk(clk), .reset_n(reset_n), .en(valid_set[30]));
+
+dffre #(1) valid0_dffre (.q(valid0), .d(valid_d[0]), .resetVal(1&#39;b0), .clk(clk), .reset_n(reset_n), .en(valid_en[0]));
+dffre #(1) valid1_dffre (.q(valid1), .d(valid_d[1]), .resetVal(1&#39;b0), .clk(clk), .reset_n(reset_n), .en(valid_en[1]));
+dffre #(1) valid2_dffre (.q(valid2), .d(valid_d[2]), .resetVal(1&#39;b0), .clk(clk), .reset_n(reset_n), .en(valid_en[2]));
+dffre #(1) valid3_dffre (.q(valid3), .d(valid_d[3]), .resetVal(1&#39;b0), .clk(clk), .reset_n(reset_n), .en(valid_en[3]));
+...
+dffre #(1) valid29_dffre (.q(valid29), .d(valid_d[29]), .resetVal(1&#39;b0), .clk(clk), .reset_n(reset_n), .en(valid_en[29]));
+dffre #(1) valid30_dffre (.q(valid30), .d(valid_d[30]), .resetVal(1&#39;b0), .clk(clk), .reset_n(reset_n), .en(valid_en[30]));
+
+assign valid[0] = valid0;
+assign valid[1] = valid1;
+assign valid[2] = valid2;
+assign valid[3] = valid3;
+...
+assign valid[29] = valid29;
+assign valid[30] = valid30;
+
+assign valid_set[0] = push_en;
+assign valid_set[1] = valid_set[0] &amp; valid[0] &amp; ~(pop_vec[0] &amp; pop_en);
+assign valid_set[2] = valid_set[1] &amp; valid[1] &amp; ~(pop_vec[1] &amp; pop_en);
+assign valid_set[3] = valid_set[2] &amp; valid[2] &amp; ~(pop_vec[2] &amp; pop_en);
+...
+assign valid_set[29] = valid_set[28] &amp; valid[28] &amp; ~(pop_vec[28] &amp; pop_en);
+assign valid_set[30] = valid_set[29] &amp; valid[29] &amp; ~(pop_vec[29] &amp; pop_en);
+
+assign index_d0 = push_data_enc;
+assign index_d1 = index0;
+assign index_d2 = index1;
+assign index_d3 = index2;
+...
+assign index_d29 = index29;
+assign index_d30 = index30;
+
+assign valid_en = valid_set | valid_clr;
+
+assign valid_clr = pop_vec &amp; {31{pop_en}};
+
+assign valid_d = valid_set | ~valid_clr;
+
+encoder_j push_idx_encode (
+        .invector       (push_data),
+        .outdecode      (push_data_enc));
+
+endmodule
+
+
+</pre>
+</div></div><p><br/></p>

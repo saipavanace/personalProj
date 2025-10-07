@@ -1,0 +1,150 @@
+<style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759724982192 {padding: 0px;}
+div.rbtoc1759724982192 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759724982192 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759724982192'>
+<ul class='toc-indentation'>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-Introduction'>Introduction</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-CurrentUsage'>Current Usage</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-ProposedUsage'>Proposed Usage</a>
+<ul class='toc-indentation'>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-report'>report</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-get_objects'>get_objects</a></li>
+</ul>
+</li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-AdditionalTclCommands'>Additional Tcl Commands</a>
+<ul class='toc-indentation'>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-get_clock_subdomain'>get_clock_subdomain</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-get_type'>get_type</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-get_network_type'>get_network_type</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-get_parameter'>get_parameter</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-set_parameter'>set_parameter</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-generate_param_report'>generate_param_report</a></li>
+</ul>
+</li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-AdditionalCommandstobeReviewed'>Additional Commands to be Reviewed</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-AdditionalInfrastructureChanges'>Additional Infrastructure Changes</a></li>
+<li><a href='#QueryingParameters,References,andObjectsInMaestro-LegacyConstructsToBeReviewed/Updated'>Legacy Constructs To Be Reviewed/Updated</a></li>
+</ul>
+</div><p /><h2 id="QueryingParameters,References,andObjectsInMaestro-Introduction">Introduction</h2><p>To determine what parameter values are set in a design can be difficult if the parameter is hidden or non-settable. Also, users would like to see what parameters were set in the design for documentation purposes. Maestro does not have a convenient command to report these parameters. The current method is to write out a mpf (Maestro project file) and decrypt it to view the design. This is inconvenient and not user friendly.</p><p>This document is a proposal to allow Maestro to query ADM (Arteris Data Model) data such as parameters, references, and child objects. Some of the data may not be visible (hidden) to the user. However, with the appropriate license, the parameters shall be accessible to view. With this capability, debugging a design can be done interactively from the console.</p><p>Intended implementation version: Ncore 3.6 and later.</p><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p> The most recent review of TCL commands, with a focus on D2D rework, is at <a class="external-link" data-card-appearance="inline" href="https://arteris.sharepoint.com/:x:/s/SWteam/Ebbo93L4eP9JqV2VY7syS5sB2sq7AYuj0n0Ms9rJGipqFA?e=ZulVwI&amp;ovuser=1382f73f-5bce-440e-8715-0b91292b0299%2CFederico.Angiolini%40arteris.com&amp;clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNTA0MDMxOTExMyIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D" rel="nofollow">https://arteris.sharepoint.com/:x:/s/SWteam/Ebbo93L4eP9JqV2VY7syS5sB2sq7AYuj0n0Ms9rJGipqFA?e=ZulVwI&amp;ovuser=1382f73f-5bce-440e-8715-0b91292b0299%2CFederico.Angiolini%40arteris.com&amp;clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNTA0MDMxOTExMyIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D</a>  .</p></div></div><h2 id="QueryingParameters,References,andObjectsInMaestro-CurrentUsage">Current Usage </h2><p>Currently, several tcl commands are being used for this purpose: <strong>get_parameter</strong>, <strong>query_object</strong>,  <strong>report_object</strong>, <strong>generate_output_param_report</strong>, <strong>generate_input_param_report</strong>, <strong>get_objects, get_connected</strong>.</p><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="aca4b967-f4a8-4271-8d9e-20ac7258cc16" class="confluenceTable"><colgroup><col style="width: 340.0px;"/><col style="width: 340.0px;"/></colgroup><tbody><tr><td class="confluenceTd"><p>Tcl Command</p></td><td class="confluenceTd"><p>Current Testcase Usage</p></td></tr><tr><td class="confluenceTd"><p><strong>get_parameter</strong></p><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>IMPLEMENTED in 3.6</p></div></div></td><td class="confluenceTd"><p>Frequently used. Returns visible parameters or references and their values. Hidden parameters or references are returned with <code>-hidden</code> for holders of a development license. <code>-details</code> provides constraint information.</p></td></tr><tr><td class="confluenceTd"><p><strong>query_object</strong></p></td><td class="confluenceTd"><p>Seldom used. It can be replaced by other commands when this project is completed.</p></td></tr><tr><td class="confluenceTd"><p><strong>report_object</strong></p></td><td class="confluenceTd"><p>Seldom used. It reports parameters and other data on certain, but not all, objects. Hidden parameters are not reported. Attempts have been made to give specialize reports based on object type.</p></td></tr><tr><td class="confluenceTd"><p><strong>get_objects</strong></p></td><td class="confluenceTd"><p>Heavily used. It returns child objects and other objects (references) indirectly related to the given object.</p></td></tr><tr><td class="confluenceTd"><p><strong>generate_output_param_report</strong></p></td><td class="confluenceTd"><p>Seldom used internally for comparing design versions.</p></td></tr><tr><td class="confluenceTd"><p><strong>generate_input_param_report</strong></p></td><td class="confluenceTd"><p>Seldom used internally for comparing design versions.</p></td></tr><tr><td class="confluenceTd"><p><strong>get_connected</strong></p></td><td class="confluenceTd"><p>Used as a relative of <strong>get_objects</strong> with the specific goal of mining topology connectivity.</p></td></tr></tbody></table></div><p> </p><p>Maestro has no means to query for child object types available for a given object to explore and debug a design.</p><p> </p><p> </p><h2 id="QueryingParameters,References,andObjectsInMaestro-ProposedUsage">Proposed Usage</h2><p>To show the hidden data, the design must have “Arteris/Dev” license enabled. The code can query for this license using <strong>isDebugLicenseAvailable()</strong> API.</p><p>Since <strong>query_object</strong> is seldom used, this command shall be deprecated and removed. The current usage of this command shall be provided by other commands. Some of the current usages are:</p><ul><li><p>getting the clock of a ncoreunit, </p></li><li><p>determine the type of network,</p></li><li><p>check if an object exists without erroring out. </p></li></ul><p>Replacement functionality will be implemented with new tcl commands below.</p><h3 id="QueryingParameters,References,andObjectsInMaestro-report">report</h3><p>The <strong>report_object</strong> command shall be replaced by the <strong>report</strong> command.</p><p>The new <strong>report</strong> command shall be implemented to show all parameters, references, and child objects under different command options.</p><p><strong>report $obj</strong> shall return a report of the object. The report shall contain all user settable/viewable parameters and references of the object in a user readable format.</p><p>If the <strong>-hidden</strong> option is added to the command and the design has a debug license, all parameters (including hidden ones) shall be reported. If the design does not have a debug license, this option is ignored.</p><p>If the <strong>-file $filename</strong> is added to the command, the output shall go into the file.</p><p>Sample report output:</p><span class="inline-comment-marker" data-ref="3ba66308-01f9-4207-b397-4365eba41d65"><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" width="680" src="https://arterisip.atlassian.net/wiki/download/attachments/216957079/image-20230510-180400.png?api=v2"></span></span><h3 id="QueryingParameters,References,andObjectsInMaestro-get_objects">get_objects</h3><p><strong>get_objects</strong> command was implemented when the database APIs were not as richly developed. Many of the commands have specialized code to retrieve the requested data. Now, Maestro has a richer set of database APIs; the retrieval can be done generically. Therefore, code clean-up shall be done. </p><p>This command shall return a list of child objects base on the <strong>-type $child_type</strong> option. In the current ADM API, each object has a list of user “gettable” (visible and editable) child objects which this command shall use to determine the gettable child objects. If the child_type is a hidden child object type and if the design does not have the debug license, the command shall return an empty list and an error message shall be displayed. If the child_type is a hidden child object type and if the design does have the debug license, the command shall return the list of hidden objects.</p><p>In the current implementation, the command sometimes returns direct children, and sometimes performs a recursive descent. The implementation is not fully consistent. It is recommended to add a <strong>-recursive</strong> argument-less flag to handle recursive descent and eliminate the ambiguity.</p><p>For some applications, the command performs a dedicated traversal, e.g., asking for the ClockSubDomain of a parent object may return the clock of that object - rather than a hierarchical descendant. This usage overlaps with the ability to get references via <strong>get_parameter</strong> and should be slowly deprecated in the interest of consistency and predictability.</p><h2 id="QueryingParameters,References,andObjectsInMaestro-AdditionalTclCommands">Additional Tcl Commands</h2><p>Some additional tcl commands shall be created to replace the <strong>query_object</strong> functionality.</p><h3 id="QueryingParameters,References,andObjectsInMaestro-get_clock_subdomain">get_clock_subdomain</h3><p><strong>get_clock_subdomain $object</strong> shall return the clock subdomain that is attached to the object. If no clock subdomain is attached, the command shall return an empty name. If the object does not support a clock subdomain, an error message shall be displayed.</p><h3 id="QueryingParameters,References,andObjectsInMaestro-get_type">get_type</h3><p><strong>get_type $object</strong> shall return the type of object. This command shall work on hidden objects too. If the object does not exist, the command shall return an empty type and no error message shall be displayed.</p><p>If the <strong>-child_object_type</strong> is added to the command, a tcl list of user visible object types shall be returned. The object type may then be used in the <strong>get_objects</strong> command to query the child objects. </p><p>If the <strong>-hidden</strong> option (applicable with <strong>-child_object_type</strong> option) and debug license is available, all child object types except user visible types shall be returned; otherwise, the command shall return an empty list.</p><h3 id="QueryingParameters,References,andObjectsInMaestro-get_network_type">get_network_type</h3><p><strong>get_network_type $network</strong> shall return type of network. Valid return values are: nondata, data, request, response, unknown. An error message shall be displayed if the object is not a network and the return value will be an empty name.</p><p><strong>get_network_type $network -data | -nondata | -request | -response</strong> shall return “true” if the network matches the option, otherwise returns “false”. Only one option is allowed. An error message shall be displayed if the object is not a network. (Check with David’s tepam files for ‘data’, ‘nondata’, etc. Should match GUI.)</p><h3 id="QueryingParameters,References,andObjectsInMaestro-get_parameter">get_parameter</h3><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>IMPLEMENTED in 3.6</p></div></div><p><strong>get_parameter -object $object</strong> , without options, returns a tcl list of name-value pairs of the user visible and settable parameters and references.</p><p>If the <strong>-hidden</strong> option is added to the command, all parameters and references (including hidden ones) become accessible. If the user does not have a debug license, this option is not available.</p><p>If the <strong>-name $name</strong> option is added to the command, the value of the given parameter or reference shall be returned. If the parameter is hidden, -hidden must be specified as well; if not, the operation results in an error, but if the user has access to a debug license, a reminder will be printed to retry with -hidden.</p><p>If the <strong>-details</strong> option is added to the command, the command will also show additional available information, such as the min, max, enum and default values of the parameter, if any, and its visibility flags.</p><p>The legacy command <strong>query_attribute</strong> is allowed as a synonym, but prints a <code>Deprecated:</code> message reminding the user to use the new command name.</p><h3 id="QueryingParameters,References,andObjectsInMaestro-set_parameter">set_parameter</h3><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-6002"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_216957079_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-6002" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>MAES-6002</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p><strong>set_parameter $object -name $name -value $value</strong> shall the name of the parameter with the value on the object. Hidden and non-visible parameters are settable using this command, only subject to access to the development license, and after printing a <code>Warning</code> or <code>Deprecated</code>. Write-protected parameters are never settable with this command or any other command.</p><p>Some parameters requires an array of values, which shall also be accepted by the <strong>-value</strong> option. </p><p><strong>set_parameter $object -param_list [list name1 val1 name2 val2 …]</strong> shall set a list of name and value pairs of parameters to the object. If <strong>-name</strong> or <strong>-value</strong> options are present, the command shall error. </p><h3 id="QueryingParameters,References,andObjectsInMaestro-generate_param_report">generate_param_report</h3><p><strong>generate_output_param_report</strong> and <strong>generate_input_param_report</strong> shall be replaced by the <strong>generate_param_report</strong> command.</p><p><strong>generate_param_report</strong> command shall report the parameters used in the user in the design. The output shall begin at the project level and recursively report the child objects. The report shall be in the form of a table for each object.</p><p>If the <strong>-file $filename</strong> is added to the command, the output shall go into the file.</p><p>The <strong>-format</strong> option may be included. The valid formats are <strong>html </strong>and <strong>text</strong>. </p><p>If the <strong>-all</strong> is added to the command, it shall report all visible and settable parameters and references.</p><p>If the <strong>-hidden</strong> is added to the command and the debug license is available, it shall report all (including non-visible) parameters and references. If debug license is not available, only the visible and settable ones are reported.</p><p> </p><h2 id="QueryingParameters,References,andObjectsInMaestro-AdditionalCommandstobeReviewed">Additional Commands to be Reviewed</h2><p /><ul><li><p><strong>create_interface</strong> looks like it was added without peer review and may be redundant.</p></li><li><p><strong>report_clock</strong> should be reviewed for consistency with <strong>report_object.</strong></p></li><li><p><strong>get_cells</strong> was also added with custom terminology and poorly specified use cases. It may be redundant.</p></li><li><p><strong>get_context</strong> and <strong>set_context</strong> are probably ready for removal or rescoping.</p></li><li><p><strong>query_custom_attribute</strong> may be renamed to <strong>get_custom_attribute</strong> for consistency.</p></li><li><p><strong>get_connected</strong> is a command for topology traversal with inconsistent implementation that we probably want to make more systematic.</p></li></ul><h2 id="QueryingParameters,References,andObjectsInMaestro-AdditionalInfrastructureChanges">Additional Infrastructure Changes</h2><p>Currently a hard-coded table of user object type name to Adm class is in “<a class="external-link" href="http://TclTypeName.cc" rel="nofollow">TclTypeName.cc</a>”, which is used by <strong>create_objects</strong> and <strong>get_objects</strong> commands to determine which type of objects to create or retrieve. Ideally, this table should be incorporated into the type file of each object and removed from “<a class="external-link" href="http://TclTypeName.cc" rel="nofollow">TclTypeName.cc</a>”. This project shall add object type name into the type file of each object. <a class="external-link" href="https://arterisip.atlassian.net/browse/MAES-6097" rel="nofollow">MAES-6097</a> has been filed for this enhancement.</p><p> </p><p /><h2 id="QueryingParameters,References,andObjectsInMaestro-LegacyConstructsToBeReviewed/Updated">Legacy Constructs To Be Reviewed/Updated</h2><p /><ul><li><p><code>packetport</code> is allowed as a synonym for <code>packet_port</code>, <code>multiflow</code> for <code>multi_flow</code>.</p><ul><li><p>These exceptions shall be cleared up if possible. A Deprecated for the non-underscore variant shall be consistently thrown if usage is widespread and removal is not yet possible.</p></li></ul></li></ul><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>FIXED in 3.8</p></div></div><ul><li><p><code>create_object</code> seems to contain special-casing for keywords including: <code>project</code> , <code>generator</code>, <code>in_port</code>, <code>out_port</code>, <code>architecture</code>, <code>routing</code>.</p><ul><li><p>The special-casing seems unnecessary and it should be possible to entirely remove the legacy cases.</p></li></ul></li></ul><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>FIXED in 3.8 except for <code>in_port</code>, <code>out_port</code>, which have widespread usage.</p></div></div><ul><li><p><code>create_object</code> has additional side effects for <code>network</code> creation when passed the <code>subtype</code>s <code>csr_request</code> or <code>csr_response</code>.</p><ul><li><p>This is needed by a small number of SW-only, legacy tests that can be migrated, removing the need for the special code path.</p></li></ul></li></ul><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>FIXED in 3.8</p></div></div><ul><li><p><code>get_objects</code> seems to contain special-casing for keywords: <code>width</code>, <code>type</code>, <code>parent</code>, <code>leaf</code>, <code>boundto</code>, <code>connectedto</code>, <code>configsocket</code>, <code>csr_atu</code>.</p><ul><li><p>The <code>width</code> and <code>leaf</code> special cases seem obsolete and not in use. For the others, dedicated TCL commands seem more appropriate, like <code>get_type</code>, <code>get_parent</code>, etc.; the existing <code>get_connected</code> command should also be able to ultimately cover <code>boundto</code>and <code>connectedto</code>.</p></li></ul></li><li><p><code>get_objects</code> for <code>AdmClass::NCOREUNIT</code> is done via either <code>ncore_unit</code> or <code>implementation_unit</code> and is anyway special-cased.</p><ul><li><p>We need to review the general context of NcoreUnits and their containers, which is tentatively scheduled for Ncore 3.8. In the meantime, if necessary, this exception may remain in use but efforts should be made to minimize its impacts.</p></li></ul></li><li><p><code>get_objects</code> uses the <code>atu</code> keyword to refer to both <code>AdmClass::NONCOHERENTNI</code> (a virtual base class) and its derived types <code>AdmClass::NONCOHERENTNIINIT</code> and <code>AdmClass::NONCOHERENTNITARG</code>.</p><ul><li><p>The use for the virtual base class is unnecessary as such objects cannot materially exist. It is advisable to adopt individual strings for the derived types (tentatively, <code>atu_i</code> and <code>atu_t</code> by Symphony terminology) and we could special-case the <code>atu</code> string as a collective name.</p></li></ul></li><li><p><code>update_object</code> contains a large number of special and legacy cases. An initial list is:</p><ul><li><p>All <code>-bind</code> cases should be migrated to the upcoming ability of <code>set_parameter</code>to manipulate references.</p><ul><li><p>Additionally, special-casing is provided for <code>Flow</code>s, <code>MappedFlow</code>s, <code>EventPort</code>s, which should not happen (the latter two types are not even user-visible in Ncore 3.6). The underlying implementation further special-cases some behaviours for <code>MultiFlow</code>s and for some bindings (<code>ClockSubDomain</code> to interface units, <code>ClockSubDomain</code> to <code>Switch</code>, and <code>Socket</code> to <code>DynamicMemoryGroup</code>) to preserve script compatibility; we should strive to reduce these legacy uses.</p></li></ul></li><li><p>The <code>update_object -inclock -outclock</code> flow for ClockAdapters is currently obsolete, even if we may reintroduce a similar capability in the near term.</p></li><li><p>The <code>update_object -type rectangle</code> command needs to be replaced by a dedicated command to manipulate shapes for Ncore 3.6. 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-6376"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_216957079_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-6376" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>MAES-6376</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p></li><li><p>The <code>update_object -type packet_port -add</code> and <code>update_object -type guiposition</code> special cases seem to be of obsolete use and should be removed.</p></li><li><p>The <code>update_object -model routing|route|packetroute|packet_route -method</code> command is clunky and needs to be a dedicated command, e.g <code>initialize_route</code> or <code>set_route</code>.</p></li></ul></li><li><p><code>query_object</code> also accepts a number of custom keywords, many of which should not be visible by the user or should be replaced by dedicated query commands:</p><ul><li><p><code>admName</code>, <code>userName</code>, <code>type</code>, <code>clock</code>, <code>mapped_type</code>, several network-specific keywords, several placement-specific keywords.</p></li></ul></li><li><p><code>debug_create_attribute</code> is an obsolete command whose only remaining purpose is to enter structured data into ADM. It is only used in obsolete tests. It forces a direct dependency of <code>libmtcl</code> onto <code>libdm</code> (DAL) and must be removed. 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-6317"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_216957079_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-6317" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>MAES-6317</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p></li></ul><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>FIXED in 3.8</p></div></div>

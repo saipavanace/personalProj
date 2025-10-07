@@ -1,0 +1,2895 @@
+{
+    "assertOn": 1,
+    "fnNativeInterface": "AXI",
+    "useUnique": 0,
+    "useCache": 1,
+    "usePma": 1,
+    "eSkid": 1,
+    "eAge": 1,
+    "eStarve": 1,
+    "nDce": 1,
+    "nDmi": 1,
+    "nDii": 1,
+    "QosMap": ["16'h3", "16'hfffc"],
+    "wFPortId": 3,
+    "VictimBuffer": 1,
+    "eP0": 0,
+    "AsyncReset": 1,
+    "DataReset": 0,
+    "PriSubDiagAddrBits": [
+    ],          
+    "SecSubRows": [
+    ],          
+    "engVerId": 0,
+    "implVerId": 0,
+    "Credits": {
+        "MaxCreditPerDCE": [ 5 ],
+        "MaxCreditPerDMI": [ 4 ],
+        "MaxCreditPerDII": [ 3 ],
+        "MaxCreditPerQOS": [ 0, 0 ],
+        "ReserveWrPerDCE": [ 1 ],
+        "ReserveWrPerDMI": [ 0 ],
+        "ReserveWrPerDII": [ 2 ],
+        "ReserveWrPerQOS": [ 0, 0 ]
+    },
+    "nGPRA": 3,
+    "InterleaveInfo" : {
+    "dmiIGSV": [
+        {
+            "IGV": [
+                {
+                    "DMIIDV": [
+                        0
+                    ]
+                },
+                {
+                    "DMIIDV": [
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "IGV": [
+                {
+                    "DMIIDV": [
+                        0,
+                        1
+                    ]
+                }
+            ]
+        }
+    ],
+    "dmi2WIFV": [
+        {
+            "PrimaryBits": [
+                7
+            ],
+            "SecondaryBits": [
+                "'h10000000"
+            ]
+        },
+        {
+            "PrimaryBits": [
+                9
+            ],
+            "SecondaryBits": [
+                "'h40000000"
+            ]
+        }
+    ],
+    "dmi3WIFV": [
+        {
+            "PrimaryBits": [
+                7,
+                8
+            ],
+            "SecondaryBits": [
+                "'h10000000",
+                "'h20000000"
+            ]
+        },
+        {
+            "PrimaryBits": [
+                9,
+                10
+            ],
+            "SecondaryBits": [
+                "'h40000000",
+                "'h80000000"
+            ]
+        }
+    ],
+    "dmi4WIFV": [
+        {
+            "PrimaryBits": [
+                7,
+                8
+            ],
+            "SecondaryBits": [
+                "'h10000000",
+                "'h20000000"
+            ]
+        },
+        {
+            "PrimaryBits": [
+                9,
+                10
+            ],
+            "SecondaryBits": [
+                "'h40000000",
+                "'h80000000"
+            ]
+        }
+    ]
+    },
+    "ccpParams": {
+        "nRsrcIdxBits": 1,
+        "useScratchpad": 0,
+        "wCacheLineOffset": 6,
+        "nTableEntries": 64,
+        "nSets": 2,
+        "nWays": 8,
+        "wData": 128,
+        "nBeatsPerBank": 1,
+        "nTagBanks": 1,
+        "nDataBanks": 1,
+        "PortPriSubDiagAddrBits": [],
+        "PortSecSubRows": [],
+        "PriSubDiagAddrBits": [
+            7
+        ],
+        "useSecSubRows": 0,
+        "SecSubRows": [
+                "'h2000"
+        ],
+        "TagBankSelBits": [],
+        "DataBankSelBits": [],
+        "TagErrInfo": "SECDED",
+        "DataErrInfo": "NONE",
+        "wAddr": 32,
+        "wSecurity": 1,
+        "wStateBits": 3,
+        "nClkDiv": 1,
+        "nRPPorts": 1,
+        "RepPolicy": "NRU",
+        "useDinBuffer": 0,
+        "useDoutBuffer": 1,
+        "num_ports": 1,
+        "enFastTimingPaths": 0,
+        "isCCPunit": 0
+    },
+    "MemoryGeneration": {
+        "ottMem": {
+            "rtlPrefixString": "",
+            "MemType": "NONE",
+            "Signals": []
+        },
+        "tagMem": {
+            "rtlPrefixString": "DRAM_ccp_tag",
+            "MemType": "NONE",
+            "Signals": []
+        },
+        "rpMem": {
+            "rtlPrefixString": "",
+            "MemType": "",
+            "Signals": []
+        },
+        "dataMem": {
+            "rtlPrefixString": "DRAM_ccp_data",
+            "MemType": "NONE",
+            "Signals": []
+        }
+    },
+    "cmpInfo": {
+        "nOttCtrlEntries": 33,
+        "nSttCtrlEntries": 4,
+	"nOttDataBanks": 2,
+        "OttErrorType": "SECDED"
+    },
+    "ResilienceInfo": {
+        "enableUnitDuplication": 0,
+        "nResiliencyDelay": 3,
+	"enableNativeIntfProtection": 0
+    },
+    "cmType": {
+	"CmdRdCln":	  "8'h01",
+	"CmdRdNshDty":	  "8'h02",
+	"CmdRdVld":	  "8'h03",
+	"CmdRdUnq":	  "8'h04",
+	"CmdClnUnq":	  "8'h05",
+	"CmdMkUnq":	  "8'h06",
+	"CmdRdNitc":	  "8'h07",
+	"CmdClnVld":	  "8'h08",
+	"CmdClnInv":	  "8'h09",
+	"CmdMkInv":	  "8'h0A",
+	"CmdRdNC":	  "8'h0B",
+	"CmdDvmMsg":	  "8'h0F",
+	"CmdWrUnqPtl":	  "8'h10",
+	"CmdWrUnqFull":	  "8'h11",
+	"CmdWrAtm":	  "8'h12",
+	"CmdRdAtm":	  "8'h13",
+	"CmdWrBkFull":	  "8'h14",
+	"CmdWrClnFull":	  "8'h15",
+	"CmdWrEvict":	  "8'h16",
+	"CmdWrBkPtl":	  "8'h18",
+	"CmdWrClnPtl":	  "8'h19",
+	"CmdWrNCPtl":	  "8'h20",
+	"CmdWrNCFull":	  "8'h21",
+	"CmdWrStshFull":  "8'h22",
+	"CmdWrStshPtl":	  "8'h23",
+	"CmdLdCchShd":	  "8'h24",
+	"CmdLdCchUnq":	  "8'h25",
+	"CmdRdNitcCI":	  "8'h26",
+	"CmdRdNitcMI":	  "8'h27",
+	"CmdClnShPsist":  "8'h28",
+	"CmdSwapAtm":	  "8'h29",
+	"CmdCompAtm":	  "8'h2A",
+	"CmdPref":	  "8'h2B",
+	"SnpClnDtr":	  "8'h41",
+	"SnpNitc":	  "8'h42",
+	"SnpVldDtr":	  "8'h43",
+	"SnpInvDtr":	  "8'h44",
+	"SnpInvDtw":	  "8'h45",
+	"SnpInv":	  "8'h46",
+	"SnpClnDtw":	  "8'h48",
+	"SnpNoSDInt":	  "8'h4A",
+	"SnpInvStsh":	  "8'h4B",
+	"SnpUnqStsh":	  "8'h4C",
+	"SnpStshShd":	  "8'h4D",
+	"SnpStshUnq":	  "8'h4E",
+	"SnpDvmMsg":	  "8'h4F",
+	"SnpNitcCI":	  "8'h50",
+	"SnpNitcMI":	  "8'h51",
+	"MrdRdCln":	  "8'h60",
+	"MrdRdWSCln":	  "8'h61",
+	"MrdRdWUCln":	  "8'h62",
+	"MrdRdWU":	  "8'h63",
+	"MrdRdWInv":	  "8'h64",
+	"MrdPref":	  "8'h65",
+	"MrdCln":	  "8'h66",
+	"MrdInv":	  "8'h67",
+	"MrdFlush":	  "8'h68",
+	"UpdInv":	  "8'h70",
+	"UpdSCln":	  "8'h71",
+	"HntRead":	  "8'h78",
+	"StrReq":	  "8'h7A",
+	"TunReq":	  "8'h7B",
+	"RbrReq":	  "8'h7C",
+	"RbUReq":	  "8'h7D",
+	"DtrDataInv":	  "8'h80",
+	"DtrDataSCln":	  "8'h81",
+	"DtrDataSDty":	  "8'h82",
+	"DtrDataUCln":	  "8'h83",
+	"DtrDataUDty":	  "8'h84",
+	"DtwNullData":	  "8'h90",
+	"DtwDataFullCln": "8'h91",
+	"DtwDataPtlDty":  "8'h92",
+	"DtwDataFullDty": "8'h93",
+	"DtwMrgMrdInv":	  "8'h98",
+	"DtwMrgMrdSCln":  "8'h99",
+	"DtwMrgMrdSDty":  "8'h9A",
+	"DtwMrgMrdUCln":  "8'h9B",
+	"DtwMrgMrdUDty":  "8'h9C",
+	"CCmdRsp":	  "8'hF0",
+	"NCCmdRsp":	  "8'hF1",
+	"SnpRsp":	  "8'hF2",
+	"DtwRsp":	  "8'hF3",
+	"DtrRsp":	  "8'hF4",
+	"HntRsp":	  "8'hF5",
+	"MrdRsp":	  "8'hF6",
+	"StrRsp":	  "8'hF7",
+	"UpdRsp":	  "8'hF8",
+	"RbrRsp":	  "8'hF9",
+	"RbuRsp":	  "8'hFA",
+	"TunRsp":	  "8'hFB",
+	"CmpRsp":	  "8'hFC",
+	"CmeRsp":	  "8'hFD",
+	"TreRsp":	  "8'hFE"
+    },
+    "concMuxMsgParams": {
+        "tx": {
+            "cmdReq": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 118,
+                "wDpBits"  : 0
+            },
+"updReq": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 57,
+                "wDpBits"  : 0
+            },
+            "dtrRsp": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 20,
+                "wDpBits"  : 0
+            },
+            "strRsp": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 18,
+                "wDpBits"  : 0
+            },
+	    "snpRsp": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 30,
+                "wDpBits"  : 0
+            },
+            "dtrReq": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 1,
+                "wNdpBits" : 32,
+                "wDpBits"  : 149
+            },
+            "dtwReq": {
+                "enablePipe": 0,
+                "pipeDepth" : 2,
+                "dpPresent" : 1,
+                "wNdpBits"  : 44,
+                "wDpBits"   : 149
+            }
+        },
+        "rx": {
+            "strReq": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 48,
+                "wDpBits"  : 0
+            },
+	    "snpReq": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 127,
+                "wDpBits"  : 0
+            },
+	    "cmdRsp": {
+                "enablePipe": 0,
+                "pipeDepth":  2,
+                "dpPresent":  0,
+                "wNdpBits" : 18,
+                "wDpBits"  :  0
+            },
+	    "dtrRsp": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 20,
+                "wDpBits"  : 0
+            },
+            "dtwRsp": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 20,
+                "wDpBits"  : 0
+            },
+"updRsp": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits" : 18,
+                "wDpBits"  : 0
+            },
+            "dtrReq": {
+                "enablePipe":0,
+                "pipeDepth": 2,
+                "dpPresent": 1,
+                "wNdpBits" : 32,
+                "wDpBits"  : 149
+            }
+        }
+    },
+    "concParams": {
+        "hdrParams": {
+            "wTargetId"     :  10,
+            "wInitiatorId"  :  10,
+            "wCmType"       :  8,
+            "wMsgId"        :  10,
+            "wHProt"        :  8,
+            "wTTier"        :  3,
+            "wSteering"     :  3,
+            "wPriority"     :  3,
+            "wQl"           :  3
+        },
+        "cmdReqParams": {
+            "wNdpAux"   :   2,
+            "wQos"      :   4,
+            "wTof"      :   2,
+            "wDId"      :   10,
+            "wIntfSize" :   2,
+            "wSize"     :   3,
+            "wMpf2"     :  10,
+            "wMpf1"     :  10,
+            "wTM"       :   1,
+            "wRL"       :   2,
+            "wLK"       :   2,
+            "wOR"       :   2,
+            "wPR"       :   1,
+            "wNS"       :   1,
+            "wES"       :   1,
+            "wEN"       :   1,
+            "wST"       :   1,
+            "wCH"       :   1,
+            "wCA"       :   1,
+            "wAC"       :   1,
+            "wVZ"       :   1,
+            "wAddr"     :  48,
+            "wCmStatus" :   8
+        },
+	"updReqParams": {
+            "wNS"       :   1,
+            "wAddr"     :  48,
+            "wCmStatus" :   8
+        },
+        "strRspParams": {
+            "wCmStatus" : 8,
+            "wMsgId"    : 10
+        },
+	"snpRspParams": {
+            "wIntfSize" : 2,
+            "wMpf1"     : 10,
+            "wCmStatus" : 8,
+            "wMsgId"    : 10
+        },
+	"cmdRspParams": {
+            "wCmStatus" : 8,
+            "wMsgId"    : 10
+        },
+        "dtrRspParams": {
+            "wRL"       : 2,
+            "wCmStatus" : 8,
+            "wMsgId"    : 10
+        },
+        "dtwReqParams": {
+            "wNdpAux"   : 4,
+            "wMpf2"     : 10,
+            "wMpf1"     : 10,
+            "wPrimary"  : 1,
+            "wTM"       : 1,
+            "wRL"       : 2,
+            "wCmStatus" : 8,
+            "wRBID"     : 8,
+            "wDwId"     : 6,
+            "wDBad"     : 2,
+            "wData"     : 128,
+            "wUser"     : 0
+        },
+        "dtwRspParams": {
+            "wRL"       : 2,
+            "wCmStatus" : 8,
+            "wMsgId"    : 10
+        },
+	"updRspParams": {
+            "wCmStatus" : 8,
+            "wMsgId"    : 10
+        },
+        "strReqParams": {
+            "wIntfSize" : 2,
+            "wMpf2"     : 10,
+            "wMpf1"     : 10,
+            "wRBID"     : 8,
+            "wCmStatus" : 8,
+            "wMsgId"    : 10
+        },
+	"snpReqParams": {
+            "wNdpAux" 	: 4,
+            "wRBID"     : 8,
+            "wQos" 	: 4,
+            "wTof" 	: 3,
+            "wDId" 	: 10,
+            "wIntfSize" : 2,
+            "wMpf3"     : 10,
+            "wMpf2"     : 10,
+            "wMpf1"     : 10,
+            "wTM"     	: 1,
+            "wRL"       : 2,
+            "wUP"     	: 2,
+            "wPR"       : 1,
+            "wNS"       : 1,
+            "wCA"       : 1,
+            "wAC"       : 1,
+            "wVZ"       : 1,
+            "wAddr"     : 48,
+            "wCmStatus" : 8
+        },
+        "dtrReqParams": {
+            "wNdpAux"   : 4,
+            "wMpf1"     : 10,
+            "wTM"       : 1,
+            "wRL"       : 2,
+            "wCmStatus" : 8,
+            "wMsgId"    : 10,
+            "wDwId"     : 6,
+            "wDBad"     : 2,
+            "wData"     : 128,
+            "wUser"     : 0
+        }
+    },
+    "smiPortParams": {
+        "tx": [
+            {
+                "name": "smi_tx0_",
+                "params": {
+                    "fnMsgClass": ["cmd_req_", "upd_req_"],
+		    "fPortId": ["3'b000", "3'b000"],
+                    "enablePipe": 0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_tx1_",
+                "params" : {
+                    "fnMsgClass": ["snp_rsp_", "str_rsp_", "dtr_rsp_tx_"],
+		    "fPortId": ["3'b000", "3'b000", "3'b000"],
+                    "enablePipe":0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_tx2_",
+                "params" : {
+                    "fnMsgClass": ["dtr_req_tx_", "dtw_req_"],
+		    "fPortId": ["3'b000", "3'b000"],
+                    "enablePipe":0,
+                    "pipeDepth": 1
+                }
+            }
+        ],
+        "rx": [
+            {
+                "name": "smi_rx0_",
+                "params" : {
+                    "fnMsgClass": ["str_req_", "snp_req_"],
+                    "fnMsgCmType": ["8'b0111_1010", "8'b010?_????"],
+		    "fPortId": ["3'b000", "3'b000"],
+                    "enablePipe":0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_rx1_",
+                "params" : {
+                    "fnMsgClass": ["cmd_rsp_", 
+				   "dtr_rsp_rx_", 
+				   "dtw_rsp_", 
+				   "upd_rsp_"],
+                    "fnMsgCmType": ["8'b1111_000?", 
+				    "8'b1111_0100",
+				    "8'b1111_0011",
+				    "8'b1111_1000"],
+		    "fPortId": ["3'b000", "3'b000", "3'b000", "3'b000"],
+                    "enablePipe":0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_rx2_", 
+                "params" : {
+                    "fnMsgClass": ["dtr_req_rx_"],
+                    "fnMsgCmType": ["8'b1000_????"],
+		    "fPortId": ["3'b000"],
+                    "enablePipe":0,
+                    "pipeDepth": 1
+                }
+            }
+        ]
+    },    
+    "interfaces": {
+        "clkInt": {
+            "name": "",
+            "params": {},
+            "direction": "slave",
+            "interface": "InterfaceCLK"
+        },
+        "irqInt": {
+            "name": "io_aiu_irq_",
+            "params": {},
+            "direction": "master",
+            "interface": "InterfaceIRQ"
+        },
+        "uIdInt": {
+            "name": "io_aiu_",
+            "params": {
+                        "wFUnitId"  :   7,
+                        "wNUnitId"  :   3,
+                        "wRpn"      :   8,
+                        "wNrri"     :   4
+                      },
+            "direction": "slave",
+            "interface": "InterfaceUnitId"
+        },
+        "uSysDceIdInt": {
+            "name": "io_aiu_dce_",
+            "params": {
+                        "wFUnitIdV"  :   [7]
+                      },
+            "direction": "slave",
+            "interface": "InterfaceSysUnitId"
+        },
+        "uSysDmiIdInt": {
+            "name": "io_aiu_dmi_",
+            "params": {
+                        "wFUnitIdV"  :   [7]
+                      },
+            "direction": "slave",
+            "interface": "InterfaceSysUnitId"
+        },
+        "uSysDiiIdInt": {
+            "name": "io_aiu_dii_",
+            "params": {
+                        "wFUnitIdV"  :   [7]
+                      },
+            "direction": "slave",
+            "interface": "InterfaceSysUnitId"
+        },
+        "apbInt": {
+            "name": "io_aiu_apb_slv_",
+            "params": {
+                        "wAddr"     :   12,
+                        "wData"     :   32,
+                        "wPSlverr"   :   1
+                      },
+            "direction": "slave",
+            "interface": "InterfaceAPB"
+        },
+        "axiInt": {
+            "name": "io_aiu_axi_", 
+            "params": {
+                        "wAddr"     :   32,
+                        "wArUser"   :   12,
+                        "wArId"     :   12,
+                        "wAwUser"   :   12,
+                        "wAwId"     :   12,
+                        "wResp"     :   2,
+                        "wRegion"   :   0,
+                        "wQos"      :   4,
+                        "wLock"     :   1,
+                        "wProt"     :   3,
+                        "wWUser"    :   0,
+                        "wData"     :   128,
+                        "wRUser"    :   12,
+                        "wBUser"    :   0,
+                        "wLen"      :   8,
+                        "wSize"     :   3
+                      },
+            "direction": "slave",
+            "interface": "InterfaceAXI"
+        },
+        "qInt": {
+            "name": "io_aiu_qc_",
+            "params": {
+                "wActive" : 1,
+                "channelType" : "Q"
+	    },
+            "direction": "slave",
+            "interface": "InterfacePQChannel"
+        },
+        "smiTxInt": [
+            {
+                "name": "smi_tx0_",
+                "params": {
+                    "nSmiVC"    :   1,
+                    "wSmiTid"   :   10,
+                    "wSmiSid"   :   10,
+                    "wSmiSteer" :   3,
+                    "wSmiTier"  :   3,
+                    "wSmiQos"   :   3,
+                    "wSmiPri"   :   3,
+                    "wSmiNDPLen":   8,
+                    "wSmiNDP"   :   136,
+                    "wSmiId"    :   10,
+                    "wSmiType"  :   8,
+                    "wSmiUser"  :   8,
+                    "wSmiErr"   :   1,
+                    "wSmiRoute" :   0,
+                    "wSmiClass" :   0,
+                    "wSmiSeqnum":   0,
+                    "wSmiAddr"  :   0,
+                    "wSmiLen"   :   0,
+                    "wSmiVNid"  :   0,
+                    "wSmiProt"  :   0,
+                    "wSmiTxnHdr":   0,
+                    "nSmiDPvc"  :   0,
+                    "wSmiDPlast":   0,
+                    "wSmiDPdata":   0,
+                    "wSmiDPuser":   0,
+                    "wSmiDPbe"  :   0,
+                    "wSmiDPid"  :   0,
+                    "wSmiDPerr" :   0,
+                    "wSmiDPresp":   0,
+                    "wSmiDPdummy":  0
+                },
+                "direction": "master",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_tx1_",
+                "params": {
+                    "nSmiVC"    :   1,
+                    "wSmiTid"   :   10,
+                    "wSmiSid"   :   10,
+                    "wSmiSteer" :   3,
+                    "wSmiTier"  :   3,
+                    "wSmiQos"   :   3,
+                    "wSmiPri"   :   3,
+                    "wSmiNDPLen":   8,
+                    "wSmiNDP"   :   136,
+                    "wSmiId"    :   10,
+                    "wSmiType"  :   8,
+                    "wSmiUser"  :   8,
+                    "wSmiErr"   :   1,
+                    "wSmiRoute" :   0,
+                    "wSmiClass" :   0,
+                    "wSmiSeqnum":   0,
+                    "wSmiAddr"  :   0,
+                    "wSmiLen"   :   0,
+                    "wSmiVNid"  :   0,
+                    "wSmiProt"  :   0,
+                    "wSmiTxnHdr":   0,
+                    "nSmiDPvc"  :   0,
+                    "wSmiDPlast":   0,
+                    "wSmiDPdata":   0,
+                    "wSmiDPuser":   0,
+                    "wSmiDPbe"  :   0,
+                    "wSmiDPid"  :   0,
+                    "wSmiDPerr" :   0,
+                    "wSmiDPresp":   0,
+                    "wSmiDPdummy":  0
+                },
+                "direction": "master",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_tx2_",
+                "params": {
+                    "nSmiVC"    :   1,
+                    "wSmiTid"   :   10,
+                    "wSmiSid"   :   10,
+                    "wSmiSteer" :   3,
+                    "wSmiTier"  :   3,
+                    "wSmiQos"   :   3,
+                    "wSmiPri"   :   3,
+                    "wSmiNDPLen":   8,
+                    "wSmiNDP"   :   136,
+                    "wSmiId"    :   10,
+                    "wSmiType"  :   8,
+                    "wSmiUser"  :   8,
+                    "wSmiErr"   :   1,
+                    "wSmiRoute" :   0,
+                    "wSmiClass" :   0,
+                    "wSmiSeqnum":   0,
+                    "wSmiAddr"  :   0,
+                    "wSmiLen"   :   0,
+                    "wSmiVNid"  :   0,
+                    "wSmiProt"  :   0,
+                    "wSmiTxnHdr":   0,
+                    "nSmiDPvc"  :   1,
+                    "wSmiDPlast":   1,
+                    "wSmiDPdata":   128,
+                    "wSmiDPuser":   24,
+                    "wSmiDPbe"  :   0,
+                    "wSmiDPid"  :   0,
+                    "wSmiDPerr" :   0,
+                    "wSmiDPresp":   0,
+                    "wSmiDPdummy":  0
+                },
+                "direction": "master",
+                "interface": "InterfaceSMI"
+            }
+        ],
+        "smiRxInt": [
+            {
+                "name": "smi_rx0_",
+                "params": {
+                    "nSmiVC"    :   1,
+                    "wSmiTid"   :   10,
+                    "wSmiSid"   :   10,
+                    "wSmiSteer" :   3,
+                    "wSmiTier"  :   3,
+                    "wSmiQos"   :   3,
+                    "wSmiPri"   :   3,
+                    "wSmiNDPLen":   8,
+                    "wSmiNDP"   :   136,
+                    "wSmiId"    :   10,
+                    "wSmiType"  :   8,
+                    "wSmiUser"  :   8,
+                    "wSmiErr"   :   0,
+                    "wSmiRoute" :   0,
+                    "wSmiClass" :   0,
+                    "wSmiSeqnum":   0,
+                    "wSmiAddr"  :   0,
+                    "wSmiLen"   :   0,
+                    "wSmiVNid"  :   0,
+                    "wSmiProt"  :   0,
+                    "wSmiTxnHdr":   0,
+                    "nSmiDPvc"  :   0,
+                    "wSmiDPlast":   0,
+                    "wSmiDPdata":   0,
+                    "wSmiDPuser":   0,
+                    "wSmiDPbe"  :   0,
+                    "wSmiDPid"  :   0,
+                    "wSmiDPerr" :   0,
+                    "wSmiDPresp":   0,
+                    "wSmiDPdummy":  0
+                },
+                "direction": "slave",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_rx1_",
+                "params": {
+                    "nSmiVC"    :   1,
+                    "wSmiTid"   :   10,
+                    "wSmiSid"   :   10,
+                    "wSmiSteer" :   3,
+                    "wSmiTier"  :   3,
+                    "wSmiQos"   :   3,
+                    "wSmiPri"   :   3,
+                    "wSmiNDPLen":   8,
+                    "wSmiNDP"   :   136,
+                    "wSmiId"    :   10,
+                    "wSmiType"  :   8,
+                    "wSmiUser"  :   8,
+                    "wSmiErr"   :   0,
+                    "wSmiRoute" :   0,
+                    "wSmiClass" :   0,
+                    "wSmiSeqnum":   0,
+                    "wSmiAddr"  :   0,
+                    "wSmiLen"   :   0,
+                    "wSmiVNid"  :   0,
+                    "wSmiProt"  :   0,
+                    "wSmiTxnHdr":   0,
+                    "nSmiDPvc"  :   0,
+                    "wSmiDPlast":   0,
+                    "wSmiDPdata":   0,
+                    "wSmiDPuser":   0,
+                    "wSmiDPbe"  :   0,
+                    "wSmiDPid"  :   0,
+                    "wSmiDPerr" :   0,
+                    "wSmiDPresp":   0,
+                    "wSmiDPdummy":  0
+                },
+                "direction": "slave",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_rx2_",
+                "params": {
+                    "nSmiVC"    :   1,
+                    "wSmiTid"   :   10,
+                    "wSmiSid"   :   10,
+                    "wSmiSteer" :   3,
+                    "wSmiTier"  :   3,
+                    "wSmiQos"   :   3,
+                    "wSmiPri"   :   3,
+                    "wSmiNDPLen":   8,
+                    "wSmiNDP"   :   136,
+                    "wSmiId"    :   10,
+                    "wSmiType"  :   8,
+                    "wSmiUser"  :   8,
+                    "wSmiErr"   :   0,
+                    "wSmiRoute" :   0,
+                    "wSmiClass" :   0,
+                    "wSmiSeqnum":   0,
+                    "wSmiAddr"  :   0,
+                    "wSmiLen"   :   0,
+                    "wSmiVNid"  :   0,
+                    "wSmiProt"  :   0,
+                    "wSmiTxnHdr":   0,
+                    "nSmiDPvc"  :   1,
+                    "wSmiDPlast":   1,
+                    "wSmiDPdata":   128,
+                    "wSmiDPuser":   24,
+                    "wSmiDPbe"  :   0,
+                    "wSmiDPid"  :   0,
+                    "wSmiDPerr" :   0,
+                    "wSmiDPresp":   0,
+                    "wSmiDPdummy":  0
+                },
+                "direction": "slave",
+                "interface": "InterfaceSMI"
+            }
+        ]
+    },
+    "csr": {
+        "addressWidth": 12,
+        "width": 32,
+        "spaceBlock": [
+            {
+                "baseAddress": 0,
+                "registers": [
+                    {
+                        "name": "UIDR",
+                        "description": "Unit Identification Register",
+                        "csrDescription": "Unit Identification Register",
+                        "addressOffset": 0,
+                        "fields": [
+                            {
+                                "name": "RPN",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Unit Register Page Number (within its NRR)",
+                                "reset": 0
+                            },
+                            {
+                                "name": "NRRI",
+                                "bitOffset": 8,
+                                "bitWidth": 4,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Identifier of the Ncore 3 Register Region\nin which this unit resides",
+                                "reset": 0
+                            },
+                            {
+                                "name": "NUnitId",
+                                "bitOffset": 12,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Ncore 3 Unit identifier. ",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 24,
+                                "bitWidth": 7,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "Valid",
+                                "bitOffset": 31,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Value of 1 validates this register. This bit\nis set to 1 if the unit is implemented.",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UFUIDR",
+                        "description": "Unit Fabric Unit Identification Register",
+                        "csrDescription": "Unit Fabric Unit Identification Register",
+                        "addressOffset": 4,
+                        "fields": [
+                            {
+                                "name": "FUnitId",
+                                "bitOffset": 0,
+                                "bitWidth": 7,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Fabric Unit Identifier of the unit"
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 16,
+                                "bitWidth": 16,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "CREDIT",
+                        "description": "Credit on a per message type basis",
+                        "csrDescription": "Credit on a per message type basis.",
+                        "addressOffset": 64,
+                        "fields": [
+                            {
+                                "name": "MRC",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Command credit."
+                            },
+                            {
+                                "name": "MRU",
+                                "bitOffset": 8,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Update credit."
+                            },
+                            {
+                                "name": "MRR",
+                                "bitOffset": 16,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "DTR credit."
+                            },
+                            {
+                                "name": "MRW",
+                                "bitOffset": 24,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "DTW credit."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "CONTROL",
+                        "description": "Hardware control debug register",
+                        "csrDescription": "Hardware control debug register.",
+                        "addressOffset": 68,
+                        "fields": [
+                            {
+                                "name": "cfg",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 8,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Hardware control."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "POOL",
+                        "description": "OTT pools",
+                        "csrDescription": "OTT pools.",
+                        "addressOffset": 72,
+                        "fields": [
+                            {
+                                "name": "WR",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "OTT Write pool."
+                            },
+                            {
+                                "name": "RD",
+                                "bitOffset": 16,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "OTT Read pool."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "LIMIT0",
+                        "description": "Limit Table size",
+                        "csrDescription": "Limit OTT/STT sizes.",
+                        "addressOffset": 76,
+                        "fields": [
+                            {
+                                "name": "OTT",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "OTT limit."
+                            },
+                            {
+                                "name": "STT",
+                                "bitOffset": 16,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "STT Limit."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "LIMIT1",
+                        "description": "Limit Read/Write operations",
+                        "csrDescription": "Limit Read/Write operations.",
+                        "addressOffset": 80,
+                        "fields": [
+                            {
+                                "name": "WR",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "OTT Write limit."
+                            },
+                            {
+                                "name": "RD",
+                                "bitOffset": 16,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "OTT Read Limit."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "LIMIT2",
+                        "description": "Limit evictions",
+                        "csrDescription": "Limit evictions.",
+                        "addressOffset": 84,
+                        "fields": [
+                            {
+                                "name": "EV",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Limit evictions."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "USMCMCR0",
+                        "description": "Unit System Memory Cache Maintenance Control Register",
+                        "csrDescription": "Unit System Memory Cache Maintenance Control Register",
+                        "addressOffset": 88,
+                        "fields": [
+                            {
+                                "name": "MntOp",
+                                "bitOffset": 0,
+                                "bitWidth": 4,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field encodes the cache maintenance operation to be performed:\n0x0: Initialize all Entries\n0x1-0x3: Reserved\n0x4: Flush All Entries\n0x5: Flush Entry at Set and Way\n0x6: Flush Entry at Address\n0x7: Flush Address Range\n0x8: Flush Set Way Range\n0x9-0xB: Reserved\n0xC: Debug Read Entry at set, way, and word\n0xD: Reserved\n0xE: Debug Write Entry at set, way, and word\n0xF: Reserved\n",
+                                "reset": 0,
+                                "scope": "All"
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 4,
+                                "bitWidth": 12,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ArrayID",
+                                "bitOffset": 16,
+                                "bitWidth": 6,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field selects the array on which the cache maintenance operation is to be performed:\n  0x00: Tag Array \n  0x01: Data Array\n  0x02-0x3F: Reserved",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "SecAttr",
+                                "bitOffset": 22,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This bit indicates the value of the security attribute of the address for the cache maintenance operation is to be performed. \nIf the cache maintenance operation does not operate on an address, the value of this bit should be zero.\n",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 23,
+                                "bitWidth": 9,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "USMCMAR0",
+                        "description": "Unit System Memory Cache Maintenance Activity Register",
+                        "csrDescription": "Unit System Memory Cache Maintenance Activity Register",
+                        "addressOffset": 92,
+                        "fields": [
+                            {
+                                "name": "MntOpActv",
+                                "bitOffset": 0,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This bit is set when any cache maintenance operation is in progress and is clear otherwise",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 1,
+                                "bitWidth": 31,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "USMCMLR00",
+                        "description": "Unit System Memory Cache Maintenance Location Register 0",
+                        "csrDescription": "Unit System Memory Cache Maintenance Location Register 0",
+                        "addressOffset": 96,
+                        "fields": [
+                            {
+                                "name": "MntSet",
+                                "bitOffset": 0,
+                                "bitWidth": 20,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "The field indicates the set on which the maintenance operation is to be performed",
+                                "scope": "All",
+                                "link": ""
+                            },
+                            {
+                                "name": "MntWay",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the way on which the maintenance operation is to be performed.",
+                                "scope": "All",
+                                "link": ""
+                            },
+                            {
+                                "name": "MntWord",
+                                "bitOffset": 26,
+                                "bitWidth": 6,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the data word on which the maintenance operation is to be performed.",
+                                "scope": "All",
+                                "link": ""
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "USMCMLR10",
+                        "description": "Unit System Memory Cache Maintenance Location Register 1",
+                        "csrDescription": "Unit System Memory Cache Maintenance Location Register 1",
+                        "addressOffset": 100,
+                        "fields": [
+                            {
+                                "name": "MntAddr",
+                                "bitOffset": 0,
+                                "bitWidth": 16,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field contains the high-order address bits of the address on which the maintenance operation is to be performed",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "MntRange",
+                                "bitOffset": 16,
+                                "bitWidth": 16,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the range for flush operations in number of cache lines.\nThis field is used when doing flushes based on address or set/way range.",
+                                "scope": "All"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "USMCMDR0",
+                        "description": "Unit System Memory Cache Maintenance Data Register",
+                        "csrDescription": "Unit System Memory Cache Maintenance Data Register",
+                        "addressOffset": 104,
+                        "fields": [
+                            {
+                                "name": "MntData",
+                                "bitOffset": 0,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field contains the data resulting from a maintenance read operation or the data to be used for a maintenance write operation.",
+                                "bitWidth": 32,
+                                "reset": 0,
+                                "scope": "All"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "QOS",
+                        "description": "Credit adjustment per target type basis",
+                        "csrDescription": "Credit adjustment per target type basis: 0x1: Max 1. 0x2: Max 2. 0x3: Max 3. 0x5: Minus 1. 0x6: Minus 2. 0x7: Minus 3. 0x9: 1 read others writes. 0xa: Reserve 1 write. 0xb: No limit. 0xd: reserve 1 extra write, 0xe: reserve 2 extra writes, 0xf: reserve 3 extra writes, Others: no change",
+                        "addressOffset": 108,
+                        "fields": [
+                            {
+                                "name": "DCE",
+                                "bitOffset": 0,
+                                "bitWidth": 4,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "DCE credit adjustment."
+                            },
+                            {
+                                "name": "DMI",
+                                "bitOffset": 4,
+                                "bitWidth": 4,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "DMI credit adjustment."
+                            },
+                            {
+                                "name": "DII",
+                                "bitOffset": 8,
+                                "bitWidth": 4,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "DII credit adjustment."
+                            },
+                            {
+                                "name": "QOS",
+                                "bitOffset": 12,
+                                "bitWidth": 4,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "QOS credit adjustment."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "PERIOD",
+                        "description": "Starvation detection period",
+                        "csrDescription": "Specify period length for starvation detection",
+                        "addressOffset": 108,
+                        "fields": [
+                            {
+                                "name": "EVENT",
+                                "bitOffset": 0,
+                                "bitWidth": 12,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Event counter period in granularity of 16."
+                            },
+                            {
+                                "name": "TIME",
+                                "bitOffset": 12,
+                                "bitWidth": 20,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Timer period in granularity of 2K."
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UUEDR",
+                        "description": "Unit Uncorrectable Error Detect Register",
+                        "csrDescription": "Unit Uncorrectable Error Detect Register",
+                        "addressOffset": 256,
+                        "fields": [
+                            {
+                                "name": "ProtErrDetEn",
+                                "bitOffset": 0,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "AXI downstream protocol error detect enable: When set, errors will be detected from the downstream AXI interface.",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "TransErrDetEn",
+                                "bitOffset": 1,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+                            },
+                            {
+                                "name": "MemErrDetEn",
+                                "bitOffset": 2,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 3,
+                                "bitWidth": 29,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UUEIR",
+                        "description": "Unit Uncorrectable Error Interrupt Register",
+                        "csrDescription": "Unit Uncorrectable Error Interrupt Register",
+                        "addressOffset": 260,
+                        "fields": [
+                            {
+                                "name": "ProtErrIntEn",
+                                "bitOffset": 0,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Downstream AXI uncorrectable error interrupt enable.",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "TransErrIntEn",
+                                "bitOffset": 1,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Concerto Transport uncorrectable error interrupt enable."
+                            },
+                            {
+                                "name": "MemErrIntEn",
+                                "bitOffset": 2,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "RAM memory uncorrectable error interrupt enable."
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 3,
+                                "bitWidth": 29,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UUESR",
+                        "description": "Unit Uncorrectable Error Status Register",
+                        "csrDescription": "Unit Uncorrectable Error Status Register",
+                        "addressOffset": 264,
+                        "fields": [
+                            {
+                                "name": "ErrVld",
+                                "bitOffset": 0,
+                                "bitWidth": 1,
+                                "access": "W1C",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "If this bit is set, Error information is logged in status and location registers. Writing a one to the Correctable Error Valid bit clears the Correctable Error Valid bit."
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 1,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ErrType",
+                                "bitOffset": 4,
+                                "bitWidth": 5,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "This field indicates the logged error type"
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 9,
+                                "bitWidth": 7,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ErrInfo",
+                                "bitOffset": 16,
+                                "bitWidth": 16,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "This field indicates additional information about logged error"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UUELR0",
+                        "description": "Unit Uncorrectable Error Location Registers 0",
+                        "csrDescription": "Unit Uncorrectable Error Location Registers 0",
+                        "addressOffset": 268,
+                        "fields": [
+                            {
+                                "name": "ErrEntry",
+                                "bitOffset": 0,
+                                "bitWidth": 20,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the entry or the set in which the logged error was detected",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "ErrWay",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the way in which the logged error was detected",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "ErrWord",
+                                "bitOffset": 26,
+                                "bitWidth": 6,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the data word in which the logged error was detected",
+                                "scope": "All"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UUELR1",
+                        "description": "Unit Uncorrectable Error Location Registers 1",
+                        "csrDescription": "Unit Uncorrectable Error Location Registers 1",
+                        "addressOffset": 272,
+                        "fields": [
+                            {
+                                "name": "ErrAddr",
+                                "bitOffset": 0,
+                                "bitWidth": 12,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field contains the high-order address bits of the transaction that encountered the error",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 12,
+                                "bitWidth": 20,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UUESAR",
+                        "description": "Unit Uncorrectable Error Status Alias Register",
+                        "csrDescription": "Unit Uncorrectable Error Status Alias Register",
+                        "addressOffset": 276,
+                        "fields": [
+                            {
+                                "name": "ErrVld",
+                                "bitOffset": 0,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrVld",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias bit for setting error valid filed of xUESR",
+                                "bitWidth": 1
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 1,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ErrType",
+                                "bitOffset": 4,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrType",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias bit for setting error type field of xUESR ",
+                                "bitWidth": 5
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 9,
+                                "bitWidth": 7,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ErrInfo",
+                                "bitOffset": 16,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrInfo",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias bit for setting errro info field of xUESR",
+                                "bitWidth": 16
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UCECR",
+                        "description": "Unit Correctable Error Control Register",
+                        "csrDescription": "Unit Correctable Error Control Register",
+                        "addressOffset": 320,
+                        "fields": [
+                            {
+                                "name": "ErrDetEn",
+                                "bitOffset": 0,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "If this bit is set, then correctable error detection and logging is enabled; otherwise, correctable error detection and logging is disabled."
+                            },
+                            {
+                                "name": "ErrIntEn",
+                                "bitOffset": 1,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "If this bit is set, the Correctable Error Interrupt output signal is asserted when the number of correctable errors corrected equals the value in ErrThreshold field; otherwise, the correctable error interrupt signal is never asserted."
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 2,
+                                "bitWidth": 2,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ErrThreshold",
+                                "bitOffset": 4,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "This field determines the number of correctable errors that must be corrected before the Correctable Error Interrupt output signal is asserted."
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 12,
+                                "bitWidth": 20,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UCESR",
+                        "description": "Unit Correctable Error Status Register",
+                        "csrDescription": "Unit Correctable Error Status Register",
+                        "addressOffset": 352,
+                        "fields": [
+                            {
+                                "name": "ErrVld",
+                                "bitOffset": 0,
+                                "bitWidth": 1,
+                                "access": "W1C",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "If this bit is set, Error information is logged in status and location registers. Writing a one to the Correctable Error Valid bit clears the Correctable Error Valid bit."
+                            },
+                            {
+                                "name": "ErrCountOverflow",
+                                "bitOffset": 1,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "This bit indicates that the number of correctable errors detected by the unit overflowed the Correctable Error Count field"
+                            },
+                            {
+                                "name": "ErrCount",
+                                "bitOffset": 2,
+                                "bitWidth": 8,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "This field indicates the number of correctable errors detected by the unit. The field stops incrementing if the Correctable Error Count Overflow bit is set"
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 10,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ErrType",
+                                "bitOffset": 11,
+                                "bitWidth": 5,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "This field indicates the logged error type"
+                            },
+                            {
+                                "name": "ErrInfo",
+                                "bitOffset": 16,
+                                "bitWidth": 16,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "This field indicates additional information about logged error"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UCELR0",
+                        "description": "Unit Correctable Error Location Registers 0",
+                        "csrDescription": "Unit Correctable Error Location Registers 0",
+                        "addressOffset": 356,
+                        "fields": [
+                            {
+                                "name": "ErrEntry",
+                                "bitOffset": 0,
+                                "bitWidth": 20,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the entry or the set in which the logged error was detected",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "ErrWay",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the way in which the logged error was detected",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "ErrWord",
+                                "bitOffset": 26,
+                                "bitWidth": 6,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field indicates the data word in which the logged error was detected",
+                                "scope": "All"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UCELR1",
+                        "description": "Unit Correctable Error Location Registers 1",
+                        "csrDescription": "Unit Correctable Error Location Registers 1",
+                        "addressOffset": 360,
+                        "fields": [
+                            {
+                                "name": "ErrAddr",
+                                "bitOffset": 0,
+                                "bitWidth": 12,
+                                "access": "RW",
+                                "hardware": "WO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field contains the high-order address bits of the transaction that encountered the error",
+                                "scope": "All"
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 12,
+                                "bitWidth": 20,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UCESAR",
+                        "description": "Unit Correctable Error Status Alias Register",
+                        "csrDescription": "Unit Correctable Error Status Alias Register",
+                        "addressOffset": 336,
+                        "fields": [
+                            {
+                                "name": "ErrVld",
+                                "bitOffset": 0,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrVld",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias bit for setting error valid filed of xCESR",
+                                "bitWidth": 1
+                            },
+                            {
+                                "name": "ErrCountOverflow",
+                                "bitOffset": 1,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrCountOverflow",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias bit for ssetting Error Count Overflow field of xCESR"
+                            },
+                            {
+                                "name": "ErrCount",
+                                "bitOffset": 2,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrCount",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias field for setting error Count field of xCESR"
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 10,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "ErrType",
+                                "bitOffset": 11,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrType",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias bit for setting error type field of xCESR ",
+                                "bitWidth": 5
+                            },
+                            {
+                                "name": "ErrInfo",
+                                "bitOffset": 16,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "link": "xESR.ErrInfo",
+                                "linkOp": "SOW",
+                                "opOrder": "HW",
+                                "scope": "All",
+                                "description": "Alias bit for setting errro info field of xCESR",
+                                "bitWidth": 16
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UCRTR",
+                        "description": "Unit Correctable Resiliency Threshold Register",
+                        "csrDescription": "Unit Correctable Resiliency Threshold Register",
+                        "addressOffset": 380,
+                        "fields": [
+                            {
+                                "name": "ResThreshold",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 1,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Threshold for the uncorrectable error indication to the functional safety controller."
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 8,
+                                "bitWidth": 24,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP0RA",
+                        "description": "General Purpose Region Attribute Register",
+                        "csrDescription": "General Purpose Region Attribute Register",
+                        "addressOffset": 1024,
+                        "fields": [
+                            {
+                                "name": "DIGId",
+                                "bitOffset": 0,
+                                "bitWidth": 3,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "DIGId",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUI",
+                                "bitOffset": 9,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUI",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Size",
+                                "bitOffset": 20,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Size",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUT",
+                                "bitOffset": 30,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUT",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Valid",
+                                "bitOffset": 31,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Valid",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP0RBLR",
+                        "description": "General Purpose Region Base Address Register",
+                        "csrDescription": "General Purpose Region Base Address Register",
+                        "addressOffset": 1028,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP0RBHR",
+                        "description": "General Purpose Region Base Address Register",
+                        "csrDescription": "General Purpose Region Base Address Register",
+                        "addressOffset": 1032,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP1RA",
+                        "description": "General Purpose Region Attribute Register",
+                        "csrDescription": "General Purpose Region Attribute Register",
+                        "addressOffset": 1036,
+                        "fields": [
+                            {
+                                "name": "DIGId",
+                                "bitOffset": 0,
+                                "bitWidth": 3,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "DIGId",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUI",
+                                "bitOffset": 9,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUI",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Size",
+                                "bitOffset": 20,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Size",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUT",
+                                "bitOffset": 30,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUT",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Valid",
+                                "bitOffset": 31,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Valid",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP1RBLR",
+                        "description": "General Purpose Region Base Address Register",
+                        "csrDescription": "General Purpose Region Base Address Register",
+                        "addressOffset": 1040,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP1RBHR",
+                        "description": "General Purpose Region Base Address Register",
+                        "csrDescription": "General Purpose Region Base Address Register",
+                        "addressOffset": 1044,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP2RA",
+                        "description": "General Purpose Region Attribute Register",
+                        "csrDescription": "General Purpose Region Attribute Register",
+                        "addressOffset": 1048,
+                        "fields": [
+                            {
+                                "name": "DIGId",
+                                "bitOffset": 0,
+                                "bitWidth": 3,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "DIGId",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUI",
+                                "bitOffset": 9,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUI",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Size",
+                                "bitOffset": 20,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Size",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUT",
+                                "bitOffset": 30,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUT",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Valid",
+                                "bitOffset": 31,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Valid",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP2RBLR",
+                        "description": "General Purpose Region Base Address Register",
+                        "csrDescription": "General Purpose Region Base Address Register",
+                        "addressOffset": 1052,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GP2RBHR",
+                        "description": "General Purpose Region Base Address Register",
+                        "csrDescription": "General Purpose Region Base Address Register",
+                        "addressOffset": 1056,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "BRAR",
+                        "description": "Boot Region Attribute Register",
+                        "csrDescription": "Boot Region Attribute Register",
+                        "addressOffset": 2048,
+                        "fields": [
+                            {
+                                "name": "DIGId",
+                                "bitOffset": 0,
+                                "bitWidth": 3,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "DIGId",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUI",
+                                "bitOffset": 9,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUI",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "HUT",
+                                "bitOffset": 14,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "HUI",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Size",
+                                "bitOffset": 20,
+                                "bitWidth": 5,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Size",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "ST",
+                                "bitOffset": 30,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "ST",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Valid",
+                                "bitOffset": 31,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Valid",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "BRBLR",
+                        "description": "Boot Region Base High Register",
+                        "csrDescription": "Boot Region Base High Register",
+                        "addressOffset": 2052,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "BRBHR",
+                        "description": "Boot Region Base High Register",
+                        "csrDescription": "Boot Region Base High Register",
+                        "addressOffset": 2056,
+                        "fields": [
+                            {
+                                "name": "Address",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Address",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "NRSBAR",
+                        "description": "NRS Base Address Register",
+                        "csrDescription": "NRS Base Address Register",
+                        "addressOffset": 896,
+                        "fields": [
+                            {
+                                "name": "NRSBA",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "NRSBA",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "NRSBHR",
+                        "description": "NRSBHR is used to stage the writing of the Base address of the NRS",
+                        "csrDescription": "NRS Base Address Hold Register",
+                        "addressOffset": 900,
+                        "fields": [
+                            {
+                                "name": "NRSBA",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "NRSBA field indicates bits[51:20] of the Base address of the Ncore Register Space"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "NRSBLR",
+                        "description": "NRSBLR is used to load the NRSBAR from NRSBHR",
+                        "csrDescription": "NRS Base Address Load Register",
+                        "addressOffset": 904,
+                        "fields": [
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 0,
+                                "bitWidth": 4,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "NRSDIIId",
+                                "bitOffset": 4,
+                                "bitWidth": 10,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field is set to NUId of the DII to which the Ncore is connected"
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 14,
+                                "bitWidth": 17,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "BALoaded",
+                                "bitOffset": 31,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RW",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "This field is set when NRSBHR is stored into and reset when this register is read "
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "AMIGR",
+                        "description": "Active Memory Interleave Group Register",
+                        "csrDescription": "Active Memory Interleave Group Register",
+                        "addressOffset": 2064,
+                        "fields": [
+                            {
+                                "name": "Valid",
+                                "bitOffset": 0,
+                                "bitWidth": 1,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "NRSBA",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "AMIGS",
+                                "bitOffset": 1,
+                                "bitWidth": 4,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "NRSBA",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "MAIFR",
+                        "description": "MIG Active Interleave Function Register",
+                        "csrDescription": "MIG Active Interleave Function Register",
+                        "addressOffset": 2068,
+                        "fields": [
+                            {
+                                "name": "MIG2AIFId",
+                                "bitOffset": 6,
+                                "bitWidth": 3,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "MIG2AIFId",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "MIG3AIFId",
+                                "bitOffset": 9,
+                                "bitWidth": 3,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "MIG3AIFId",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "MIG4AIFId",
+                                "bitOffset": 12,
+                                "bitWidth": 3,
+                                "access": "RW",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "MIG4AIFId",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UENGIDR",
+                        "description": "Unit Engineering ID Register ",
+                        "csrDescription": "Unit Engineering ID Register ",
+                        "addressOffset": 4084,
+                        "fields": [
+                            {
+                                "name": "EngVerId",
+                                "bitOffset": 0,
+                                "bitWidth": 32,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Engineering Version Identifier",
+                                "scope": "All",
+                                "reset": 0
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "UINFOR",
+                        "description": "Unit Information Register ",
+                        "csrDescription": "Unit Information Register ",
+                        "addressOffset": 4092,
+                        "fields": [
+                            {
+                                "name": "ImplVer",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Implementation Version",
+                                "scope": "All",
+                                "reset": 0
+                            },
+                            {
+                                "name": "UT",
+                                "bitOffset": 8,
+                                "bitWidth": 4,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Unit Type",
+                                "scope": "All",
+                                "reset": 10
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 12,
+                                "bitWidth": 19,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "Valid",
+                                "bitOffset": 31,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Implemented",
+                                "scope": "All",
+                                "reset": 1
+                            }
+                        ],
+                        "specialImplementation": false
+                    }
+                ]
+            }
+        ]
+    }
+}

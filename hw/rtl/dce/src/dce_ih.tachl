@@ -1,0 +1,309 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+//
+// NAME: Intake H
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+//
+//=============================================================================
+
+
+//      
+// Variables
+// 
+   
+var u = obj.lib;
+var m = obj.userLib;
+
+//
+// Params
+//
+
+let useSramInputFlop = u.getParam('useSramInputFlop');
+
+let N_ATT =m.ParamDefaultGet(u, 'nAttEntries', 'int', 32);
+let CMD_REQ_INTF = m.ParamDefaultGet(u, 'cmdReqInterface', 'object', {});
+let UPD_REQ_INTF = m.ParamDefaultGet(u, 'updReqInterface', 'object', {});
+let W_FUNIT_ID = m.ParamDefaultGet(u, 'wFUnitId', 'int', 4);
+let W_FPORT_ID = m.ParamDefaultGet(u, 'wFPortId', 'int', 4);
+
+let wChipletId = u.getParam('wChipletId');
+let wLinkId    = u.getParam('wLinkId');
+let wFUnitId   = W_FUNIT_ID;
+let wFPortId   = W_FPORT_ID;
+
+let NUM_ARB = 2;
+let W_ADDR = CMD_REQ_INTF.addr;
+let W_CM_TYPE = CMD_REQ_INTF.cm_type;
+let W_INIT_ID = CMD_REQ_INTF.initiator_id;
+let W_NS = CMD_REQ_INTF.ns;
+let W_ES = CMD_REQ_INTF.es;
+let W_MPF1 = CMD_REQ_INTF.mpf1;
+let W_MPF2 = CMD_REQ_INTF.mpf2;
+
+//
+// ports
+//
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+
+u.port('input',  'dm_req_ready', 1);                    //FROM DM
+u.port('output', 'dm_req_valid', 1);                    //TO   DM
+u.port('output', 'dm_req_addr', W_ADDR);                //TO   DM, TM
+u.port('output', 'dm_req_ns', W_NS);                    //TO   DM, TM
+u.port('output', 'dm_req_type', W_CM_TYPE);             //TO   DM, TM
+u.port('output', 'dm_req_initiator_id', W_INIT_ID);     //TO   DM, TM
+u.port('output', 'dm_req_wakeup_valid', 1);             //TO   DM, TM
+u.port('output', 'dm_req_mpf1', W_MPF1);                //TO       TM
+u.port('output', 'dm_req_mpf2', W_MPF2);                //TO       TM
+u.port('output', 'dm_req_es', W_ES);                    //TO       TM
+u.port('output', 'dm_req_alloc_vec', N_ATT);            //TO   DM, TM
+u.port('output', 'dm_req_stash_id', W_INIT_ID);         //TO   DM
+
+u.port('input',  'dm_upd_req_ready', 1);                //FROM DM
+u.port('output', 'dm_upd_req_valid', 1);                //TO   DM, TM
+u.port('output', 'dm_upd_req_addr', W_ADDR);            //TO   DM, TM
+u.port('output', 'dm_upd_req_ns', W_NS);                //TO   DM, TM
+u.port('output', 'dm_upd_req_initiator_id', W_INIT_ID); //TO   DM
+
+u.port('output','ih_alloc_valid', 1);                   //TO   TM //ih_alloc_valid = ih_cmd_req_valid & ih_cmd_req_ready;
+u.port('input', 'ih_alloc_ready', 1);                   //FROM TM
+u.port('input', 'ih_req_alloc_vec', N_ATT);             //FROM TM
+
+//
+// INPUT INTERFACES
+//
+u.port('input', 'ih_upd_req_valid', 1);                 //FROM SB
+u.port('output','ih_upd_req_ready', 1);                 //TO   SB
+u.port('input', 'ih_upd_req_ns', W_NS);                 //FROM SB
+u.port('input', 'ih_upd_req_addr', W_ADDR);             //FROM SB
+u.port('input', 'ih_upd_req_initiator_id', W_INIT_ID);  //FROM SB
+
+u.port('input', 'ih_cmd_req_valid', 1);                 //FROM SB //= skid_buf_cmd_req_valid & cmd_rsp_int_ready
+u.port('output','ih_cmd_req_ready', 1);                 //TO   SB
+u.port('input', 'ih_cmd_req_cm_type', W_CM_TYPE);       //FROM SB
+u.port('input', 'ih_cmd_req_ns', W_NS);                 //FROM SB
+u.port('input', 'ih_cmd_req_addr', W_ADDR);             //FROM SB
+u.port('input', 'ih_cmd_req_initiator_id', W_INIT_ID);  //FROM SB
+u.port('input', 'ih_cmd_req_mpf1', W_MPF1);             //FROM SB
+u.port('input', 'ih_cmd_req_mpf2', W_MPF2);             //FROM SB
+u.port('input', 'ih_cmd_req_es', W_ES);                 //FROM SB
+
+u.port('input', 'dm_rtr_valid', 1);                     //FROM DM
+u.port('output','dm_rtr_ready', 1);                     //TO   DM
+u.port('input', 'dm_rtr_att_vec', N_ATT);               //FROM DM
+u.port('input', 'dm_rtr_req_cm_type', W_CM_TYPE);       //FROM DM
+u.port('input', 'dm_rtr_req_ns', W_NS);                 //FROM DM
+u.port('input', 'dm_rtr_req_addr', W_ADDR);             //FROM DM
+u.port('input', 'dm_rtr_req_initiator_id', W_INIT_ID);  //FROM DM
+u.port('input', 'dm_rtr_req_mpf1', W_MPF1);             //FROM DM
+u.port('input', 'dm_rtr_req_mpf2', W_MPF2);             //FROM DM
+u.port('input', 'dm_rtr_req_es', W_ES);                 //FROM DM
+
+u.port('input', 'tm_cmd_wakeup_req_arb_valid', 1);               //FROM TM
+u.port('output','tm_cmd_wakeup_req_arb_ready', 1);               //TO   TM
+u.port('input', 'att_entry_wakeup_req_cm_type', W_CM_TYPE);      //FROM TM
+u.port('input', 'att_entry_wakeup_req_ns', W_NS);                //FROM TM
+u.port('input', 'att_entry_wakeup_req_addr', W_ADDR);            //FROM TM
+u.port('input', 'att_entry_wakeup_req_initiator_id', W_INIT_ID); //FROM TM
+u.port('input', 'att_entry_wakeup_req_mpf1', W_MPF1);            //FROM TM
+u.port('input', 'att_entry_wakeup_req_mpf2', W_MPF2);            //FROM TM
+u.port('input', 'att_entry_wakeup_req_att_vec', N_ATT);          //FROM TM
+u.port('input', 'att_entry_wakeup_req_es', W_ES);                //FROM TM
+
+
+\jsend
+module \=u.getModuleName()=\
+         (\=u.getPorts('\n    ')=\
+          );
+
+\jsbegin
+//
+// verilog params
+//
+\jsend
+
+localparam
+  NUM_ARB = \=NUM_ARB=\,
+  W_ADDR = \=W_ADDR=\,
+  W_NS = \=W_NS=\,
+  W_ES = \=W_ES=\,
+  W_CM_TYPE = \=W_CM_TYPE=\,
+  W_INIT_ID = \=W_INIT_ID=\,
+  W_MPF1 = \=W_MPF1=\,
+  W_MPF2 = \=W_MPF2=\,
+  W_FUNIT_ID = \=W_FUNIT_ID=\,
+  W_FPORT_ID = \=W_FPORT_ID=\,
+  N_ATT = \=N_ATT=\;
+          
+wire [NUM_ARB-1:0]  ih_cmd_arb_in_req_valid, ih_cmd_arb_in_req_ready, ih_cmd_arb_in_req_last, ih_cmd_arb_in_req_grant;
+wire [W_CM_TYPE-1:0] ih_cmd_arb_out_req_cm_type;
+wire [W_NS-1:0]   ih_cmd_arb_out_req_ns;   
+wire [W_ES-1:0]   ih_cmd_arb_out_req_es;   
+wire [W_ADDR-1:0] ih_cmd_arb_out_req_addr;
+wire [W_INIT_ID-1:0] ih_cmd_arb_out_req_initiator_id, ih_cmd_arb_out_req_stash_id;
+wire [W_MPF1-1:0] ih_cmd_arb_out_req_mpf1;
+wire [W_MPF2-1:0] ih_cmd_arb_out_req_mpf2;   
+wire ih_cmd_arb_out_req_valid, ih_cmd_arb_out_req_ready;
+
+wire                     ih_cmd_wakeup_req_valid;
+wire                     ih_cmd_wakeup_req_ready;
+wire [\=W_CM_TYPE-1=\:0] ih_cmd_wakeup_req_cm_type;
+wire [\=W_NS-1=\:0]      ih_cmd_wakeup_req_ns;
+wire [\=W_ADDR-1=\:0]    ih_cmd_wakeup_req_addr;
+wire [\=W_INIT_ID-1=\:0] ih_cmd_wakeup_req_initiator_id;
+wire [\=W_MPF1-1=\:0]    ih_cmd_wakeup_req_mpf1;
+wire [\=W_MPF2-1=\:0]    ih_cmd_wakeup_req_mpf2;
+wire [\=W_ES-1=\:0]      ih_cmd_wakeup_req_es;
+wire [\=N_ATT-1=\:0]     ih_cmd_wakeup_req_att_vec;
+   
+wire                     tm_cmd_retry_req_valid;
+wire                     tm_cmd_retry_req_ready;
+wire [\=W_CM_TYPE-1=\:0] tm_cmd_retry_req_cm_type;
+wire [\=W_NS-1=\:0]      tm_cmd_retry_req_ns;
+wire [\=W_ADDR-1=\:0]    tm_cmd_retry_req_addr;
+wire [\=W_INIT_ID-1=\:0] tm_cmd_retry_req_initiator_id;
+wire [\=W_MPF1-1=\:0]    tm_cmd_retry_req_mpf1;
+wire [\=W_MPF2-1=\:0]    tm_cmd_retry_req_mpf2;
+wire [\=W_ES-1=\:0]      tm_cmd_retry_req_es;
+wire [\=N_ATT-1=\:0]     tm_cmd_retry_req_att_vec;
+   
+   
+// update pass through 
+
+assign dm_upd_req_valid = ih_upd_req_valid;
+assign ih_upd_req_ready = dm_upd_req_ready; 
+assign dm_upd_req_ns =  ih_upd_req_ns;
+assign dm_upd_req_addr = ih_upd_req_addr;
+assign dm_upd_req_initiator_id = ih_upd_req_initiator_id;     
+
+assign dm_req_valid = ih_cmd_arb_out_req_valid & ih_cmd_arb_out_req_ready;
+assign ih_cmd_arb_out_req_ready = (ih_cmd_wakeup_req_valid) ? dm_req_ready : dm_req_ready & ih_alloc_ready;
+assign dm_req_type = ih_cmd_arb_out_req_cm_type;
+assign dm_req_ns = ih_cmd_arb_out_req_ns;
+assign dm_req_addr = ih_cmd_arb_out_req_addr;
+assign dm_req_initiator_id = ih_cmd_arb_out_req_initiator_id;
+assign dm_req_stash_id = ih_cmd_arb_out_req_stash_id;
+assign dm_req_mpf1 = ih_cmd_arb_out_req_mpf1;
+assign dm_req_mpf2 = ih_cmd_arb_out_req_mpf2;
+assign dm_req_es = ih_cmd_arb_out_req_es;   
+   
+assign dm_req_alloc_vec = ({N_ATT{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_att_vec) | 
+                          ({N_ATT{~ih_cmd_arb_in_req_grant[0]}} & ih_req_alloc_vec);  
+
+assign dm_req_wakeup_valid = ih_cmd_arb_in_req_grant[0] & dm_req_valid;
+   
+// Cmd arb
+   
+   
+assign ih_cmd_arb_in_req_valid = {(ih_cmd_req_valid & ~ih_cmd_wakeup_req_valid), ih_cmd_wakeup_req_valid};
+assign ih_cmd_arb_in_req_last = {NUM_ARB{1'b1}};
+assign ih_cmd_req_ready = ih_cmd_arb_in_req_ready[1];
+assign ih_cmd_wakeup_req_ready = ih_cmd_arb_in_req_ready[0];
+
+\=u.instance ({
+               instanceName: 'ih_cmd_req_rr_arb',
+               moduleName: 'rr_arb_comb_mux_therm',
+               params: {
+                        num_inputs: NUM_ARB,
+                        interleave_mode : 1
+                        },
+               verilogParams: {},
+               ports: {
+                       clk : 'clk',
+                       reset_n : 'reset_n',
+                       sink_valid : 'ih_cmd_arb_in_req_valid',
+                       sink_last : 'ih_cmd_arb_in_req_last',
+                       sink_ready : 'ih_cmd_arb_in_req_ready',
+                       sink_grant : 'ih_cmd_arb_in_req_grant',
+                       source_valid : 'ih_cmd_arb_out_req_valid',
+                       source_ready : 'ih_cmd_arb_out_req_ready',
+                       source_last  : ''
+                       }
+               })=\
+
+
+assign ih_cmd_arb_out_req_cm_type = ({W_CM_TYPE{ih_cmd_arb_in_req_grant[1]}} & ih_cmd_req_cm_type) |
+                                    ({W_CM_TYPE{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_cm_type);
+
+assign ih_cmd_arb_out_req_ns      = ({W_NS{ih_cmd_arb_in_req_grant[1]}} & ih_cmd_req_ns) |
+                                    ({W_NS{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_ns);
+
+assign ih_cmd_arb_out_req_addr    = ({W_ADDR{ih_cmd_arb_in_req_grant[1]}} & ih_cmd_req_addr) |
+                                    ({W_ADDR{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_addr);
+
+assign ih_cmd_arb_out_req_initiator_id = ({W_INIT_ID{ih_cmd_arb_in_req_grant[1]}} & ih_cmd_req_initiator_id) |
+                                         ({W_INIT_ID{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_initiator_id);
+\js if (wChipletId > 0) {
+
+wire [\=wChipletId-1=\:0] ih_cmd_arb_out_req_initiator_chiplet_id = ih_cmd_arb_out_req_initiator_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\];
+
+assign ih_cmd_arb_out_req_stash_id = {ih_cmd_arb_out_req_initiator_chiplet_id, \=wLinkId=\'d0,
+                                      ih_cmd_arb_out_req_mpf1[W_FUNIT_ID-1:0], {W_FPORT_ID{1'b0}}};
+
+\js } else {
+assign ih_cmd_arb_out_req_stash_id = {ih_cmd_arb_out_req_mpf1[W_FUNIT_ID-1:0], {W_FPORT_ID{1'b0}}};
+\js }
+
+assign ih_cmd_arb_out_req_mpf1 = ({W_MPF1{ih_cmd_arb_in_req_grant[1]}} & ih_cmd_req_mpf1) |
+                                 ({W_MPF1{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_mpf1);
+
+assign ih_cmd_arb_out_req_mpf2 = ({W_MPF2{ih_cmd_arb_in_req_grant[1]}} & ih_cmd_req_mpf2) |
+                                 ({W_MPF2{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_mpf2);
+
+assign ih_cmd_arb_out_req_es = ({W_ES{ih_cmd_arb_in_req_grant[1]}} & ih_cmd_req_es) |
+                               ({W_ES{ih_cmd_arb_in_req_grant[0]}} & ih_cmd_wakeup_req_es);
+
+assign ih_alloc_valid = (ih_cmd_req_valid & ih_cmd_req_ready);
+
+
+
+
+
+// Retry is prioritized over wakeup
+
+assign ih_cmd_wakeup_req_valid      = tm_cmd_retry_req_valid | tm_cmd_wakeup_req_arb_valid;
+
+assign tm_cmd_retry_req_ready       = tm_cmd_retry_req_valid ? ih_cmd_wakeup_req_ready : 1'b0;
+
+assign tm_cmd_wakeup_req_arb_ready  = tm_cmd_retry_req_valid ? 1'b0 : ih_cmd_wakeup_req_ready;
+
+assign ih_cmd_wakeup_req_att_vec      = tm_cmd_retry_req_valid ? tm_cmd_retry_req_att_vec      : att_entry_wakeup_req_att_vec;
+assign ih_cmd_wakeup_req_cm_type      = tm_cmd_retry_req_valid ? tm_cmd_retry_req_cm_type      : att_entry_wakeup_req_cm_type;
+assign ih_cmd_wakeup_req_ns           = tm_cmd_retry_req_valid ? tm_cmd_retry_req_ns           : att_entry_wakeup_req_ns;
+assign ih_cmd_wakeup_req_addr         = tm_cmd_retry_req_valid ? tm_cmd_retry_req_addr         : att_entry_wakeup_req_addr;
+assign ih_cmd_wakeup_req_mpf1         = tm_cmd_retry_req_valid ? tm_cmd_retry_req_mpf1         : att_entry_wakeup_req_mpf1;
+assign ih_cmd_wakeup_req_mpf2         = tm_cmd_retry_req_valid ? tm_cmd_retry_req_mpf2         : att_entry_wakeup_req_mpf2;
+assign ih_cmd_wakeup_req_es           = tm_cmd_retry_req_valid ? tm_cmd_retry_req_es           : att_entry_wakeup_req_es;
+assign ih_cmd_wakeup_req_initiator_id = tm_cmd_retry_req_valid ? tm_cmd_retry_req_initiator_id : att_entry_wakeup_req_initiator_id;
+
+// Retry FIFO
+
+\=u.instance ({
+    instanceName: 'retry_fifo',
+    moduleName: 'fifo',
+    params: {
+        width: W_ES + W_MPF2 + W_MPF1 + W_INIT_ID + W_ADDR + W_NS + W_CM_TYPE + N_ATT,
+        depth: 3,
+        zerodepth: useSramInputFlop ? 1 : 0,
+        bypass_mode: 1,
+        output_empty: 0
+    },
+    ports: {
+        clk        : 'clk',
+        reset_n    : 'reset_n',
+        push_valid : 'dm_rtr_valid',
+        push_ready : 'dm_rtr_ready',
+        push_data  : '{dm_rtr_req_es, dm_rtr_req_mpf2, dm_rtr_req_mpf1, dm_rtr_req_initiator_id, dm_rtr_req_addr, dm_rtr_req_ns, dm_rtr_req_cm_type, dm_rtr_att_vec}',
+        pop_valid  : 'tm_cmd_retry_req_valid',
+        pop_ready  : 'tm_cmd_retry_req_ready',
+        pop_data   : '{tm_cmd_retry_req_es, tm_cmd_retry_req_mpf2, tm_cmd_retry_req_mpf1, tm_cmd_retry_req_initiator_id, tm_cmd_retry_req_addr, tm_cmd_retry_req_ns, tm_cmd_retry_req_cm_type, tm_cmd_retry_req_att_vec}'
+    }
+})=\
+   
+endmodule

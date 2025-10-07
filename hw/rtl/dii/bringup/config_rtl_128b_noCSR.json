@@ -1,0 +1,600 @@
+{
+    "strRtlNamePrefix": "DII",        
+    "wAddr": 48,
+    "wData": 128,
+    "wLargestEndpoint": 22,
+    "wCacheLineOffset": 6,
+    "enableDoublePortBuffer" : 1,
+    "wFPortId": 3,
+    "engVerId": 0,
+    "implVerId": 0,
+    "fnNativeInterface": "AXI",
+    "assertOn": 0,
+    "cmpInfo": {
+        "nNcCmdInFlightToDii": 32,
+        "nRttCtrlEntries": 12,
+        "nWttCtrlEntries": 8,
+        "nDtrInFlight": 8,
+        "nWriteRBIDs": 4,
+	"nWriteBufferEntries" : 32
+    },
+    "useResiliency": 0,
+    "ResilienceInfo": {
+        "enableUnitDuplication": 1,
+	"enableNativeIntfProtection": 0,
+        "nResiliencyDelay": 1,
+        "fnResiliencyProtectionType": "NONE"
+    },
+    "cmType": {
+        "CmdClnInv": "8'h09",
+        "CmdClnVld": "8'h08",	
+        "CmdMkInv": "8'h0A",
+        "CmdRdNC": "8'h0B",
+        "CmdWrNCPtl": "8'h20",
+        "CmdWrNCFull": "8'h21",
+        "CmdClnShPsist": "8'h28",
+        "StrReq": "8'h7A",
+        "NCCmdRsp": "8'hF1",
+        "DtwRsp": "8'hF3",
+        "DtrReq": "8'h80"
+    },
+    "concMuxMsgParams": {
+        "tx": {
+            "ncCmdRsp": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits": 18,
+                "wDpBits": 0
+            },
+            "dtwRsp": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits": 20,
+                "wDpBits": 0
+            },
+            "strReq": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits": 50,
+                "wDpBits": 0
+            },
+            "dtrReq": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 1,
+                "wNdpBits": 33,
+                "wDpBits": 85
+            }
+        },
+        "rx": {
+            "cmdReq": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits": 116,
+                "wDpBits": 0
+            },
+            "strRsp": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits": 18,
+                "wDpBits": 0
+            },
+            "dtrRsp": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 0,
+                "wNdpBits": 20,
+                "wDpBits": 0
+            },
+            "dtwReq": {
+                "enablePipe": 0,
+                "pipeDepth": 2,
+                "dpPresent": 1,
+                "wNdpBits": 42,
+                "wDpBits": 85
+            }
+        }
+    },
+    "concParams": {
+        "hdrParams": {
+            "wTargetId": 10,
+            "wInitiatorId": 10,
+            "wCmType": 8,
+            "wMsgId": 10,
+            "wHProt": 8,
+            "wTTier": 3,
+            "wSteering": 3,
+            "wPriority": 3,
+            "wQl": 3
+        },
+        "cmdReqParams": {
+            "wNdpAux": 2,
+            "wQos": 4,
+            "wTof": 3,
+            "wDId": 10,
+            "wIntfSize": 2,
+            "wSize": 3,
+            "wMpf2": 10,
+            "wMpf1": 10,
+            "wTM": 1,
+            "wRL": 2,
+            "wLK": 2,
+            "wOR": 2,
+            "wPR": 1,
+            "wNS": 1,
+            "wES": 1,
+            "wEN": 1,
+            "wST": 1,
+            "wCH": 1,
+            "wCA": 1,
+            "wAC": 1,
+            "wVZ": 1,
+            "wAddr": 48,
+            "wCmStatus": 8
+        },
+        "strRspParams": {
+            "wCmStatus": 8,
+            "wMsgId": 10
+        },
+        "dtrRspParams": {
+            "wRL": 2,
+            "wCmStatus": 8,
+            "wMsgId": 10
+        },
+        "dtwReqParams": {
+            "wNdpAux": 2,
+            "wMpf2": 10,
+            "wMpf1": 10,
+            "wPrimary": 1,
+            "wTM": 1,
+            "wRL": 2,
+            "wCmStatus": 8,
+            "wRBID": 8,
+            "wDwId": 6,
+            "wDBad": 2,
+            "wData": 128,
+            "wUser": 0
+        },
+        "ncCmdRspParams": {
+            "wCmStatus": 8,
+            "wMsgId": 10
+        },
+        "dtwRspParams": {
+            "wRL": 2,
+            "wCmStatus": 8,
+            "wMsgId": 10
+        },
+        "strReqParams": {
+            "wNdpAux": 2,
+            "wIntfSize": 2,
+            "wMpf2": 10,
+            "wMpf1": 10,
+            "wRBID": 8,
+            "wCmStatus": 8,
+            "wMsgId": 10
+        },
+        "dtrReqParams": {
+            "wNdpAux": 2,
+            "wMpf1": 10,
+            "wTM": 1,
+            "wRL": 2,
+            "wCmStatus": 8,
+            "wMsgId": 10,
+            "wDwId": 6,
+            "wDBad": 2,
+            "wData": 128,
+            "wUser": 0
+        }
+    },
+    "smiPortParams": {
+        "tx": [
+            {
+                "name": "smi_tx0_",
+                "params": {
+                    "fnMsgClass": [
+                        "str_req_"
+                    ],
+		    "fnMsgCmType": [
+			 "8'b0111_1010"
+                    ],
+                    "fPortId": [
+			"3'b000"
+                    ],
+                    "enablePipe": 0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_tx1_",
+                "params": {
+                    "fnMsgClass": [
+                        "nc_cmd_rsp_",
+                        "dtw_rsp_"
+                    ],
+		    "fnMsgCmType": [
+		  	 "8'b1111_0001",
+			 "8'b1111_0011"
+                    ],
+                    "fPortId": [
+			"3'b000",
+                        "3'b000"
+                    ],
+                    "enablePipe": 0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_tx2_",
+                "params": {
+                    "fnMsgClass": [
+                        "dtr_req_"
+                    ],
+		    "fnMsgCmType": [
+		  	"8'b1000_????"
+                    ],
+                    "fPortId": [
+                        "3'b000"
+                    ],
+                    "enablePipe": 0,
+                    "pipeDepth": 1
+                }
+            }
+        ],
+        "rx": [
+            {
+                "name": "smi_rx0_",
+                "params": {
+                    "fnMsgClass": [
+                        "cmd_req_"			
+                    ],
+                    "fPortId": [
+                        "3'b000"			
+                    ],
+                    "fnMsgCmType": [
+                        "8'b00??_????"
+                    ],
+                    "enablePipe": 0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_rx1_",
+                "params": {
+                    "fnMsgClass": [
+                        "dtr_rsp_",
+                        "str_rsp_"
+                    ],
+                    "fPortId": [
+                        "3'b000",
+                        "3'b000"
+                    ],
+                    "fnMsgCmType": [
+                        "8'b1111_0100",
+                        "8'b1111_0111"
+                    ],
+                    "enablePipe": 0,
+                    "pipeDepth": 1
+                }
+            },
+            {
+                "name": "smi_rx2_",
+                "params": {
+                    "fnMsgClass": [
+                        "dtw_req_"			
+                    ],
+                    "fPortId": [
+                        "3'b000"
+                    ],
+                    "fnMsgCmType": [
+                        "8'b1001_????"
+                    ],
+                    "enablePipe": 0,
+                    "pipeDepth": 1
+                }
+            }
+        ]
+    },
+    "interfaces": {
+        "clkInt": {
+            "name": "",
+            "params": {},
+            "direction": "slave",
+            "interface": "InterfaceCLK"
+        },
+        "uIdInt": {
+            "name": "dii_",
+            "params": {
+                "wFUnitId": 7,
+                "wNUnitId": 12,
+                "wNrri": 4,
+                "wRpn": 8
+            },
+            "direction": "slave",
+            "interface": "InterfaceUnitId"
+        },
+        "apbInt": {
+            "name": "dii_apb_",
+            "params": {
+                "wAddr": 12,
+                "wData": 32,
+                "wPSlverr": 1
+            },
+            "direction": "slave",
+            "interface": "InterfaceAPB"
+        },
+        "irqInt": {
+            "name": "dii_irq_",
+            "params": {},
+            "direction": "master",
+            "interface": "InterfaceIRQ"
+        },
+        "axiInt": {
+            "name": "dii_axi_mst_",
+            "params": {
+                "wAddr": 48,
+                "wArUser": 2,
+                "wArId": 2,
+                "wAwUser": 2,
+                "wAwId": 2,
+                "wWUser": 2,
+                "wData": 128,
+                "wRUser": 2,
+                "wBUser": 2,
+                "wLen": 8,
+                "wSize": 3,
+                "wLock": 1,
+                "wProt": 3,
+                "wQos": 4,
+                "wRegion": 4
+            },
+            "direction": "master",
+            "interface": "InterfaceAXI"
+        },
+	"qInt": {
+            "name": "dii_q_",
+            "params": {
+		"wActive" : 1,
+		"channelType" : "Q"
+	    },
+            "direction": "slave",
+            "interface": "InterfacePQChannel"
+        },
+        "smiTxInt": [
+            {
+                "name": "smi_tx0_",
+                "params": {
+                    "nSmiVC": 1,
+                    "wSmiTid": 10,
+                    "wSmiSid": 10,
+                    "wSmiSteer": 3,
+                    "wSmiTier": 3,
+                    "wSmiQos": 3,
+                    "wSmiPri": 3,
+                    "wSmiNDPLen": 8,
+                    "wSmiNDP": 136,
+                    "wSmiId": 10,
+                    "wSmiType": 8,
+                    "wSmiUser": 8,
+                    "wSmiErr": 1,
+                    "wSmiRoute": 0,
+                    "wSmiClass": 0,
+                    "wSmiSeqnum": 0,
+                    "wSmiAddr": 0,
+                    "wSmiLen": 0,
+                    "wSmiVNid": 0,
+                    "wSmiProt": 0,
+                    "wSmiTxnHdr": 0,
+                    "nSmiDPvc": 0,
+                    "wSmiDPlast": 0,
+                    "wSmiDPdata": 0,
+                    "wSmiDPuser": 0,
+                    "wSmiDPbe": 0,
+                    "wSmiDPid": 0,
+                    "wSmiDPerr": 0,
+                    "wSmiDPresp": 0,
+                    "wSmiDPdummy": 0
+                },
+                "direction": "master",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_tx1_",
+                "params": {
+                    "nSmiVC": 1,
+                    "wSmiTid": 10,
+                    "wSmiSid": 10,
+                    "wSmiSteer": 3,
+                    "wSmiTier": 3,
+                    "wSmiQos": 3,
+                    "wSmiPri": 3,
+                    "wSmiNDPLen": 8,
+                    "wSmiNDP": 136,
+                    "wSmiId": 10,
+                    "wSmiType": 8,
+                    "wSmiUser": 8,
+                    "wSmiErr": 1,
+                    "wSmiRoute": 0,
+                    "wSmiClass": 0,
+                    "wSmiSeqnum": 0,
+                    "wSmiAddr": 0,
+                    "wSmiLen": 0,
+                    "wSmiVNid": 0,
+                    "wSmiProt": 0,
+                    "wSmiTxnHdr": 0,
+                    "nSmiDPvc": 0,
+                    "wSmiDPlast": 0,
+                    "wSmiDPdata": 0,
+                    "wSmiDPuser": 0,
+                    "wSmiDPbe": 0,
+                    "wSmiDPid": 0,
+                    "wSmiDPerr": 0,
+                    "wSmiDPresp": 0,
+                    "wSmiDPdummy": 0
+                },
+                "direction": "master",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_tx2_",
+                "params": {
+                    "nSmiVC": 1,
+                    "wSmiTid": 10,
+                    "wSmiSid": 10,
+                    "wSmiSteer": 3,
+                    "wSmiTier": 3,
+                    "wSmiQos": 3,
+                    "wSmiPri": 3,
+                    "wSmiNDPLen": 8,
+                    "wSmiNDP": 136,
+                    "wSmiId": 10,
+                    "wSmiType": 8,
+                    "wSmiUser": 8,
+                    "wSmiErr": 1,
+                    "wSmiRoute": 0,
+                    "wSmiClass": 0,
+                    "wSmiSeqnum": 0,
+                    "wSmiAddr": 0,
+                    "wSmiLen": 0,
+                    "wSmiVNid": 0,
+                    "wSmiProt": 0,
+                    "wSmiTxnHdr": 0,
+                    "nSmiDPvc": 1,
+                    "wSmiDPlast": 1,
+                    "wSmiDPdata": 128,
+                    "wSmiDPuser": 24,
+                    "wSmiDPbe": 0,
+                    "wSmiDPid": 0,
+                    "wSmiDPerr": 0,
+                    "wSmiDPresp": 0,
+                    "wSmiDPdummy": 0
+                },
+                "direction": "master",
+                "interface": "InterfaceSMI"
+            }
+        ],
+        "smiRxInt": [
+            {
+                "name": "smi_rx0_",
+                "params": {
+                    "nSmiVC": 1,
+                    "wSmiTid": 10,
+                    "wSmiSid": 10,
+                    "wSmiSteer": 3,
+                    "wSmiTier": 3,
+                    "wSmiQos": 3,
+                    "wSmiPri": 3,
+                    "wSmiNDPLen": 8,
+                    "wSmiNDP": 136,
+                    "wSmiId": 10,
+                    "wSmiType": 8,
+                    "wSmiUser": 8,
+                    "wSmiErr": 1,
+                    "wSmiRoute": 0,
+                    "wSmiClass": 0,
+                    "wSmiSeqnum": 0,
+                    "wSmiAddr": 0,
+                    "wSmiLen": 0,
+                    "wSmiVNid": 0,
+                    "wSmiProt": 0,
+                    "wSmiTxnHdr": 0,
+                    "nSmiDPvc": 0,
+                    "wSmiDPlast": 0,
+                    "wSmiDPdata": 0,
+                    "wSmiDPuser": 0,
+                    "wSmiDPbe": 0,
+                    "wSmiDPid": 0,
+                    "wSmiDPerr": 0,
+                    "wSmiDPresp": 0,
+                    "wSmiDPdummy": 0
+                },
+                "direction": "slave",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_rx1_",
+                "params": {
+                    "nSmiVC": 1,
+                    "wSmiTid": 10,
+                    "wSmiSid": 10,
+                    "wSmiSteer": 3,
+                    "wSmiTier": 3,
+                    "wSmiQos": 3,
+                    "wSmiPri": 3,
+                    "wSmiNDPLen": 8,
+                    "wSmiNDP": 136,
+                    "wSmiId": 10,
+                    "wSmiType": 8,
+                    "wSmiUser": 8,
+                    "wSmiErr": 1,
+                    "wSmiRoute": 0,
+                    "wSmiClass": 0,
+                    "wSmiSeqnum": 0,
+                    "wSmiAddr": 0,
+                    "wSmiLen": 0,
+                    "wSmiVNid": 0,
+                    "wSmiProt": 0,
+                    "wSmiTxnHdr": 0,
+                    "nSmiDPvc": 0,
+                    "wSmiDPlast": 0,
+                    "wSmiDPdata": 0,
+                    "wSmiDPuser": 0,
+                    "wSmiDPbe": 0,
+                    "wSmiDPid": 0,
+                    "wSmiDPerr": 0,
+                    "wSmiDPresp": 0,
+                    "wSmiDPdummy": 0
+                },
+                "direction": "slave",
+                "interface": "InterfaceSMI"
+            },
+            {
+                "name": "smi_rx2_",
+                "params": {
+                    "nSmiVC": 1,
+                    "wSmiTid": 10,
+                    "wSmiSid": 10,
+                    "wSmiSteer": 3,
+                    "wSmiTier": 3,
+                    "wSmiQos": 3,
+                    "wSmiPri": 3,
+                    "wSmiNDPLen": 8,
+                    "wSmiNDP": 136,
+                    "wSmiId": 10,
+                    "wSmiType": 8,
+                    "wSmiUser": 8,
+                    "wSmiErr": 1,
+                    "wSmiRoute": 0,
+                    "wSmiClass": 0,
+                    "wSmiSeqnum": 0,
+                    "wSmiAddr": 0,
+                    "wSmiLen": 0,
+                    "wSmiVNid": 0,
+                    "wSmiProt": 0,
+                    "wSmiTxnHdr": 0,
+                    "nSmiDPvc": 1,
+                    "wSmiDPlast": 1,
+                    "wSmiDPdata": 128,
+                    "wSmiDPuser": 24,
+                    "wSmiDPbe": 0,
+                    "wSmiDPid": 0,
+                    "wSmiDPerr": 0,
+                    "wSmiDPresp": 0,
+                    "wSmiDPdummy": 0
+                },
+                "direction": "slave",
+                "interface": "InterfaceSMI"
+            }
+        ]
+    },
+    "readBufferDepth" : 4,    
+    "DataMem": {
+                "rtlPrefixString": "RAM_read_buffer_data",
+                "MemType": "NONE",
+                "Signals": []
+    } 
+}

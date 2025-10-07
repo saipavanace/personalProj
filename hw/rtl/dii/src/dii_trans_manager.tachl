@@ -1,0 +1,163 @@
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines the dii transaction manager which manages DTRReq and STRReq credits.
+//
+//=============================================================================
+
+var u                  = obj.lib;
+var memFunctions       = obj.userLib;
+var bundleFunctions    = obj.userLib.bundleFunctions;
+var log2ceil           = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+//=============================================================================
+// Top Level Parameters
+//=============================================================================
+
+var nAius              = u.getParam("nAius");
+var wFUnitId           = u.getParam("wFUnitId");
+var nDtrReqCredits     = u.getParam("nDtrReqCredits");
+var nStrReqCredits     = u.getParam("nStrReqCredits");
+var wTargetId          = u.getParam("wTargetId");
+var wInitiatorId       = u.getParam("wInitiatorId");
+var aiuInterface       = u.getParam("aiuInterface");
+var wDtrCredit         = log2ceil(nDtrReqCredits)+1;
+var wStrCredit         = log2ceil(nStrReqCredits)+1;
+
+//=============================================================================
+// Top Level Ports
+//=============================================================================
+
+u.port('input' , 'clk'                       , 1);
+u.port('input' , 'reset_n'                   , 1);
+
+obj.lib.interface('', 'slave', aiuInterface);
+
+u.port('input' , 'str_req_valid'             , 1);
+u.port('input' , 'str_req_ready'             , 1);
+u.port('input' , 'str_req_last'              , 1);
+u.port('input' , 'str_req_target_id'         , wTargetId);
+
+u.port('input' , 'dtr_req_valid'             , 1);
+u.port('input' , 'dtr_req_ready'             , 1);
+u.port('input' , 'dtr_req_last'              , 1);
+u.port('input' , 'dtr_req_target_id'         , wTargetId);
+
+u.port('input' , 'str_rsp_valid'             , 1);
+u.port('input' , 'str_rsp_ready'             , 1);
+u.port('input' , 'str_rsp_initiator_id'      , wInitiatorId);
+
+u.port('input' , 'dtr_rsp_valid'             , 1);
+u.port('input' , 'dtr_rsp_ready'             , 1);
+u.port('input' , 'dtr_rsp_initiator_id'      , wInitiatorId);
+
+u.port('output', 'str_req_has_credits'       , 1);
+u.port('output', 'dtr_req_has_credits'       , 1);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+//=============================================================================
+// Wires
+//=============================================================================
+
+wire [\=nAius=\-1:0] str_has_credit;
+wire [\=nAius=\-1:0] dtr_has_credit;
+
+//=============================================================================
+// STRReq Credits
+//=============================================================================
+
+\jsbegin
+for (var aiu = 0; aiu < nAius; aiu = aiu + 1){
+\jsend
+
+//-----------------------------------------------------------------------------
+// STR Credit Counter for AIU \=aiu=\
+
+wire str_currently_targeted_\=aiu=\                 =  str_req_target_id[\=wTargetId-1=\:\=wTargetId-wFUnitId=\] == f_unit_id[\=(aiu+1)*wFUnitId-1=\:\=aiu*wFUnitId=\];
+wire str_credit_cnt_up\=aiu=\                       =  str_rsp_valid & str_rsp_ready & (str_rsp_initiator_id[\=wInitiatorId-1=\:\=wInitiatorId-wFUnitId=\] == f_unit_id[\=(aiu+1)*wFUnitId-1=\:\=aiu*wFUnitId=\]);
+wire str_credit_cnt_down\=aiu=\                     =  str_req_valid & str_req_ready & str_req_last & (str_req_target_id[\=wTargetId-1=\:\=wTargetId-wFUnitId=\] == f_unit_id[\=(aiu+1)*wFUnitId-1=\:\=aiu*wFUnitId=\]);
+wire str_credit_en_aiu\=aiu=\                       =  str_credit_cnt_up\=aiu=\ | str_credit_cnt_down\=aiu=\;
+
+reg  [\=wStrCredit-1=\:0] str_credit_nxt\=aiu=\;
+wire [\=wStrCredit-1=\:0] str_credit_\=aiu=\;
+
+always @ (*) begin
+  if(str_credit_cnt_up\=aiu=\ & str_credit_cnt_down\=aiu=\) begin
+       str_credit_nxt\=aiu=\ = str_credit_\=aiu=\;
+  end else if (str_credit_cnt_up\=aiu=\) begin
+       str_credit_nxt\=aiu=\ = str_credit_\=aiu=\ + 1;
+  end else if (str_credit_cnt_down\=aiu=\) begin
+       str_credit_nxt\=aiu=\ = str_credit_\=aiu=\ - 1;
+  end else begin
+       str_credit_nxt\=aiu=\ = str_credit_\=aiu=\;
+  end
+end
+
+\=u.dffre(       wStrCredit
+              , 'str_credit_'+aiu
+	      , 'str_credit_nxt'+aiu
+	      , wStrCredit+'\'d' + nStrReqCredits
+	      , 'str_credit_en_aiu'+ aiu
+	      , 'clk'
+	      , 'reset_n')=\
+
+assign str_has_credit[\=aiu=\] = (\='str_credit_'+aiu=\ != 0)  & str_currently_targeted_\=aiu=\;
+\jsbegin
+}
+\jsend
+
+//=============================================================================
+// DTRReq Credits
+//=============================================================================
+
+\jsbegin
+for (var aiu = 0; aiu < nAius; aiu = aiu + 1){
+\jsend
+
+//-----------------------------------------------------------------------------
+// STR Credit Counter for AIU \=aiu=\
+
+wire dtr_currently_targeted_\=aiu=\                 =  dtr_req_target_id[\=wTargetId-1=\:\=wTargetId-wFUnitId=\] == f_unit_id[\=(aiu+1)*wFUnitId-1=\:\=aiu*wFUnitId=\];
+wire dtr_credit_cnt_up\=aiu=\                       =  dtr_rsp_valid & dtr_rsp_ready & (dtr_rsp_initiator_id[\=wInitiatorId-1=\:\=wInitiatorId-wFUnitId=\] == f_unit_id[\=(aiu+1)*wFUnitId-1=\:\=aiu*wFUnitId=\]);
+wire dtr_credit_cnt_down\=aiu=\                     =  dtr_req_valid & dtr_req_ready & dtr_req_last & (dtr_req_target_id[\=wTargetId-1=\:\=wTargetId-wFUnitId=\] == f_unit_id[\=(aiu+1)*wFUnitId-1=\:\=aiu*wFUnitId=\]);
+wire dtr_credit_en_aiu\=aiu=\                       =  dtr_credit_cnt_up\=aiu=\ | dtr_credit_cnt_down\=aiu=\;
+
+reg  [\=wDtrCredit-1=\:0] dtr_credit_nxt\=aiu=\;
+wire [\=wDtrCredit-1=\:0] dtr_credit_\=aiu=\;
+
+always @ (*) begin
+  if(dtr_credit_cnt_up\=aiu=\ & dtr_credit_cnt_down\=aiu=\) begin
+       dtr_credit_nxt\=aiu=\ = dtr_credit_\=aiu=\;
+  end else if (dtr_credit_cnt_up\=aiu=\) begin
+       dtr_credit_nxt\=aiu=\ = dtr_credit_\=aiu=\ + 1;
+  end else if (dtr_credit_cnt_down\=aiu=\) begin
+       dtr_credit_nxt\=aiu=\ = dtr_credit_\=aiu=\ - 1;
+  end else begin
+       dtr_credit_nxt\=aiu=\ = dtr_credit_\=aiu=\;
+  end
+end
+
+\=u.dffre(       wDtrCredit
+              , 'dtr_credit_'+aiu
+	      , 'dtr_credit_nxt'+aiu
+	      ,  wDtrCredit+'\'d' + nDtrReqCredits
+	      , 'dtr_credit_en_aiu'+ aiu
+	      , 'clk'
+	      , 'reset_n')=\
+
+assign dtr_has_credit[\=aiu=\] = (\='dtr_credit_'+aiu=\ != 0) & dtr_currently_targeted_\=aiu=\;
+\jsbegin
+}
+\jsend
+
+//=============================================================================
+// Credit Grant
+//=============================================================================
+
+assign str_req_has_credits = |str_has_credit;
+assign dtr_req_has_credits = |dtr_has_credit;
+
+endmodule

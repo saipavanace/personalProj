@@ -1,0 +1,1072 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2025 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DVE Remote Manager
+// Author: Boon Chuan
+// Filename: dve_remote_man.tachl
+//=============================================================================
+// This module converts remote DVM snoop request transaction to local DVM request transaction
+// for the DVE Skid Buffer that guarantees that the STRreq order is the same as CMDreq order.
+// This module guarantees that the DTWreq order is the same as CMDreq order.
+// This module assumes SNPreq Part 1 and Part 2 arrives in order and non-interleaved.
+// CMPrsp for this module can be out-of-order and is forwarded as SNPrsp.
+//
+// -> SNPreq part 1
+//   -> SNPreq part 2
+//     -> CMDreq
+//       <- CMDrsp
+//       <- STRreq
+//         -> DTWreq
+//           <- DTWrsp
+//             <- CMPrsp
+//               <- SNPrsp
+//               -> STRrsp
+//
+//
+// SNPreq -+-> Part1 FIFO -> When    +-> CMDreq FIFO --> CMDreq
+//         |                 both  --|
+//         +-> Part2 FIFO -> valid   +-> DTWreqPre FIFO -> Wait for STRreq -> DTWreq FIFO -> DTWreq
+//
+// CMPrsp -+-> STRrsp FIFO -> STRrsp
+//         |
+//         +-> SNPrsp FIFO -> SNPrsp
+//
+// CMDrsp accept and drop.
+// DTWrsp accept and drop.
+//
+//
+// assign cmdreq_fifo__push_valid = snpreq1_fifo__pop_valid & snpreq2_fifo__pop_valid;
+// assign dtwreqpre_fifo__push_valid = cmdreq_fifo__push_valid;
+//
+// assign snpreq1_fifo__pop_ready = cmdreq_fifo__push_valid & cmdreq_fifo__push_ready;
+// assign snpreq2_fifo__pop_ready = snpreq1_fifo__pop_ready;
+//
+// assign dtwreq_fifo__push_valid = dvm_strreq_valid & dvm_strreq_ready;
+// assign dtwreqpre_fifo__pop_ready = dtwreq_fifo__push_valid;
+//
+//=============================================================================
+
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var assertOn           = obj.lib.getParam('assertOn');
+var wTraceMe           = obj.lib.getParam('wTraceMe');
+var wDvmReqAddr        = obj.lib.getParam('wDvmReqAddr');    // AMBA 5 CHI DVM requires 44,45,46..52
+var wDvmReqData        = obj.lib.getParam('wDvmReqData');    // Always 64 as DVM data payload is always lower 64 bits.
+var wDvmReqAttr        = obj.lib.getParam('wDvmReqAttr');
+var wDvmReqAiuId       = obj.lib.getParam('wDvmReqAiuId');
+var wDvmReqMsgId       = obj.lib.getParam('wDvmReqMsgId');
+var wDvmReqQos         = obj.lib.getParam('wDvmReqQos');
+var wDvmReqPriority    = obj.lib.getParam('wDvmReqPriority');
+var nSkidEntries       = obj.lib.getParam('nSkidEntries');
+var nSttEntries        = obj.lib.getParam('nSttEntries');
+var wSttId             = obj.lib.getParam('wSttId');
+
+var wSkidEntries       = Math.max(1, log2ceil(nSkidEntries));
+
+var wSnpReq1Fifo       = 8 + wSttId + wDvmReqAddr + 8 + 8 + wDvmReqAttr + (wDvmReqAiuId * 2) + wDvmReqQos + wDvmReqPriority;
+var wSnpReq2Fifo       = wDvmReqAddr + 8 + 8;
+var wSnpRspFifo        = 8 + wSttId + wDvmReqAiuId;
+var wCmdReqFifo        = 8 + wDvmReqAddr + wDvmReqAttr + wDvmReqAiuId + wDvmReqMsgId + wDvmReqQos + wDvmReqPriority;
+var wStrReqFifo        = wSkidEntries + wSttId + wDvmReqAiuId + wDvmReqMsgId + wDvmReqPriority + wTraceMe;
+var wDtwReqPreFifo     = 8 + wDvmReqData + 1 + wDvmReqAiuId + wDvmReqMsgId + wDvmReqPriority + wTraceMe;
+var wDtwReqFifo        = 8 + wDvmReqData + 1 + wSkidEntries + wDvmReqAiuId + wDvmReqMsgId + wDvmReqPriority + wTraceMe;
+var wDtwRspFifo        = wDvmReqMsgId + wDvmReqAiuId + wDvmReqPriority;
+var wStrRspFifo        = wSttId;
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+obj.lib.port('input',  'clk',      1);
+obj.lib.port('input',  'reset_n',  1);
+obj.lib.port('output', 'busy',     1);
+
+
+// Input DVM SNPreq
+obj.lib.port('input',  'dvm_snpreq_valid',  1);
+obj.lib.port('output', 'dvm_snpreq_ready',  1);
+obj.lib.port('input',  'dvm_snpreq_cmstatus', 8);
+obj.lib.port('input',  'dvm_snpreq_sttid',  wSttId);
+obj.lib.port('input',  'dvm_snpreq_addr',   wDvmReqAddr);
+obj.lib.port('input',  'dvm_snpreq_mpf1', 8); // vmidext is sent in snoop part 1
+obj.lib.port('input',  'dvm_snpreq_mpf2', wDvmReqAiuId);
+obj.lib.port('input',  'dvm_snpreq_mpf3', 8);
+obj.lib.port('input',  'dvm_snpreq_attr',   wDvmReqAttr);
+obj.lib.port('input',  'dvm_snpreq_aiuid',  wDvmReqAiuId);
+    if (wDvmReqQos > 0) {
+obj.lib.port('input',  'dvm_snpreq_qos',    wDvmReqQos);
+    }
+    if (wDvmReqPriority > 0) {
+obj.lib.port('input',  'dvm_snpreq_priority', wDvmReqPriority);
+    }
+
+// Output DVM SNPrsp
+obj.lib.port('output', 'dvm_snprsp_valid',   1);
+obj.lib.port('input',  'dvm_snprsp_ready',   1);
+obj.lib.port('output', 'dvm_snprsp_aiuid',   wDvmReqAiuId);
+obj.lib.port('output', 'dvm_snprsp_sttid',   wSttId);
+obj.lib.port('output', 'dvm_snprsp_cmstatus', 8);
+
+
+
+// Output DVM CMDreq
+obj.lib.port('output', 'dvm_cmdreq_valid',  1);
+obj.lib.port('input',  'dvm_cmdreq_ready',  1);
+obj.lib.port('output', 'dvm_cmdreq_cmstatus', 8);
+obj.lib.port('output', 'dvm_cmdreq_addr',   wDvmReqAddr);
+obj.lib.port('output', 'dvm_cmdreq_attr',   wDvmReqAttr);
+obj.lib.port('output', 'dvm_cmdreq_aiuid',  wDvmReqAiuId);
+obj.lib.port('output', 'dvm_cmdreq_msgid',  wDvmReqMsgId);
+    if (wDvmReqQos > 0) {
+obj.lib.port('output', 'dvm_cmdreq_qos',    wDvmReqQos);
+    }
+    if (wDvmReqPriority > 0) {
+obj.lib.port('output', 'dvm_cmdreq_priority', wDvmReqPriority);
+    }
+
+// Input DVM CMDrsp
+obj.lib.port('input',  'dvm_cmdrsp_valid',  1);
+obj.lib.port('output', 'dvm_cmdrsp_ready',  1);
+obj.lib.port('input',  'dvm_cmdrsp_aiuid',  wDvmReqAiuId);
+obj.lib.port('input',  'dvm_cmdrsp_msgid',  wDvmReqMsgId); //this is the RMessageId
+obj.lib.port('input',  'dvm_cmdrsp_sttid',  wSttId);
+obj.lib.port('input',  'dvm_cmdrsp_cmstatus', 8);
+    if (wDvmReqPriority > 0) {
+obj.lib.port('input',  'dvm_cmdrsp_priority', wDvmReqPriority);
+    }
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+obj.lib.port('input',  'dvm_cmdrsp_tm', wTraceMe);
+    }
+
+// Input DVM STRreq
+obj.lib.port('input',  'dvm_strreq_valid',  1);
+obj.lib.port('output', 'dvm_strreq_ready',  1);
+obj.lib.port('input',  'dvm_strreq_rbid',   wSkidEntries);
+obj.lib.port('input',  'dvm_strreq_sttid',  wSttId);
+obj.lib.port('input',  'dvm_strreq_aiuid',  wDvmReqAiuId);
+obj.lib.port('input',  'dvm_strreq_msgid',  wDvmReqMsgId); //this is the RMessageId
+    if (wDvmReqPriority > 0) {
+obj.lib.port('input',  'dvm_strreq_priority', wDvmReqPriority);
+    }
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+obj.lib.port('input',  'dvm_strreq_tm', wTraceMe);
+    }
+
+// Output DVM DTWreq 
+obj.lib.port('output', 'dvm_dtwreq_valid',  1);
+obj.lib.port('input',  'dvm_dtwreq_ready',  1);
+obj.lib.port('output', 'dvm_dtwreq_last',   1);
+obj.lib.port('output', 'dvm_dtwreq_cmstatus', 8);
+obj.lib.port('output', 'dvm_dtwreq_data',   wDvmReqData);
+obj.lib.port('output', 'dvm_dtwreq_dbad',   1);
+obj.lib.port('output', 'dvm_dtwreq_rbid',   wSkidEntries);
+obj.lib.port('output', 'dvm_dtwreq_aiuid',  wDvmReqAiuId);
+obj.lib.port('output', 'dvm_dtwreq_msgid',  wDvmReqMsgId);
+    if (wDvmReqPriority > 0) {
+obj.lib.port('output', 'dvm_dtwreq_priority', wDvmReqPriority);
+    }
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+obj.lib.port('output', 'dvm_dtwreq_tm', wTraceMe);
+    }
+
+// Input DVM DTWrsp 
+obj.lib.port('input',  'dvm_dtwrsp_valid',  1);
+obj.lib.port('output', 'dvm_dtwrsp_ready',  1);
+obj.lib.port('input',  'dvm_dtwrsp_aiuid',  wDvmReqAiuId);
+obj.lib.port('input',  'dvm_dtwrsp_msgid',  wDvmReqMsgId);
+obj.lib.port('input',  'dvm_dtwrsp_cmstatus', 8);
+obj.lib.port('input',  'dvm_dtwrsp_dbad',   1);
+    if (wDvmReqPriority > 0) {
+obj.lib.port('input',  'dvm_dtwrsp_priority', wDvmReqPriority);
+    }
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+obj.lib.port('input',  'dvm_dtwrsp_tm', wTraceMe);
+    }
+
+
+// Input DVM CMPrsp
+obj.lib.port('input',  'dvm_cmp_valid',  1);
+obj.lib.port('output', 'dvm_cmp_ready',  1);
+obj.lib.port('input',  'dvm_cmp_sttid',  wSttId);
+obj.lib.port('input',  'dvm_cmp_aiuid',  wDvmReqAiuId);
+obj.lib.port('input',  'dvm_cmp_msgid',  wDvmReqMsgId);
+obj.lib.port('input',  'dvm_cmp_cmstatus', 8);
+    if (wDvmReqPriority > 0) {
+obj.lib.port('input',  'dvm_cmp_priority', wDvmReqPriority);
+    }
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+obj.lib.port('input',  'dvm_cmp_tm', wTraceMe);
+    }
+
+// Output DVM STRrsp
+obj.lib.port('output', 'dvm_strrsp_valid',   1);
+obj.lib.port('input',  'dvm_strrsp_ready',   1);
+obj.lib.port('output', 'dvm_strrsp_sttid',   wSttId);
+
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+
+wire snpreq1_fifo__push_ready;
+wire snpreq2_fifo__push_ready;
+wire snpreq1_fifo__push_valid;
+wire snpreq2_fifo__push_valid;
+wire [\=wSnpReq1Fifo-1=\:0] snpreq1_fifo__push_bundle;
+wire [\=wSnpReq2Fifo-1=\:0] snpreq2_fifo__push_bundle;
+wire [\=wSnpReq1Fifo-1=\:0] snpreq1_fifo__pop_bundle;
+wire [\=wSnpReq2Fifo-1=\:0] snpreq2_fifo__pop_bundle;
+wire snpreq1_fifo__pop_valid;
+wire snpreq2_fifo__pop_valid;
+wire snpreq1_fifo__pop_ready;
+wire snpreq2_fifo__pop_ready;
+
+wire cmdreq_fifo__push_ready;
+wire cmdreq_fifo__push_valid;
+wire [\=wCmdReqFifo-1=\:0] cmdreq_fifo__push_bundle;
+wire [\=wCmdReqFifo-1=\:0] cmdreq_fifo__pop_bundle;
+wire cmdreq_fifo__pop_valid;
+wire cmdreq_fifo__pop_ready;
+
+wire dtwreqpre_fifo__push_ready;
+wire dtwreqpre_fifo__push_valid;
+wire [\=wDtwReqPreFifo-1=\:0] dtwreqpre_fifo__push_bundle;
+wire [\=wDtwReqPreFifo-1=\:0] dtwreqpre_fifo__pop_bundle;
+wire dtwreqpre_fifo__pop_valid;
+wire dtwreqpre_fifo__pop_ready;
+
+wire dtwreq_fifo__push_ready;
+wire dtwreq_fifo__push_valid;
+wire [\=wDtwReqFifo-1=\:0] dtwreq_fifo__push_bundle;
+wire [\=wDtwReqFifo-1=\:0] dtwreq_fifo__pop_bundle;
+wire dtwreq_fifo__pop_valid;
+wire dtwreq_fifo__pop_ready;
+
+wire strrsp_fifo__push_ready;
+wire strrsp_fifo__push_valid;
+wire [\=wStrRspFifo-1=\:0] strrsp_fifo__push_bundle;
+wire [\=wStrRspFifo-1=\:0] strrsp_fifo__pop_bundle;
+wire strrsp_fifo__pop_valid;
+wire strrsp_fifo__pop_ready;
+
+wire snprsp_fifo__push_ready;
+wire snprsp_fifo__push_valid;
+wire [\=wSnpRspFifo-1=\:0] snprsp_fifo__push_bundle;
+wire [\=wSnpRspFifo-1=\:0] snprsp_fifo__pop_bundle;
+wire snprsp_fifo__pop_valid;
+wire snprsp_fifo__pop_ready;
+
+
+
+
+wire [7:0] snpreq1_fifo__pop_cmstatus;
+wire [\=wSttId-1=\:0] snpreq1_fifo__pop_sttid;
+wire [\=wDvmReqAddr-1=\:0] snpreq1_fifo__pop_addr;
+wire [\=wDvmReqAddr-1=\:0] snpreq2_fifo__pop_addr;
+wire [7:0] snpreq1_fifo__pop_mpf1;
+wire [7:0] snpreq2_fifo__pop_mpf1;
+wire [\=wDvmReqAiuId-1=\:0] snpreq1_fifo__pop_mpf2;
+wire [7:0] snpreq1_fifo__pop_mpf3;
+wire [7:0] snpreq2_fifo__pop_mpf3;
+wire [\=wDvmReqAttr-1=\:0] snpreq1_fifo__pop_attr;
+wire [\=wDvmReqAiuId-1=\:0] snpreq1_fifo__pop_aiuid;
+    \js if (wDvmReqQos > 0) {
+wire [\=wDvmReqQos-1=\:0] snpreq1_fifo__pop_qos;
+    \js }
+    \js if (wDvmReqPriority > 0) {
+wire [\=wDvmReqPriority-1=\:0] snpreq1_fifo__pop_priority;
+    \js }
+
+
+wire [7:0] cmdreq_fifo__push_cmstatus;
+wire [\=wDvmReqAddr-1=\:0] cmdreq_fifo__push_addr;
+wire [\=wDvmReqAttr-1=\:0] cmdreq_fifo__push_attr;
+wire [\=wDvmReqAiuId-1=\:0] cmdreq_fifo__push_aiuid;
+wire [\=wDvmReqMsgId-1=\:0] cmdreq_fifo__push_msgid;
+    \js if (wDvmReqQos > 0) {
+wire [\=wDvmReqQos-1=\:0] cmdreq_fifo__push_qos;
+    \js }
+    \js if (wDvmReqPriority > 0) {
+wire [\=wDvmReqPriority-1=\:0] cmdreq_fifo__push_priority;
+    \js }
+
+
+wire [7:0] dtwreqpre_fifo__push_cmstatus;
+wire [\=wDvmReqData-1=\:0] dtwreqpre_fifo__push_data;
+wire dtwreqpre_fifo__push_dbad;
+wire [\=wDvmReqAiuId-1=\:0] dtwreqpre_fifo__push_aiuid;
+wire [\=wDvmReqMsgId-1=\:0] dtwreqpre_fifo__push_msgid;
+    \js if (wDvmReqPriority > 0) {
+wire [\=wDvmReqPriority-1=\:0] dtwreqpre_fifo__push_priority;
+    \js }
+    \jsbegin
+    // Ncore3.2 always has a trace bit
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+    \jsend
+wire [\=wTraceMe-1=\:0] dtwreqpre_fifo__push_tm;
+    \js }
+
+wire [7:0] dtwreqpre_fifo__pop_cmstatus;
+wire [\=wDvmReqData-1=\:0] dtwreqpre_fifo__pop_data;
+wire dtwreqpre_fifo__pop_dbad;
+wire [\=wDvmReqAiuId-1=\:0] dtwreqpre_fifo__pop_aiuid;
+wire [\=wDvmReqMsgId-1=\:0] dtwreqpre_fifo__pop_msgid;
+    \js if (wDvmReqPriority > 0) {
+wire [\=wDvmReqPriority-1=\:0] dtwreqpre_fifo__pop_priority;
+    \js }
+    \jsbegin
+    // Ncore3.2 always has a trace bit
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+    \jsend
+wire [\=wTraceMe-1=\:0] dtwreqpre_fifo__pop_tm;
+    \js }
+
+
+\jsbegin
+//=============================================================================
+// SNPreq Part1 FIFO
+// SNPreq Part2 FIFO
+// SNPreq Ready is ORing of SNPreq Part1 and Part2 FIFOs' Pop Valids
+//=============================================================================
+\jsend
+
+assign snpreq1_fifo__push_valid = dvm_snpreq_valid & ~dvm_snpreq_addr[3]; 
+assign snpreq2_fifo__push_valid = dvm_snpreq_valid &  dvm_snpreq_addr[3]; 
+
+assign dvm_snpreq_ready = (snpreq1_fifo__push_ready & ~dvm_snpreq_addr[3])
+                        | (snpreq2_fifo__push_ready &  dvm_snpreq_addr[3])
+                        ;
+
+assign snpreq1_fifo__push_bundle = {
+    \js if (wDvmReqPriority > 0) {
+    dvm_snpreq_priority,
+    \js }
+    \js if (wDvmReqQos > 0) {
+    dvm_snpreq_qos,
+    \js }
+    dvm_snpreq_aiuid,
+    dvm_snpreq_attr,
+    dvm_snpreq_mpf3,
+    dvm_snpreq_mpf2,
+    dvm_snpreq_mpf1,
+    dvm_snpreq_addr,
+    dvm_snpreq_sttid,
+    dvm_snpreq_cmstatus
+    };
+
+assign snpreq2_fifo__push_bundle = {
+    dvm_snpreq_mpf3,
+    dvm_snpreq_mpf1,
+    dvm_snpreq_addr
+    };
+
+
+assign {
+
+    \js if (wDvmReqPriority > 0) {
+    snpreq1_fifo__pop_priority,
+    \js }
+    \js if (wDvmReqQos > 0) {
+    snpreq1_fifo__pop_qos,
+    \js }
+    snpreq1_fifo__pop_aiuid,
+    snpreq1_fifo__pop_attr,
+    snpreq1_fifo__pop_mpf3,
+    snpreq1_fifo__pop_mpf2,
+    snpreq1_fifo__pop_mpf1,
+    snpreq1_fifo__pop_addr,
+    snpreq1_fifo__pop_sttid,
+    snpreq1_fifo__pop_cmstatus
+
+    } = snpreq1_fifo__pop_bundle;
+
+assign {
+
+    snpreq2_fifo__pop_mpf3,
+    snpreq2_fifo__pop_mpf1,
+    snpreq2_fifo__pop_addr
+
+    } = snpreq2_fifo__pop_bundle;
+
+assign snpreq1_fifo__pop_ready = cmdreq_fifo__push_valid & cmdreq_fifo__push_ready;
+assign snpreq2_fifo__pop_ready = snpreq1_fifo__pop_ready;
+
+\jsbegin
+    var snpreq1FifoParams = {
+        width       : wSnpReq1Fifo,
+        depth       : nSkidEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var snpreq2FifoParams = {
+        width       : wSnpReq2Fifo,
+        depth       : nSkidEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_snpreq1_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'snpreq1_fifo__push_bundle',
+        push_valid          : 'snpreq1_fifo__push_valid',
+        push_ready          : 'snpreq1_fifo__push_ready',
+        pop_data            : 'snpreq1_fifo__pop_bundle',
+        pop_valid           : 'snpreq1_fifo__pop_valid',
+        pop_ready           : 'snpreq1_fifo__pop_ready'
+    };
+    var instance_ports_for_snpreq2_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'snpreq2_fifo__push_bundle',
+        push_valid          : 'snpreq2_fifo__push_valid',
+        push_ready          : 'snpreq2_fifo__push_ready',
+        pop_data            : 'snpreq2_fifo__pop_bundle',
+        pop_valid           : 'snpreq2_fifo__pop_valid',
+        pop_ready           : 'snpreq2_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'snpreq1_fifo',
+        moduleName: 'fifo',
+        params : snpreq1FifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_snpreq1_fifo,
+        portsDelimiter: '\n    '
+    })=\
+    \=obj.lib.instance({
+        instanceName: 'snpreq2_fifo',
+        moduleName: 'fifo',
+        params : snpreq2FifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_snpreq2_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+
+\jsbegin
+//=============================================================================
+//
+// SNPreq Part1 and Part2 together is translated to CMDreq and DTWreq
+//
+//     Write to CMDreq FIFO
+//     Write to DTWreqPre FIFO
+//
+//=============================================================================
+\jsend
+
+
+assign cmdreq_fifo__push_cmstatus = snpreq1_fifo__pop_cmstatus;
+
+    \jsbegin
+    // AMBA spec does not define dvms for address > 48 bits
+    /* istanbul ignore if env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 50) {
+    \jsend
+assign cmdreq_fifo__push_addr[\=wDvmReqAddr-1=\:50] = \=wDvmReqAddr-50=\'b0;
+    \js }
+
+    \jsbegin
+    // AMBA spec does not define dvms for address > 48 bits
+    /* istanbul ignore if env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 49) {
+    \jsend
+assign cmdreq_fifo__push_addr[49] = 1'b0;
+    \js }
+
+    \jsbegin
+    // AMBA spec does not define dvms for address > 48 bits
+    /* istanbul ignore if env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 48) {
+    \jsend
+assign cmdreq_fifo__push_addr[48] = 1'b0;
+    \js }
+
+    \js if (wDvmReqAddr > 47) {
+assign cmdreq_fifo__push_addr[47] = 1'b0;
+    \js }
+    \js if (wDvmReqAddr > 46) {
+assign cmdreq_fifo__push_addr[46] = 1'b0;
+    \js }
+    \js if (wDvmReqAddr > 45) {
+assign cmdreq_fifo__push_addr[45] = 1'b0;
+    \js }
+    \js if (wDvmReqAddr > 44) {
+assign cmdreq_fifo__push_addr[44] = 1'b0;
+    \js }
+    \js if (wDvmReqAddr > 43) {
+assign cmdreq_fifo__push_addr[43] = 1'b0;
+    \js }
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 42) {
+    \jsend
+assign cmdreq_fifo__push_addr[42] = snpreq1_fifo__pop_mpf3[5];
+    \js }
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 41) {
+    \jsend
+assign cmdreq_fifo__push_addr[41] = snpreq1_fifo__pop_mpf3[1];
+    \js }
+
+    \jsbegin
+    // Ncore3.2 always has an addresss width > 40 bits
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 40) {
+    \jsend
+assign cmdreq_fifo__push_addr[40] = snpreq1_fifo__pop_addr[40];
+    \js }
+
+    \jsbegin
+    // Ncore3.2 always has an addresss width > 40 bits
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 32) {
+    \jsend
+assign cmdreq_fifo__push_addr[39:32] = snpreq1_fifo__pop_addr[39:32];
+    \js }
+
+assign cmdreq_fifo__push_addr[31:0] = snpreq1_fifo__pop_addr[31:0];
+
+assign cmdreq_fifo__push_attr     = snpreq1_fifo__pop_attr;
+assign cmdreq_fifo__push_aiuid    = snpreq1_fifo__pop_mpf2; // requesting AIUID
+assign cmdreq_fifo__push_msgid    = snpreq1_fifo__pop_sttid;
+    \js if (wDvmReqQos > 0) {
+assign cmdreq_fifo__push_qos      = snpreq1_fifo__pop_qos;
+    \js }
+    \js if (wDvmReqPriority > 0) {
+assign cmdreq_fifo__push_priority = snpreq1_fifo__pop_priority;
+    \js }
+
+
+
+
+    \jsbegin
+    // Ncore3.2 always has a trace bit
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+    \jsend
+assign dtwreqpre_fifo__push_tm = 1'b0;
+    \js }
+    \js if (wDvmReqPriority > 0) {
+assign dtwreqpre_fifo__push_priority = snpreq1_fifo__pop_priority;
+    \js }
+assign dtwreqpre_fifo__push_msgid = snpreq1_fifo__pop_sttid;
+assign dtwreqpre_fifo__push_aiuid = snpreq1_fifo__pop_mpf2;  // requesting AIUID
+assign dtwreqpre_fifo__push_dbad = 1'b0;
+assign dtwreqpre_fifo__push_cmstatus = snpreq1_fifo__pop_cmstatus;
+
+assign dtwreqpre_fifo__push_data[3:0] = snpreq2_fifo__pop_mpf3[4:1];
+
+assign dtwreqpre_fifo__push_data[31:4] = snpreq2_fifo__pop_addr[31:4];
+
+    \jsbegin
+    // Ncore3.2 always has an addresss width > 40 bits
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 32) {
+    \jsend
+assign dtwreqpre_fifo__push_data[39:32] = snpreq2_fifo__pop_addr[39:32];
+    \js } else {
+assign dtwreqpre_fifo__push_data[39:32] = 8'h0;
+    \js }
+
+    \jsbegin
+    // Ncore3.2 always has an addresss width > 40 bits
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 40) {
+    \jsend
+assign dtwreqpre_fifo__push_data[43:40] = snpreq2_fifo__pop_addr[43:40];
+    \js } else {
+assign dtwreqpre_fifo__push_data[43:40] = 4'b0;
+    \js }
+
+    \js if (wDvmReqAddr > 44) {
+assign dtwreqpre_fifo__push_data[44] = snpreq2_fifo__pop_addr[44];
+    \js } else if (wDvmReqAddr > 40) {
+assign dtwreqpre_fifo__push_data[44] = snpreq1_fifo__pop_addr[41];
+    \js } else {
+assign dtwreqpre_fifo__push_data[44] = 1'b0;
+    \js }
+
+    \js if (wDvmReqAddr > 45) {
+assign dtwreqpre_fifo__push_data[45] = snpreq2_fifo__pop_addr[45];
+    \js } else if (wDvmReqAddr > 40) {
+assign dtwreqpre_fifo__push_data[45] = snpreq1_fifo__pop_addr[42];
+    \js } else {
+assign dtwreqpre_fifo__push_data[45] = 1'b0;
+    \js }
+
+    \js if (wDvmReqAddr > 46) {
+assign dtwreqpre_fifo__push_data[46] = snpreq2_fifo__pop_addr[46];
+    \js } else if (wDvmReqAddr > 40) {
+assign dtwreqpre_fifo__push_data[46] = snpreq1_fifo__pop_addr[43];
+    \js } else {
+assign dtwreqpre_fifo__push_data[46] = 1'b0;
+    \js }
+
+    \js if (wDvmReqAddr > 46) {
+assign dtwreqpre_fifo__push_data[47] = snpreq2_fifo__pop_addr[47];
+    \js } else if (wDvmReqAddr > 44) {
+assign dtwreqpre_fifo__push_data[47] = snpreq2_fifo__pop_addr[44];
+    \js } else {
+assign dtwreqpre_fifo__push_data[47] = 1'b0;
+    \js }
+
+    \jsbegin
+    // AMBA spec does not define dvms for address > 48 bits
+    /* istanbul ignore if env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 48) {
+    \jsend
+assign dtwreqpre_fifo__push_data[48] = snpreq2_fifo__pop_addr[48];
+    \js } else if (wDvmReqAddr > 44) {
+assign dtwreqpre_fifo__push_data[48] = snpreq1_fifo__pop_addr[44];
+    \js } else {
+assign dtwreqpre_fifo__push_data[48] = 1'b0;
+    \js }
+
+    \jsbegin
+    // AMBA spec does not define dvms for address > 48 bits
+    /* istanbul ignore if env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wDvmReqAddr > 49) {
+    \jsend
+assign dtwreqpre_fifo__push_data[49] = snpreq2_fifo__pop_addr[49];
+    \js } else if (wDvmReqAddr > 45) {
+assign dtwreqpre_fifo__push_data[49] = snpreq2_fifo__pop_addr[45];
+    \js } else {
+assign dtwreqpre_fifo__push_data[49] = 1'b0;
+    \js }
+
+    \js if (wDvmReqAddr > 45) {
+assign dtwreqpre_fifo__push_data[50] = snpreq1_fifo__pop_addr[45];
+    \js } else {
+assign dtwreqpre_fifo__push_data[50] = 1'b0;
+    \js }
+
+assign dtwreqpre_fifo__push_data[54:51] = snpreq2_fifo__pop_mpf1[3:0];
+
+assign dtwreqpre_fifo__push_data[55]    = snpreq2_fifo__pop_mpf3[5];
+
+assign dtwreqpre_fifo__push_data[63:56] = snpreq1_fifo__pop_mpf1;
+
+
+
+\js if ( wDvmReqPriority > 0 ) {
+assign dtwreqpre_fifo__push_priority = snpreq1_fifo__pop_priority;
+\js }
+
+
+
+\jsbegin
+//=============================================================================
+//
+// Output CMDreq FIFO
+//
+//=============================================================================
+\jsend
+
+assign cmdreq_fifo__push_valid = snpreq1_fifo__pop_valid & snpreq2_fifo__pop_valid;
+
+assign dvm_cmdreq_valid = cmdreq_fifo__pop_valid;
+
+assign cmdreq_fifo__pop_ready = dvm_cmdreq_ready;
+
+
+assign cmdreq_fifo__push_bundle = {
+
+   \js if (wDvmReqPriority > 0) {
+   cmdreq_fifo__push_priority,
+   \js }
+   \js if (wDvmReqQos > 0) {
+   cmdreq_fifo__push_qos,
+   \js }
+   cmdreq_fifo__push_msgid,
+   cmdreq_fifo__push_aiuid,
+   cmdreq_fifo__push_attr,
+   cmdreq_fifo__push_addr,
+   cmdreq_fifo__push_cmstatus
+
+   };
+
+assign {
+
+   \js if (wDvmReqPriority > 0) {
+   dvm_cmdreq_priority,
+   \js }
+   \js if (wDvmReqQos > 0) {
+   dvm_cmdreq_qos,
+   \js }
+   dvm_cmdreq_msgid,
+   dvm_cmdreq_aiuid,
+   dvm_cmdreq_attr,
+   dvm_cmdreq_addr,
+   dvm_cmdreq_cmstatus
+
+   } = cmdreq_fifo__pop_bundle;
+
+\jsbegin
+    var cmdreqFifoParams = {
+        width       : wCmdReqFifo,
+        depth       : 2,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_cmdreq_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'cmdreq_fifo__push_bundle',
+        push_valid          : 'cmdreq_fifo__push_valid',
+        push_ready          : 'cmdreq_fifo__push_ready',
+        pop_data            : 'cmdreq_fifo__pop_bundle',
+        pop_valid           : 'cmdreq_fifo__pop_valid',
+        pop_ready           : 'cmdreq_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'cmdreq_fifo',
+        moduleName: 'fifo',
+        params : cmdreqFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_cmdreq_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+\jsbegin
+//=============================================================================
+//
+// DTWreqPre FIFO
+//
+//=============================================================================
+\jsend
+
+assign dtwreqpre_fifo__push_valid = cmdreq_fifo__push_valid;
+
+assign dtwreqpre_fifo__pop_ready = dtwreq_fifo__push_valid;
+
+assign dtwreqpre_fifo__push_bundle = {
+
+    \jsbegin
+    // Ncore3.2 always has a trace bit
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+    \jsend
+    dtwreqpre_fifo__push_tm,
+    \js }
+    \js if (wDvmReqPriority > 0) {
+    dtwreqpre_fifo__push_priority,
+    \js }
+    dtwreqpre_fifo__push_msgid,
+    dtwreqpre_fifo__push_aiuid,
+    dtwreqpre_fifo__push_dbad,
+    dtwreqpre_fifo__push_data,
+    dtwreqpre_fifo__push_cmstatus
+
+    };
+
+assign {
+
+    \jsbegin
+    // Ncore3.2 always has a trace bit
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+    \jsend
+    dtwreqpre_fifo__pop_tm,
+    \js }
+    \js if (wDvmReqPriority > 0) {
+    dtwreqpre_fifo__pop_priority,
+    \js }
+    dtwreqpre_fifo__pop_msgid,
+    dtwreqpre_fifo__pop_aiuid,
+    dtwreqpre_fifo__pop_dbad,
+    dtwreqpre_fifo__pop_data,
+    dtwreqpre_fifo__pop_cmstatus
+
+    } = dtwreqpre_fifo__pop_bundle;
+
+\jsbegin
+    var dtwreqpreFifoParams = {
+        width       : wDtwReqPreFifo,
+        depth       : nSkidEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_dtwreqpre_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'dtwreqpre_fifo__push_bundle',
+        push_valid          : 'dtwreqpre_fifo__push_valid',
+        push_ready          : 'dtwreqpre_fifo__push_ready',
+        pop_data            : 'dtwreqpre_fifo__pop_bundle',
+        pop_valid           : 'dtwreqpre_fifo__pop_valid',
+        pop_ready           : 'dtwreqpre_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'dtwreqpre_fifo',
+        moduleName: 'fifo',
+        params : dtwreqpreFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_dtwreqpre_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+
+\jsbegin
+//=============================================================================
+//
+// CMDrsp accept and drop.
+//
+//=============================================================================
+\jsend
+
+assign dvm_cmdrsp_ready = 1'b1;
+
+\jsbegin
+//=============================================================================
+//
+// When STRreq is received, transfer DTWreqPre FIFO to DTWreq FIFO
+//
+//
+// DTWreq FIFO
+//
+//=============================================================================
+\jsend
+
+assign dtwreq_fifo__push_valid = dvm_strreq_valid & dvm_strreq_ready;
+
+assign dvm_strreq_ready = dtwreq_fifo__push_ready;
+
+assign dtwreq_fifo__push_bundle  = {
+
+    \jsbegin
+    // Ncore3.2 always has a trace bit
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+    \jsend
+    dtwreqpre_fifo__pop_tm,
+    \js }
+    \js if (wDvmReqPriority > 0) {
+    dtwreqpre_fifo__pop_priority,
+    \js }
+    dtwreqpre_fifo__pop_msgid,
+    dtwreqpre_fifo__pop_aiuid,
+    dvm_strreq_rbid,
+    dtwreqpre_fifo__pop_dbad,
+    dtwreqpre_fifo__pop_data,
+    dtwreqpre_fifo__pop_cmstatus
+
+    };
+
+assign dvm_dtwreq_valid = dtwreq_fifo__pop_valid;
+
+assign dvm_dtwreq_last  = 1'b1;
+
+assign {
+    dvm_dtwreq_cmstatus,
+    dvm_dtwreq_data,
+    dvm_dtwreq_dbad,
+    dvm_dtwreq_rbid,
+    dvm_dtwreq_aiuid,
+    dvm_dtwreq_msgid,
+    \js if (wDvmReqPriority > 0) {
+    dvm_dtwreq_priority,
+    \js }
+    \jsbegin
+    // Ncore3.2 always has a trace bit
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+    \jsend
+    dvm_dtwreq_tm
+    \js }
+
+    } = dtwreq_fifo__pop_bundle;
+
+assign dtwreq_fifo__pop_ready = dvm_dtwreq_ready;
+
+\jsbegin
+    var dtwreqFifoParams = {
+        width       : wDtwReqFifo,
+        depth       : 2,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_dtwreq_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'dtwreq_fifo__push_bundle',
+        push_valid          : 'dtwreq_fifo__push_valid',
+        push_ready          : 'dtwreq_fifo__push_ready',
+        pop_data            : 'dtwreq_fifo__pop_bundle',
+        pop_valid           : 'dtwreq_fifo__pop_valid',
+        pop_ready           : 'dtwreq_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'dtwreq_fifo',
+        moduleName: 'fifo',
+        params : dtwreqFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_dtwreq_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+\jsbegin
+//=============================================================================
+//
+// DTWrsp accept and drop.
+//
+//=============================================================================
+\jsend
+
+assign dvm_dtwrsp_ready = 1'b1;
+
+\jsbegin
+//=============================================================================
+//
+// CMPrsp writes to both STRrsp FIFO and SNPrsp FIFO.
+//
+//=============================================================================
+\jsend
+
+assign dvm_cmp_ready = strrsp_fifo__push_ready & snprsp_fifo__push_ready;
+
+\jsbegin
+//=============================================================================
+//
+// STRrsp FIFO is written by CMPrsp.
+//
+//=============================================================================
+\jsend
+
+assign strrsp_fifo__push_valid = dvm_cmp_valid;
+
+assign strrsp_fifo__push_bundle = { dvm_cmp_sttid };
+
+
+assign dvm_strrsp_valid = strrsp_fifo__pop_valid;
+
+assign { dvm_strrsp_sttid } = strrsp_fifo__pop_bundle;
+
+assign strrsp_fifo__pop_ready = dvm_strrsp_ready;
+
+\jsbegin
+    var strrspFifoParams = {
+        width       : wStrRspFifo,
+        depth       : nSkidEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_strrsp_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'strrsp_fifo__push_bundle',
+        push_valid          : 'strrsp_fifo__push_valid',
+        push_ready          : 'strrsp_fifo__push_ready',
+        pop_data            : 'strrsp_fifo__pop_bundle',
+        pop_valid           : 'strrsp_fifo__pop_valid',
+        pop_ready           : 'strrsp_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'strrsp_fifo',
+        moduleName: 'fifo',
+        params : strrspFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_strrsp_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+
+\jsbegin
+//=============================================================================
+//
+// SNPrsp FIFO is written by CMPrsp.
+//
+//=============================================================================
+\jsend
+
+assign snprsp_fifo__push_valid = dvm_cmp_valid;
+
+assign snprsp_fifo__push_bundle = { dvm_cmp_aiuid, dvm_cmp_sttid, dvm_cmp_cmstatus };
+
+
+assign dvm_snprsp_valid = snprsp_fifo__pop_valid;
+
+assign snprsp_fifo__pop_ready = dvm_snprsp_ready;
+
+assign { dvm_snprsp_aiuid, dvm_snprsp_sttid, dvm_snprsp_cmstatus } = snprsp_fifo__pop_bundle;
+
+\jsbegin
+    var snprspFifoParams = {
+        width       : wSnpRspFifo,
+        depth       : nSkidEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_snprsp_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'snprsp_fifo__push_bundle',
+        push_valid          : 'snprsp_fifo__push_valid',
+        push_ready          : 'snprsp_fifo__push_ready',
+        pop_data            : 'snprsp_fifo__pop_bundle',
+        pop_valid           : 'snprsp_fifo__pop_valid',
+        pop_ready           : 'snprsp_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'snprsp_fifo',
+        moduleName: 'fifo',
+        params : snprspFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_snprsp_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+
+\jsbegin
+//=============================================================================
+//
+// Busy is ORing of all FIFOs' Pop Valids
+//
+//=============================================================================
+\jsend
+
+assign busy = 
+     snpreq1_fifo__pop_valid 
+   | snpreq2_fifo__pop_valid
+   | cmdreq_fifo__pop_valid
+   | dtwreqpre_fifo__pop_valid
+   | dtwreq_fifo__pop_valid
+   | strrsp_fifo__pop_valid
+   | snprsp_fifo__pop_valid
+   ;
+
+endmodule

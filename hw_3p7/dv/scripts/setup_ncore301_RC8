@@ -1,0 +1,12 @@
+#!/bin/bash -fx
+if [ -z $WORK_TOP ]; 
+then
+    echo "WORK_TOP is not set"
+    exit 1
+fi
+export ARTERISD_LICENSE_FILE=5281@lic-node0.arteris.com
+export PATH="/engr/dev/releases/maestro/build/Ncore3/maestro-product/2021-07-01/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/Ncore3/maestro-product/2021-07-01/maestro-doc/examples/tcllib
+
+source $WORK_TOP/dv/scripts/setup_ncore301_RC8_repos
+

@@ -1,0 +1,84 @@
+#ncore3.2 customer config
+#on 1/12/2023 billc commented out everything, checkin will only use runsim_testlist.json in the future
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n hw_cfg_nxpauto -d INHOUSE_APB_VIP,RTL_DUT,DUMP_ON,ASSERT_ON -y hw_config_nxpauto -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_nxpauto -a -i ncaiu0
+
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n hw_cfg_nxpauto -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 97836535 -u _0
+
+#ioaiu_config1
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n ioaiu_config1 -d INHOUSE_APB_VIP,RTL_DUT,DUMP_ON,ASSERT_ON -y hw_config_07 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7 -a -i ncaiu8
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config1 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+ctrlr_value=0xf,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 31858079 -u _1
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config1 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 5053369 -u _2
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config1 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 58466751 -u _3
+
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n hwcfg2 -d INHOUSE_AXI,INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_2 -i ncaiu0 -a
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n hwcfg2 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoop=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 1 -u _4
+# Cchen node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n hwcfg2 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoop=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 65465132 -u _5
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n hwcfg1 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_DEBUG,+UVM_MAX_QUIT_COUNT=1 -R 31858079 -u _6
+#node $WORK_TOP/../scripts/qrsim.js -a -m -q -e ioaiu -c -n ioaiu_hw_cfg_nxp -d INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON -y hw_config_07 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7 -i ncaiu7
+
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n hw_cfg_22 -d INHOUSE_APB_VIP,RTL_DUT,DUMP_ON,ASSERT_ON -y hw_config_20 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_22 -a -i ncaiu8
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n hw_cfg_22 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoop=0,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 269036383 -u _7
+
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -c -d INHOUSE_APB_VIP,DUMP_ON,USE_DEFAULT_AMAP,ASSERT_ON -q -n config2 -s $WORK_TOP/../test_projects/fsys_v3.0_configs/simple_config2AchlParams.json -U $WORK_TOP/rtl/ioaiu/src/ioaiu_config2.json -a 
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config2 -t bring_up_test -p +hit_pct=20,+k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoops=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 57841089 -u _8
+#2123555
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config2 -t bring_up_test -p +use_full_cl,+k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoops=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 6970433 -u _9
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config2 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoop=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 65465132 -u _10
+
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config2 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoop=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 280792563 -u _11
+#15589856
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config2 -t bring_up_test -p +use_full_cl,+k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoops=500,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 12393079 -u _12
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config2 -t bring_up_test -p +en_dump,+k_num_write_req=0,+k_num_read_req=1,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 12393079 -u _13
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config2 -t bring_up_test -p +en_dump,+k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 12393079 -u _14
+
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n ioaiu_config3 -d INHOUSE_APB_VIP,RTL_DUT,DUMP_ON,ASSERT_ON -y hw_config_07 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7 -a -i ncaiu0
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config3 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 199975881 -u _15
+# node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config3 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_axcache_0_to_dii=1,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 199975881 -u _16
+
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n ioaiu_config4 -d INHOUSE_APB_VIP,RTL_DUT,DUMP_ON,ASSERT_ON -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_2 -a -i ncaiu2
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config4 -t bring_up_test -p +k_num_write_req=1000,+wt_ace_atm_str=5,+wt_ace_full_stash=0,+wt_ace_unq_stash=0,+wt_ace_shared_stash=0,+wt_ace_full_stash=0,+wt_ace_stash_trans=0,+wt_ace_ptl_stash=0,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 269036383 -u _17
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n config4 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 269036383 -u _18
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config4 -t bring_up_test -p +k_num_write_req=1000,+k_num_snoop=1000,+wt_ace_atm_str=5,+wt_ace_full_stash=0,+wt_ace_unq_stash=0,+wt_ace_shared_stash=0,+wt_ace_full_stash=0,+wt_ace_stash_trans=0,+wt_ace_ptl_stash=0,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 269036383 -u _19
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config4 -t bring_up_test -p +k_num_write_req=1000,+k_num_snoop=1000,+wt_ace_atm_str=5,+wt_ace_full_stash=0,+wt_ace_unq_stash=0,+wt_ace_shared_stash=0,+wt_ace_full_stash=0,+wt_ace_stash_trans=0,+wt_ace_ptl_stash=0,+k_num_read_req=1000,+force_single_dvm,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 269036383 -u _20
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config4 -t bring_up_test -p +k_num_write_req=1000,+k_num_snoop=0,+wt_ace_atm_str=5,+wt_ace_full_stash=0,+wt_ace_unq_stash=0,+wt_ace_shared_stash=0,+wt_ace_full_stash=0,+wt_ace_stash_trans=0,+wt_ace_ptl_stash=0,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 269036383 -u _21
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config4 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoop=0,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 269036383 -u _22
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config4 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=0,+k_num_snoop=0,+wt_ace_atm_str=100,+wt_ace_atm_swap=100,wt_ace_atm_comp=100,+wt_ace_atm_ld=100,+wt_ace_full_stash=0,+wt_ace_unq_stash=0,+wt_ace_shared_stash=0,+wt_ace_stash_trans=0,+wt_ace_ptl_stash=0,+wt_ace_wrnosnp=0,+wt_ace_wrunq=0,+wt_ace_wrlnunq=0,wt_ace_wr_bar_tmp=0,+coherent_atomics,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 6186396 -u _23
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_config4 -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=0,k_num_snoop=0,+wt_ace_atm_str=100,+wt_ace_atm_swap=100,wt_ace_atm_comp=100,+wt_ace_atm_ld=100,+wt_ace_full_stash=0,+wt_ace_unq_stash=0,+wt_ace_shared_stash=0,+wt_ace_stash_trans=0,+wt_ace_ptl_stash=0,+wt_ace_wrnosnp=0,+wt_ace_wrunq=0,+wt_ace_wrlnunq=0,wt_ace_wr_bar_tmp=0,+mixed_atomics,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 6186396 -u _24
+
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -c -d DUMP_ON,ASSERT_ON,INHOUSE_OCP_VIP -q -n config2 -s $WORK_TOP/../test_projects/fsys_v3.0_configs/simple_config2AchlParams.json -U $WORK_TOP/rtl/ioaiu/src/ioaiu_config2.json -a -t bring_up_test -p +k_num_write_req=1000,+k_num_read_req=1000,+k_num_snoop=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 214243942 -u _25
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n ioaiu_cfg_ace -d INHOUSE_APB_VIP,RTL_DUT,DUMP_ON,ASSERT_ON -y hw_config_03 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_3 -a -i caiu1
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_cfg_ace -t bring_up_test -p +k_num_write_req=1,+k_num_read_req=1,+k_num_snoop=1,+wt_snp_prev_addr=100,+wt_snp_cmd_req_addr=0,+wt_snp_random_addr=0,+wt_snp_inv=50,+wt_snp_inv_dtr=50,+wt_snp_inv_dtw=50,+wt_snp_nitc=0,+ace_bringup,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 65465132 -u _rd_wr_snp
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n ioaiu_cfg_ace -t bring_up_test -p +k_num_write_req=0,+k_num_read_req=0,+k_num_snoop=1,+wt_snp_prev_addr=100,+wt_snp_cmd_req_addr=0,+wt_snp_random_addr=0,+wt_snp_inv=80,+wt_snp_inv_dtr=0,+wt_snp_inv_dtw=0,+wt_snp_nitc=0,+ace_bringup,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 65465132 -u _snp
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -n ioaiu_cfg_ace -t bring_up_test -p +k_num_write_req=0,+k_num_snoop=0,+k_num_read_req=40,+command_line_directed_test,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+wt_ace_dvm_sync=0,+wt_ace_dvm_msg=5 -R 269036383 -u _26
+
+#sysco bringup test
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -n ioaiu_cfg_ace -t sysco_test -p +k_num_write_req=50,+k_num_read_req=50,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1,+k_timeout=5000000 -R 523036750 -u _27
+
+#AXI w/ proxyCache
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -c -n hw_cfg_2_ioc -d INHOUSE_APB_VIP,RTL_DUT,DUMP_ON,ASSERT_ON -y hw_config_02 -Z $MAESTRO_EXAMPLES/../ioaiu_config/hw_cfg_2_ioc -a -i ncaiu0
+
+#sysco bringup test for AXI w/ proxyCache
+#cchen: node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -n hw_cfg_2_ioc -t sysco_test -p +enable_detach_seq,+enable_reattach_seq,+k_num_write_req=50,+k_num_read_req=50,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 12345 -u _28
+
+#sysco bringup test for ACE
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e ioaiu -n ioaiu_cfg_ace -t sysco_test -p +enable_detach_seq,+enable_reattach_seq,+k_num_write_req=1000,+k_num_read_req=1000,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 1867549 -u _29
+
+#aceaiu resiliency_sanity_tests
+#Compile -- config_ace_256b_ecc
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -a -c -n config_ace_256b_ecc -d INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON2,INHOUSE_OCP_VIP,COVER_ON,RESILIENCY_TESTING,OVL_ASSERT_OFF -l +define+ERROR_TEST -i caiu1 -Z $MAESTRO_EXAMPLES/../ioaiu_config/config_ace_256b -y hw_config_03 -q
+#test run -- config_ace_256b_ecc uce+ce of ECC
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -n config_ace_256b_ecc -t bring_up_test -q -R 29958019 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+k_targ_src_id_chk_en=1,+smi_ndp_err_inj=1,+inj_cntl=1,+corr_error_inj_pcnt=70,+k_num_write_req=10,+k_num_read_req=10,+k_num_snoop=10,+prob_ace_snp_resp_error=0,+wt_expected_end_state=100,+wt_legal_end_state_with_sf=0,+wt_legal_end_state_without_sf==0,+ioaiu_tb_arg,+k_timeout=2000000 -u _30
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -n config_ace_256b_ecc -t bring_up_test -q -R 35113922 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+k_targ_src_id_chk_en=1,+disable_pri_check=1,+inj_cntl=2,+smi_ndp_err_inj=1,+aiu_scb_en=0,+expect_mission_fault=1,+k_smi_cov_en=0,+uncorr_error_inj_pcnt=70,+k_num_write_req=100,+k_num_read_req=100,+k_num_snoop=100,+k_timeout=2000000 -u _31
+
+#ioaiu resiliency_sanity_tests
+#Compile -- hw_cfg_7_all_ecc
+#node $WORK_TOP/../scripts/qrsim.js -e ioaiu -a -c -n hw_cfg_7_all_ecc -d INHOUSE_APB_VIP,DUMP_ON,ASSERT_ON2,INHOUSE_OCP_VIP,COVER_ON,RESILIENCY_TESTING,OVL_ASSERT_OFF -l +define+ERROR_TEST -i ncaiu0 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7_all_ecc -y hw_config_07 -q
+#test run -- hw_cfg_7_all_ecc uce+ce of ECC
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -n hw_cfg_7_all_ecc -t bring_up_test -q -R 13107743 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+k_targ_src_id_chk_en=1,+smi_ndp_err_inj=1,+inj_cntl=1,+corr_error_inj_pcnt=70,+k_num_write_req=10,+k_num_read_req=10,+k_num_snoop=10,+prob_ace_snp_resp_error=0,+wt_expected_end_state=100,+wt_legal_end_state_with_sf=0,+wt_legal_end_state_without_sf==0,+ioaiu_tb_arg,cctrlr_en=0xff,+k_timeout=2000000 -u _32
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -n hw_cfg_7_all_ecc -t bring_up_test -q -R 61196996 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+k_targ_src_id_chk_en=1,+disable_pri_check=1,+inj_cntl=2,+smi_ndp_err_inj=1,+aiu_scb_en=0,+expect_mission_fault=1,+k_smi_cov_en=0,+uncorr_error_inj_pcnt=70,+k_num_write_req=100,+k_num_read_req=100,+k_num_snoop=100,+k_timeout=2000000 -u _33
+###################################
+### Perf monitor bringup_test 
+###################################
+#ioaiu perf monitor sanity test
+#cchen: node $WORK_TOP/../scripts/qrsim.js -e ioaiu -q -n hwcfg2  -t perf_cnt_test -R 34936044 -q -p +UVM_MAX_QUIT_COUNT=20,+UVM_VERBOSITY=UVM_NONE,+k_targ_src_id_chk_en=1,+k_num_write_req=100,+k_num_read_req=100,+k_num_snoop=100,+k_timeout=2000000,+event_first=1,+event_second=0,+min_stall_period=0,+counter_control=0,+ssr_count=0 -u _34
+

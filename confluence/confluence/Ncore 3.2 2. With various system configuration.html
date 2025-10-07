@@ -1,0 +1,38 @@
+<p>We selected three test cases from the test 1 as below:</p><ul><li>Read only concurrent test – Test 1-8</li><li>Write only concurrent test – Test 1-7</li><li>PCIe scenario, CAIU enabled - Test 2-3</li></ul><p><br/></p><p>In this test, SRAM model integrated with DMI is configured as below</p><ul><li>100 cycle turn-around time (77 ns, 13.GHz)</li><li>Read outstanding: 64</li><li>Write outstanding: 32</li></ul><p><br/></p><div class="table-wrap"><table class="relative-table wrapped confluenceTable" style="width: 50.6316%;"><colgroup><col style="width: 33.6108%;"/><col style="width: 66.3892%;"/></colgroup><tbody><tr><th class="confluenceTh">Test</th><th class="confluenceTh">Observation</th></tr><tr><td class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/247366702/Ncore+3.2+1.+Read+only+concurrent+test" data-linked-resource-id="247366702" data-linked-resource-version="1" data-linked-resource-type="page">Ncore 3.2 1. Read only concurrent test</a></td><td class="confluenceTd"><ul><li>QoS effect is being observed when system is congested.</li><li>When system is idle, do not see much improvement </li><li><span class="legacy-color-text-default">Sequence 4 s</span>hows <strong>meaningful disadvantage</strong> when QoS is enabled. <ul><li>Observing DCE credit is<span> </span><strong>not</strong><span> </span>balanced well, because, </li><li><span class="legacy-color-text-orange2">DCE skid buffer occupation balancing is broken. → Need more investigation</span></li></ul></li><li>Maximum achievable BW is 92% when all the NCAIUs are concurrently working, and limited by MRD credit of the DCE. </li></ul></td></tr><tr><td class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/247366739/Ncore+3.2+2.+Write+only+concurrent+test" data-linked-resource-id="247366739" data-linked-resource-version="1" data-linked-resource-type="page">Ncore 3.2 2. Write only concurrent test</a></td><td class="confluenceTd"><ul><li>QoS effect is being observed when system is congested.<ul><li>When all the NCAIUs are concurrently working, observing 40% of the latency improvement on QoS enabled initiator, with 7% of BW improvement</li></ul></li><li>When system is idle, do not see much improvement – shows slightly worse data than qos off case.</li><li>For the sequence 1 and 2, system is congested due to WTT entry of the DMI, and in case of 3, 4, and 5, system is congested because of RB entry of the DCE.</li></ul></td></tr><tr><td class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/247366766/Ncore+3.2+3.+PCIe+Test+with+CAIU" data-linked-resource-id="247366766" data-linked-resource-version="1" data-linked-resource-type="page">Ncore 3.2 3. PCIe Test with CAIU</a></td><td class="confluenceTd"><div class="content-wrapper"><ul><li>BW is similar with 0ns SRAM model case.</li><li>Resource status: DCE MRD credit is not bottleneck anymore<ul><li>with 0ns latency, DCE MRD credit was the bottleneck, mainly because of the<span class="legacy-color-text-orange2"> MRD turn-around time</span>. </li></ul></li><li>For the higher QOS value shows better latency numbers, however, <ul><li>The traffic with higher qos value shows 8% of the latency improvement, which is smaller than 0ns case.</li><li>The smaller latency improvement becomes low, because system itself is not limited by local credit.</li><li><span class="legacy-color-text-orange2">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-8573" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-8573?src=confmacro" class="jira-issue-key">CONC-8573</a>
+                            </span>
+</span></li></ul></li></ul></div></td></tr></tbody></table></div>

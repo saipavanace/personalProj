@@ -1,0 +1,36 @@
+README
+======
+
+CONTENTS:
+
+A. Environment setup, you will need following setting to run Cadence simulation with Cadence ACE and CHI VIPs:
+    Set $PROJ_HOME to folder containing rtl directory
+    Set $CDS_INST_DIR to point to the tool directory
+    Set $CDN_VIP_ROOT to point to the VIP source directory
+    Set $CDN_VIP_LIB_PATH to point to Cadence VIP working library
+    
+    supported version:
+    xrun 24.03-s001
+    vipcat_11.30.096
+	
+B. Running the Example Testbench: ncore_sys_test
+     % make build
+     % make ncore_sys_test
+
+   B1. To see all valid tests for your configuration:
+     % make valid
+
+   B2. To run all valid tests (after make build):
+     % make run
+
+C. Files in the Example
+	 The interface definition files is located at: 
+        $CDN_VIP_ROOT/tools.lnx86/denali_64bit/ddvapi/sv/hdl_interfaces/
+
+     All UVM related files are located at  	
+        $CDN_VIP_ROOT/tools.lnx86/denali_64bit/ddvapi/sv/uvm/chi
+        $CDN_VIP_ROOT/tools.lnx86/denali_64bit/ddvapi/sv/uvm/cdn_axi
+	
+D. Look at "Section 5 RTL Simulation Flows" in the reference manual for more information
+
+

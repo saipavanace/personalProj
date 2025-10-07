@@ -1,0 +1,321 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Name: DMI Merge Engine
+// Aurthor: Tso-Wei Chang
+// Description: 
+// This module processes merge data in cache miss scenario.
+// (Note merge is handled within the cache in hit scenario)
+// Upon AXI miss data return, a handshake with Write Data Buffer happens to
+// grab DTW data and the module will merge the data on a per-beat basis.
+//=============================================================================
+\jsend
+
+\jsbegin
+// 
+// Variables
+//
+var bundleFunctions = obj.userLib.bundleFunctions;
+var dw              = obj.lib.getParam('dw');
+var rttIdWidth      = obj.lib.getParam('returnDataInterface','id');
+var wAddr           = obj.lib.getParam('wAddr');
+var wSize           = obj.lib.getParam('wSize');
+var wMpf1           = obj.lib.getParam('readAllocateInterface', 'aiu_id');
+var wMpf2           = obj.lib.getParam('readAllocateInterface', 'aiu_trans_id');
+var wCmType         = obj.lib.getParam('readAllocateInterface', 'cm_type');
+var wBeat           = obj.lib.getParam('wBeat');
+var wAddrOffset     = Math.log2(dw/8);
+var wCacheLineOffset= obj.lib.getParam('wCacheLineOffset');
+var cmType          = obj.lib.getParam('cmType');
+var wTransId        = obj.lib.getParam('returnDataInterface', 'trans_id');
+var wDataBufferId   = obj.lib.getParam('writeDataBufferInterface', 'req_id');
+var wQos            = obj.lib.getParam('returnDataInterface', 'qos'); 
+var wUser	    = obj.lib.getParam('returnDataInterface', 'user');
+var wMpf1real = obj.lib.getParam('returnDataInterface', 'mpf1');
+
+//
+// Interfaces
+//
+obj.lib.interface('',               'slave', obj.lib.getParam('clkInterface'));
+obj.lib.interface('mem_data_in_',   'slave', obj.lib.getParam('returnDataInterface'));
+obj.lib.interface('result_data_',   'master',obj.lib.getParam('returnDataInterface'));
+obj.lib.interface('mrg_',           'master',obj.lib.getParam('writeDataBufferInterface'));
+//
+// Ports
+//
+obj.lib.port('output', 'fill_out',                 1);
+obj.lib.port('output', 'fill_addr',                wAddr);
+obj.lib.port('output', 'fill_ns',                  1);
+obj.lib.port('output', 'vz_out',                   1);
+
+obj.lib.port('input',  'fill_in',                  1);
+obj.lib.port('input',  'addr_in',                  wAddr);
+obj.lib.port('input',  'size_in',                  wSize);
+obj.lib.port('input',  'ns_in',                    1);
+obj.lib.port('input',  'req_id_in',                wDataBufferId);
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+    localparam  MRG_INV = \=cmType['DtwMrgMrdInv']=\,
+                MRG_SCLN= \=cmType['DtwMrgMrdSCln']=\,
+                MRG_SDTY= \=cmType['DtwMrgMrdSDty']=\,
+                MRG_UCLN= \=cmType['DtwMrgMrdUCln']=\,
+                MRG_UDTY= \=cmType['DtwMrgMrdUDty']=\;
+
+    localparam  DTR_INV = \=cmType['DtrDataInv']=\,
+                DTR_SCLN= \=cmType['DtrDataSCln']=\,
+                DTR_SDTY= \=cmType['DtrDataSDty']=\,
+                DTR_UCLN= \=cmType['DtrDataUCln']=\,
+                DTR_UDTY= \=cmType['DtrDataUDty']=\;
+
+\jsbegin
+    //
+    // Wires
+    //
+\jsend
+    \=bundleFunctions.wiresFromInterface('push_result_data_',obj.lib.getParam('returnDataInterface'),      [],          obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('mem_data_',        obj.lib.getParam('returnDataInterface'),      [],          obj.lib.bundle)=\
+    wire                                pop_req_in_valid;
+    wire                                pop_req_out_valid;
+    wire                                push_fill_out;
+    wire                                fill;
+    wire                                ns;
+    wire                                vz;
+    wire [\=wAddr-1=\:0]                addr;
+    wire [\=wSize-1=\:0]                size;
+    wire [\=wTransId-1=\:0]             trans_id;
+    wire [\=wDataBufferId-1=\:0]        req_id;
+    wire [\=wTransId-1=\:0]             mrg_trans_id;
+    wire [\=wTransId-1=\:0]             mrg_trans_id_in;
+    wire                                mrg_trans_id_en;
+    wire                                mem_req_in_ready;
+    wire                                beat_no_mrg;
+    wire [\=dw-1=\:0]                   result_mrg_data;
+    wire                                push_result_req_ready;
+    wire                                push_result_data_fill;
+    wire [\=wBeat=\:0]                  beat_count;
+    wire [\=wBeat=\:0]                  beat_count_in;
+    wire                                beat_count_en;
+    wire [\=wBeat=\:0]                  beat_init;
+    wire                                mrg_data_go;
+    wire                                mrg_data_go_lock;
+    wire                                size_aligned;
+    wire                                mrg_req_accepted_d;
+    wire                                mrg_req_accepted_en;
+    wire                                mrg_req_accepted;
+\js // merge data logic
+
+\js for(var i = 0; i < dw/8 ; i++) {
+        assign result_mrg_data[\=8*(i+1)-1=\:\=8*i=\] = (mem_data_data[\=8*(i+1)-1=\:\=8*i=\] & ~{8{mrg_be[\=i=\]}}) | (mrg_data[\=8*(i+1)-1=\:\=8*i=\] & {8{mrg_be[\=i=\]}});
+\js    }
+    assign push_result_data_data = beat_no_mrg? mem_data_data : result_mrg_data;
+
+    assign mrg_req_valid = mem_data_first & mem_data_valid & ~mrg_req_accepted; 
+    \=obj.lib.dffre(1, 'mrg_req_accepted', 'mrg_req_accepted_d', "1'b0", 'mrg_req_accepted_en', 'clk', 'reset_n')=\
+
+    assign mrg_req_accepted_d  = (mrg_req_valid & mrg_req_ready) & ~(mrg_valid & mrg_ready & mrg_last);
+    assign mrg_req_accepted_en = (mrg_req_valid & mrg_req_ready) |  (mrg_valid & mrg_ready & mrg_last);
+    assign mrg_req_id = req_id;
+    assign mrg_ready = push_result_data_ready & mem_data_valid & mrg_data_go;
+
+\js // number of beat expected from wdata buffer
+    assign beat_init = (size > \=wAddrOffset=\)? (\=wBeat+1=\'b1 << (size - \=wAddrOffset=\)) - 1'b1 : \=wBeat+1=\'b0;
+    assign beat_count_in = mem_data_first? beat_init : (beat_count[\=wBeat-1=\:0] == \=wBeat=\'b0)? beat_count : beat_count - \=wBeat+1=\'b1;
+    assign beat_count_en = mem_data_valid & mem_data_ready; 
+    assign beat_no_mrg = mem_data_first? 1'b0 : (beat_count[\=wBeat-1=\:0] == \=wBeat=\'b0);
+    \=obj.lib.dffre(wBeat+1, 'beat_count', 'beat_count_in', (wBeat+1)+"'b0", 'beat_count_en', 'clk', 'reset_n')=\
+
+\js // check alignment
+    wire [\=wBeat=\:0] wr_ptr;
+    wire [\=wBeat=\:0] wr_ptr_next;
+    wire               wr_ptr_en; 
+    wire [\=wBeat=\:0] wr_wrap_boundary_beat;
+    wire [\=wBeat=\:0] wr_size_aligned_beat;
+    wire               mrg_data_go_lock_in;
+    wire               mrg_data_go_lock_en;
+
+    assign size_aligned = ~|((\=wCacheLineOffset=\'b1 << size) & addr[\=wCacheLineOffset-1=\:0] & {{\=wCacheLineOffset - wAddrOffset=\{1'b1}}, {\=wAddrOffset=\{1'b0}}});
+    assign mrg_data_go = size_aligned? 1'b1 : ~mrg_data_go_lock;
+    // Check: wr_ptr_next selecting, -1 or -2
+    assign mrg_data_go_lock_in = mem_data_last? 1'b0 : mrg_data_go_lock & ~(wr_ptr_next[\=wBeat-1=\:0] == wr_size_aligned_beat[\=wBeat-1=\:0]) | 
+                                                      ~mrg_data_go_lock &  (wr_ptr_next == wr_wrap_boundary_beat);
+    assign mrg_data_go_lock_en = wr_ptr_en;
+
+    assign wr_ptr_next = mem_data_first? addr[\=wCacheLineOffset-1=\:\=wAddrOffset=\] + \=wBeat+1=\'b1 : wr_ptr + \=wBeat+1=\'b1;
+    assign wr_ptr_en   = mem_data_valid & mem_data_ready;
+    assign wr_wrap_boundary_beat = (size < \=wAddrOffset=\)?  addr[\=wCacheLineOffset=\:\=wAddrOffset=\] 
+                                                           : (addr[\=wCacheLineOffset=\:\=wAddrOffset=\] & (\=wBeat+1=\'b1 << (size-\=wAddrOffset=\))) + (\=wBeat+1=\'b1 << (size-\=wAddrOffset=\)) ;
+    assign wr_size_aligned_beat = (addr[\=wCacheLineOffset=\:\=wAddrOffset=\] & (\=wBeat+1=\'b1 << size-\=wAddrOffset=\));
+    \=obj.lib.dffre(1, 'mrg_data_go_lock', 'mrg_data_go_lock_in', "1'b0", 'mrg_data_go_lock_en', 'clk', 'reset_n')=\
+    \=obj.lib.dffre(wBeat+1, 'wr_ptr', 'wr_ptr_next', (wBeat+1)+"'b0", 'wr_ptr_en', 'clk', 'reset_n')=\
+        
+\js // result fifo
+    \=obj.lib.instance({
+        instanceName: 'merge_result_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            width: bundleFunctions.getBundleWidth(obj.lib.getParam('returnDataInterface'), ['valid', 'ready'], obj.lib.bundle),
+            depth: 2,
+            zerodepth: 0,
+            bypass_mode: 0,
+            interface: obj.lib.getParam('returnDataInterface')
+        },
+        verilogParams: {},
+        ports: {
+            push_valid: 'push_result_data_valid',
+            push_ready: 'push_result_data_ready'},
+        interfaces: [
+            {modulePrefix: '',      localPrefix: '',                  interface: obj.lib.getParam('clkInterface')},
+            {modulePrefix: 'push_', localPrefix: 'push_result_data_', interface: obj.lib.getParam('returnDataInterface'), exclude:['valid', 'ready']},
+            {modulePrefix: 'pop_',  localPrefix: 'result_data_',      interface: obj.lib.getParam('returnDataInterface')}
+        ],
+        portsDelimiter: '\n        '
+    })=\
+    assign push_result_data_fill        = 1'b0;
+    assign push_result_data_valid       = (mrg_valid | beat_no_mrg) & mem_data_valid;
+    assign push_result_data_first       = mem_data_first;
+    assign push_result_data_last        = mem_data_last;
+    assign push_result_data_id          = mem_data_id;
+    assign push_result_data_target_id   = mem_data_target_id;
+    assign push_result_data_r_message_id= mem_data_r_message_id;
+    assign push_result_data_cm_type     = mem_data_cm_type;
+    assign push_result_data_dwid        = mem_data_dwid;
+    assign push_result_data_exokay      = 1'b0;
+    assign push_result_data_poison      =  beat_no_mrg? mem_data_poison : mem_data_poison | mrg_poison;
+\js if ( wQos != 0) {
+    assign push_result_data_qos         = mem_data_qos;
+\js }
+
+\js // Assume first beat always has merge data.
+\js // This is only used for DTWMrgMrd very late response. mpf1 contains the pre-allocated resp buffer id.
+\js // the if statement is necessary when the mrd buffer forces the trans_id to a width greater than mpf1
+\js // This was rendered unnecessary becasue the size of the buffer was adjusted
+    \jsbegin 
+        /* istanbul ignore if env ncore_3p7*/
+    if(wMpf1real<wTransId){
+    \jsend
+        assign push_result_data_trans_id    = mem_data_first? {\=wTransId-wMpf1real=\'d0,mrg_mpf1} : mrg_trans_id;
+    \jsbegin
+    } else {
+    \jsend
+        assign push_result_data_trans_id    = mem_data_first? mrg_mpf1[\=wTransId-1=\:0] : mrg_trans_id;
+    \jsbegin
+    }
+    \jsend
+
+    assign push_result_data_vz          = mem_data_vz;
+    assign push_result_data_intf_size   = mem_data_intf_size;
+\js // merge result data is always full cacheline. Used for data rotation.
+    assign push_result_data_size        = \=wSize=\'h\=wCacheLineOffset=\;
+\js // TODO: need to check who else is using mpf1. may not be necessary
+    assign push_result_data_mpf1        = \=obj.lib.getParam("returnDataInterface").mpf1=\'d0; //mem_data_mpf1;
+    assign push_result_data_cdw         = mem_data_cdw;
+    assign push_result_data_err_type    = mem_data_err_type;
+    assign push_result_data_tm          = mem_data_tm;
+    assign push_result_data_rd_type     = mem_data_rd_type;
+\js if (wUser != 0 ) {
+    assign push_result_data_user	= mem_data_user;
+\js }
+    \=obj.lib.dffre(wTransId, 'mrg_trans_id', 'mrg_trans_id_in', wTransId + "'b0", 'mrg_trans_id_en', 'clk', 'reset_n')=\
+    
+
+
+    \jsbegin 
+    /* istanbul ignore if env ncore_3p7*/
+    if(wMpf1real<wTransId){
+    \jsend
+
+    assign mrg_trans_id_in   = mem_data_first? {\=wTransId-wMpf1real=\'d0,mrg_mpf1} : \=wTransId=\'b0;
+    \jsbegin
+    } else {
+    \jsend
+        assign mrg_trans_id_in    = mem_data_first? mrg_mpf1[\=wTransId-1=\:0] : \=wTransId=\'b0;
+    \jsbegin
+    }
+    \jsend
+    assign mrg_trans_id_en = mem_data_valid & mem_data_ready & mem_data_first;
+
+    \=obj.lib.instance({
+        instanceName: 'req_out_fifo',
+        moduleName: 'fifo',
+        params: {
+            width: 1 + 1 + wAddr + 1,
+            depth: 2,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        verilogParams: {},
+        ports: {
+            push_valid: 'push_result_data_valid',
+            push_ready: 'push_result_req_ready',
+            pop_valid:  'pop_req_out_valid',
+            pop_ready:  'result_data_ready',
+            push_data:  '{vz, ns, addr, push_fill_out}',
+            pop_data:   '{vz_out, fill_ns, fill_addr, fill_out}'},
+        interfaces: [
+            {modulePrefix: '',      localPrefix: '',                interface: obj.lib.getParam('clkInterface')},
+        ],
+        portsDelimiter: '\n        '
+    })=\
+
+    assign push_fill_out = fill;
+ 
+    \=obj.lib.instance({
+        instanceName: 'mem_req_in_fifo',
+        moduleName: 'fifo',
+        params: {
+            width: 1 + 1 + wAddr + 1 + wTransId + wSize + wDataBufferId,
+            depth: 2,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        verilogParams: {},
+        ports: {
+            push_valid: 'mem_data_in_valid',
+            push_ready: 'mem_req_in_ready',
+            pop_valid:  'pop_req_in_valid',
+            pop_ready:  'mem_data_ready',
+            push_data:  '{mem_data_in_vz, ns_in, addr_in, fill_in, mem_data_in_trans_id, size_in, req_id_in}',
+            pop_data:   '{vz, ns, addr, fill, trans_id, size, req_id}'
+        },
+        interfaces: [
+            {modulePrefix: '',      localPrefix: '',                interface: obj.lib.getParam('clkInterface')},
+        ],
+        portsDelimiter: '\n        '
+    })=\
+
+
+\js // memory data fifo
+    \=obj.lib.instance({
+        instanceName: 'mem_data_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            width: bundleFunctions.getBundleWidth(obj.lib.getParam('returnDataInterface'), ['valid', 'ready'], obj.lib.bundle),
+            depth: 2,
+            zerodepth: 0,
+            bypass_mode: 0,
+            interface: obj.lib.getParam('returnDataInterface')
+        },
+        verilogParams: {},
+        ports: {
+            push_valid: 'mem_data_in_valid',
+            push_ready: 'mem_data_in_ready'},
+        interfaces: [
+            {modulePrefix: '',      localPrefix: '',                interface: obj.lib.getParam('clkInterface')},
+            {modulePrefix: 'push_', localPrefix: 'mem_data_in_',    interface: obj.lib.getParam('returnDataInterface'), exclude:['valid','ready']},
+            {modulePrefix: 'pop_',  localPrefix: 'mem_data_',       interface: obj.lib.getParam('returnDataInterface')}
+        ],
+        portsDelimiter: '\n        '
+    })=\
+    assign mem_data_ready = push_result_data_ready & (mrg_valid | beat_no_mrg) ;
+    
+\jsbegin
+// Assertion:
+
+\jsend
+endmodule
+

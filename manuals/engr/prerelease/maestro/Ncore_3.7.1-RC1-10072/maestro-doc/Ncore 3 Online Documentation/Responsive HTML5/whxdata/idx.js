@@ -1,0 +1,1 @@
+gXMLBuffer ="<?xml version=\"1.0\" encoding=\"utf-8\" ?><index>  <chunkinfo url=\"idata1.js\" first=\"APB Socket\" last=\"parameters\" num=\"85\" />  <chunkinfo url=\"idata2.js\" first=\"Power and Clock Region\" last=\"Using the Topology Editor\" num=\"44\" />  </index>";

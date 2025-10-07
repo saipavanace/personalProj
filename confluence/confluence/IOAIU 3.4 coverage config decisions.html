@@ -1,0 +1,92 @@
+<style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759724915379 {padding: 0px;}
+div.rbtoc1759724915379 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759724915379 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759724915379'>
+<ul class='toc-indentation'>
+<li><a href='#IOAIU3.4coverageconfigdecisions-1.Coverageconfigdecisions'>1. Coverage config decisions</a></li>
+<li><a href='#IOAIU3.4coverageconfigdecisions-2.Afewsystemparametercoverageholes'>2. A few system parameter coverage holes</a></li>
+<li><a href='#IOAIU3.4coverageconfigdecisions-3.Otherconfigconcerns'>3. Other config concerns</a></li>
+</ul>
+</div><p /><h2 id="IOAIU3.4coverageconfigdecisions-1.Coverageconfigdecisions">1. Coverage config decisions</h2><p>This table is to capture the decision on which IOAIU config need to be used for tachl coverage, code coverage and functional coverage.</p><p /><div class="table-wrap"><table data-layout="default" data-local-id="4864a5a5-9536-4cc7-837a-6c286201dedf" class="confluenceTable"><colgroup><col style="width: 198.0px;"/><col style="width: 62.0px;"/><col style="width: 83.0px;"/><col style="width: 133.0px;"/><col style="width: 830.0px;"/></colgroup><tbody><tr><td class="confluenceTd"><p>config_name</p></td><td class="confluenceTd"><p>cores</p></td><td class="confluenceTd"><p>AIU</p></td><td class="confluenceTd"><p>initial recommendation</p></td><td class="confluenceTd"><p>comments</p></td></tr><tr><td class="confluenceTd"><p><strong>config1</strong></p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>AXI</p></td><td class="confluenceTd"><p>keep </p></td><td class="confluenceTd"><p>already have coverage exclusions</p></td></tr><tr><td class="confluenceTd"><p><strong>config3</strong></p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>ACE-LITE</p></td><td class="confluenceTd"><p>keep </p></td><td class="confluenceTd"><p>already have coverage exclusions</p></td></tr><tr><td class="confluenceTd"><p><strong>config_ace_small_ott</strong></p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>ACE</p></td><td class="confluenceTd"><p>keep </p></td><td class="confluenceTd"><p>already have coverage exclusions</p></td></tr><tr><td class="confluenceTd"><p><strong>hw_cfg_2_ioc_256b</strong></p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>AXI PROXY</p></td><td class="confluenceTd"><p>keep </p></td><td class="confluenceTd"><p>already have coverage exclusions</p></td></tr><tr><td class="confluenceTd"><p><strong>hw_cfg_2_ioc_64b</strong></p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>AXI PROXY</p></td><td class="confluenceTd"><p>keep </p></td><td class="confluenceTd"><p>already have coverage exclusions</p></td></tr><tr><td class="confluenceTd"><p><strong>hw_cfg_nxpauto</strong></p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>ACE-LITE-E</p></td><td class="confluenceTd"><p>keep </p></td><td class="confluenceTd"><p>already have coverage exclusions</p></td></tr><tr><td class="confluenceTd"><p><strong>hw_cfg_meye_q7_ioc_4c</strong></p></td><td class="confluenceTd"><p>4</p></td><td class="confluenceTd"><p>AXI PROXY</p></td><td class="confluenceTd"><p>keep</p></td><td class="confluenceTd"><p>need 4-core, using RC meye config since 4-core is no longer available in FR meye config</p></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p><strong>hw_cfg_meye_q7_acc00_ioc_2c</strong></p></td><td class="confluenceTd"><p>2</p></td><td class="confluenceTd"><p>AXI PROXY</p></td><td class="confluenceTd"><p><strong>add</strong></p></td><td class="confluenceTd"><p>need 2-core</p></td></tr><tr><td class="confluenceTd"><p>hw_cfg_meye_q7_xnn00_ioc_2c</p></td><td class="confluenceTd"><p>2</p></td><td class="confluenceTd"><p>AXI PROXY</p></td><td class="confluenceTd"><p><strong>do not add</strong></p></td><td class="confluenceTd"><p>xnn parameter coverage seemed to be the same as acc, does anyone know of any major differences between xnn and acc?</p></td></tr><tr><td class="confluenceTd"><p><em><strong>hw_cfg_60_ioc_8c</strong></em></p></td><td class="confluenceTd"><p>8</p></td><td class="confluenceTd"><p>AXI PROXY</p></td><td class="confluenceTd"><p><strong>add?</strong></p></td><td class="confluenceTd"><p>need 8-core?</p></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>2, 4, 8</p></td><td class="confluenceTd"><p>AXI</p></td><td class="confluenceTd"><p><strong>unknown</strong></p></td><td class="confluenceTd"><p>need decision on whether to add this work to the 3.4 schedule or reconsider for later</p></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>2, 4, 8</p></td><td class="confluenceTd"><p>ACE-LITE</p></td><td class="confluenceTd"><p><strong>unknown</strong></p></td><td class="confluenceTd"><p>need decision on whether to add this work to the 3.4 schedule or reconsider for later</p></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>2, 4, 8</p></td><td class="confluenceTd"><p>ACE-LITE-E</p></td><td class="confluenceTd"><p><strong>unknown</strong></p></td><td class="confluenceTd"><p>need decision on whether to add this work to the 3.4 schedule or reconsider for later</p></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>hw_cfg_meye_q7_aux0_axi4_1c</p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>AXI</p></td><td class="confluenceTd"><p><strong>do not add</strong></p></td><td class="confluenceTd"><p>already using 3.2 legacy configs, didn't find any obvious holes in parameter coverage in current coverage configs that this config addresses</p></td></tr><tr><td class="confluenceTd"><p>hw_cfg_meye_q7_cpu0_ace_1c</p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>ACE</p></td><td class="confluenceTd"><p><strong>do not add</strong></p></td><td class="confluenceTd"><p>already using 3.2 legacy configs, didn't find any obvious holes in parameter coverage in current coverage configs that this config addresses</p></td></tr><tr><td class="confluenceTd"><p>hw_cfg_meye_q7_pci_ace_lite_1c</p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>ACE-LITE</p></td><td class="confluenceTd"><p><strong>do not add</strong></p></td><td class="confluenceTd"><p>already using 3.2 legacy configs, didn't find any obvious holes in parameter coverage in current coverage configs that this config addresses</p></td></tr></tbody></table></div><p /><p /><p>I created a list of all the possible configs that might be used in IOAIU 3.4 coverage. The first seven are the ones being used today - the “original_7”. Below that are additional configs with my preliminary recommendation that needs input from RTL. </p><p>Notably, I suggest that we need to add the 2-core Mobileye config, since during RC, it did not exist. Then there are questions about an 8 core config and multiported IOAIU configs that are not AXI proxy. Obviously, any additional configs present schedule risk.</p><p>At the bottom of the list, I mentioned the 1-core Mobileye configs. During some preliminary parameter coverage investigation, I did not notice any “system level” parameters where our “original_7” had a missing value on the extremes, smallest or largest legal values, that the Mobileye 1-core configs hit.</p><h2 id="IOAIU3.4coverageconfigdecisions-2.Afewsystemparametercoverageholes">2. A few system parameter coverage holes</h2><p>Also, here are a few parameter coverage holes that I observed that might be a concern. We need to decide which ones need to be fixed for 3.4. I only mention some holes that are found in our current 75 configs but missed in the original_7, but not holes in the original_7 that are not hit in the other configs.</p><p /><div class="table-wrap"><table data-layout="default" data-local-id="859fd8ca-53c6-47f4-bcd6-28800052b1c4" class="confluenceTable"><colgroup><col style="width: 170.0px;"/><col style="width: 170.0px;"/><col style="width: 170.0px;"/><col style="width: 170.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>system parameter</strong></p></th><th class="confluenceTh"><p><strong>holes hit by all_75_configs but not original_7</strong></p></th><th class="confluenceTh"><p><strong>other configs (not in original_7) that hit these values</strong></p></th><th class="confluenceTh"><p><strong>notes</strong></p></th></tr><tr><td class="confluenceTd"><p>InterUnitDelay</p></td><td class="confluenceTd"><p>4 (max legal value)</p></td><td class="confluenceTd"><p>config_ace_lite_e_256b</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>hw_cfg_2_ioc</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>hw_cfg_2_ioc_small_ott</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>hw_cfg_7_all_parity</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>nDvmSnpCredits</p></td><td class="confluenceTd"><p>6 and 8 (max legal value) </p></td><td class="confluenceTd"><p>config_ace_256b</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>config_ace_64b</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>config_ace_lite_64b</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>nProcs</p></td><td class="confluenceTd"><p>32(max legal value)</p></td><td class="confluenceTd"><p>hw_cfg_60*</p></td><td class="confluenceTd"><p>some extra values are &gt; 32</p></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>nSnpsPerAiu</p></td><td class="confluenceTd"><p>2 (min legal value) and 10</p></td><td class="confluenceTd"><p>config_ace_lite_e_2_trace_trig</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>nTaggedMonitors</p></td><td class="confluenceTd"><p>0 (min legal value) and 8 (max legal value)</p></td><td class="confluenceTd"><p>config_ace_lite_e_2_trace_trig</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>config_ace_lite_4_trace_trig</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>interfaces.axiInt.params.wAwUser and wArUser</p></td><td class="confluenceTd"><p>32 (max legal value)</p></td><td class="confluenceTd"><p>config_ace_lite_4_trace_trig</p></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><p /><h2 id="IOAIU3.4coverageconfigdecisions-3.Otherconfigconcerns">3. Other config concerns</h2><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9254"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_126255115_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9254" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9254</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9255"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_126255115_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9255" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9255</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p>

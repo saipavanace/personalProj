@@ -1,0 +1,226 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Free List Manager
+// 
+// Track outstanding ids with bit vector, but access in and out with encoded id.
+// 
+// Features
+//    - encoded interfaces, output from dff
+//    - stitches valid ready so can be placed inline
+//    - arbitrary number of ids up to 2^id_width, msb padding on encoded id
+//    - id constant for multi-beat until last (or tie last to 1 if not needed)
+//=========================================================================
+
+var u = obj.lib;
+u.paramDefault('onehot_mode',   'int', 0);
+u.paramDefault('busy_sig',      'int', 0);
+u.paramDefault('dealloc_ports', 'int', 1);
+u.paramDefault('idWidth',       'int', 0);
+var onehot_mode     = u.getParam('onehot_mode');
+var busy_sig        = u.getParam('busy_sig');
+var dealloc_ports   = u.getParam('dealloc_ports');
+
+var ID_NUM          = u.getParam('idNum');
+var ID_NUM_LOG      = Math.ceil(Math.log2(ID_NUM));
+
+// ID_WIDTH is not used in one-hot mode
+var ID_WIDTH        = u.getParam('idWidth');
+
+//=========================================================================
+// ports
+//=========================================================================
+u.interface('', 'slave', u.getParam('clkInterface'));
+// upstream
+u.port('input',  'pre_alloc_valid', 1);
+u.port('input',  'pre_alloc_last',  1);
+u.port('output', 'pre_alloc_ready', 1);
+
+// downstream
+u.port('output', 'alloc_valid', 1);
+if (onehot_mode) {
+u.port('output', 'alloc_id',   ID_NUM);
+u.port('input',  'dealloc_id', ID_NUM);
+u.port('input',  'alloc_ready', 1);
+u.port('input',  'dealloc_valid', 1);
+} else if (dealloc_ports > 1) {
+u.port('output', 'alloc_id',   ID_WIDTH);
+u.port('input',  'alloc_ready', 1);
+  for (var i = 0; i < dealloc_ports; i++) {
+u.port('input',  'dealloc_valid'+i, 1);
+u.port('input',  'dealloc_id'+i,    ID_WIDTH);
+  }
+} else {
+u.port('output', 'alloc_id',   ID_WIDTH);
+u.port('input',  'alloc_ready', 1);
+u.port('input',  'dealloc_valid',   1);
+u.port('input',  'dealloc_id',      ID_WIDTH);
+}
+
+if (busy_sig) {
+u.port('output', 'pending_dealloc', 1);
+}
+
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+wire [\=ID_NUM-1=\:0]       id_in_use;
+wire [\=ID_NUM-1=\:0]       d_id_in_use;
+wire [\=ID_NUM-1=\:0]       q_id_in_use;
+wire                        en_id_in_use;
+
+\js if(onehot_mode) {
+wire [\=ID_NUM-1=\:0]       alloc_id_reg;
+wire [\=ID_NUM-1=\:0]       d_alloc_id;
+\js } else {
+wire [\=ID_NUM_LOG-1=\:0]   alloc_id_reg;
+wire [\=ID_WIDTH-1=\:0]     d_alloc_id;
+\js }
+
+wire [\=ID_NUM-1=\:0] alloc_id_reg_dec;
+
+wire                d_alloc_v;
+wire                en_alloc_id;
+wire                alloc_v;
+
+\js if (dealloc_ports > 1) {
+wire [\=ID_NUM-1=\:0]   dealloc_vector;
+wire                dealloc_valid;
+\js }
+
+    \=obj.lib.dffre(ID_NUM, 'q_id_in_use', 'd_id_in_use', ID_NUM+"'d0", 'en_id_in_use', 'clk', 'reset_n')=\
+
+    assign en_id_in_use = (alloc_valid & alloc_ready) | dealloc_valid;
+
+
+    // need to account for already assigned output latch so don't duplicate 
+    // grants in consecutive cycles
+\js if(onehot_mode) {
+    assign  d_id_in_use = (id_in_use & ~(dealloc_valid ? dealloc_id : \=ID_NUM=\'d0));
+    assign  id_in_use = alloc_id & {\=ID_NUM=\{alloc_v}} | q_id_in_use;
+\js } else if (dealloc_ports > 1) {
+    assign  d_id_in_use = id_in_use & ~dealloc_vector;
+    assign  id_in_use = ({{\=ID_NUM-1=\{1'b0}}, alloc_v} << alloc_id) | q_id_in_use;
+\js } else {
+    assign  d_id_in_use = (id_in_use & ~(dealloc_valid ? (\=ID_NUM=\'d1 << dealloc_id) : \=ID_NUM=\'d0));
+    assign  id_in_use = ({{\=ID_NUM-1=\{1'b0}}, alloc_v} << alloc_id) | q_id_in_use;
+\js }
+
+\jsbegin
+if (dealloc_ports > 1) { \jsend
+    assign dealloc_vector = (dealloc_valid0 ? (\=ID_NUM=\'b1 << dealloc_id0) : \=ID_NUM=\'d0) 
+    \jsbegin 
+    // Had to waive entire FOR loop. ncore3.2 only uses up to 2 dealloc ports so branch condition below will always selects ";"
+    /* istanbul ignore next env ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7*/
+    for (var i = 1; i < dealloc_ports; i++) { \jsend
+                          | (dealloc_valid\=i=\ ? (\=ID_NUM=\'b1 << dealloc_id\=i=\) : \=ID_NUM=\'d0)\=((i+1)<dealloc_ports)? ' ':';'=\
+    \jsbegin
+    } \jsend
+    assign dealloc_valid  =  dealloc_valid0
+    \jsbegin
+    // Had to waive entire FOR loop. ncore3.2 only uses up to 2 dealloc ports so branch condition below will always selects ";"
+    /* istanbul ignore next env ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7*/
+    for (var i = 1; i < dealloc_ports; i++) { \jsend
+                          |  dealloc_valid\=i=\ \=((i+1)<dealloc_ports)? ' ':';'=\
+    \jsbegin
+    }
+} \jsend
+
+    // Have alloc_id come out of dff for 2 reasons
+    // 1. For DTR and other cases with multiple beats
+    //    show the same alloc_id for all beats until last is seen.
+    // 2. Removes timing of find_first logic from affecting outputs, especially
+    //    in case alloc_id is output of the unit.
+
+\js if(onehot_mode) {
+
+    \=obj.lib.instance({
+      'portsDelimiter': '\n    ',
+      'instanceName': 'alloc_id_find_first',
+      'moduleName':   'arb_spri',
+      'params': {
+           width : ID_NUM
+         },
+      'verilogParams': {},
+      'ports': {
+          in_req    : '~id_in_use',
+          out_gnt   : 'alloc_id_reg',
+      }
+    })=\
+
+    wire [\=ID_NUM+1-1=\:0] alloc_q;
+    assign {alloc_v, alloc_id} = alloc_q;
+
+    \=obj.lib.dffre((ID_NUM+1), 'alloc_q', '{d_alloc_v, d_alloc_id}', (ID_NUM+1)+"'d0", 'en_alloc_id', 'clk', 'reset_n')=\
+
+    assign  d_alloc_id = alloc_id_reg;
+
+\js } else {
+
+
+    \=obj.lib.instance({
+      'portsDelimiter': '\n    ',
+      'instanceName': 'flm_alloc_find_first',
+      'moduleName':   'arb_spri',
+      'params': {
+           width : ID_NUM
+         },
+      'verilogParams': {},
+      'ports': {
+          in_req    : '~id_in_use',
+          out_gnt   : 'alloc_id_reg_dec',
+      }
+    })=\
+
+    \=obj.lib.instance({
+        instanceName:  'flm_id_encode',
+        moduleName: 'encoder',
+        params: {width: ID_NUM},
+        verilogParams: {},
+        ports: {
+                invector : 'alloc_id_reg_dec',
+                outdecode: 'alloc_id_reg'},
+        interfaces:[],
+        portsDelimiter: '\n        '
+    })=\
+
+    wire [\=ID_WIDTH+1-1=\:0] alloc_q;
+    assign {alloc_v, alloc_id} = alloc_q;
+
+   
+    \=obj.lib.dffre((ID_WIDTH+1), 'alloc_q', '{d_alloc_v, d_alloc_id}', (ID_WIDTH+1)+"'d0", 'en_alloc_id', 'clk', 'reset_n')=\
+
+\js if ( ID_WIDTH != ID_NUM_LOG ) {
+    assign  d_alloc_id = {{\=ID_WIDTH - ID_NUM_LOG=\{1'b0}}, alloc_id_reg};
+\js } else {
+    assign d_alloc_id = alloc_id_reg;
+\js }
+
+\js }
+
+    assign en_alloc_id = (pre_alloc_valid & pre_alloc_ready & pre_alloc_last) | ~alloc_v;
+    assign  d_alloc_v  = ~(&id_in_use);
+
+    assign alloc_valid     = alloc_v & pre_alloc_valid;
+    assign pre_alloc_ready = alloc_v & alloc_ready;
+
+
+\jsbegin
+// reserved id should not be count as busy
+if (busy_sig) {
+     /* istanbul ignore if env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+     if(onehot_mode) { \jsend
+    assign pending_dealloc = |(q_id_in_use & ~(alloc_id & {\=ID_NUM=\{alloc_v}}));
+    \jsbegin
+    } else { \jsend
+    assign pending_dealloc = |(q_id_in_use & ~({{\=ID_NUM-1=\{1'b0}}, alloc_v} << alloc_id));
+    \jsbegin
+    }
+} \jsend
+
+endmodule
+

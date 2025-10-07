@@ -1,0 +1,2252 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+//
+// NAME: dce_att_entry
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+// ATT entry for DCE
+//
+//=============================================================================
+//
+// Variables
+//
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+//
+// Params
+//
+let ASSERT_ON = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+
+let CachingAgentIsCHI = m.ParamDefaultGet(u, 'CachingAgentIsCHI', 'string', "7'd0");
+
+let useMoveFlopsToTop = m.ParamDefaultGet(u, 'useMoveFlopsToTop', 'int', 0);
+
+let att_req_alloc_bundle = m.ParamDefaultGet(u, 'att_req_alloc_bundle', 'object', {});
+let att_alloc_bundle     = m.ParamDefaultGet(u, 'att_alloc_bundle', 'object', {});
+
+let att_req_alloc_bundle_width = bundleFunctions.getBundleWidth(att_req_alloc_bundle, [], u.bundle);
+let att_alloc_bundle_width     = bundleFunctions.getBundleWidth(att_alloc_bundle, [], u.bundle);
+
+let useQos = m.ParamDefaultGet(u, 'useQos', 'int', 0);
+
+let CMD_REQ_INTF = m.ParamDefaultGet(u, 'cmdReqInterface', 'object', {});
+let MRD_REQ_INTF = m.ParamDefaultGet(u, 'mrdReqInterface', 'object', {});
+let MRD_RSP_INTF = m.ParamDefaultGet(u, 'mrdRspInterface', 'object', {});
+let SNP_REQ_INTF = m.ParamDefaultGet(u, 'snpReqInterface', 'object', {});
+let SNP_RSP_INTF = m.ParamDefaultGet(u, 'snpRspInterface', 'object', {});
+let STR_REQ_INTF = m.ParamDefaultGet(u, 'strReqInterface', 'object', {});
+let STR_RSP_INTF = m.ParamDefaultGet(u, 'strRspInterface', 'object', {});
+let RBR_REQ_INTF = m.ParamDefaultGet(u, 'rbrReqInterface', 'object', {});
+
+let SF_INFO = m.ParamDefaultGet(u, 'snoopFilterInfo', 'array', []);
+
+let N_SF = m.ParamDefaultGet(u, 'nSf', 'int', 4);
+let N_WAYS = m.ParamDefaultGet(u, 'nWays', 'int', 4);
+let N_C_AGENTS = m.ParamDefaultGet(u, 'nCachingAgents', 'int', 4);
+
+var nChiplets        = u.getParam('nChiplets');
+var wChipletId       = u.getParam('wChipletId');
+var wLinkId          = u.getParam('wLinkId');
+var wGlobalFUnitId   = u.getParam('wGlobalFUnitId');
+var nCachingAgents   = N_C_AGENTS;
+
+let N_DMIS = m.ParamDefaultGet(u, 'nDmis', 'int', 4);
+let N_CONNECTED_DMIS = m.ParamDefaultGet(u, 'nConnectedDmis', 'int', 4);
+let CM_TYPE = m.ParamDefaultGet(u, 'cmType', 'object', {});
+let N_ATT = m.ParamDefaultGet(u, 'nAtt', 'int', 32);
+let W_N_ATT = m.ParamDefaultGet(u, 'wNumAtt', 'int', 4);
+let W_FUNIT_ID = m.ParamDefaultGet(u, 'wFUnitId', 'int', 4);
+let W_FPORT_ID = m.ParamDefaultGet(u, 'wFPortId', 'int', 4);
+
+var W_GLOBAL_FUNIT_ID = wGlobalFUnitId;
+var wFUnitId = W_FUNIT_ID;
+var wFPortId = W_FPORT_ID;
+
+let W_N_C_AGENTS = Math.max(m.log2ceil(N_C_AGENTS), 1);
+
+let W_RB_ID = RBR_REQ_INTF.rb_id - 1;
+let W_MSG_ID = CMD_REQ_INTF.message_id;
+let W_INIT_ID = CMD_REQ_INTF.initiator_id;
+let W_TARGET_ID = CMD_REQ_INTF.target_id;
+let W_CM_TYPE = CMD_REQ_INTF.cm_type;
+let W_H_PROT = CMD_REQ_INTF.h_prot;
+let W_T_TIER = SNP_REQ_INTF.t_tier;
+let W_STEER = SNP_REQ_INTF.steering;
+let W_PRI = SNP_REQ_INTF.priority;
+let W_QL =  SNP_REQ_INTF.ql;
+let W_CM_STATUS = CMD_REQ_INTF.cm_status;
+let W_ADDR = CMD_REQ_INTF.addr;
+let W_VZ = CMD_REQ_INTF.vz;
+let W_AC = CMD_REQ_INTF.ac;
+let W_CA = CMD_REQ_INTF.ca;
+let W_CH = CMD_REQ_INTF.ch;
+let W_ST = CMD_REQ_INTF.st;
+let W_EN = CMD_REQ_INTF.en;
+let W_ES = CMD_REQ_INTF.es;
+let W_NS = CMD_REQ_INTF.ns;
+let W_PR = CMD_REQ_INTF.pr;
+let W_OR = CMD_REQ_INTF.or;
+let W_LK = CMD_REQ_INTF.lk;
+let W_RL = CMD_REQ_INTF.rl;
+let W_TM = CMD_REQ_INTF.tm;
+let W_MPF1 = CMD_REQ_INTF.mpf1;
+let W_MPF2 = CMD_REQ_INTF.mpf2;
+let W_MPF3 = SNP_REQ_INTF.mpf3;
+let W_SIZE = CMD_REQ_INTF.size;
+let W_INTF_SIZE = CMD_REQ_INTF.intf_size;
+let W_AUX = CMD_REQ_INTF.aux;
+let W_D_ID = CMD_REQ_INTF.d_id;
+let W_TOF = CMD_REQ_INTF.tof;
+let W_R_TYPE = RBR_REQ_INTF.r_type;
+let W_MW = RBR_REQ_INTF.mw;
+let W_UP = SNP_REQ_INTF.up;
+let W_QOS = SNP_REQ_INTF.qos;
+let W_CM_ERR = 3;
+let W_CM_STATE = 3;
+
+    if (nChiplets > 1) {
+var req_snp_mpf1_padding0 = W_MPF1 > W_GLOBAL_FUNIT_ID ? "{" + (W_MPF1-W_GLOBAL_FUNIT_ID) + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ ""
+    } else {
+var req_snp_mpf1_padding0 = W_MPF1 > W_FUNIT_ID ? "{" + (W_MPF1-W_FUNIT_ID) + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ ""
+    }
+let req_snp_mpf2_padding0 = W_MPF2 > W_MSG_ID   ? "{" + (W_MPF2-W_MSG_ID)   + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ "";
+let req_snp_mpf3_padding0 = W_MPF3 > W_FUNIT_ID ? "{" + (W_MPF3-W_FUNIT_ID) + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ "";
+
+    if (nChiplets > 1) {
+var req_mrd_mpf1_padding0 = W_MPF1 > W_GLOBAL_FUNIT_ID ? "{" + (W_MPF1-W_GLOBAL_FUNIT_ID) + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ "";
+    } else {
+var req_mrd_mpf1_padding0 = W_MPF1 > W_FUNIT_ID ? "{" + (W_MPF1-W_FUNIT_ID) + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ "";
+    }
+let req_mrd_mpf2_padding0 = W_MPF2 > W_MSG_ID   ? "{" + (W_MPF2-W_MSG_ID)   + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ "";
+
+let req_str_mpf1_padding0 = W_MPF1 > W_FUNIT_ID ? "{" + (W_MPF1-W_FUNIT_ID) + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ "";
+let req_str_mpf2_padding0 = W_MPF2 > W_MSG_ID   ? "{" + (W_MPF2-W_MSG_ID)   + "{1'b0}}," : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ "";
+
+//
+// Ports
+//
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+u.port('input', 'ca_f_unit_id', N_C_AGENTS*W_FUNIT_ID);
+
+if (nChiplets > 1) {
+u.port('input', 'ca_global_f_unit_id', nCachingAgents * wGlobalFUnitId);
+u.port('input', 'ca_global_f_unit_id_valid', nCachingAgents);
+}
+
+u.port('input', 'dmi_f_unit_id',  N_DMIS*W_FUNIT_ID);
+u.port('input', 'connected_dmi_f_unit_id' ,  N_CONNECTED_DMIS*W_FUNIT_ID);
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveFlopsToTop) {
+
+u.port('output', 'en_att_req_alloc_bundle', 1);
+u.port('output', 'in_att_req_alloc_bundle', att_req_alloc_bundle_width);
+u.port('input',  'out_att_req_alloc_bundle', att_req_alloc_bundle_width);
+
+u.port('output', 'en_att_alloc_bundle', 1);
+u.port('output', 'in_att_alloc_bundle', att_alloc_bundle_width);
+u.port('input',  'out_att_alloc_bundle', att_alloc_bundle_width);
+
+}
+
+if (useQos) {
+u.port('input', 'csr_eviction_qos', 4);
+u.port('input', 'csr_use_eviction_qos', 1);
+}
+
+//
+// Alloc signals
+//
+
+u.port('input',  'alloc', 1); //dce_tm: att_req_alloc[gi] WHERE att_req_alloc = att_req_avail & {N_ATT{tm_req_alloc_valid & tm_req_alloc_ready}};
+u.port('output', 'valid', 1);
+u.port('output', 'valid_early', 1);
+u.port('output', 'timeout_overflow', 1);
+u.port('input',  'timeout_overflow_event', 1);
+u.port('input',  'timeout_overflow_event_clr', 1);
+
+                                //dce_tm: p1_att_req_alloc = flop( att_req_alloc )
+u.port('input', 'p1_alloc', 1); //dce_tm: p1_req_att_alloc[gi] WHERE p1_req_att_alloc = (p1_req_wakeup_valid) ? p1_wakeup_req_att : p1_att_req_alloc;
+u.port('input', 'p1_att_snp_all', 1);          //load to register UPON p1_alloc
+u.port('input', 'p1_att_snp_type', W_CM_TYPE); //load to register UPON p1_alloc;
+u.port('input', 'p1_att_mrd_type', W_CM_TYPE); //load to register UPON p1_alloc
+u.port('input', 'p1_att_mrd_type_valid', 1);   //load to register UPON p1_alloc
+u.port('input', 'p1_att_write_rbid_valid', 1); //load to register UPON p1_alloc
+u.port('input', 'p1_att_req_wakeup_valid', 1); //FOR last_en = (~p1_att_req_wakeup_valid & p1_alloc) | (att_entry_coll_en | de_alloc_pulse);
+u.port('input', 'p1_att_req_stash_mpf1', 1);   //load to register UPON p1_alloc_en WHERE p1_alloc_en = p1_alloc | de_alloc_pulse
+
+u.port('input', 'p3_att_exmon_en', 1);
+u.port('input', 'p3_att_exmon_status', 1);
+u.port('input', 'p3_att_exmon_store_fail', 1);
+
+u.port('output', 'att_entry_way_vec', N_WAYS);
+u.port('output', 'att_entry_agent_active_vec', N_C_AGENTS); 
+
+//
+// Recall signals 
+//
+
+u.port('input', 'addr_map_error', 1);
+u.port('input', 'recall_alloc', 1); //dce_tm: att_recall_alloc[gi] WHERE att_recall_alloc = att_recall_avail & {N_ATT{dm_recall_alloc_valid & dm_recall_alloc_ready}};
+u.port('input', 'recall_ns', W_NS);
+u.port('input', 'recall_addr', W_ADDR);
+u.port('input', 'recall_d_id', W_D_ID);
+u.port('input', 'recall_sharer_vec', N_C_AGENTS);
+u.port('output', 'recall_req', 1);
+
+//
+// Timing fix for recall_d_id 
+//
+u.port('input', 'q_recall_alloc', 1);
+u.port('input', 'q_recall_d_id', W_D_ID);
+u.port('input', 'q_addr_map_error', 1);
+
+//
+// Sleep signals 
+//
+u.port('input', 'att_entry_sleep', 1);
+u.port('input', 'att_entry_wake', 1);
+
+u.port('input', 'att_entry_coll_en', 1);
+u.port('input', 'att_entry_coll_num', W_N_ATT);
+u.port('output', 'att_entry_last', 1);
+u.port('output', 'att_entry_addr_comp_valid', 1); //att_entry_addr_comp_valid = valid & ~de_alloc_pulse;
+u.port('output', 'att_entry_wake_next', N_ATT);
+
+u.port('output', 'att_entry_wakeup_req_valid', 1);
+u.port('input', 'att_entry_wakeup_req_ready', 1);
+
+//
+// Tx Packet interface
+//
+
+u.port('output', 'att_entry_req_snp_valid', 1);
+u.port('input', 'att_entry_req_snp_ready', 1);
+u.port('output', 'att_entry_req_snp_last', 1);
+u.port('output', 'att_entry_req_mrd_valid', 1);
+u.port('input', 'att_entry_req_mrd_ready', 1);
+u.port('output', 'att_entry_req_mrd_last', 1);
+u.port('output', 'att_entry_req_rbr_valid', 1);
+u.port('input', 'att_entry_req_rbr_ready', 1);
+u.port('output', 'att_entry_req_rbr_last', 1);
+u.port('output', 'att_entry_req_str_valid', 1);
+u.port('input', 'att_entry_req_str_ready', 1);
+u.port('output', 'att_entry_req_str_last', 1);
+
+u.port('output', 'att_entry_req_addr', W_ADDR);
+u.port('output', 'att_entry_req_type', W_CM_TYPE); 
+u.port('output', 'att_entry_req_mrd_type', W_CM_TYPE);
+u.port('output', 'att_entry_req_snp_type', W_CM_TYPE);
+u.port('output', 'att_entry_req_vz', W_VZ);
+u.port('output', 'att_entry_req_ac', W_AC);
+u.port('output', 'att_entry_req_ca', W_CA);
+u.port('output', 'att_entry_req_ch', W_CH);
+u.port('output', 'att_entry_req_st', W_ST);
+u.port('output', 'att_entry_req_en', W_EN);
+u.port('output', 'att_entry_req_es', W_ES);
+u.port('output', 'att_entry_req_ns', W_NS);
+u.port('output', 'att_entry_req_pr', W_PR);
+u.port('output', 'att_entry_req_or', W_OR);
+u.port('output', 'att_entry_req_lk', W_LK);
+u.port('output', 'att_entry_req_rl', W_RL);
+u.port('output', 'att_entry_req_tm', W_TM);
+u.port('output', 'att_entry_req_mpf1', W_MPF1);
+u.port('output', 'att_entry_req_mpf2', W_MPF2);
+u.port('output', 'att_entry_req_size', W_SIZE);
+u.port('output', 'att_entry_req_intf_size', W_INTF_SIZE);
+u.port('output', 'att_entry_req_d_id', W_D_ID);
+u.port('output', 'att_entry_req_tof',  W_TOF);
+u.port('output', 'att_entry_req_r_type', W_R_TYPE);
+u.port('output', 'att_entry_req_mw', W_MW);
+u.port('output', 'att_entry_req_rb_id', W_RB_ID);
+u.port('output', 'att_entry_req_gid', 1);
+u.port('output', 'att_entry_req_cm_status', W_CM_STATUS);
+u.port('output', 'att_entry_req_up', W_UP);
+if(W_AUX != 0) {
+u.port('output', 'att_entry_req_aux', W_AUX);
+}
+if(W_QOS != 0) {
+u.port('output', 'att_entry_req_qos', W_QOS);
+u.port('output', 'att_entry_req_pri', W_PRI);
+}
+u.port('output', 'att_entry_req_initiator_id', W_INIT_ID);
+u.port('output', 'att_entry_req_message_id', W_MSG_ID);
+u.port('output', 'att_entry_snp_req_target_id', W_TARGET_ID);
+u.port('output', 'att_entry_mrd_req_rl', W_RL);
+
+u.port('output', 'att_entry_req_snp_mpf1', W_MPF1);
+u.port('output', 'att_entry_req_snp_mpf2', W_MPF2);
+u.port('output', 'att_entry_req_snp_mpf3', W_MPF3);
+
+u.port('output', 'att_entry_req_mrd_mpf1', W_MPF1);
+u.port('output', 'att_entry_req_mrd_mpf2', W_MPF2);
+
+u.port('output', 'att_entry_req_str_mpf1', W_MPF1);   
+u.port('output', 'att_entry_req_str_mpf2', W_MPF2);   
+u.port('output', 'att_entry_req_str_tm', 1);   
+u.port('output', 'att_entry_req_str_intf_size', W_INTF_SIZE);
+
+// Directory input signals	
+u.port('input', 'att_entry_dm_rsp_valid', 1);
+u.port('input', 'att_entry_dm_rsp_way_vec', N_WAYS);
+u.port('input', 'att_entry_dm_rsp_owner_valid',  1);
+u.port('input', 'att_entry_dm_rsp_owner_num', W_N_C_AGENTS);
+u.port('input', 'att_entry_dm_rsp_owner_vec', N_C_AGENTS);
+u.port('input', 'att_entry_dm_rsp_sharer_vec', N_C_AGENTS);
+u.port('input', 'att_entry_dm_rsp_wr_required', 1);
+u.port('input', 'att_entry_dm_rsp_error', 1);
+
+// Directory otuput signals 
+u.port('input', 'att_entry_dm_write_ready', 1);
+u.port('output', 'att_entry_dm_write_valid', 1);
+u.port('output', 'att_entry_dm_write_last', 1);
+u.port('output', 'att_entry_dm_write_addr', W_ADDR);
+u.port('output', 'att_entry_dm_write_ns', W_NS);
+u.port('output', 'att_entry_dm_write_way_vec', N_WAYS);
+u.port('output', 'att_entry_dm_write_owner_valid', 1);
+u.port('output', 'att_entry_dm_write_owner_num', W_N_C_AGENTS);
+u.port('output', 'att_entry_dm_write_sharer_vec', N_C_AGENTS);
+u.port('output', 'att_entry_dm_write_change_vec', N_C_AGENTS);
+
+
+u.port('input', 'att_entry_dm_write_way_vec_clr', 1);
+// ReqB signals
+
+u.port('output', 'att_rb_id_req', '1');
+u.port('output', 'att_rb_id_d_id_vec', N_CONNECTED_DMIS);
+u.port('output', 'mrd_att_rb_id_d_id_vec', N_DMIS);
+u.port('output', 'att_rb_id_d_id', W_D_ID);
+
+u.port('input', 'att_rb_id_grant', '1');
+u.port('input', 'att_rb_id_in', W_RB_ID);
+u.port('input', 'att_rb_id_in_gid', '1');
+
+u.port('output', 'att_rb_id_void_valid', '1');
+u.port('output', 'att_rb_id_out', W_RB_ID);
+u.port('output', 'att_rb_id_out_gid', 1);
+u.port('output', 'att_entry_req_rbr_reserve_sent', 1);
+
+// credits
+
+u.port('output', 'att_mrd_credit_req', 1);
+u.port('input', 'att_mrd_credit_grant', N_DMIS);
+u.port('input', 'att_mrd_credit_grant_err', N_DMIS);
+
+u.port('output', 'att_snp_credit_req', 1);
+u.port('output', 'att_snp_credit_id_vec', N_C_AGENTS);
+u.port('input', 'att_snp_credit_grant', N_C_AGENTS);
+
+u.port('input', 'csr_SnoopEnable', N_C_AGENTS);
+u.port('output', 'snp_rsp_miss', 1);
+//
+// Interfaces
+//
+
+m.defineSlavePortsFromInterface('cmd_req_', CMD_REQ_INTF, u.port, ['ready', 'valid']);
+m.defineSlavePortsFromInterface('mrd_rsp_', MRD_RSP_INTF, u.port, ['ready']);
+m.defineSlavePortsFromInterface('snp_rsp_', SNP_RSP_INTF, u.port, ['ready']);
+m.defineSlavePortsFromInterface('str_rsp_', STR_RSP_INTF, u.port, ['ready']);
+  
+//
+// Module
+//
+
+\jsend
+
+module \=u.getModuleName()=\
+           #(
+             parameter ATT_ID = 1
+             )
+             (\=u.getPorts('\n')=\
+              );
+   
+//
+// verilog params
+//
+
+localparam
+  W_RB_ID = \=W_RB_ID=\,
+  W_MSG_ID = \=W_MSG_ID=\,
+  W_TARGET_ID = \=W_TARGET_ID=\,
+  W_ADDR = \=W_ADDR=\,
+  W_CM_TYPE = \=W_CM_TYPE=\,
+  W_VZ = \=W_VZ=\,
+  W_AC = \=W_AC=\,
+  W_CA = \=W_CA=\,
+  W_CH = \=W_CH=\,
+  W_ST = \=W_ST=\,
+  W_EN = \=W_EN=\,
+  W_ES = \=W_ES=\,
+  W_NS = \=W_NS=\,
+  W_PR = \=W_PR=\,
+  W_OR = \=W_OR=\,
+  W_LK = \=W_LK=\,
+  W_RL = \=W_RL=\,
+  W_TM = \=W_TM=\,
+  W_MPF1 = \=W_MPF1=\,
+  W_MPF2 = \=W_MPF2=\,
+  W_MPF3 = \=W_MPF3=\,
+  W_SIZE = \=W_SIZE=\,
+  W_INTF_SIZE = \=W_INTF_SIZE=\,
+  W_AUX = \=W_AUX=\,
+  W_D_ID = \=W_D_ID=\,
+  W_TOF = \=W_TOF=\,
+  W_CM_STATUS = \=W_CM_STATUS=\,
+  W_R_TYPE = \=W_R_TYPE=\,
+  W_MW = \=W_MW=\,
+  W_UP = \=W_UP=\,
+  W_QOS = \=W_QOS=\,
+  W_INIT_ID = \=W_INIT_ID=\,
+  W_N_C_AGENTS = \=W_N_C_AGENTS=\,
+  N_C_AGENTS = \=N_C_AGENTS=\,
+  N_SF = \=N_SF=\,
+  N_WAYS = \=N_WAYS=\,
+  W_N_ATT = \=W_N_ATT=\,
+  N_ATT = \=N_ATT=\,
+  W_GLOBAL_FUNIT_ID = \=W_GLOBAL_FUNIT_ID=\,
+  W_FUNIT_ID = \=W_FUNIT_ID=\,
+  W_FPORT_ID = \=W_FPORT_ID=\,
+  N_DMIS = \=N_DMIS=\,
+  N_CONNECTED_DMIS = \=N_CONNECTED_DMIS=\,
+  SNP_ERR = 7,
+  SNP_RV = 5,
+  SNP_RS = 4,
+  SNP_DC = 3,
+  SNP_DT1 = 2,
+  SNP_DT0 = 1,
+  SNP_SNARF = 0,
+  W_CM_ERR = \=W_CM_ERR=\,
+  W_CM_STATE = \=W_CM_STATE=\,
+  W_PRI = \=W_PRI=\,
+  CM_OWNER = 3'b010,
+  CM_SHARER = 3'b011,
+  CM_UNIQ = 3'b100,
+  CM_INVAL =  3'b000;
+//
+// Code
+//
+wire att_entry_snp_cln_dtw;
+wire [1:0] q_snp_req_up;
+wire str_req_cm_status_en;   
+wire [W_CM_STATUS-1:0] str_req_cm_status_in, str_req_cm_status;
+genvar gi;
+wire stsh_once_target_snoop_err;
+wire recall_alloc_q0;
+wire cmd_cln_sf;
+wire cmd_aw_uniq;
+wire rbr_req_write_no_snp, rbr_reserve_sent_en;
+wire snp_pending_clr;
+wire no_snps_required_q0;
+wire snp_targ_me, snp_targ_vec_set, snp_targ_vec_clr;
+wire snp_rsp_dtr_in, snp_rsp_owner_wr_stash;
+wire snp_sharer_init_vec_update;
+wire mrd_pending_clr;
+wire mrd_rsp_pending_q0, str_rsp_pending_q0, mrd_pending_q0;
+wire de_alloc, de_alloc_q0, de_alloc_q1, de_alloc_pulse;
+wire valid_en, valid_in;
+wire snp_pending_set, snp_pending_set_q0, snp_pending_en, snp_pending_in, snp_pending_q0;
+wire [N_C_AGENTS-1:0] snp_vec_q0;
+wire att_entry_mrd_type_valid, att_entry_write_rbid_valid;   
+wire [W_CM_TYPE-1:0] att_entry_snp_type_q0, att_entry_mrd_type, att_entry_mrd_type_overwritten;
+wire cmd_type_wrbk, cmd_type_wrcln, cmd_type_wrunq, cmd_type_wr, cmd_type_cln_unq, cmd_init_valid;
+wire cmd_type_wrstsh, cmd_type_inv, cmd_type_stsh_once, cmd_type_atomics, cmd_init_owner;
+wire cmd_wrcln_sd;   
+wire cmd_type_rds_mkclnunq;
+wire att_entry_owner_valid_set, att_entry_owner_valid_clr, att_entry_owner_valid_en, att_entry_owner_valid_in, att_entry_owner_valid_q0;
+wire att_entry_owner_num_set, att_entry_owner_num_clr, att_entry_owner_num_en;
+wire att_entry_sharer_vec_set, att_entry_sharer_vec_clr,att_entry_sharer_vec_en;
+wire [N_C_AGENTS-1:0] att_entry_sharer_vec_in, att_entry_owner_vec_in, att_entry_sharer_vec_q0, att_entry_sharer_vec_orignal_in, att_entry_sharer_vec_orignal_q0, att_entry_owner_vec_q0, att_entry_owner_vec, att_entry_sharer_vec;
+wire att_entry_way_vec_set, att_entry_way_vec_clr, att_entry_way_vec_en;
+wire [N_WAYS-1:0] att_entry_way_vec_in;
+wire [N_WAYS-1:0] att_entry_way_vec_q0;
+wire att_entry_snp_all_set, att_entry_snp_all_clr, att_entry_snp_all_en, att_entry_snp_all_in, att_entry_snp_all_q0;
+wire snp_target_first_in, snp_target_first_en, snp_target_first_set, snp_target_first_clr;   
+wire second_snp_stash_wu, second_snp_stash_ws, all_snp_rsp_done, all_snp_rsp_done_q0, all_snp_rsp_done_q1, all_snp_rsp_done_pulse_q0;  
+wire stash_snp_no_snarf, snp_rsp_no_snarf, snp_rsp_snarf_en, snp_rsp_snarf_in, snp_rsp_snarf_q0;
+wire [N_C_AGENTS-1:0] snp_rsp_owner_vec, snp_targ_owner_vec,  snp_targ_sharer_vec, snp_rsp_owner_in_vec;   
+   
+wire no_snps_required, snp_rsp_dtw_q0, snp_rsp_pending, mrd_pending_set;
+wire dm_rsp_pending_q0, dm_rsp_pending_set, dm_rsp_pending_clr, dm_rsp_pending_en, dm_rsp_pending_in;
+   
+wire snp_targ_vec_en, snp_req_up_en;
+wire [W_UP-1:0] snp_req_up_in;
+wire snp_target_first_pulse, snp_target_first_done_pulse, snp_target_first_q0, snp_target_first_q1;
+wire cmd_init_nca;   
+wire [N_C_AGENTS-1:0] snp_targ_vec_in, snp_targ_vec_q0, snp_targ_vec_ready, snp_targ_vec_grant, stash_targ_vec, cmd_init_vec;
+wire [N_C_AGENTS-1:0] snp_targ_stash_owner_vec, snp_targ_stash_sharer_vec;
+wire [W_N_C_AGENTS-1:0] stash_targ_num;   
+wire second_snp_stash, second_snp_stash_q0, no_second_snp_stash, snp_targ_owner_sel;
+
+wire [N_C_AGENTS-1:0] dm_write_ca_inval, dm_write_ca_set;
+wire [N_SF-1:0] dm_write_sf_inval;
+wire [N_WAYS-1:0] dm_write_sf_inval_mask;
+
+wire snp_rsp_for_sharer_promotion;
+wire snp_rsp_my, snp_rsp_pending_vec_en, snp_rsp_pending_vec_set, snp_rsp_pending_vec_clr;
+wire snp_rsp_owner_num_clr, snp_rsp_owner_num_en;
+wire snp_rsp_snarf_owner_in, snp_rsp_snarf_owner_q0;
+wire snp_rsp_owner_valid_set, snp_rsp_owner_valid_clr, snp_rsp_owner_valid_en, snp_rsp_owner_valid_in, snp_rsp_owner_valid_q0;   
+wire snp_rsp_owner_valid_in_org;
+wire [N_C_AGENTS-1:0] snp_rsp_pending_vec_q0, snp_rsp_pending_vec_in, snp_rsp_init_vec, snp_rsp_init_vec_n, snp_rsp_owner_trf_init_q0;
+wire [W_N_C_AGENTS-1:0] snp_rsp_owner_num_in, snp_rsp_owner_num_q0, snp_rsp_init_num_q0, cmd_init_num, snp_rsp_init_num;
+wire [W_N_C_AGENTS-1:0] snp_rsp_owner_num_in_org;
+wire snp_rsp_owner, snp_rsp_sharer, snp_rsp_owner_trf, snp_rsp_owner_clr, snp_rsp_dtr, snp_rsp_dtw, snp_rsp_snarf;
+wire snp_rsp_dtw_set, snp_rsp_dtw_clr, snp_rsp_dtw_en, snp_rsp_dtw_in;
+wire [W_CM_TYPE-1:0] mrd_rd_cln_type, mrd_type_in, mrd_type_q0;
+wire snp_rsp_dtr_en, snp_rsp_dtr_q0, all_snp_rsp_done_en;
+wire snp_rsp_err, snp_rsp_no_err, snp_rsp_err_q0, snp_rsp_owner_trf_en, snp_rsp_owner_trf_in, snp_rsp_owner_trf_q0;
+wire [W_CM_STATE-1:0] cm_state, cm_state_org;
+wire cmd_type_ex, cmd_type_evict, cmd_wrunq_owner, cmd_wrunq_sharer;  
+wire [W_CM_ERR-1:0] snp_rsp_err_info_q0, snp_rsp_err_info;
+wire snp_rsp_err_info_en, snp_rsp_err_is_addr, snp_rsp_err_is_addr_for_non_inv_type, att_entry_snp_non_inv_type, snp_rsp_err_is_addr_owner_clr;
+wire snp_rsp_owner_sharer;
+wire snp_rsp_intf_size_en, snp_rsp_mpf1_en;
+wire [W_MPF1-1:0] snp_rsp_mpf1_q0, snp_rsp_mpf1_in;
+wire [W_INTF_SIZE-1:0] snp_rsp_intf_size_q0, snp_rsp_intf_size_in;
+ 
+wire dm_write_pending_set, dm_write_pending_clr, dm_write_pending_en, dm_write_pending_in, dm_write_pending_q0;
+wire dm_write_pending_preset, dm_write_pending_preset_q0;
+wire set_new_owner, clr_old_owner;
+
+wire att_entry_dir_error_in;
+wire att_entry_dir_error_en;
+wire att_entry_dir_error_q0;                  
+
+wire sleep;
+
+wire dm_rsp_valid;
+wire att_entry_dm_rsp_wr_required_en, att_entry_dm_rsp_wr_required_in, att_entry_dm_rsp_wr_required_q0;
+
+wire wrstsh_valid;
+
+
+
+\js if (nChiplets > 1) {
+
+wire [\=wGlobalFUnitId-1=\:0] att_entry_req_initiator_global_f_unit_id;
+wire [\=wGlobalFUnitId-1=\:0] snp_rsp_initiator_global_f_unit_id;
+
+assign att_entry_req_initiator_global_f_unit_id = {
+            att_entry_req_initiator_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\],
+            att_entry_req_initiator_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\]
+                                                  };
+
+assign snp_rsp_initiator_global_f_unit_id = {
+            snp_rsp_initiator_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\],
+            snp_rsp_initiator_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\]
+                                                  };
+
+\js }
+
+//=============================================================================     
+// Valid
+//=============================================================================     
+
+assign valid_early = alloc | recall_alloc ? 1'b1 : de_alloc_pulse ? 1'b0 : valid;
+
+assign valid_en = alloc | recall_alloc | de_alloc_pulse;
+assign valid_in = alloc | recall_alloc;   
+\=u.dffre(1, 'valid', 'valid_in', "1'b0", 'valid_en', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'recall_req', 'recall_alloc', "1'b0", 'valid_en', 'clk', 'reset_n')=\
+
+assign recall_alloc_q0 = q_recall_alloc & ~q_addr_map_error;
+
+assign dm_rsp_valid = att_entry_dm_rsp_valid;
+
+//=============================================================================     
+// Sleep / Wakeup / Collision
+//=============================================================================     
+
+\=u.instance({
+    instanceName : 'u_sleep_wake',
+    moduleName : 'dce_att_entry_sleep_wake',
+    params : {
+        nAtt        : N_ATT,
+        wNumAtt     : W_N_ATT
+    },
+    ports : {
+        clk                       : 'clk',
+        reset_n                   : 'reset_n',
+
+        att_entry_sleep           : 'att_entry_sleep',
+        att_entry_wake            : 'att_entry_wake',
+        att_entry_coll_en         : 'att_entry_coll_en',           //OUTPUT
+        att_entry_coll_num        : 'att_entry_coll_num',          //OUTPUT
+        att_entry_last            : 'att_entry_last',              //OUTPUT
+        att_entry_addr_comp_valid : 'att_entry_addr_comp_valid',   //OUTPUT
+        att_entry_wake_next       : 'att_entry_wake_next',         //OUTPUT
+
+        att_entry_wakeup_req_valid : 'att_entry_wakeup_req_valid', //OUTPUT
+        att_entry_wakeup_req_ready : 'att_entry_wakeup_req_ready',
+
+        sleep                      : 'sleep',                      //OUTPUT
+
+        valid                      : 'valid',
+        de_alloc_pulse             : 'de_alloc_pulse',
+        p1_att_req_wakeup_valid    : 'p1_att_req_wakeup_valid',
+        p1_alloc                   : 'p1_alloc'
+    }
+})=\
+
+//=============================================================================     
+// Alloc
+//=============================================================================     
+
+wire req_alloc;
+wire p1_req_alloc;  
+wire p1_alloc_en;
+
+assign req_alloc = recall_alloc | alloc;   
+
+assign p1_req_alloc = recall_alloc | p1_alloc;   
+
+assign p1_alloc_en = p1_alloc | de_alloc_pulse;  
+
+//=============================================================================     
+// Static registers enabled by q_recall_alloc | alloc
+//=============================================================================     
+
+wire [W_D_ID-1:0] in_att_entry_req_d_id;
+wire              en_att_entry_req_d_id;
+
+\=u.dffre(W_D_ID, 'att_entry_req_d_id', 'in_att_entry_req_d_id', "{"+W_D_ID+"{1'b0}}", 'en_att_entry_req_d_id', 'clk', 'reset_n')=\
+
+assign en_att_entry_req_d_id = q_recall_alloc | alloc;
+assign in_att_entry_req_d_id = q_recall_alloc ? q_recall_d_id : cmd_req_d_id;
+
+//=============================================================================     
+// Static registers enabled by req_alloc = recall_alloc | alloc
+//=============================================================================     
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (!useMoveFlopsToTop) {
+\jsend
+
+wire [\=att_req_alloc_bundle_width-1=\:0] in_att_req_alloc_bundle;
+wire [\=att_req_alloc_bundle_width-1=\:0] out_att_req_alloc_bundle;
+wire en_att_req_alloc_bundle;
+
+\=u.dffre(att_req_alloc_bundle_width, 'out_att_req_alloc_bundle', 'in_att_req_alloc_bundle', "{"+att_req_alloc_bundle_width+"{1'b0}}", 'en_att_req_alloc_bundle', 'clk', 'reset_n')=\
+
+\js }
+
+\=bundleFunctions.wiresFromInterface('in_att_entry_req_',  att_req_alloc_bundle, ['d_id'], u.bundle)=\
+\=bundleFunctions.wiresFromInterface('out_att_entry_req_', att_req_alloc_bundle, ['d_id'], u.bundle)=\ 
+
+assign in_att_entry_req_type      = (recall_alloc) ? \=CM_TYPE.CmdClnInv=\ : cmd_req_cm_type;
+assign in_att_entry_req_addr      = (recall_alloc) ? recall_addr : cmd_req_addr;
+assign in_att_entry_req_ns        = (recall_alloc) ? recall_ns : cmd_req_ns;
+
+\js //assign in_att_entry_req_d_id      = (recall_alloc) ? recall_d_id : cmd_req_d_id;   
+
+assign in_att_entry_req_vz        = (recall_alloc) ? 1'b0 : cmd_req_vz;
+assign in_att_entry_req_ac        = (recall_alloc) ? 1'b1 : cmd_req_ac;
+assign in_att_entry_req_ca        = (recall_alloc) ? 1'b1 : cmd_req_ca;
+assign in_att_entry_req_ch        = (recall_alloc) ? 1'b1 : cmd_req_ch;
+assign in_att_entry_req_pr        = (recall_alloc) ? 1'b1 : cmd_req_pr;
+assign in_att_entry_req_tm        = (recall_alloc) ? 1'b0 : cmd_req_tm;
+assign in_att_entry_req_intf_size = (recall_alloc) ? \=W_INTF_SIZE=\'d1 : cmd_req_intf_size;   
+assign in_att_entry_req_size      = (recall_alloc) ? \=W_SIZE=\'d6 : cmd_req_size;  
+assign in_att_entry_req_tof       = (recall_alloc) ? {W_TOF{1'b0}} : cmd_req_tof;
+
+\jsbegin
+if ( W_QOS != 0 ) {
+  /* istanbul ignore else env ncore_3p6, ncore_3p7 */
+  if (useQos) {
+\jsend
+assign in_att_entry_req_qos = (recall_alloc) ? (csr_use_eviction_qos ? csr_eviction_qos : \=W_QOS=\'d15) : cmd_req_qos;
+  \js } else {
+assign in_att_entry_req_qos = (recall_alloc) ? \=W_QOS=\'d15 : cmd_req_qos;
+  \js }
+\js }
+\js if ( W_PRI != 0 ) {
+assign in_att_entry_req_pri = (recall_alloc) ? \=W_PRI=\'d0  : cmd_req_priority;
+\js }
+\js if ( W_AUX != 0 ) {
+assign in_att_entry_req_aux = (recall_alloc) ? \=W_AUX=\'d0  : cmd_req_aux;
+\js }
+
+assign in_att_req_alloc_bundle = \=bundleFunctions.packetizeBundle('in_att_entry_req_', att_req_alloc_bundle, [], u.bundle)=\;
+
+assign \=bundleFunctions.packetizeBundle('out_att_entry_req_', att_req_alloc_bundle, [], u.bundle)=\ = out_att_req_alloc_bundle;
+
+assign en_att_req_alloc_bundle = req_alloc;
+
+\=bundleFunctions.assignByBundle('att_entry_req_', 'out_att_entry_req_', att_req_alloc_bundle, ['intf_size'], u.bundle)=\
+
+
+assign att_entry_req_intf_size = cmd_type_stsh_once & mrd_pending_q0 & snp_rsp_snarf_q0 ? snp_rsp_intf_size_q0 : out_att_entry_req_intf_size;  
+
+//=============================================================================     
+// Static registers enabled by alloc
+//=============================================================================     
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (!useMoveFlopsToTop) {
+\jsend
+
+wire [\=att_alloc_bundle_width-1=\:0] in_att_alloc_bundle;
+wire [\=att_alloc_bundle_width-1=\:0] out_att_alloc_bundle;
+wire en_att_alloc_bundle;
+
+\=u.dffre(att_alloc_bundle_width, 'out_att_alloc_bundle', 'in_att_alloc_bundle', "{"+att_alloc_bundle_width+"{1'b0}}", 'en_att_alloc_bundle', 'clk', 'reset_n')=\
+
+\js }
+
+\=bundleFunctions.wiresFromInterface('in_att_entry_req_',  att_alloc_bundle, [], u.bundle)=\
+\=bundleFunctions.wiresFromInterface('out_att_entry_req_', att_alloc_bundle, [], u.bundle)=\ 
+
+assign in_att_entry_req_initiator_id = cmd_req_initiator_id;
+assign in_att_entry_req_message_id   = cmd_req_message_id;
+assign in_att_entry_req_st           = cmd_req_st;
+assign in_att_entry_req_en           = cmd_req_en;
+assign in_att_entry_req_es           = cmd_req_es;
+assign in_att_entry_req_or           = cmd_req_or;
+assign in_att_entry_req_lk           = cmd_req_lk;
+assign in_att_entry_req_rl           = cmd_req_rl;
+assign in_att_entry_req_mpf1         = cmd_req_mpf1;
+assign in_att_entry_req_mpf2         = cmd_req_mpf2;
+
+assign in_att_alloc_bundle = \=bundleFunctions.packetizeBundle('in_att_entry_req_', att_alloc_bundle, [], u.bundle)=\;
+
+assign \=bundleFunctions.packetizeBundle('out_att_entry_req_', att_alloc_bundle, [], u.bundle)=\ = out_att_alloc_bundle;
+
+assign en_att_alloc_bundle = alloc;
+
+\=bundleFunctions.assignByBundle('att_entry_req_', 'out_att_entry_req_', att_alloc_bundle, [], u.bundle)=\
+
+
+\=u.dffre(1, 'att_entry_req_str_tm', 'cmd_req_tm', "1'b0", 'alloc', 'clk', 'reset_n')=\
+
+//=============================================================================     
+// Static registers enabled by p1_req_alloc = recall_alloc | p1_alloc
+//=============================================================================     
+
+wire [W_CM_TYPE-1:0] att_entry_snp_type_in;
+wire att_entry_mrd_type_valid_in;
+wire att_entry_write_rbid_valid_in;
+
+assign att_entry_snp_type_in = (recall_alloc) ? \=CM_TYPE.SnpInvDtw=\ : p1_att_snp_type;
+assign att_entry_mrd_type_valid_in = (recall_alloc) ? 1'b0 : p1_att_mrd_type_valid;
+assign att_entry_write_rbid_valid_in = (recall_alloc) ? 1'b1 : p1_att_write_rbid_valid;
+
+\=u.dffre(W_CM_TYPE, 'att_entry_snp_type_q0', 'att_entry_snp_type_in', "{W_CM_TYPE{1'b0}}", 'p1_req_alloc', 'clk', 'reset_n')=\
+\=u.dffre(1, 'att_entry_mrd_type_valid', 'att_entry_mrd_type_valid_in', "1'b0", 'p1_req_alloc', 'clk', 'reset_n')=\
+\=u.dffre(1, 'att_entry_write_rbid_valid', 'att_entry_write_rbid_valid_in', "1'b0", 'p1_req_alloc', 'clk', 'reset_n')=\
+
+//=============================================================================     
+// Static registers enabled by p1_alloc
+//=============================================================================     
+
+\=u.dffre(W_CM_TYPE, 'att_entry_mrd_type', 'p1_att_mrd_type', "{W_CM_TYPE{1'b0}}", 'p1_alloc', 'clk', 'reset_n')=\
+
+//=============================================================================     
+// Static registers enabled by p1_alloc_en = p1_alloc | de_alloc_pulse
+//=============================================================================     
+
+wire att_req_stash_mpf1;
+wire p1_att_req_stash_mpf1_in;  
+
+assign p1_att_req_stash_mpf1_in = (de_alloc_pulse) ? 1'b0 : p1_att_req_stash_mpf1;
+
+\=u.dffre(1, 'att_req_stash_mpf1', 'p1_att_req_stash_mpf1_in', "1'b0", 'p1_alloc_en', 'clk', 'reset_n')=\
+
+//=============================================================================     
+// Static registers enabled by att_exmon_store_fail_en = p3_att_exmon_en | de_alloc_pulse
+//=============================================================================     
+
+wire att_exmon_status;
+wire att_exmon_status_q0;
+wire att_exmon_store_fail;
+wire att_exmon_store_fail_q0;
+wire att_exmon_store_fail_in;
+wire att_exmon_store_fail_en;
+
+assign att_exmon_store_fail_en = p3_att_exmon_en | de_alloc_pulse;
+assign att_exmon_store_fail_in = de_alloc_pulse ? 1'b0 : p3_att_exmon_store_fail;
+
+\=u.dffre(1, 'att_exmon_store_fail_q0', 'att_exmon_store_fail_in', "1'b0", 'att_exmon_store_fail_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'att_exmon_status_q0',     'p3_att_exmon_status',     "1'b0", 'att_exmon_store_fail_en', 'clk', 'reset_n')=\
+
+assign att_exmon_status     = p3_att_exmon_en ? p3_att_exmon_status     : att_exmon_status_q0;
+assign att_exmon_store_fail = p3_att_exmon_en ? p3_att_exmon_store_fail : att_exmon_store_fail_q0;
+
+//=============================================================================     
+// Command decode
+//=============================================================================     
+
+assign cmd_type_cln_unq = (att_entry_req_type == \=CM_TYPE.CmdClnUnq=\ ) |
+			  (att_entry_req_type == \=CM_TYPE.CmdMkUnq=\ ) ;
+
+assign cmd_type_rds_mkclnunq = (att_entry_req_type == \=CM_TYPE.CmdRdCln=\ )
+                             | (att_entry_req_type == \=CM_TYPE.CmdRdVld=\ )
+                             | (att_entry_req_type == \=CM_TYPE.CmdRdNshDty=\ )
+                             | (att_entry_req_type == \=CM_TYPE.CmdRdUnq=\ )
+                             | (att_entry_req_type == \=CM_TYPE.CmdMkUnq=\ )
+                             | (att_entry_req_type == \=CM_TYPE.CmdClnUnq=\ );
+
+assign cmd_type_evict = (att_entry_req_type == \=CM_TYPE.CmdEvict=\ );
+  
+assign cmd_type_wrbk = ((att_entry_req_type == \=CM_TYPE.CmdWrBkPtl=\ ) |
+                        (att_entry_req_type == \=CM_TYPE.CmdWrBkFull=\ ) |
+                        (att_entry_req_type == \=CM_TYPE.CmdWrEvict=\ ));
+
+assign cmd_type_wrcln = ((att_entry_req_type == \=CM_TYPE.CmdWrClnFull=\ ) |
+                         (att_entry_req_type == \=CM_TYPE.CmdWrClnPtl=\ ));
+
+assign cmd_type_wrunq = ((att_entry_req_type == \=CM_TYPE.CmdWrUnqPtl=\ ) |
+                         (att_entry_req_type == \=CM_TYPE.CmdWrUnqFull=\ ));
+   
+assign cmd_type_wrstsh = ((att_entry_req_type == \=CM_TYPE.CmdWrStshFull=\ ) |
+                          (att_entry_req_type == \=CM_TYPE.CmdWrStshPtl=\ ));
+
+assign cmd_type_stsh_once = ((att_entry_req_type == \=CM_TYPE.CmdLdCchUnq=\ ) |
+                             (att_entry_req_type == \=CM_TYPE.CmdLdCchShd=\ ));
+
+assign cmd_type_inv = ((att_entry_req_type == \=CM_TYPE.CmdClnInv=\ ) |
+                       (att_entry_req_type == \=CM_TYPE.CmdMkInv=\ ));
+
+assign cmd_type_atomics = ((att_entry_req_type == \=CM_TYPE.CmdWrAtm=\ ) |
+                           (att_entry_req_type == \=CM_TYPE.CmdRdAtm=\ ) |
+                           (att_entry_req_type == \=CM_TYPE.CmdSwapAtm=\ ) |
+                           (att_entry_req_type == \=CM_TYPE.CmdCompAtm=\ ));
+
+assign cmd_type_ex = ((att_entry_req_type == \=CM_TYPE.CmdClnUnq=\   ) |
+                      (att_entry_req_type == \=CM_TYPE.CmdRdCln=\    ) |
+                      (att_entry_req_type == \=CM_TYPE.CmdRdVld=\    ) |
+                      (att_entry_req_type == \=CM_TYPE.CmdRdNshDty=\ )) & att_entry_req_es;   
+
+assign cmd_type_wr = cmd_type_wrbk | cmd_type_wrcln | cmd_type_wrunq | cmd_type_evict;
+
+//
+// command initiator is owner
+//
+assign cmd_init_owner = (att_entry_owner_valid_q0 & (cmd_init_vec == att_entry_owner_vec_q0) & ~cmd_init_nca);
+
+//
+// command initiator is owner or sharer
+//
+assign cmd_init_valid = cmd_init_owner | (| (att_entry_sharer_vec_q0 & cmd_init_vec));
+
+//
+// ACE AWUNIQUE
+//
+assign cmd_aw_uniq = (att_entry_req_tof == \=W_TOF=\'d2) & att_entry_req_mpf1[0];
+
+//
+// cmd_cln_sf means final state for requestor is IX
+//
+assign cmd_cln_sf = (cmd_type_wrunq & ((att_entry_req_tof != \=W_TOF=\'d2) | cmd_aw_uniq))
+                  | cmd_type_wrbk
+                  | cmd_type_evict
+                  | cmd_type_wrstsh
+                  | cmd_type_inv
+                  | cmd_type_stsh_once
+                  | cmd_type_atomics;  
+
+//
+// command wr stash valid with matching stash target id
+//
+assign wrstsh_valid = att_req_stash_mpf1 & cmd_type_wrstsh;
+
+//
+// WriteClean with an Owner and another Sharer => Owner: Shared Dirty,  Sharer: Shared Clean
+//
+assign cmd_wrcln_sd = cmd_type_wrcln & (cmd_init_owner & (| (att_entry_sharer_vec_q0 & ~cmd_init_vec)));
+
+//
+// WriteUnique with command initiator as the owner
+//
+assign cmd_wrunq_owner = cmd_type_wrunq & cmd_init_owner;
+
+//
+// WriteUnique with command initiator as the sharer
+//
+assign cmd_wrunq_sharer = cmd_type_wrunq & (| (att_entry_sharer_vec_q0 & cmd_init_vec));  
+   
+//=============================================================================     
+// DM rsp flops and logic
+//=============================================================================     
+              
+assign att_entry_owner_valid_set = att_entry_dm_rsp_owner_valid & dm_rsp_valid & (| att_entry_owner_vec_in);
+assign att_entry_owner_valid_clr = de_alloc_pulse;   
+assign att_entry_owner_valid_en = att_entry_owner_valid_set | att_entry_owner_valid_clr;     
+assign att_entry_owner_valid_in = att_entry_owner_valid_set;
+\=u.dffre(1, 'att_entry_owner_valid_q0', 'att_entry_owner_valid_in', "1'b0", 'att_entry_owner_valid_en', 'clk', 'reset_n')=\
+
+assign dm_rsp_pending_set = alloc | recall_alloc;
+assign dm_rsp_pending_clr = dm_rsp_valid | de_alloc_pulse;
+assign dm_rsp_pending_en = dm_rsp_pending_set | dm_rsp_pending_clr;
+assign dm_rsp_pending_in = dm_rsp_pending_set;   
+\=u.dffre(1, 'dm_rsp_pending_q0', 'dm_rsp_pending_in', "1'b0", 'dm_rsp_pending_en', 'clk', 'reset_n')=\ 
+
+assign att_entry_owner_num_set = dm_rsp_valid;
+assign att_entry_owner_num_clr = de_alloc_pulse;
+assign att_entry_owner_num_en = att_entry_owner_num_set | att_entry_owner_num_clr;
+assign att_entry_owner_vec_in = {N_C_AGENTS{dm_rsp_valid}} &  att_entry_dm_rsp_owner_vec & csr_SnoopEnable;   
+\=u.dffre(N_C_AGENTS, 'att_entry_owner_vec_q0', 'att_entry_owner_vec_in', "{N_C_AGENTS{1'b0}}", 'att_entry_owner_num_en', 'clk', 'reset_n')=\   
+
+assign att_entry_owner_vec = att_entry_owner_vec_q0 | att_entry_owner_vec_in;
+
+assign att_entry_dir_error_in = de_alloc_pulse ? 1'b0 : att_entry_dm_rsp_error;
+assign att_entry_dir_error_en = dm_rsp_valid | de_alloc_pulse;
+\=u.dffre(1, 'att_entry_dir_error_q0', 'att_entry_dir_error_in', "1'b0", 'att_entry_dir_error_en', 'clk', 'reset_n')=\
+
+assign att_entry_sharer_vec_set = dm_rsp_valid | recall_alloc;
+assign att_entry_sharer_vec_clr = de_alloc_pulse;
+assign att_entry_sharer_vec_en = att_entry_sharer_vec_set | att_entry_sharer_vec_clr;
+assign att_entry_sharer_vec_in = ({N_C_AGENTS{dm_rsp_valid}} & att_entry_dm_rsp_sharer_vec & csr_SnoopEnable) |
+                                 ({N_C_AGENTS{recall_alloc}} & recall_sharer_vec & csr_SnoopEnable); 
+\=u.dffre(N_C_AGENTS, 'att_entry_sharer_vec_q0', 'att_entry_sharer_vec_in', "{N_C_AGENTS{1'b0}}", 'att_entry_sharer_vec_en', 'clk', 'reset_n')=\
+
+assign att_entry_sharer_vec =   att_entry_sharer_vec_q0 | att_entry_sharer_vec_in;
+
+//
+// att_entry_agent_active_vec includes sharer vector (also includes owner) and identified stash target
+//
+assign att_entry_agent_active_vec = att_entry_sharer_vec_q0
+                                  | ({N_C_AGENTS{att_req_stash_mpf1}} & stash_targ_vec);   
+
+assign att_entry_sharer_vec_orignal_in = ({N_C_AGENTS{dm_rsp_valid}} & att_entry_dm_rsp_sharer_vec)
+                                       | ({N_C_AGENTS{recall_alloc}} & recall_sharer_vec); 
+\=u.dffre(N_C_AGENTS, 'att_entry_sharer_vec_orignal_q0', 'att_entry_sharer_vec_orignal_in', "{N_C_AGENTS{1'b0}}", 'att_entry_sharer_vec_en', 'clk', 'reset_n')=\                            
+
+assign att_entry_way_vec_set = dm_rsp_valid;
+assign att_entry_way_vec_clr = de_alloc_pulse | att_entry_dm_write_way_vec_clr;
+assign att_entry_way_vec_en = att_entry_way_vec_set | att_entry_way_vec_clr;
+assign att_entry_way_vec_in = ({N_WAYS{dm_rsp_valid & ~att_entry_dm_rsp_error}} & att_entry_dm_rsp_way_vec)
+                            | ({N_WAYS{att_entry_dm_write_way_vec_clr}} & att_entry_way_vec_q0 & ~dm_write_sf_inval_mask);
+\=u.dffre(N_WAYS, 'att_entry_way_vec_q0', 'att_entry_way_vec_in', "{N_WAYS{1'b0}}", 'att_entry_way_vec_en', 'clk', 'reset_n')=\
+
+assign att_entry_way_vec = att_entry_way_vec_q0 | att_entry_way_vec_in;
+
+assign att_entry_snp_all_set = p1_alloc | recall_alloc;
+assign att_entry_snp_all_clr = de_alloc_pulse;
+assign att_entry_snp_all_en = att_entry_snp_all_set | att_entry_snp_all_clr;   
+assign att_entry_snp_all_in = (p1_att_snp_all & p1_alloc) |  recall_alloc;         // snp all set or null rsp num == all 1s whend valid is 0
+\=u.dffre(1, 'att_entry_snp_all_q0', 'att_entry_snp_all_in', "{1{1'b0}}", 'att_entry_snp_all_en', 'clk', 'reset_n')=\
+  
+assign att_entry_dm_rsp_wr_required_en = dm_rsp_valid | de_alloc_pulse; 
+assign att_entry_dm_rsp_wr_required_in = att_entry_dm_rsp_wr_required & dm_rsp_valid & ~att_entry_dm_rsp_error;
+\=u.dffre(1, 'att_entry_dm_rsp_wr_required_q0', 'att_entry_dm_rsp_wr_required_in', "{1{1'b0}}", 'att_entry_dm_rsp_wr_required_en', 'clk', 'reset_n')=\   
+        
+//=============================================================================     
+// Req Buffer flops and logic
+//=============================================================================     
+wire att_gid;
+wire att_rb_id_req_set, att_rb_id_req_clr, att_rb_id_req_en, att_rb_id_req_in, att_rb_id_req_q0;
+wire att_rb_id_void_valid_set, att_rb_id_void_valid_clr, att_rb_id_void_valid_en, att_rb_id_void_valid_in, att_rb_id_void_valid_q0;
+wire [W_RB_ID-1:0] att_rb_id;
+wire rbr_req_reserve, rbr_req_release, rbr_req_type_en, rbr_req_type_in;
+wire rbr_req_pending_set, rbr_req_pending_clr, rbr_req_pending_en, rbr_req_pending_in, rbr_req_type_q0;
+wire att_rb_id_rcvd_en, att_rb_id_rcvd_in, att_rb_id_rcvd_q0;
+wire rbr_reserve_sent_set, rbr_sent_clr; //att_entry_req_rbr_reserve_sent;
+wire rbr_pending_q0;
+
+assign att_rb_id_req_set = (att_entry_write_rbid_valid & dm_rsp_valid & ~att_exmon_store_fail & ~att_entry_dm_rsp_error)  |
+                           (recall_alloc_q0 & (|att_entry_sharer_vec_q0));                // recall entry  
+   
+assign att_rb_id_req_clr = (att_rb_id_grant | (no_snps_required & att_entry_mrd_type_valid) | 
+	                       (~cmd_type_wr & no_snps_required) |
+                           (no_second_snp_stash | stash_snp_no_snarf)); 
+assign att_rb_id_req_en = att_rb_id_req_set | att_rb_id_req_clr;   
+assign att_rb_id_req_in = (att_rb_id_req_clr) ? 1'b0 : 1'b1;
+
+\=u.dffre(1, 'att_rb_id_req_q0', 'att_rb_id_req_in', "1'b0", 'att_rb_id_req_en', 'clk', 'reset_n')=\
+
+wire  [\=N_CONNECTED_DMIS-1=\:0] in_att_rb_id_d_id_vec;
+
+\js for (let i=0; i< N_CONNECTED_DMIS; i++) { 
+    \js if (N_CONNECTED_DMIS == 1) {
+assign in_att_rb_id_d_id_vec = (in_att_entry_req_d_id[W_FUNIT_ID-1:0] == connected_dmi_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]) ? 1'b1 : 1'b0;
+    \js } else {
+assign in_att_rb_id_d_id_vec[\=i=\] = (in_att_entry_req_d_id[W_FUNIT_ID-1:0] == connected_dmi_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]) ? 1'b1 : 1'b0;  
+    \js }                
+\js }                
+
+\=u.dffre(N_CONNECTED_DMIS, 'att_rb_id_d_id_vec', 'in_att_rb_id_d_id_vec', "{N_CONNECTED_DMIS{1'b0}}", 'en_att_entry_req_d_id', 'clk', 'reset_n')=\  
+
+wire  [\=N_DMIS-1=\:0] in_mrd_att_rb_id_d_id_vec;
+
+\js for (let i=0; i< N_DMIS; i++) { 
+    \js if (N_DMIS == 1) {
+assign in_mrd_att_rb_id_d_id_vec = (in_att_entry_req_d_id[W_FUNIT_ID-1:0] == dmi_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]) ? 1'b1 : 1'b0;
+    \js } else {
+assign in_mrd_att_rb_id_d_id_vec[\=i=\] = (in_att_entry_req_d_id[W_FUNIT_ID-1:0] == dmi_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]) ? 1'b1 : 1'b0;  
+    \js }                
+\js }                
+
+\=u.dffre(N_DMIS, 'mrd_att_rb_id_d_id_vec', 'in_mrd_att_rb_id_d_id_vec', "{N_DMIS{1'b0}}", 'en_att_entry_req_d_id', 'clk', 'reset_n')=\  
+
+assign att_rb_id_d_id = att_entry_req_d_id;
+
+assign att_rb_id_req =  att_rb_id_req_q0;
+
+assign att_rb_id_rcvd_en = att_rb_id_grant | de_alloc_pulse;
+assign att_rb_id_rcvd_in = att_rb_id_grant;   
+\=u.dffre(1, 'att_rb_id_rcvd_q0', 'att_rb_id_rcvd_in', "1'b0", 'att_rb_id_rcvd_en', 'clk', 'reset_n')=\  
+
+\=u.dffre(W_RB_ID, 'att_rb_id', 'att_rb_id_in', "{W_RB_ID{1'b0}}", 'att_rb_id_grant', 'clk', 'reset_n')=\  
+
+\=u.dffre(1, 'att_gid', 'att_rb_id_in_gid', "1'b0", 'att_rb_id_grant', 'clk', 'reset_n')=\  
+
+assign att_rb_id_void_valid_set = (att_rb_id_rcvd_q0 | att_rb_id_rcvd_in) & ((~(cmd_type_wr | cmd_type_wrstsh) & no_snps_required) |
+                                                                             (no_second_snp_stash | stash_snp_no_snarf | stsh_once_target_snoop_err) |
+                                                                             rbr_req_release);
+assign att_rb_id_void_valid_clr = att_rb_id_void_valid_q0;
+assign att_rb_id_void_valid_en = att_rb_id_void_valid_set | att_rb_id_void_valid_clr;
+assign att_rb_id_void_valid_in = (att_rb_id_void_valid_set) ? 1'b1 : 1'b0;  
+\=u.dffre(1, 'att_rb_id_void_valid_q0', 'att_rb_id_void_valid_in', "1'b0", 'att_rb_id_void_valid_en', 'clk', 'reset_n')=\                        
+
+assign att_rb_id_void_valid  = att_rb_id_void_valid_q0;
+
+assign att_rb_id_out = att_rb_id;
+
+assign att_entry_req_rb_id = att_rb_id;
+
+assign att_entry_req_gid = att_gid;
+
+assign att_rb_id_out_gid = att_gid;
+
+//=============================================================================     
+// RBRreq
+//=============================================================================     
+
+assign rbr_req_write_no_snp = cmd_type_wrunq | cmd_type_wrstsh | cmd_type_wrbk | cmd_type_wrcln;
+                         
+assign rbr_req_reserve = ( 
+                           (att_rb_id_grant & ~att_rb_id_void_valid_set & ~dm_rsp_pending_q0)  // dir then rbid
+                          & ~cmd_type_stsh_once 
+                          & (   (| snp_targ_owner_vec)
+                              | (att_entry_snp_all_q0 & (| snp_targ_sharer_vec))
+                              | rbr_req_write_no_snp
+                              | (((snp_req_up_in == 2'b01) | (snp_req_up_in == 2'b10)) & ~(cmd_type_wrbk | cmd_type_wrcln))
+                            )
+                         )  
+                       | (cmd_type_stsh_once & (second_snp_stash_wu | second_snp_stash_ws))                     // stash once
+                       | (~att_rb_id_rcvd_q0 & att_rb_id_rcvd_in & recall_req & (| att_entry_sharer_vec_q0));   // recall request
+
+assign rbr_req_release = (((att_entry_req_rbr_reserve_sent & all_snp_rsp_done_pulse_q0) |
+                           (rbr_reserve_sent_set & ~att_entry_req_rbr_reserve_sent & all_snp_rsp_done_q0)) &  // handle rbr req and snp rsp race
+                          ~snp_rsp_dtw_q0 &
+                          ~cmd_type_wrunq &
+                          ~(((att_entry_req_type == \=CM_TYPE.CmdWrStshFull=\) & ~snp_rsp_snarf_q0) |
+                             (att_entry_req_type == \=CM_TYPE.CmdWrStshPtl=\)));
+
+assign rbr_req_type_en = rbr_req_reserve; //REMOVE RbrReq.release message //| rbr_req_release; 
+assign rbr_req_type_in = (rbr_req_reserve) ? 1'b1 : 1'b0;
+\=u.dffre(1, 'att_entry_req_r_type', 'rbr_req_type_in', "1'b0", 'rbr_req_type_en', 'clk', 'reset_n')=\
+
+assign att_entry_req_mw = (att_entry_req_type == \=CM_TYPE.CmdWrUnqPtl=\ )
+                        | (att_entry_req_type == \=CM_TYPE.CmdWrStshPtl=\ );
+
+assign att_entry_req_rbr_last = 1'b1;
+                            
+assign rbr_req_pending_set = rbr_req_type_en;
+assign rbr_req_pending_clr = att_entry_req_rbr_ready;
+assign rbr_req_pending_en = rbr_req_pending_set | rbr_req_pending_clr;
+assign rbr_req_pending_in = (rbr_req_pending_set) ? 1'b1 : 1'b0;                         
+\=u.dffre(1, 'rbr_pending_q0', 'rbr_req_pending_in', "1'b0", 'rbr_req_pending_en', 'clk', 'reset_n')=\   
+
+assign att_entry_req_rbr_valid = rbr_pending_q0;
+
+assign rbr_reserve_sent_set = att_entry_req_r_type & rbr_pending_q0 & att_entry_req_rbr_ready;
+assign rbr_sent_clr = de_alloc_pulse;
+assign rbr_reserve_sent_en = rbr_reserve_sent_set | rbr_sent_clr;
+                       
+\=u.dffre(1, 'att_entry_req_rbr_reserve_sent', 'rbr_reserve_sent_set', "1'b0", 'rbr_reserve_sent_en', 'clk', 'reset_n')=\
+
+//=============================================================================     
+// Snoop flops
+//=============================================================================     
+   
+assign snp_target_first_set = cmd_type_stsh_once & att_req_stash_mpf1 & att_rb_id_req & att_rb_id_grant;
+assign snp_target_first_clr = snp_target_first_q0 & snp_rsp_my;
+assign snp_target_first_en = snp_target_first_set | snp_target_first_clr;
+assign snp_target_first_in = snp_target_first_set;
+\=u.dffre(1, 'snp_target_first_q0', 'snp_target_first_in', "1'b0", 'snp_target_first_en', 'clk', 'reset_n')=\ 
+
+\=u.dffre(1, 'snp_target_first_q1', 'snp_target_first_q0', "1'b0", "1'b1", 'clk', 'reset_n')=\  
+
+assign snp_target_first_pulse = ~snp_target_first_q0 & snp_target_first_in;
+assign snp_target_first_done_pulse = snp_target_first_q1 & ~snp_target_first_q0;
+   
+
+\js if (nChiplets > 1) {
+
+    \js for (let i=0; i < N_C_AGENTS; i++) {
+assign stash_targ_vec[\=i=\] = (att_entry_req_mpf1[\=wGlobalFUnitId-1=\:0] == ca_global_f_unit_id[\=i*wGlobalFUnitId=\ +: \=wGlobalFUnitId=\]); 
+    \js }
+
+\js } else {
+
+    \js for (let i=0; i < N_C_AGENTS; i++) {
+assign stash_targ_vec[\=i=\] = (att_entry_req_mpf1[W_FUNIT_ID-1:0] == ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]); 
+    \js }
+
+\js }
+
+\js if (nChiplets > 1) {
+
+    \js for (let i=0; i < N_C_AGENTS; i++) {
+assign cmd_init_vec[\=i=\] = (att_entry_req_initiator_global_f_unit_id == ca_global_f_unit_id[\=i*wGlobalFUnitId=\ +: \=wGlobalFUnitId=\]) & ca_global_f_unit_id_valid[\=i=\];
+    \js }
+
+\js } else {
+
+    \js for (let i=0; i < N_C_AGENTS; i++) {
+assign cmd_init_vec[\=i=\] = (att_entry_req_initiator_id[W_INIT_ID-1:W_FPORT_ID] == ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]);
+    \js }
+
+\js }
+
+//
+// command initiator is not caching agent
+//
+assign cmd_init_nca = ~(| cmd_init_vec); 
+
+\=u.instance({
+    instanceName: 'stash_target_num_onehot_bin',
+    moduleName: 'encoder',
+    params: {
+        width: N_C_AGENTS
+    },
+    ports: {
+        invector: 'stash_targ_vec',
+        outdecode: 'stash_targ_num'
+    }
+})=\
+
+assign second_snp_stash = ((snp_rsp_snarf_q0 & att_rb_id_rcvd_q0) | ~att_req_stash_mpf1)
+                        & ~dm_rsp_pending_q0
+                        & valid
+                        & cmd_type_stsh_once
+                        & ~att_entry_dir_error_q0;
+
+\=u.dffre(1, 'second_snp_stash_q0', 'second_snp_stash', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+assign second_snp_stash_wu = (second_snp_stash & ~second_snp_stash_q0 & (att_entry_req_type == \=CM_TYPE.CmdLdCchUnq=\ ) & 
+                              (| (att_entry_sharer_vec_q0 & ~stash_targ_vec & ~cmd_init_vec)) & att_req_stash_mpf1);
+assign second_snp_stash_ws = (second_snp_stash & ~second_snp_stash_q0 & (att_entry_req_type == \=CM_TYPE.CmdLdCchShd=\ ) & 
+                              (| (att_entry_owner_vec_q0)) & ~cmd_init_owner & ~(|(stash_targ_vec & att_entry_owner_vec_q0)) & att_req_stash_mpf1);
+assign no_second_snp_stash = (second_snp_stash & ~second_snp_stash_q0 & ~(second_snp_stash_wu | second_snp_stash_ws));
+assign stash_snp_no_snarf = snp_target_first_q0 & snp_rsp_no_snarf;
+
+assign snp_pending_set = ((dm_rsp_valid & ~att_entry_write_rbid_valid & 
+                           ~cmd_type_stsh_once & ~att_exmon_store_fail & ~att_entry_dm_rsp_error) &                       // Dir rsp after rbid 
+                          att_entry_snp_all_q0                                                      // snp all including sharer
+                         ) |           
+
+                         ((att_rb_id_grant & ~dm_rsp_pending_q0 & 
+                           ~cmd_type_stsh_once & ~att_exmon_store_fail) &                              // Dir rsp before rbid
+                         (att_entry_snp_all_q0 |                                                              // snp all including sharer
+                          ((q_snp_req_up == 2'b01) & ~(cmd_type_wrbk | cmd_type_wrcln | att_entry_snp_cln_dtw)) | // snp unique sharer and not write back 
+                          ((q_snp_req_up == 2'b10) & ~(cmd_type_wrbk | cmd_type_wrcln | att_entry_snp_cln_dtw)) | // snp unique sharer and not write back 
+                          (att_entry_owner_valid_q0 & ~(cmd_type_wrbk | cmd_type_wrcln))                     // snp owner and not write back
+                          )) |
+
+                         (snp_target_first_pulse |                                                                 // Stash once snoop
+                         second_snp_stash_wu | second_snp_stash_ws) |                                              // second stash snoop
+                         (~att_rb_id_rcvd_q0 & att_rb_id_rcvd_in & recall_req & (| att_entry_sharer_vec_q0));      // recall snoop
+
+\=u.dffre(1, 'snp_pending_set_q0', 'snp_pending_set', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+assign snp_pending_clr =  ~(| snp_targ_vec_q0) &  snp_pending_q0;    
+assign snp_pending_en = snp_pending_set | snp_pending_clr;
+assign snp_pending_in = (snp_pending_set) ? 1'b1 : 1'b0;
+\=u.dffre(1, 'snp_pending_q0', 'snp_pending_in', "1'b0", 'snp_pending_en', 'clk', 'reset_n')=\
+
+assign no_snps_required =
+  (
+     // rbid then dir rsp
+     (dm_rsp_valid & ~att_entry_dm_rsp_error & ~att_entry_write_rbid_valid & ~((snp_req_up_in == 2'b01) | (snp_req_up_in == 2'b10)))
+  |
+     (dm_rsp_valid & ~att_entry_dm_rsp_error & ~att_entry_write_rbid_valid & cmd_type_evict)
+  |
+     (dm_rsp_valid & ~att_entry_dm_rsp_error & att_exmon_store_fail)
+  |
+
+     // dir then rbid
+     (att_rb_id_grant & ~dm_rsp_pending_q0 & ~(recall_req | recall_alloc) & ~((q_snp_req_up == 2'b01) | (q_snp_req_up == 2'b10)))
+  |
+     (att_rb_id_grant & ~dm_rsp_pending_q0 & ~(recall_req | recall_alloc) & (cmd_type_wrbk | cmd_type_wrcln | att_entry_snp_cln_dtw))
+  ) &
+
+    ~cmd_type_stsh_once & ~wrstsh_valid &                                              // Stash target snp
+
+  (
+    ~((| snp_targ_owner_vec) | (att_entry_snp_all_q0 & (| snp_targ_sharer_vec)))       // no owner or sharer
+  | (cmd_type_wrbk | cmd_type_evict | cmd_type_wrcln)                                  // write back cases
+  | att_exmon_store_fail                                                               // exmon fail
+  );
+  
+\=u.dffre(1, 'no_snps_required_q0', 'no_snps_required', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+//
+// mrd mpf
+//
+assign att_entry_req_mrd_mpf1 = (cmd_type_wrstsh | cmd_type_stsh_once) ? att_entry_req_mpf1 :
+        \js if (nChiplets > 1) {
+                                                                         {\=req_mrd_mpf1_padding0=\ att_entry_req_initiator_global_f_unit_id};
+        \js } else {
+                                                                         {\=req_mrd_mpf1_padding0=\ att_entry_req_initiator_id[W_INIT_ID-1:W_FPORT_ID]};
+        \js }
+assign att_entry_req_mrd_mpf2 = (cmd_type_wrstsh | cmd_type_stsh_once) ? {\=req_mrd_mpf2_padding0=\ snp_rsp_mpf1_q0[W_MSG_ID-1:0]} : {\=req_mrd_mpf2_padding0=\ att_entry_req_message_id}; 
+                        
+//
+// snoop type
+//
+assign att_entry_snp_cln_dtw = (att_entry_snp_type_q0 == \=CM_TYPE.SnpClnDtw=\);
+
+wire   att_entry_snp_inv_type = (att_entry_snp_type_q0 == \=CM_TYPE.SnpInvDtw=\)
+                              | (att_entry_snp_type_q0 == \=CM_TYPE.SnpInvDtr=\)
+                              | (att_entry_snp_type_q0 == \=CM_TYPE.SnpInv=\)
+                              | (att_entry_snp_type_q0 == \=CM_TYPE.SnpInvStsh=\)
+                              | (att_entry_snp_type_q0 == \=CM_TYPE.SnpUnqStsh=\)
+                              | ((att_entry_snp_type_q0 == \=CM_TYPE.SnpStshUnq=\) & ~snp_target_first_q0)
+                              | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNitcCI=\)
+                              | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNitcMI=\)
+                              ;
+wire att_entry_snp_inv_dtr;
+wire [N_C_AGENTS-1:0] att_entry_sharer_vec_ff_lr, att_entry_sharer_vec_ff_rl, att_entry_sharer_not_init_vec_ff_rl;
+wire [W_N_C_AGENTS-1:0] att_entry_sharer_vec_ff_lr_encode, att_entry_sharer_vec_ff_rl_encode, att_entry_sharer_not_init_vec_ff_rl_encode; 
+
+assign att_entry_snp_inv_dtr = (att_entry_snp_type_q0 == \=CM_TYPE.SnpInvDtr=\);
+assign att_entry_req_snp_type = att_entry_snp_type_q0;
+
+//
+// snoop mpf
+//
+assign att_entry_req_snp_mpf1 = (cmd_type_wrstsh | cmd_type_stsh_once) ? att_entry_req_mpf1 :
+        \js if (nChiplets > 1) {
+                                                                         { \=req_snp_mpf1_padding0=\ att_entry_req_initiator_global_f_unit_id };   
+        \js } else {
+                                                                         { \=req_snp_mpf1_padding0=\ att_entry_req_initiator_id[W_INIT_ID-1:W_FPORT_ID] };   
+        \js }
+assign att_entry_req_snp_mpf2 = (cmd_type_wrstsh | cmd_type_stsh_once) ? att_entry_req_mpf2 : { \=req_snp_mpf2_padding0=\ att_entry_req_message_id};
+
+\js if (nChiplets > 1) {
+
+assign att_entry_req_snp_mpf3 = (q_snp_req_up == 2'b11) ? { \=req_snp_mpf3_padding0=\ (
+                      \js for(let i=0; i<N_C_AGENTS; i++) {
+                          ({\=wGlobalFUnitId=\{att_entry_owner_vec[\=i=\]}} & ca_global_f_unit_id[\=i*wGlobalFUnitId=\ +: \=wGlobalFUnitId=\]) | 
+                      \js } 
+                           \=W_FUNIT_ID=\'d0)} :
+                                (q_snp_req_up == 2'b10) ? { \=req_snp_mpf3_padding0=\ (
+                      \js for(let i=0; i<N_C_AGENTS; i++) {
+                          ({\=wGlobalFUnitId=\{att_entry_sharer_not_init_vec_ff_rl[\=i=\]}} & ca_global_f_unit_id[\=i*wGlobalFUnitId=\ +: \=wGlobalFUnitId=\]) |
+                      \js }
+                                       \=wGlobalFUnitId=\'d0)} :
+                                       \=W_MPF3=\'d0;
+
+\js } else {
+
+assign att_entry_req_snp_mpf3 = (q_snp_req_up == 2'b11) ? { \=req_snp_mpf3_padding0=\ (
+                                  \js for(let i=0; i<N_C_AGENTS; i++) {
+                                      ({W_FUNIT_ID{att_entry_owner_vec[\=i=\ ]}} & ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]) | 
+                                  \js } 
+                                       \=W_FUNIT_ID=\'d0)} :
+                                (q_snp_req_up == 2'b10) ? { \=req_snp_mpf3_padding0=\ (
+                                  \js for(let i=0; i<N_C_AGENTS; i++) {
+                                      ({W_FUNIT_ID{att_entry_sharer_not_init_vec_ff_rl[\=i=\ ]}} & ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]) |
+                                  \js }
+                                       \=W_FUNIT_ID=\'d0)} :
+                                       \=W_MPF3=\'d0;
+
+\js }
+  
+//
+// snoop MPF3
+//
+
+\=u.instance ({
+               instanceName: 'snp_mpf_ff',
+               moduleName: 'find_first_rl',
+               params: {
+                        width : N_C_AGENTS
+                        },
+               ports : {
+                        value : "1'b1",
+                        invec : 'att_entry_sharer_vec & ~cmd_init_vec',
+                        outvec : 'att_entry_sharer_not_init_vec_ff_rl',
+                        outvec_encode : 'att_entry_sharer_not_init_vec_ff_rl_encode'
+                        }
+               })=\
+
+//
+// snoop UP
+//
+
+\=u.instance ({
+               instanceName: 'snp_up_ff_lr',
+               moduleName: 'find_first_lr',
+               params: {
+                        width : N_C_AGENTS
+                        },
+               ports : {
+                        value : "1'b1",
+                        invec : 'att_entry_sharer_vec',
+                        outvec : 'att_entry_sharer_vec_ff_lr',
+                        outvec_encode : 'att_entry_sharer_vec_ff_lr_encode'
+                        }
+               })=\
+
+\=u.instance ({
+               instanceName: 'snp_up_ff_rl',
+               moduleName: 'find_first_rl',
+               params: {
+                        width : N_C_AGENTS
+                        },
+               ports : {
+                        value : "1'b1",
+                        invec : 'att_entry_sharer_vec',
+                        outvec : 'att_entry_sharer_vec_ff_rl',
+                        outvec_encode : 'att_entry_sharer_vec_ff_rl_encode'
+                        }
+               })=\
+
+assign snp_req_up_en = dm_rsp_valid; 
+assign snp_req_up_in =
+                        (| (att_entry_sharer_vec_ff_lr & att_entry_sharer_vec_ff_rl & ~cmd_init_vec)) ? 2'b01 :
+                        (| (att_entry_sharer_vec & ~cmd_init_vec)) ? (att_entry_owner_valid_in ? 2'b11 : 2'b10) : 2'b00;
+
+\=u.dffre(W_UP, 'q_snp_req_up', 'snp_req_up_in',  "{W_UP{1'b0}}", 'snp_req_up_en', 'clk', 'reset_n')=\
+
+assign att_entry_req_up = (q_snp_req_up == 2'b10) ? 2'b11 : q_snp_req_up;
+
+//
+// snoop target ID
+//
+assign snp_targ_owner_sel = (att_rb_id_grant & ~dm_rsp_pending_q0 & att_entry_owner_valid_q0) & ~att_entry_snp_all_q0 & ~cmd_type_stsh_once;
+assign snp_targ_me = att_entry_req_es & ~((att_entry_req_type == \=CM_TYPE.CmdRdVld=\    ) |
+                                          (att_entry_req_type == \=CM_TYPE.CmdClnUnq=\   ) |
+                                          (att_entry_req_type == \=CM_TYPE.CmdRdCln=\    ) |
+                                          (att_entry_req_type == \=CM_TYPE.CmdRdNshDty=\ ));
+assign snp_targ_owner_vec = (({N_C_AGENTS{~snp_targ_me}} & (~cmd_init_vec & att_entry_owner_vec)) |
+                             ({N_C_AGENTS{snp_targ_me}} & att_entry_owner_vec));
+assign snp_targ_sharer_vec = (({N_C_AGENTS{~snp_targ_me}} & (~cmd_init_vec & att_entry_sharer_vec)) |
+                              ({N_C_AGENTS{snp_targ_me | recall_req}} & att_entry_sharer_vec));
+assign snp_targ_stash_owner_vec = (~cmd_init_vec & ~stash_targ_vec & att_entry_owner_vec_q0);
+assign snp_targ_stash_sharer_vec = (~cmd_init_vec & ~stash_targ_vec & att_entry_sharer_vec_q0);
+assign snp_targ_vec_set = snp_pending_set | (att_entry_req_snp_valid & att_entry_req_snp_ready);
+assign snp_targ_vec_clr = de_alloc_pulse;
+assign snp_targ_vec_en = snp_targ_vec_set | snp_targ_vec_clr;   
+assign snp_targ_vec_in = ((snp_targ_vec_clr) ? {N_C_AGENTS{1'b0}} :                                                                             // Clr 
+                          (snp_target_first_pulse) ? stash_targ_vec :                                                                           // Stash once
+                          (att_entry_req_snp_valid & att_entry_req_snp_ready) ? (snp_targ_vec_q0 ^ (snp_targ_vec_q0 & snp_targ_vec_ready)) :    // Vec update
+                          (snp_targ_owner_sel) ? snp_targ_owner_vec :                                                                           // snoop owner only  
+                          (second_snp_stash_ws) ? snp_targ_stash_owner_vec :                                                                    // Stash once sharer  
+                          (second_snp_stash_wu) ? snp_targ_stash_sharer_vec:                                                                    // stash once uniq  
+  ((q_snp_req_up == 2'b10) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict) & ~att_entry_snp_all_q0) ? att_entry_sharer_not_init_vec_ff_rl :
+                          snp_targ_sharer_vec | ({N_C_AGENTS{wrstsh_valid}} & stash_targ_vec));                                                 // snoop vec all sharers & include write stash target
+
+
+\=u.dffre(N_C_AGENTS, 'snp_targ_vec_q0', 'snp_targ_vec_in',  "{N_C_AGENTS{1'b0}}", 'snp_targ_vec_en', 'clk', 'reset_n')=\
+
+//
+// SNP credits
+//
+wire [N_C_AGENTS-1:0] snp_credit_en, snp_credit_in, snp_credit_rcvd_q0, snp_arb_req_valid, find_first_snp_arb_req_valid;
+
+assign att_snp_credit_id_vec = snp_targ_vec_q0 & ~snp_credit_rcvd_q0;
+assign att_snp_credit_req = | att_snp_credit_id_vec;
+assign snp_credit_en = att_snp_credit_grant | {N_C_AGENTS{de_alloc_pulse}};
+assign snp_credit_in = att_snp_credit_grant;
+
+\js for(var gi = 0; gi < N_C_AGENTS; gi++) {
+
+      wire snp_credit_rcvd\=gi=\;
+      \=u.dffre(1, 'snp_credit_rcvd'+gi, 'snp_credit_in['+gi+']', "1'b0", 'snp_credit_en['+gi+']', 'clk', 'reset_n')=\
+      assign snp_credit_rcvd_q0[\=gi=\] = snp_credit_rcvd\=gi=\;
+
+\js }
+
+assign snp_arb_req_valid = snp_targ_vec_q0 & snp_credit_rcvd_q0 & {N_C_AGENTS{snp_target_first_q0 ? att_rb_id_rcvd_q0 : 1'b1}};
+
+//
+// SNPreq
+//
+
+\js if(N_C_AGENTS == 1) {
+
+assign att_entry_req_snp_valid = snp_arb_req_valid;
+assign snp_targ_vec_ready = snp_targ_vec_grant & att_entry_req_snp_ready;
+assign att_entry_req_snp_last = 1'b1;
+assign snp_targ_vec_grant = snp_arb_req_valid;
+
+\js } else {                          
+
+    \=u.instance({
+              instanceName : 'u_find_first_snp_arb_req_valid',
+              moduleName : 'find_first_one',
+              params : {
+                        width :  N_C_AGENTS
+                        },
+              ports : {
+                       invec : 'snp_arb_req_valid',
+                       outvec : 'find_first_snp_arb_req_valid'
+                       }
+              })=\
+
+assign att_entry_req_snp_valid = {|{snp_arb_req_valid}};
+
+assign att_entry_req_snp_last  = 1'b1;
+
+assign snp_targ_vec_grant = find_first_snp_arb_req_valid;
+
+assign snp_targ_vec_ready = find_first_snp_arb_req_valid & {N_C_AGENTS{att_entry_req_snp_ready}};
+
+\js }
+
+
+
+
+
+\js if (nChiplets > 1) {
+
+    \js if ((wChipletId > 0) && (W_TARGET_ID >= wChipletId+wLinkId+wFUnitId+wFPortId)) {
+assign att_entry_snp_req_target_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\] =
+                                  \js for(let i=0; i<N_C_AGENTS; i++) {
+                                      ({\=wChipletId=\{snp_targ_vec_grant[\=i=\]}} & ca_global_f_unit_id[\=(i*wGlobalFUnitId)+wFUnitId=\ +: \=wChipletId=\]) |
+                                  \js } 
+                                      (\=wChipletId=\'d0);
+    \js }
+
+    \js if (wLinkId > 0) {
+assign att_entry_snp_req_target_id[\=wLinkId+wFUnitId+wFPortId-1=\:\=wFUnitId+wFPortId=\] = \=wLinkId=\'d0; //FIXME
+    \js }
+
+assign att_entry_snp_req_target_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\] =
+                                  \js for(let i=0; i<N_C_AGENTS; i++) {
+                                      ({\=wFUnitId=\{snp_targ_vec_grant[\=i=\]}} & ca_global_f_unit_id[\=i*wGlobalFUnitId=\ +: \=wFUnitId=\]) |
+                                  \js } 
+                                      (\=wFUnitId=\'d0);
+
+assign att_entry_snp_req_target_id[\=wFPortId-1=\:0] = \=wFPortId=\'d0;
+
+
+\js } else {
+
+assign att_entry_snp_req_target_id = (
+                                  \js for(let i=0; i<N_C_AGENTS; i++) {
+                                      ({W_TARGET_ID{snp_targ_vec_grant[\=i=\ ]}} & {ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID], {W_FPORT_ID{1'b0}}}) | 
+                                  \js } 
+                                       {W_TARGET_ID{1'b0}});
+
+\js }
+
+//
+// SNPrsp
+//
+   
+assign snp_rsp_my = ({{32-W_MSG_ID{1'b0}}, snp_rsp_r_message_id} == ATT_ID) & snp_rsp_valid;
+
+
+\js if (nChiplets > 1) {
+
+    \js for(let i=0; i<N_C_AGENTS; i++) {
+assign snp_rsp_init_vec_n[\=i=\ ] = ~((snp_rsp_initiator_global_f_unit_id == ca_global_f_unit_id[\=i*wGlobalFUnitId=\ +: \=wGlobalFUnitId=\]) & ca_global_f_unit_id_valid[\=i=\] & snp_rsp_my);
+    \js }
+
+\js } else {
+
+    \js for(let i=0; i<N_C_AGENTS; i++) {
+assign snp_rsp_init_vec_n[\=i=\ ] = ~((snp_rsp_initiator_id[W_INIT_ID-1:W_FPORT_ID] == ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID])  && snp_rsp_my);
+    \js }
+
+\js }
+
+assign snp_rsp_init_vec = ~snp_rsp_init_vec_n;
+
+\=u.instance({
+    instanceName: 'snp_rsp_num_onehot_bin',
+    moduleName: 'encoder',
+    params: {
+        width: N_C_AGENTS
+    },
+    ports: {
+        invector: 'snp_rsp_init_vec',
+        outdecode: 'snp_rsp_init_num'
+    }
+})=\
+
+\=u.instance({
+    instanceName: 'owner_num_onehot_bin',
+    moduleName: 'encoder',
+    params: {
+        width: N_C_AGENTS
+    },
+    ports: {
+        invector: 'cmd_init_vec',
+        outdecode: 'cmd_init_num'
+    }
+})=\
+
+assign snp_rsp_pending_vec_set = snp_pending_set;
+assign snp_rsp_pending_vec_clr = snp_rsp_my;
+assign snp_rsp_pending_vec_en = snp_rsp_pending_vec_set | snp_rsp_pending_vec_clr;
+assign snp_rsp_pending_vec_in = (snp_rsp_pending_vec_set) ? snp_targ_vec_in : snp_rsp_init_vec_n & snp_rsp_pending_vec_q0;
+\=u.dffre(N_C_AGENTS, 'snp_rsp_pending_vec_q0', 'snp_rsp_pending_vec_in', "{N_C_AGENTS{1'b0}}", 'snp_rsp_pending_vec_en', 'clk', 'reset_n')=\
+
+//
+// Capture snoop rsp
+//
+wire [W_CM_ERR-1:0] snp_rsp_err_info_in = de_alloc_pulse ? {W_CM_ERR{1'b0}} : snp_rsp_err_q0 ? snp_rsp_err_info_q0 : snp_rsp_err_info;
+wire                     snp_rsp_err_in = de_alloc_pulse ? 1'b0 : snp_rsp_err_q0 ? 1'b1                : snp_rsp_err;
+
+assign snp_rsp_err    =  snp_rsp_cm_status[SNP_ERR] & snp_rsp_my; 
+assign snp_rsp_no_err = ~snp_rsp_cm_status[SNP_ERR] & snp_rsp_my;
+
+assign snp_rsp_err_info = (snp_rsp_err) ? snp_rsp_cm_status[W_CM_ERR-1:0] : {W_CM_ERR{1'b0}};
+assign snp_rsp_err_info_en = (snp_rsp_err & ~snp_rsp_dtr_q0)
+                           | snp_rsp_dtr_en
+                           | snp_rsp_dtw_en
+                           | de_alloc_pulse;                                    
+
+\=u.dffre(1, 'snp_rsp_err_q0', 'snp_rsp_err_in', "1'b0", 'snp_rsp_err_info_en', 'clk', 'reset_n')=\                                    
+
+\=u.dffre(W_CM_ERR, 'snp_rsp_err_info_q0', 'snp_rsp_err_info_in', "{W_CM_ERR{1'b0}}", 'snp_rsp_err_info_en', 'clk', 'reset_n')=\                                    
+
+assign snp_rsp_owner_sharer = snp_rsp_cm_status[SNP_RV] & snp_rsp_no_err;                                   
+assign snp_rsp_owner = snp_rsp_cm_status[SNP_RV] & ~snp_rsp_cm_status[SNP_RS] & snp_rsp_no_err;   
+assign snp_rsp_sharer = snp_rsp_cm_status[SNP_RV] & snp_rsp_cm_status[SNP_RS] & snp_rsp_no_err;
+assign snp_rsp_owner_trf = snp_rsp_cm_status[SNP_DC] & snp_rsp_no_err;
+assign snp_rsp_owner_clr = snp_rsp_no_err
+                         & snp_rsp_owner_valid_q0
+                         & ~(snp_rsp_cm_status[SNP_RV] & ~snp_rsp_cm_status[SNP_RS])
+                         & ~(snp_rsp_no_snarf & snp_target_first_q0);
+assign snp_rsp_dtr = snp_rsp_cm_status[SNP_DT1] & snp_rsp_no_err;
+assign snp_rsp_dtw = snp_rsp_cm_status[SNP_DT0] & snp_rsp_no_err;
+assign snp_rsp_snarf = snp_rsp_cm_status[SNP_SNARF] & snp_rsp_no_err;
+assign snp_rsp_no_snarf = ~snp_rsp_cm_status[SNP_SNARF] & snp_rsp_no_err;
+assign snp_rsp_pending = {|{snp_rsp_pending_vec_q0}};
+
+assign snp_rsp_for_sharer_promotion = ~snp_rsp_cm_status[SNP_RV]
+                                    & ~snp_rsp_cm_status[SNP_RS]
+                                    & ~snp_rsp_cm_status[SNP_DC]
+                                    & ~snp_rsp_cm_status[SNP_DT1]
+                                    &  snp_rsp_cm_status[SNP_DT0]
+                                    & ~snp_rsp_cm_status[SNP_SNARF]
+                                    & snp_rsp_no_err
+                                    & att_entry_snp_inv_dtr
+                                    & (att_entry_req_up==2'b11);
+
+assign all_snp_rsp_done = (| snp_rsp_pending_vec_q0) & ~(| snp_rsp_pending_vec_in);
+assign all_snp_rsp_done_en = (all_snp_rsp_done & (~cmd_type_stsh_once | second_snp_stash)) | de_alloc_pulse;
+\=u.dffre(1, 'all_snp_rsp_done_q0', 'all_snp_rsp_done', "1'b0", 'all_snp_rsp_done_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'all_snp_rsp_done_q1', 'all_snp_rsp_done_q0', "1'b0", "1'b1", 'clk', 'reset_n')=\
+assign all_snp_rsp_done_pulse_q0 = all_snp_rsp_done_q0 & ~all_snp_rsp_done_q1;  
+                                                               
+assign snp_rsp_snarf_en = snp_rsp_snarf | de_alloc_pulse;
+assign snp_rsp_snarf_in = snp_rsp_snarf;
+assign snp_rsp_snarf_owner_in = snp_rsp_snarf & snp_rsp_owner;
+\=u.dffre(1, 'snp_rsp_snarf_q0', 'snp_rsp_snarf_in', "1'b0", 'snp_rsp_snarf_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'snp_rsp_snarf_owner_q0', 'snp_rsp_snarf_owner_in', "1'b0", 'snp_rsp_snarf_en', 'clk', 'reset_n')=\
+
+assign snp_rsp_dtr_en = snp_rsp_dtr | de_alloc_pulse;
+assign snp_rsp_dtr_in = snp_rsp_dtr;
+\=u.dffre(1, 'snp_rsp_dtr_q0', 'snp_rsp_dtr_in', "1'b0", 'snp_rsp_dtr_en', 'clk', 'reset_n')=\
+
+assign snp_rsp_dtw_set = snp_rsp_dtw;
+assign snp_rsp_dtw_clr = de_alloc_pulse; 
+assign snp_rsp_dtw_en = snp_rsp_dtw_set | snp_rsp_dtw_clr;
+assign snp_rsp_dtw_in = snp_rsp_dtw;   
+\=u.dffre(1, 'snp_rsp_dtw_q0', 'snp_rsp_dtw_in', "1'b0", 'snp_rsp_dtw_en', 'clk', 'reset_n')=\
+
+assign snp_rsp_owner_trf_en = snp_rsp_owner_trf | de_alloc_pulse;
+assign snp_rsp_owner_trf_in = snp_rsp_owner_trf;
+\=u.dffre(1, 'snp_rsp_owner_trf_q0', 'snp_rsp_owner_trf_in', "1'b0", 'snp_rsp_owner_trf_en', 'clk', 'reset_n')=\
+\=u.dffre(N_C_AGENTS, 'snp_rsp_owner_trf_init_q0', 'snp_rsp_init_vec', "{N_C_AGENTS{1'b0}}", 'snp_rsp_owner_trf_en', 'clk', 'reset_n')=\
+
+assign snp_rsp_mpf1_en = snp_rsp_snarf | de_alloc_pulse;
+assign snp_rsp_mpf1_in = (snp_rsp_snarf) ? snp_rsp_mpf1 : {W_MPF1{1'b0}};
+\=u.dffre(W_MPF1, 'snp_rsp_mpf1_q0', 'snp_rsp_mpf1_in', "{W_MPF1{1'b0}}", 'snp_rsp_mpf1_en', 'clk', 'reset_n')=\
+
+assign snp_rsp_intf_size_en = snp_rsp_snarf | de_alloc_pulse;
+assign snp_rsp_intf_size_in = (snp_rsp_snarf) ? snp_rsp_intf_size : {W_INTF_SIZE{1'b0}};
+\=u.dffre(W_INTF_SIZE, 'snp_rsp_intf_size_q0', 'snp_rsp_intf_size_in', "{W_INTF_SIZE{1'b0}}", 'snp_rsp_mpf1_en', 'clk', 'reset_n')=\
+                        
+//
+// updated state info 
+//
+wire snp_sharer_rds_mkclnunq_vec_update;
+wire snp_rsp_sharer_vec_set, snp_rsp_sharer_vec_clr, snp_rsp_sharer_vec_en, snp_sharer_wrbk_vec_update, nitc_rd;
+wire snp_rsp_owner_mrd, snp_rsp_owner_cln_unq;
+wire snp_rsp_sharer_rd_stash, snp_rsp_owner_rd_stash, snp_rsp_rd_stash_no_snp_update, snp_rsp_stash_update;
+wire snp_sharer_vec_init, mrd_cmo_type, mrd_pref_type;
+wire [N_C_AGENTS-1:0] snp_rsp_init_sharer_vec, snp_rsp_sharer_vec_n, snp_rsp_sharer_vec_in, snp_rsp_sharer_vec_q0;
+wire [N_C_AGENTS-1:0] snp_rsp_sharer_vec_in_org;
+wire snp_rsp_err_inv_all;
+wire snp_rsp_err_rmv_init;
+
+assign snp_rsp_err_inv_all = (snp_rsp_err | snp_rsp_err_q0) &
+                           ( (att_entry_snp_type_q0 == \=CM_TYPE.SnpInvDtr=\)
+                           | (att_entry_snp_type_q0 == \=CM_TYPE.SnpInvDtw=\)
+                           | (att_entry_snp_type_q0 == \=CM_TYPE.SnpInv=\)
+                           | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNitcCI=\)
+                           | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNitcMI=\)
+                           )
+                           ;
+
+assign snp_rsp_err_rmv_init = (snp_rsp_err | snp_rsp_err_q0) &
+                            ( (att_entry_snp_type_q0 == \=CM_TYPE.SnpClnDtr=\)
+                            | (att_entry_snp_type_q0 == \=CM_TYPE.SnpVldDtr=\)
+                            | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNitc=\)
+                            | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNoSDInt=\)
+                            | (att_entry_snp_type_q0 == \=CM_TYPE.SnpClnDtw=\)
+                            )
+                            ;
+
+assign snp_rsp_owner_mrd = (att_entry_mrd_type_valid &                                                                  // MRD cases  
+                            ((no_snps_required &                                                                        // MRD case with no snopops          
+                              (mrd_type_in == \=CM_TYPE.MrdRdWUCln=\ | mrd_type_in == \=CM_TYPE.MrdRdWU=\ )) |
+                             (~snp_rsp_err_q0 & ~(snp_rsp_dtr_q0 | snp_rsp_dtw_q0) & all_snp_rsp_done_pulse_q0 &        // Regular snp rsps done with no data transfer 
+                              (mrd_type_q0 == \=CM_TYPE.MrdRdWUCln=\ | mrd_type_q0 == \=CM_TYPE.MrdRdWU=\ ))));   
+
+assign snp_rsp_owner_cln_unq =  cmd_type_cln_unq & ~att_exmon_store_fail & (no_snps_required_q0 | all_snp_rsp_done_pulse_q0) ;
+assign snp_rsp_owner_wr_stash = cmd_type_wrstsh & snp_rsp_snarf_q0 & all_snp_rsp_done_pulse_q0;
+assign snp_rsp_owner_rd_stash = ((no_second_snp_stash & att_req_stash_mpf1 & (snp_rsp_snarf_owner_q0 | (att_entry_req_type == \=CM_TYPE.CmdLdCchUnq=\ ))) |
+                                 ((att_entry_req_type == \=CM_TYPE.CmdLdCchUnq=\ ) & all_snp_rsp_done_pulse_q0));
+          
+assign snp_rsp_owner_valid_set = ((att_entry_owner_valid_in & dm_rsp_valid) |                          // Initilaize Owner on DM rsp
+                                  (snp_rsp_owner | snp_rsp_owner_trf) |                                // owner transfer case or orignal owner for snoops sent
+                                  (snp_rsp_owner_cln_unq & ~snp_rsp_err_q0) |                          // Owner set for clean Unq
+                                  (snp_rsp_owner_wr_stash) |                                           // Owner set for write stash snarf
+                                  (snp_rsp_owner_rd_stash) |                                           // Owner set for stash once owner case
+                                  (snp_rsp_for_sharer_promotion & ~snp_rsp_err_q0) |                   // Sharer Promotion
+                                  (snp_rsp_owner_mrd));
+
+assign snp_rsp_owner_valid_clr = (de_alloc_pulse | (snp_rsp_err & att_entry_snp_inv_type & ~(snp_rsp_dtr_q0 & snp_rsp_owner_trf_q0) & (att_entry_snp_inv_dtr ? (snp_rsp_owner_vec != cmd_init_vec) : (snp_rsp_init_num == snp_rsp_owner_num_q0) & ~(cmd_type_stsh_once & snp_target_first_q0) )) | // De allocate or Snoop Response Error for Invalidating Snoop Type
+                                  (snp_rsp_owner_clr & (snp_rsp_init_num == snp_rsp_owner_num_q0))  |  // orignal owner is not an owner anymore
+                                  ((cmd_wrcln_sd | cmd_wrunq_owner | (cmd_cln_sf & cmd_init_owner)) & 
+                                   (no_snps_required_q0 | all_snp_rsp_done_pulse_q0 ))              |  // WR CLN SD to SCm, WR UNQ UD to I, clean SF when init is owner
+                                  (cmd_init_owner & cmd_type_stsh_once & (no_second_snp_stash | stash_snp_no_snarf))       |  // always clear when initiator was seeing as an owner for stashOnce
+                                  ((nitc_rd | cmd_type_stsh_once) & cmd_init_owner & (att_entry_req_tof != \=W_TOF=\'d2) & 
+                                   (no_snps_required_q0 | all_snp_rsp_done_pulse_q0)) |                // RD NITC  
+                                  snp_rsp_err_is_addr_owner_clr); //CONC-16847
+assign snp_rsp_owner_valid_en = snp_rsp_owner_valid_set | snp_rsp_owner_valid_clr | snp_rsp_err_inv_all; //CONC-12522
+assign snp_rsp_owner_num_en = snp_rsp_owner_valid_en; //CONC-12522
+   
+assign snp_rsp_owner_valid_in_org = snp_rsp_owner_valid_set;
+assign snp_rsp_owner_valid_in = snp_rsp_err_inv_all | (snp_rsp_err_rmv_init & (snp_rsp_owner_vec == cmd_init_vec)) | snp_rsp_err_is_addr_owner_clr ? 1'b0 : snp_rsp_owner_valid_in_org ;
+
+assign snp_rsp_owner_num_in_org = ({W_N_C_AGENTS{snp_rsp_owner}} &  snp_rsp_init_num) |
+                              ({W_N_C_AGENTS{(~snp_rsp_owner_rd_stash & (snp_rsp_owner_trf | snp_rsp_owner_mrd) | snp_rsp_owner_cln_unq)}} & cmd_init_num) |
+                              ({W_N_C_AGENTS{(snp_rsp_owner_wr_stash)}} & stash_targ_num) |
+                              ({W_N_C_AGENTS{(snp_rsp_owner_rd_stash)}} & stash_targ_num) |
+                              ({W_N_C_AGENTS{att_entry_owner_valid_in & dm_rsp_valid}} & att_entry_dm_rsp_owner_num)
+                              | ({W_N_C_AGENTS{snp_rsp_for_sharer_promotion & ~snp_rsp_err_q0}} &  cmd_init_num)
+                              ;
+
+assign snp_rsp_owner_num_in = snp_rsp_err_inv_all ? {W_N_C_AGENTS{1'b0}} : snp_rsp_owner_num_in_org;
+
+\=u.dffre(W_N_C_AGENTS, 'snp_rsp_owner_num_q0', 'snp_rsp_owner_num_in', "{W_N_C_AGENTS{1'b0}}", 'snp_rsp_owner_num_en', 'clk', 'reset_n')=\   
+\=u.dffre(1, 'snp_rsp_owner_valid_q0', 'snp_rsp_owner_valid_in', "1'b0", 'snp_rsp_owner_valid_en', 'clk', 'reset_n')=\             
+
+assign snp_rsp_owner_vec = (\=N_C_AGENTS=\'b1 << snp_rsp_owner_num_q0[\=W_N_C_AGENTS-1=\:0]);
+
+assign snp_rsp_owner_in_vec = (\=N_C_AGENTS=\'b1 << snp_rsp_owner_num_in[\=W_N_C_AGENTS-1=\:0]);
+
+assign nitc_rd = (att_entry_mrd_type == \=CM_TYPE.MrdRdWInv=\);
+
+assign mrd_pref_type = (att_entry_mrd_type == \=CM_TYPE.MrdPref=\);
+
+assign snp_sharer_vec_init = dm_rsp_valid;
+assign snp_sharer_init_vec_update = ((cmd_type_cln_unq & snp_pending_set_q0) | 
+                                     (no_snps_required_q0 & att_entry_mrd_type_valid & (~nitc_rd & ~mrd_cmo_type & ~cmd_type_stsh_once)));
+assign snp_sharer_wrbk_vec_update = no_snps_required_q0 & (cmd_type_wrbk | cmd_type_evict | ((cmd_wrunq_owner | cmd_wrunq_sharer) & ((att_entry_req_tof != \=W_TOF=\'d2) | cmd_aw_uniq)));
+assign snp_sharer_rds_mkclnunq_vec_update = cmd_type_rds_mkclnunq & str_req_cm_status_en & str_req_cm_status_in[7];
+assign snp_rsp_sharer_rd_stash = ((att_entry_req_type == \=CM_TYPE.CmdLdCchShd=\ ) & all_snp_rsp_done_pulse_q0);
+assign snp_rsp_rd_stash_no_snp_update = no_second_snp_stash & att_req_stash_mpf1 & (att_entry_req_type == \=CM_TYPE.CmdLdCchShd=\ );
+assign snp_rsp_stash_update = snp_rsp_owner_wr_stash | snp_rsp_owner_rd_stash | snp_rsp_sharer_rd_stash;
+
+assign snp_rsp_sharer_vec_set = snp_sharer_vec_init | snp_sharer_init_vec_update | snp_sharer_wrbk_vec_update | snp_rsp_no_err | (snp_rsp_err & att_entry_snp_inv_type) | snp_rsp_stash_update | snp_rsp_rd_stash_no_snp_update | snp_sharer_rds_mkclnunq_vec_update;
+assign snp_rsp_sharer_vec_clr = de_alloc_pulse;
+assign snp_rsp_sharer_vec_en = snp_rsp_sharer_vec_set | snp_rsp_sharer_vec_clr | snp_rsp_err_inv_all | snp_rsp_err_is_addr_for_non_inv_type; //CONC-12522 CONC-16847
+
+assign snp_rsp_sharer_vec_n = snp_rsp_init_vec_n | {N_C_AGENTS{snp_rsp_owner_sharer | (snp_rsp_no_snarf & snp_target_first_q0)}};
+assign snp_rsp_init_sharer_vec =  (att_entry_dm_rsp_sharer_vec  & csr_SnoopEnable &  
+                                   ((nitc_rd & (att_entry_req_tof != \=W_TOF=\'d2)| cmd_cln_sf) ? ~cmd_init_vec :           // clear initiator for NITC, SF clean, stashOnce commands
+                                    {N_C_AGENTS{1'b1}})) |
+                                  ({N_C_AGENTS{(att_entry_mrd_type_valid & (~nitc_rd & ~mrd_cmo_type & ~cmd_type_stsh_once))}} & cmd_init_vec);
+   
+assign snp_rsp_sharer_vec_in_org = (({N_C_AGENTS{snp_sharer_vec_init}} & snp_rsp_init_sharer_vec)                                           |// Initialize with orignal vec
+                                ({N_C_AGENTS{snp_rsp_my}} & (snp_rsp_sharer_vec_q0 & snp_rsp_sharer_vec_n))                                 |// Retainned as owner or sharer
+                                ({N_C_AGENTS{snp_rsp_dtr}} & (snp_rsp_sharer_vec_q0 & snp_rsp_sharer_vec_n))                                |// Data transfer to requester this may happen while retaining as sharer i.e. above case
+                                ({N_C_AGENTS{snp_rsp_dtr & ~nitc_rd}} & cmd_init_vec)                                                       |// Data transfer to requester this may happen while retaining as sharer i.e. above case
+                                ({N_C_AGENTS{snp_sharer_init_vec_update}} & (att_entry_sharer_vec_q0 |  cmd_init_vec))                      |// no snoops add requester (will happen with initialization option 1)
+                                ({N_C_AGENTS{snp_sharer_wrbk_vec_update}} & (att_entry_sharer_vec_q0 & ~cmd_init_vec))                      |// no snoops write back remove owner
+                                ({N_C_AGENTS{snp_sharer_rds_mkclnunq_vec_update}}  & (snp_rsp_sharer_vec_q0 ))               |// reads, MkUnq, ClnUnq retain owner
+                                ({N_C_AGENTS{snp_rsp_stash_update}} & (snp_rsp_sharer_vec_q0 | stash_targ_vec))                             |// Stash accept update (write & once shrer with snps, once unq with either case)
+                                ({N_C_AGENTS{snp_rsp_rd_stash_no_snp_update}} & (att_entry_sharer_vec_q0 & ~cmd_init_vec | stash_targ_vec)) |// RD Stash accept Owner
+                                ({N_C_AGENTS{snp_rsp_sharer_vec_clr}} & {N_C_AGENTS{1'b0}}));                                        // clear at dealloac
+
+assign snp_rsp_sharer_vec_in = snp_rsp_err_inv_all ? {N_C_AGENTS{1'b0}} : snp_rsp_sharer_vec_in_org & (snp_rsp_err_rmv_init ? ~cmd_init_vec : (snp_rsp_err_is_addr_for_non_inv_type ? ~snp_rsp_init_num : {N_C_AGENTS{1'b1}}));
+
+\=u.dffre(N_C_AGENTS, 'snp_rsp_sharer_vec_q0', 'snp_rsp_sharer_vec_in', "{N_C_AGENTS{1'b0}}", 'snp_rsp_sharer_vec_en', 'clk', 'reset_n')=\
+                         
+//=============================================================================     
+// PMON snp_rsp_miss
+//=============================================================================     
+
+assign snp_rsp_miss	= ~snp_rsp_err_q0 & ~(snp_rsp_dtr_q0 | snp_rsp_dtw_q0) & all_snp_rsp_done_pulse_q0;
+
+//=============================================================================     
+// MRDs
+//=============================================================================     
+
+wire mrd_pending_en, mrd_pending_in;
+wire mrd_type_en, mrd_rsp_my, mrd_rd_cln_sc, mrd_rsp_cm_status_err, mrd_rsp_my_err;
+wire mrd_rsp_pending_set, mrd_rsp_pending_clr, mrd_rsp_pending_en, mrd_rsp_pending_in;
+wire mrd_credit_en, mrd_credit_in, mrd_credit_rcvd_q0, mrd_credit_ready;   
+wire mrd_credit_err_en, mrd_credit_err_in, mrd_credit_err_rcvd_q0, mrd_credit_err_ready;   
+
+assign mrd_rsp_cm_status_err = (mrd_rsp_cm_status[7:6] == 2'b10);
+assign mrd_rsp_my_err = mrd_rsp_my & mrd_rsp_cm_status_err;
+
+assign mrd_pending_set	= (~mrd_credit_err_rcvd_q0 & att_entry_mrd_type_valid & (stsh_once_target_snoop_err ? 1'b0 : snp_rsp_err_q0 & cmd_type_stsh_once ? 1'b1 : ~snp_rsp_err_q0) &
+                          (no_snps_required                                                                     | // MRD when no snoops needed 
+                          (~snp_rsp_err_q0 & ~(snp_rsp_dtr_q0 | (snp_rsp_dtw_q0 & ~att_entry_snp_inv_dtr)) & 
+                           all_snp_rsp_done_pulse_q0)                                                           | // MRD after snoops
+                          (snp_rsp_snarf_q0 & all_snp_rsp_done_pulse_q0 & cmd_type_stsh_once)                   | // MRD after all stash once snoops
+                          (mrd_cmo_type & all_snp_rsp_done_pulse_q0)                                            | // MRD for CMO after snoops  
+                          ( mrd_pref_type & no_second_snp_stash & (~att_entry_owner_valid_q0 | cmd_init_owner)) | // MRD Pref for stash with no target identified, no owner
+                          (~mrd_pref_type & no_second_snp_stash)));                                               // MRD after target stash once snoop
+assign mrd_pending_clr = (att_entry_req_mrd_ready & mrd_pending_q0) | mrd_credit_err_rcvd_q0;
+assign mrd_pending_en = mrd_pending_set | mrd_pending_clr;
+assign mrd_pending_in = (mrd_pending_set) ? 1'b1 : 1'b0;
+\=u.dffre(1, 'mrd_pending_q0', 'mrd_pending_in', "1'b0", 'mrd_pending_en', 'clk', 'reset_n')=\
+
+//
+// MRD type
+//
+assign mrd_rd_cln_sc = ((no_snps_required & (| snp_targ_sharer_vec)) |                                 // No snoops with sharer set  
+                        ((att_entry_req_type == \=CM_TYPE.CmdLdCchShd=\ ) & ~snp_rsp_snarf_owner_q0 & ~snp_rsp_snarf_owner_in) | // Stash once shared
+                        ( | (snp_rsp_sharer_vec_in & ((cmd_type_stsh_once) ? ~stash_targ_vec : ~cmd_init_vec)) & all_snp_rsp_done));              // Snp rsp with no sharers 
+
+// for ACE ReadOnce, I -> I
+wire ace_read_init, cmd_init_inval, init_is_owner;
+assign ace_read_init = (((att_entry_mrd_type == \=CM_TYPE.MrdRdWInv=\) |
+                         (att_entry_mrd_type == \=CM_TYPE.MrdRdCln=\)  |
+                         (att_entry_mrd_type == \=CM_TYPE.MrdRdWU=\)   ) &
+                        (att_entry_req_tof == \=W_TOF=\'d2)              &
+                        ~cmd_init_nca                                    );
+
+assign cmd_init_inval = ~|(cmd_init_vec & att_entry_sharer_vec);
+
+assign init_is_owner = (att_entry_owner_valid_in & (att_entry_owner_vec_in == cmd_init_vec)) // rb_id then dm_rsp  
+                     | (att_entry_owner_valid_q0 & cmd_init_owner);                          // dm_rsp then rb_id
+
+assign att_entry_mrd_type_overwritten = ace_read_init ? ( nitc_rd ? ( cmd_init_inval ? \=CM_TYPE.MrdRdWInv=\ : \=CM_TYPE.MrdRdCln=\ ) 
+                                                                  : ( init_is_owner  ? \=CM_TYPE.MrdRdCln=\  : att_entry_mrd_type   ) ) : att_entry_mrd_type ;
+                              
+assign mrd_rd_cln_type = ((att_entry_mrd_type_overwritten == \=CM_TYPE.MrdRdCln=\) &  ~mrd_rd_cln_sc) ? \=CM_TYPE.MrdRdWUCln=\ :
+                         ((att_entry_mrd_type_overwritten == \=CM_TYPE.MrdRdCln=\) &   mrd_rd_cln_sc) ? \=CM_TYPE.MrdRdWSCln=\ : {W_CM_TYPE{1'b0}};   
+
+assign mrd_type_in = ( mrd_rd_cln_type | att_entry_mrd_type & {\=W_CM_TYPE=\{(att_entry_mrd_type_overwritten != \=CM_TYPE.MrdRdCln=\)}} );
+assign mrd_type_en = ((dm_rsp_valid & ~att_entry_write_rbid_valid) |
+                      (att_rb_id_grant & ~dm_rsp_pending_q0) |
+                      (all_snp_rsp_done));
+\=u.dffre(W_CM_TYPE, 'mrd_type_q0', 'mrd_type_in', "{W_CM_TYPE{1'b0}}", 'mrd_type_en', 'clk', 'reset_n')=\
+
+assign mrd_cmo_type = ((att_entry_mrd_type == \=CM_TYPE.MrdCln=\ ) |
+                       (att_entry_mrd_type == \=CM_TYPE.MrdInv=\ ) |
+                       (att_entry_mrd_type == \=CM_TYPE.MrdFlush=\ ));
+
+assign att_entry_mrd_req_rl = (cmd_type_stsh_once & ~mrd_pref_type)? \=W_RL=\'d3 : (mrd_cmo_type) ? \=W_RL=\'d2 : \=W_RL=\'d1;
+
+//
+// MRD issue
+//
+assign att_mrd_credit_req = mrd_pending_q0 & ~mrd_credit_rcvd_q0 & ~mrd_credit_err_rcvd_q0;
+assign mrd_credit_ready = {|{att_mrd_credit_grant}};
+assign mrd_credit_en = mrd_credit_ready | de_alloc_pulse;   
+assign mrd_credit_in = mrd_credit_ready;   
+\=u.dffre(1, 'mrd_credit_rcvd_q0', 'mrd_credit_in', "1'b0", 'mrd_credit_en', 'clk', 'reset_n')=\
+
+assign mrd_credit_err_ready = {|{att_mrd_credit_grant_err}};
+assign mrd_credit_err_en = mrd_credit_err_ready | de_alloc_pulse;   
+assign mrd_credit_err_in = mrd_credit_err_ready;   
+\=u.dffre(1, 'mrd_credit_err_rcvd_q0', 'mrd_credit_err_in', "1'b0", 'mrd_credit_err_en', 'clk', 'reset_n')=\
+                       
+assign att_entry_req_mrd_valid = mrd_pending_q0 & mrd_credit_rcvd_q0; //| mrd_credit_ready);
+
+assign att_entry_req_mrd_type = mrd_type_q0;
+assign att_entry_req_mrd_last = 1'b1;  
+
+//
+// MRDrsp pending flop
+//
+assign mrd_rsp_my = ({{32-W_MSG_ID{1'b0}}, mrd_rsp_r_message_id} == ATT_ID) & mrd_rsp_valid;  
+   
+assign mrd_rsp_pending_set = att_entry_req_mrd_ready & mrd_pending_q0;
+assign mrd_rsp_pending_clr = mrd_rsp_my;
+assign mrd_rsp_pending_en = mrd_rsp_pending_set | mrd_rsp_pending_clr;
+assign mrd_rsp_pending_in = mrd_rsp_pending_set;   
+\=u.dffre(1, 'mrd_rsp_pending_q0', 'mrd_rsp_pending_in', "1'b0", 'mrd_rsp_pending_en', 'clk', 'reset_n')=\
+   
+  
+//=============================================================================     
+// STR flops
+//=============================================================================     
+
+wire str_pending_set, str_pending_clr, str_pending_en, str_pending_in, str_rsp_my, str_pending_q0;   
+wire str_rsp_pending_set, str_rsp_pending_clr, str_rsp_pending_en, str_rsp_pending_in;
+
+assign stsh_once_target_snoop_err = snp_target_first_done_pulse & snp_rsp_err_q0;
+
+assign str_pending_set = (((no_second_snp_stash | second_snp_stash_wu | 
+                           second_snp_stash_ws | stash_snp_no_snarf | stsh_once_target_snoop_err) |                                                      // stash once str
+                           (all_snp_rsp_done_pulse_q0 & ~cmd_type_stsh_once & ~recall_req) |                                // str after snoop rsp
+                           (no_snps_required_q0 & ~recall_req)) & ~mrd_cmo_type |                                              // str for no snoops
+                         (mrd_rsp_my & mrd_cmo_type) | (mrd_credit_err_in & mrd_cmo_type) |
+  (~recall_req & all_snp_rsp_done_pulse_q0 & snp_rsp_err_q0 & ((att_entry_req_type == \=CM_TYPE.CmdClnVld=\) |  (att_entry_req_type == \=CM_TYPE.CmdClnShPsist=\) | (att_entry_req_type == \=CM_TYPE.CmdMkInv=\) | (att_entry_req_type == \=CM_TYPE.CmdClnInv=\))) | // str for MRD cln ops, or MkInv error, or ClnInv error
+                         (dm_rsp_valid & att_entry_dm_rsp_error));                                                          // str dm_rsp error
+
+assign str_pending_clr = att_entry_req_str_ready & str_pending_q0; 
+assign str_pending_en = str_pending_set | str_pending_clr;
+assign str_pending_in = (str_pending_set) ? 1'b1 : 1'b0;
+\=u.dffre(1, 'str_pending_q0', 'str_pending_in', "1'b0", 'str_pending_en', 'clk', 'reset_n')=\
+
+// cm_state 
+// 3'b000: Invalid  : requester ends up as invalid 
+// 3'b100: Unique   : no other sharer and requester is sharer or owner
+// 3'b010: Owner    : other sharers exist and requester is owner
+// 3'b011: Sharer   : other sharers exist and requester is not owner
+// will not set for stash request
+// Force Unique even if exclusive fails                          
+
+wire snp_rsp_init_sharer, snp_rsp_init_owner, snp_rsp_other_sharer_exist;
+wire snp_rsp_init_sharer_in, snp_rsp_init_owner_in, snp_rsp_other_sharer_exist_in;
+
+assign cm_state_org = cmd_type_cln_unq ? CM_UNIQ : 
+                  snp_rsp_init_sharer ? (snp_rsp_init_owner ? (snp_rsp_other_sharer_exist ? CM_OWNER : CM_UNIQ) : 
+                  CM_SHARER) : CM_INVAL;
+
+assign cm_state = cmd_type_cln_unq ? CM_UNIQ : 
+                  snp_rsp_init_sharer_in ? (snp_rsp_init_owner_in ? (snp_rsp_other_sharer_exist_in ? CM_OWNER : CM_UNIQ) : 
+                  CM_SHARER) : CM_INVAL;
+
+assign snp_rsp_other_sharer_exist = |((snp_rsp_sharer_vec_q0 | snp_rsp_sharer_vec_in) & ~cmd_init_vec);
+assign snp_rsp_other_sharer_exist_in = |(snp_rsp_sharer_vec_q0 & ~cmd_init_vec);
+
+assign snp_rsp_init_sharer = |((snp_rsp_sharer_vec_q0  | snp_rsp_sharer_vec_in) & cmd_init_vec);
+assign snp_rsp_init_sharer_in = |(snp_rsp_sharer_vec_q0 & cmd_init_vec);
+
+assign snp_rsp_init_owner = |((snp_rsp_owner_vec & {N_C_AGENTS{snp_rsp_owner_valid_q0 & ~snp_rsp_owner_valid_clr}} | snp_rsp_owner_in_vec & {N_C_AGENTS{snp_rsp_owner_valid_in}}) & cmd_init_vec);
+assign snp_rsp_init_owner_in = |((snp_rsp_owner_vec & {N_C_AGENTS{snp_rsp_owner_valid_q0}}) & cmd_init_vec);
+
+assign str_req_cm_status_in = ~de_alloc_pulse ? (dm_rsp_valid & att_entry_dm_rsp_error) | mrd_rsp_my_err | (mrd_credit_err_in | mrd_credit_err_rcvd_q0) ? {1'b1, {W_CM_STATUS-W_CM_ERR-1{1'b0}}, (mrd_rsp_my_err ? mrd_rsp_cm_status[2:0] : 3'b100)} :
+  snp_rsp_err_q0 & cmd_type_stsh_once & stsh_once_target_snoop_err ? ({snp_rsp_err_q0, {W_CM_STATUS-W_CM_ERR-1{1'b0}}, snp_rsp_err_info_q0}) :
+  snp_rsp_err_q0 & ~cmd_type_stsh_once & ~(cmd_type_wrunq | cmd_type_wrstsh) & ~snp_rsp_dtr_q0 ? ({snp_rsp_err_q0, {W_CM_STATUS-W_CM_ERR-1{1'b0}}, snp_rsp_err_info_q0}) :
+       {W_CM_STATUS{1'b0}} : {W_CM_STATUS{1'b0}}; 
+
+assign str_req_cm_status_en = snp_rsp_snarf_en
+                            | ((cmd_type_ex | att_entry_dm_rsp_error) & dm_rsp_valid)
+                            | all_snp_rsp_done_pulse_q0
+                            | no_snps_required_q0
+                            | stsh_once_target_snoop_err
+                            | mrd_rsp_my_err
+                            ;
+
+assign att_entry_req_str_valid = str_pending_q0;
+
+assign att_entry_req_str_last = 1'b1;   
+
+assign att_entry_req_cm_status = str_req_cm_status[7] ? str_req_cm_status : {{W_CM_STATUS-W_CM_STATE-1{1'b0}}, cm_state, snp_rsp_snarf_q0 | att_exmon_status};
+
+\=u.dffre(W_CM_STATUS, 'str_req_cm_status', 'str_req_cm_status_in', "{W_CM_STATUS{1'b0}}", 'str_req_cm_status_en', 'clk', 'reset_n')=\
+
+assign att_entry_req_str_mpf1 = {\=req_str_mpf1_padding0=\ att_entry_req_mpf1[W_FUNIT_ID-1:0]};   
+assign att_entry_req_str_mpf2 = {\=req_str_mpf2_padding0=\ snp_rsp_mpf1_q0[W_MSG_ID-1:0]};   
+assign att_entry_req_str_intf_size = snp_rsp_intf_size_q0;   
+
+//                                
+// STRrsp pending flop
+//
+assign str_rsp_my = ({{32-W_MSG_ID{1'b0}}, str_rsp_r_message_id} == ATT_ID) & str_rsp_valid;  
+   
+assign str_rsp_pending_set = att_entry_req_str_ready & str_pending_q0;
+assign str_rsp_pending_clr = str_rsp_my;
+assign str_rsp_pending_en = str_rsp_pending_set | str_rsp_pending_clr;
+assign str_rsp_pending_in = str_rsp_pending_set;   
+\=u.dffre(1, 'str_rsp_pending_q0', 'str_rsp_pending_in', "1'b0", 'str_rsp_pending_en', 'clk', 'reset_n')=\
+
+//=============================================================================     
+// Directory Write interface for directory commit
+//   Do not perform directory commit for Recall request
+//=============================================================================     
+
+assign dm_write_pending_preset = ~recall_req & (
+    all_snp_rsp_done_pulse_q0
+  | snp_rsp_stash_update
+  | snp_rsp_rd_stash_no_snp_update
+  | stash_snp_no_snarf
+  | no_second_snp_stash
+
+  | (no_snps_required_q0 & (att_entry_mrd_type_valid      |
+                            (cmd_cln_sf & cmd_init_valid) |
+                            cmd_wrunq_owner               |        
+                            cmd_type_wrcln                | 
+                            cmd_type_cln_unq              |
+                            {|{snp_rsp_sharer_vec_q0 ^ att_entry_sharer_vec_orignal_q0}}))
+
+  | (att_entry_dm_rsp_wr_required_q0 & (no_snps_required_q0         |
+                                        all_snp_rsp_done_pulse_q0   | 
+                                        no_second_snp_stash         |
+                                        stsh_once_target_snoop_err))
+  );
+
+\=u.dffre(1, 'dm_write_pending_preset_q0', 'dm_write_pending_preset', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+assign dm_write_pending_set = ~mrd_credit_err_rcvd_q0 & dm_write_pending_preset_q0 & ({|{att_entry_dm_write_change_vec}} |
+                                                            att_entry_dm_rsp_wr_required_q0    |
+                                                            att_exmon_store_fail);
+
+wire dm_write_sent_q0, dm_write_sent_in, dm_write_sent_en, dm_write_sent_clr, dm_write_sent_set;
+
+assign dm_write_sent_in = dm_write_sent_set;
+assign dm_write_sent_set = att_entry_dm_write_valid & att_entry_dm_write_ready;
+assign dm_write_sent_clr = att_entry_dm_write_way_vec_clr;
+assign dm_write_sent_en = dm_write_sent_set | dm_write_sent_clr;
+\=u.dffre(1, 'dm_write_sent_q0', 'dm_write_sent_in', "1'b0", 'dm_write_sent_en', 'clk', 'reset_n')=\ 
+
+assign dm_write_pending_clr = att_entry_dm_write_way_vec_clr | mrd_credit_err_rcvd_q0;                            
+assign dm_write_pending_en = dm_write_pending_set | dm_write_pending_clr;
+assign dm_write_pending_in = dm_write_pending_set;
+\=u.dffre(1, 'dm_write_pending_q0', 'dm_write_pending_in', "1'b0", 'dm_write_pending_en', 'clk', 'reset_n')=\                         
+
+assign att_entry_dm_write_valid = dm_write_pending_q0 & ~dm_write_sent_q0;                            
+
+assign att_entry_dm_write_last        = 1'b1;
+assign att_entry_dm_write_addr        = att_entry_req_addr;
+assign att_entry_dm_write_ns          = att_entry_req_ns;
+assign att_entry_dm_write_way_vec     = att_entry_way_vec;
+assign att_entry_dm_write_owner_valid = snp_rsp_owner_valid_q0;
+assign att_entry_dm_write_owner_num   = snp_rsp_owner_num_q0;
+assign att_entry_dm_write_sharer_vec  = snp_rsp_sharer_vec_q0 | ({N_C_AGENTS{snp_rsp_owner_valid_q0}} & snp_rsp_owner_vec);
+
+assign set_new_owner = ((~att_entry_owner_valid_q0 & snp_rsp_owner_valid_q0) |
+                        (snp_rsp_owner_valid_q0 & (snp_rsp_owner_vec != att_entry_owner_vec_q0)));
+
+assign clr_old_owner = (att_entry_owner_valid_q0 & ~snp_rsp_owner_valid_q0);
+
+assign att_entry_dm_write_change_vec =
+    (snp_rsp_sharer_vec_q0 ^ att_entry_sharer_vec_orignal_q0)
+  | ({N_C_AGENTS{~nitc_rd & ~mrd_cmo_type & ~cmd_type_wr & ~cmd_type_atomics & ~att_exmon_store_fail & ~cmd_type_wrstsh & ~cmd_type_stsh_once}} & cmd_init_vec)
+                                                                         // always write to allocated vec  MK remover CONC-5535   
+  | ({N_C_AGENTS{snp_rsp_owner_trf_q0}} & snp_rsp_owner_trf_init_q0)     // Capture owner transfer source
+  | ({N_C_AGENTS{set_new_owner}} & snp_rsp_owner_vec)                    // Set new owner
+  | ({N_C_AGENTS{clr_old_owner}} & att_entry_owner_vec_q0)               // Clear old owner
+  | ({N_C_AGENTS{att_entry_dm_rsp_wr_required_q0}});                     // Victim buffer hit or eviction 
+
+
+
+assign dm_write_ca_inval = ~att_entry_dm_write_sharer_vec & att_entry_dm_write_change_vec;
+assign dm_write_ca_set   =  att_entry_dm_write_sharer_vec & att_entry_dm_write_change_vec;
+
+\jsbegin
+var CA_BASES = [0];
+ 
+for ( var i = 1 ; i < N_SF ; i++ ) {
+    CA_BASES.push(SF_INFO[i-1].nCachingAgents + CA_BASES[i-1])
+}
+\jsend
+
+\js for ( var i = 0 ; i < N_SF; i++ ) {
+assign dm_write_sf_inval[\=i=\] =( 
+\js     for ( var j = 0 ; j < SF_INFO[i].nCachingAgents; j++ ) {
+                                 (dm_write_ca_inval[\=CA_BASES[i] + j=\] | (~att_entry_sharer_vec_q0[\=CA_BASES[i] + j=\] & ~dm_write_ca_set[\=CA_BASES[i] + j=\])) &
+\js     }
+                                 1'b1);
+\js }
+
+assign dm_write_sf_inval_mask = {   
+\js for ( var i = N_SF-1 ; i >= 0; i-- ) {
+                                   {\=SF_INFO[i].nWays=\{dm_write_sf_inval[\=i=\]}}
+\js                             if ( i != 0 ) {
+                                   ,
+\js                             } 
+
+\js }
+                                };
+
+//=============================================================================     
+// de alloc condition                            
+//=============================================================================     
+
+assign de_alloc = ~(req_alloc | recall_alloc_q0 | 
+                    (dm_rsp_pending_q0 & ~recall_req) | dm_write_pending_preset_q0 |
+                    att_rb_id_req_q0 | 
+                    rbr_req_pending_set | rbr_pending_q0 |
+                    snp_pending_set | snp_rsp_pending | 
+                    mrd_pending_set | mrd_pending_q0 | mrd_rsp_pending_q0 |
+                    dm_write_pending_set | dm_write_pending_q0 |
+                    str_pending_set | str_pending_q0 | str_rsp_pending_q0 | att_rb_id_void_valid);
+   
+\=u.dffre(1, 'de_alloc_q0', 'de_alloc', "1'b1", "1'b1", 'clk', 'reset_n')=\
+\=u.dffre(1, 'de_alloc_q1', 'de_alloc_q0', "1'b1", "1'b1", 'clk', 'reset_n')=\
+
+assign de_alloc_pulse = ~de_alloc_q1 & de_alloc_q0;
+                        
+//=============================================================================     
+// Timeout Overflow
+//=============================================================================     
+
+wire timeout_overflow_en, timeout_overflow_in;
+assign timeout_overflow_en = timeout_overflow_event_clr | (recall_req & timeout_overflow_event) | de_alloc_pulse;
+assign timeout_overflow_in = ~timeout_overflow_event_clr & ~de_alloc_pulse;
+wire q_timeout_overflow;
+\=u.dffre(1,        'q_timeout_overflow', 'timeout_overflow_in',   "1'b0",        'timeout_overflow_en',    'clk',  'reset_n')=\
+
+assign timeout_overflow = q_timeout_overflow & recall_req & timeout_overflow_event;
+
+\jsbegin
+//=============================================================================     
+// CONC-16847
+//=============================================================================     
+\jsend
+
+wire [\=N_C_AGENTS-1=\:0] ca_f_unit_id_is_chi = \=CachingAgentIsCHI=\;
+
+wire [\=N_C_AGENTS-1=\:0] snp_rsp_initiator_is_chi_vec;
+
+wire snp_rsp_initiator_is_chi;
+
+    \js for(let i=0; i<N_C_AGENTS; i++) {
+assign snp_rsp_initiator_is_chi_vec[\=i=\] = snp_rsp_my
+                                      & ca_f_unit_id_is_chi[\=i=\]
+        \js if (nChiplets > 1) {
+                                      & (snp_rsp_initiator_global_f_unit_id == ca_global_f_unit_id[\=i=\*W_GLOBAL_FUNIT_ID +: W_GLOBAL_FUNIT_ID]);
+        \js } else {
+                                      & (snp_rsp_initiator_id[W_INIT_ID-1:W_FPORT_ID] == ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]);
+        \js }
+
+    \js }
+
+assign snp_rsp_initiator_is_chi = {|{snp_rsp_initiator_is_chi_vec}};
+
+
+assign att_entry_snp_non_inv_type = (att_entry_snp_type_q0 == \=CM_TYPE.SnpClnDtw=\)
+                                  | (att_entry_snp_type_q0 == \=CM_TYPE.SnpClnDtr=\)
+                                  | (att_entry_snp_type_q0 == \=CM_TYPE.SnpVldDtr=\)
+                                  | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNitc=\)
+                                  | (att_entry_snp_type_q0 == \=CM_TYPE.SnpNoSDInt=\)
+                                  | ((att_entry_snp_type_q0 == \=CM_TYPE.SnpStshShd=\) & ~snp_target_first_q0) //i.e. SnpStshShd to non-target is converted by non-target AIU to SnpVldDtr
+                                  ;
+
+assign snp_rsp_err_is_addr = snp_rsp_err & (snp_rsp_cm_status == 8'b10000100);
+
+assign snp_rsp_err_is_addr_for_non_inv_type = snp_rsp_err_is_addr & att_entry_snp_non_inv_type & snp_rsp_initiator_is_chi;
+
+assign snp_rsp_err_is_addr_owner_clr = snp_rsp_err_is_addr_for_non_inv_type & snp_rsp_owner_valid_q0 & (snp_rsp_init_num == snp_rsp_owner_num_q0);
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (ASSERT_ON) { \jsend
+`ifdef OVL_ASSERT_ON
+
+// Assertions              
+//coverage off
+//pragma synthesis_off
+//
+reg a_error_test;
+initial begin
+	if ($test$plusargs("error_test")) begin
+		a_error_test = 1'b1;
+	end else begin
+		a_error_test = 1'b0;
+	end
+end
+
+reg rb_id_rcvd = 0;
+
+always @ *
+begin
+	if (att_rb_id_grant & att_rb_id_req)
+		rb_id_rcvd = 1;
+	if ((att_rb_id_void_valid) || snp_rsp_dtw || cmd_type_wr || cmd_type_wrstsh || att_rb_id_req_clr)
+		rb_id_rcvd = 0;
+end
+
+     
+                    
+property rbid_check;
+   @(posedge clk) disable iff (~reset_n)
+       de_alloc_pulse |->  ~rb_id_rcvd;
+endproperty
+
+assert_rbid_check: assert property (rbid_check)
+   else begin $error("RBID void fail!"); #100 $finish; end
+
+reg snp_rsp_dtw_seen;
+reg snp_rsp_dtr_seen;
+always @(posedge clk or negedge reset_n) begin
+    if (~reset_n) begin
+        snp_rsp_dtw_seen <= 1'b0;
+    end else if (de_alloc_pulse) begin
+        snp_rsp_dtw_seen <= 1'b0;
+    end else if (snp_rsp_dtw) begin
+        snp_rsp_dtw_seen <= 1'b1;
+    end else begin
+        snp_rsp_dtw_seen <= snp_rsp_dtw_seen;
+    end
+end
+
+always @(posedge clk or negedge reset_n) begin
+    if (~reset_n) begin
+        snp_rsp_dtr_seen <= 1'b0;
+    end else if (de_alloc_pulse) begin
+        snp_rsp_dtr_seen <= 1'b0;
+    end else if (snp_rsp_dtr) begin
+        snp_rsp_dtr_seen <= 1'b1;
+    end else begin
+        snp_rsp_dtr_seen <= snp_rsp_dtr_seen;
+    end
+end
+
+    assert_never #(0) assert_snp_rsp_two_dtws (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(snp_rsp_dtw_seen & snp_rsp_dtw)
+    );
+
+    assert_never #(0) assert_snp_rsp_two_dtrs (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(snp_rsp_dtr_seen & snp_rsp_dtr)
+    );
+
+    assert_never #(0) assert_no_dtr_after_dtw (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(snp_rsp_dtw_seen & snp_rsp_dtr)
+    );
+// Comment out this assertion for CONC-1481 because when ioaiu added cacheline ownership promotion, dtw became a valid response.
+//    assert_never #(0) assert_no_dtw_after_dtr (
+//        .clk(clk),
+//        .reset_n(reset_n),
+//        .test_expr(snp_rsp_dtr_seen & snp_rsp_dtw)
+//    );
+
+
+    assert_implication #(0) assert_dc_one_dt1_one(
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(snp_rsp_owner_trf),
+        .consequent_expr(snp_rsp_dtr)
+    );
+
+    assert_never #(0) assert_dm_rsp_valid_sleep (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(att_entry_dm_rsp_valid & sleep)
+    );
+
+    assert_never #(0) assert_dm_rsp_valid_recall (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(att_entry_dm_rsp_valid & (recall_alloc | recall_req))
+    );
+
+    assert_never #(0) assert_exmon_store_fail_recall (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(att_exmon_store_fail & (recall_alloc | recall_req))
+    );
+
+wire no_snps_required_org =
+  (
+    ((dm_rsp_valid & (att_exmon_store_fail | ~(((snp_req_up_in == 2'b01) | (snp_req_up_in == 2'b10)) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict | att_entry_snp_cln_dtw))) & ~att_entry_dm_rsp_error & (att_rb_id_rcvd_q0 | ~att_entry_write_rbid_valid | att_exmon_store_fail)) | // rbid then dir rsp
+    (att_rb_id_grant & (att_exmon_store_fail | ~(((q_snp_req_up == 2'b01) | (q_snp_req_up == 2'b10)) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict | att_entry_snp_cln_dtw))) & ~(recall_req | recall_alloc) & (~dm_rsp_pending_q0 | dm_rsp_valid))) &  // dir then rbid
+
+           ~cmd_type_stsh_once & ~wrstsh_valid &                                                    // Stash target snp
+           (~((| snp_targ_owner_vec) | (att_entry_snp_all_q0 & (| snp_targ_sharer_vec))) |          // no owner or sharer
+            cmd_type_wrbk | cmd_type_evict | cmd_type_wrcln |                                       // write back cases 
+            att_exmon_store_fail)                                                                   // exmon fail
+  );
+ 
+    assert_never #(0) assert_no_snps_required_org (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(no_snps_required != no_snps_required_org)
+    );
+
+wire rbr_req_reserve_org = ((
+                           (att_rb_id_grant & ~att_rb_id_void_valid_set & ~dm_rsp_pending_q0)) // dir then rbid
+                          & ~cmd_type_stsh_once 
+                          & (   (| snp_targ_owner_vec)
+                              | (att_entry_snp_all_q0 & (| snp_targ_sharer_vec))
+                              | rbr_req_write_no_snp
+                              | (((snp_req_up_in == 2'b01) | (snp_req_up_in == 2'b10)) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict))
+                            )
+                         )  
+                       | (cmd_type_stsh_once & (second_snp_stash_wu | second_snp_stash_ws))                     // stash once
+                       | (~att_rb_id_rcvd_q0 & att_rb_id_rcvd_in & recall_req & (| att_entry_sharer_vec_q0));   // recall request
+ 
+    assert_never #(0) assert_rbr_req_reserve_org (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(rbr_req_reserve != rbr_req_reserve_org)
+    );
+
+wire snp_pending_set_org = ((dm_rsp_valid & ~att_entry_write_rbid_valid & 
+                           ~cmd_type_stsh_once & ~att_exmon_store_fail & ~att_entry_dm_rsp_error) &                       // Dir rsp after rbid 
+                         (att_entry_snp_all_q0 |                                                                // snp all including sharer
+                          ((snp_req_up_in == 2'b01) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict | att_entry_snp_cln_dtw)) | // snp unique sharer and not write back
+                          ((snp_req_up_in == 2'b10) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict | att_entry_snp_cln_dtw)) | // snp unique sharer and not write back
+                          (att_entry_dm_rsp_owner_valid & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict)) | // snp owner and not write back
+                          wrstsh_valid)) |                                                                      // snp for write stash target
+
+                         ((att_rb_id_grant & ~dm_rsp_pending_q0 & 
+                           ~cmd_type_stsh_once & ~att_exmon_store_fail) &                              // Dir rsp before rbid
+                         (att_entry_snp_all_q0 |                                                              // snp all including sharer
+                          ((q_snp_req_up == 2'b01) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict | att_entry_snp_cln_dtw)) | // snp unique sharer and not write back 
+                          ((q_snp_req_up == 2'b10) & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict | att_entry_snp_cln_dtw)) | // snp unique sharer and not write back 
+                          (att_entry_owner_valid_q0 & ~(cmd_type_wrbk | cmd_type_wrcln | cmd_type_evict))|    // snp owner and not write back
+                          wrstsh_valid)) |                                                                    // snp for write stash target
+
+                         (snp_target_first_pulse |                                                                 // Stash once snoop
+                         second_snp_stash_wu | second_snp_stash_ws) |                                              // second stash snoop
+                         (~att_rb_id_rcvd_q0 & att_rb_id_rcvd_in & recall_req & (| att_entry_sharer_vec_q0));      // recall snoop
+
+    assert_never #(0) assert_snp_pending_set_org (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(snp_pending_set != snp_pending_set_org)
+    );
+
+wire [W_CM_STATUS-1:0] att_entry_req_cm_status_org, str_req_cm_status_in_org;
+
+assign str_req_cm_status_in_org = ~de_alloc_pulse ? (dm_rsp_valid & att_entry_dm_rsp_error) | mrd_rsp_my_err | (mrd_credit_err_in | mrd_credit_err_rcvd_q0) ? {1'b1, {W_CM_STATUS-W_CM_ERR-1{1'b0}}, (mrd_rsp_my_err ? mrd_rsp_cm_status[2:0] : 3'b100)} :
+  snp_rsp_err_q0 & cmd_type_stsh_once & stsh_once_target_snoop_err ? ({snp_rsp_err_q0, {W_CM_STATUS-W_CM_ERR-1{1'b0}}, snp_rsp_err_info_q0}) :
+  snp_rsp_err_q0 & ~cmd_type_stsh_once & ~(cmd_type_wrunq | cmd_type_wrstsh) & ~snp_rsp_dtr_q0 ? ({snp_rsp_err_q0, {W_CM_STATUS-W_CM_ERR-1{1'b0}}, snp_rsp_err_info_q0}) :
+      ({{W_CM_STATUS-1{1'b0}}, (snp_rsp_snarf_in | snp_rsp_snarf_q0 | att_exmon_status)}         |
+       {{W_CM_STATUS-W_CM_STATE-1{1'b0}}, cm_state_org & {W_CM_STATE{~snp_rsp_err_q0 & ~snp_rsp_snarf_in & ~snp_rsp_snarf_q0}}, 1'b0}) : 'b0;
+
+\=u.dffre(W_CM_STATUS, 'att_entry_req_cm_status_org', 'str_req_cm_status_in_org', "{W_CM_STATUS{1'b0}}", 'str_req_cm_status_en', 'clk', 'reset_n')=\
+
+    assert_never #(0) assert_att_entry_req_cm_status_org (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(att_entry_req_str_valid & (att_entry_req_cm_status != att_entry_req_cm_status_org))
+    );
+
+
+//pragma synthesis_on
+//coverage on
+`endif
+\js }
+
+endmodule 

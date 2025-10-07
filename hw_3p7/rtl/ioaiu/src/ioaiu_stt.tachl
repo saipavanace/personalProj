@@ -1,0 +1,454 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2024
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.7
+// Author : Eric
+// Date   : Sep 2024
+//
+// Description : IOAIU STT
+//   Note: This is only for the OWO configurations for now. In the future we should roll in other configs. 
+//
+//////////////////////////////////////////////////////////////////////////
+var u     = obj.lib;
+/* istanbul ignore next env ncore_3p7 */
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+/* istanbul ignore next env ncore_3p7 */
+var ioaiu_power2        = function(n) { return ((n & (n-1)) == 0) ? 1 : 0; };
+
+var owo = u.getParam('owo');
+var nStt = u.getParam('nStt');
+var nOtt = u.getParam('nOtt');
+
+var CLO  = u.getParam('CLO');
+
+var SPNT = u.getParam('SPNT');
+var SPNI = u.getParam('SPNI');
+var SPNR = u.getParam('SPNR');
+var SPNP = u.getParam('SPNP');
+var SPNL = u.getParam('SPNL');
+var SPN1 = u.getParam('SPN1');
+
+var SRNP = u.getParam('SRNP');
+var SRNM = u.getParam('SRNM');
+var SRNB = u.getParam('SRNB');
+var SRNI = u.getParam('SRNI');
+var SRNT = u.getParam('SRNT');
+var SRNA = u.getParam('SRNA');
+var SRN1 = u.getParam('SRN1');
+var SRN2 = u.getParam('SRN2');
+var SRN3 = u.getParam('SRN3');
+var SRND = u.getParam('SRND');
+var SRNF = u.getParam('SRNF');
+
+\jsend
+module \=u.getModuleName()=\ (
+        clk_i,
+        reset_ni,
+	idle_o,
+	myid_i,
+
+	\js if (owo) {
+	    \js for ( let i = 0; i < nOtt; i++) {
+	    ott_outstanding_\=i=\,
+	    ott_addr_\=i=\,
+	    ott_security_\=i=\,
+	    \js }
+
+	    \js for ( let i = 0; i < nStt; i++) {
+	    stt_val_\=i=\,
+	    stt_addr_\=i=\,
+	    stt_ns_\=i=\,	    
+	    \js }
+
+	    ott_clear_collision,
+	\js }
+	
+        snp_rsp_ready_i,
+        snp_rsp_valid_o,
+        snp_rsp_trace_o,
+        snp_rsp_tid_o,
+        snp_rsp_iid_o,
+        snp_rsp_mid_o,
+        snp_rsp_rid_o,
+        snp_rsp_pri_o,
+        snp_rsp_ql_o,
+        snp_rsp_cmd_o,
+        snp_rsp_status_o,
+        snp_rsp_mpf1_o,
+        snp_req_ready_o,
+        snp_req_valid_i,
+        snp_req_cmd_i,
+        snp_req_status_i,
+        snp_req_pri_i,
+        snp_req_mid_i,
+        snp_req_bid_i,
+        snp_req_iid_i,
+        snp_req_tid_i,
+        snp_req_addr_i,	
+        snp_req_tr_i,
+        snp_req_rl_i,
+        snp_req_up_i,
+        snp_req_pr_i,
+        snp_req_ns_i,
+	snp_req_ca_i,
+	snp_req_ac_i,
+	snp_req_vz_i,
+        snp_req_isize_i,
+        snp_req_mpf1_i,
+        snp_req_mpf2_i,
+        snp_req_mpf3_i,
+        snp_req_did_i,
+        snp_req_tof_i
+);
+
+input                    clk_i;
+input                    reset_ni;
+output                   idle_o;
+input [\=SRNT=\-1:0]     myid_i;
+
+\js if (owo) {
+    \js for ( let i = 0; i < nOtt; i++) {
+    input                    ott_outstanding_\=i=\;
+    input [\=SRNA=\-1:0]     ott_addr_\=i=\;
+    input                    ott_security_\=i=\;
+    \js }
+
+    \js for ( let i = 0; i < nStt; i++) {
+    output	    stt_val_\=i=\;
+    output [\=SRNA=\-1:0]    stt_addr_\=i=\;
+    output	    stt_ns_\=i=\;	    	    
+    \js }
+
+    input [\=nOtt=\-1:0]     ott_clear_collision;
+\js }
+
+input                    snp_rsp_ready_i;
+output                   snp_rsp_valid_o;
+output                   snp_rsp_trace_o;
+output [\=SPNT=\-1:0]    snp_rsp_tid_o;
+output [\=SPNI=\-1:0]    snp_rsp_iid_o;
+output [\=SRNM=\-1:0]    snp_rsp_mid_o;
+output [\=SPNR=\-1:0]    snp_rsp_rid_o;
+output [\=SPNP=\-1:0]    snp_rsp_pri_o;
+output [\=SPNL=\-1:0]    snp_rsp_ql_o;
+output [7:0]             snp_rsp_cmd_o;
+output [7:0]             snp_rsp_status_o;
+output [\=SPN1=\-1:0]    snp_rsp_mpf1_o;
+
+output                   snp_req_ready_o;
+input                    snp_req_valid_i;
+input [7:0]              snp_req_cmd_i;
+input [7:0]              snp_req_status_i;
+input [\=SRNP=\-1:0]     snp_req_pri_i;
+input [\=SRNM=\-1:0]     snp_req_mid_i;
+input [\=SRNB=\-1:0]     snp_req_bid_i;
+input [\=SRNI=\-1:0]     snp_req_iid_i;
+input [\=SRNT=\-1:0]     snp_req_tid_i;
+input [\=SRNA=\-1:0]     snp_req_addr_i;
+input [1:0]              snp_req_isize_i;
+input                    snp_req_tr_i;
+input [1:0]              snp_req_rl_i;
+input [1:0]              snp_req_up_i;
+input                    snp_req_pr_i;
+input                    snp_req_ns_i;
+input                    snp_req_ca_i;
+input                    snp_req_ac_i;
+input                    snp_req_vz_i;
+input [\=SRN1=\-1:0]     snp_req_mpf1_i;
+input [\=SRN2=\-1:0]     snp_req_mpf2_i;
+input [\=SRN3=\-1:0]     snp_req_mpf3_i;
+input [\=SRND=\-1:0]     snp_req_did_i;
+input [\=SRNF=\-1:0]     snp_req_tof_i;
+
+////////////////////////////////////////////////
+//
+//	OWO STT Implimentation
+//
+\js if ( owo ) {
+
+\js let context_width = 1 + 1 + SRNI + SRNM + SRNP + 1 + SRNA+ + 1;
+
+/////////
+//  Wires
+//
+
+wire stt_full;
+wire stt_tr;
+wire [\=SRNI=\-1:0] stt_iid;
+wire [\=SRNM=\-1:0] stt_mid;
+wire [\=SRNP=\-1:0] stt_pri;
+
+\js for ( let i = 0; i < nStt; i++) {
+wire stt_\=i=\_valid;
+wire stt_\=i=\_tr;
+wire stt_\=i=\_ns;
+wire [\=SRNI=\-1:0] stt_\=i=\_iid;
+wire [\=SRNM=\-1:0] stt_\=i=\_mid;
+wire [\=SRNP=\-1:0] stt_\=i=\_pri;
+wire stt_\=i=\_wfAddr;
+wire [\=SRNA=\-1:0] stt_\=i=\_addr;
+
+wire stt_\=i=\_valid_in;
+wire stt_\=i=\_tr_in;
+wire stt_\=i=\_ns_in;
+wire [\=SRNI=\-1:0] stt_\=i=\_iid_in;
+wire [\=SRNM=\-1:0] stt_\=i=\_mid_in;
+wire [\=SRNP=\-1:0] stt_\=i=\_pri_in;
+wire stt_\=i=\_wfAddr_in;
+wire [\=SRNA=\-1:0] stt_\=i=\_addr_in;
+wire [\=nOtt-1=\:0] stt_\=i=\_coll_in;
+wire [\=nOtt-1=\:0] stt_\=i=\_coll;
+
+wire [\=context_width=\-1:0] stt_\=i=\_entry_in;
+wire [\=context_width=\-1:0] stt_\=i=\_entry;
+\js }
+
+wire [\=nStt=\-1:0] stt_valid;
+wire [\=nStt=\-1:0] stt_wake;
+wire [\=nStt=\-1:0] stt_select_set;
+wire [\=nStt=\-1:0] stt_select_snp_rsp;
+
+wire stt_snp_rsp;
+
+/////////
+//  Address Match
+//
+wire [\=nOtt-1=\:0] addr_match_snp_req_vec;
+
+\js for (let i=0;i<nOtt;i++) {
+assign addr_match_snp_req_vec[\=i=\] = 
+	ott_outstanding_\=i=\ & ({ott_security_\=i=\,ott_addr_\=i=\[\=SRNA-1=\:\=CLO=\]} == {snp_req_ns_i,snp_req_addr_i[\=SRNA-1=\:\=CLO=\]});
+\js }
+wire addr_match_snp_req = |addr_match_snp_req_vec;
+
+/////////
+//  Context
+//
+
+\=u.instance({
+    instanceName: 'u_stt_valid_ffo',
+    moduleName: 'find_first_one',
+    params: {
+        width   : nStt
+    },
+    verilogParams: { WIDTH : nStt },
+    ports: {
+        invec       : '~stt_valid',
+        outvec      : 'stt_select_set'
+    }
+})=\
+
+\=u.instance({
+    instanceName: 'u_stt_wake_ffo',
+    moduleName: 'find_first_one',
+    params: {
+        width   : nStt
+    },
+    verilogParams: { WIDTH : nStt },
+    ports: {
+        invec       : 'stt_wake',
+        outvec      : 'stt_select_snp_rsp'
+    }
+})=\
+
+\js for ( let i = 0; i < nStt; i++) {
+
+wire set_\=i=\ = stt_select_set[\=i=\] & addr_match_snp_req & snp_req_valid_i & snp_req_ready_o;
+wire clear_\=i=\ = stt_select_snp_rsp[\=i=\] & ~(|stt_\=i=\_coll) & snp_rsp_valid_o & snp_rsp_ready_i & stt_snp_rsp;
+
+assign stt_\=i=\_valid_in = (set_\=i=\) ? 1'b1 : (clear_\=i=\ & stt_\=i=\_valid) ? 1'b0 : stt_\=i=\_valid;
+
+assign stt_\=i=\_coll_in = set_\=i=\ ? addr_match_snp_req_vec : (stt_\=i=\_valid & (|ott_clear_collision)) ? (stt_\=i=\_coll & ~ott_clear_collision) : stt_\=i=\_coll;
+\=u.dffre(nOtt, 'stt_'+i+'_coll', 'stt_'+i+'_coll_in','{'+nOtt+`{1'b0}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+
+assign stt_\=i=\_ns_in   = (set_\=i=\) ? snp_req_ns_i   : stt_\=i=\_ns;
+assign stt_\=i=\_tr_in   = (set_\=i=\) ? snp_req_tr_i   : stt_\=i=\_tr;
+assign stt_\=i=\_iid_in  = (set_\=i=\) ? snp_req_iid_i  : stt_\=i=\_iid;
+assign stt_\=i=\_mid_in  = (set_\=i=\) ? snp_req_mid_i  : stt_\=i=\_mid;
+assign stt_\=i=\_pri_in  = (set_\=i=\) ? snp_req_pri_i  : stt_\=i=\_pri;
+assign stt_\=i=\_addr_in = (set_\=i=\) ? snp_req_addr_i : stt_\=i=\_addr;
+
+assign stt_\=i=\_wfAddr_in = (set_\=i=\) ? 1'b1 : stt_\=i=\_valid & ~(|stt_\=i=\_coll) ? 1'b0 : stt_\=i=\_wfAddr;
+
+assign stt_wake[\=i=\] = stt_\=i=\_valid & ~stt_\=i=\_wfAddr;
+assign stt_valid[\=i=\] = stt_\=i=\_valid;
+
+assign stt_\=i=\_entry_in = {
+       stt_\=i=\_valid_in,
+       stt_\=i=\_tr_in,
+       stt_\=i=\_ns_in,       
+       stt_\=i=\_iid_in,
+       stt_\=i=\_mid_in,
+       stt_\=i=\_pri_in,
+       stt_\=i=\_wfAddr_in,
+       stt_\=i=\_addr_in       
+};
+
+assign {
+       stt_\=i=\_valid,
+       stt_\=i=\_tr,
+       stt_\=i=\_ns,              
+       stt_\=i=\_iid,
+       stt_\=i=\_mid,
+       stt_\=i=\_pri,
+       stt_\=i=\_wfAddr,
+       stt_\=i=\_addr      
+} = stt_\=i=\_entry;
+
+\=u.dffre(context_width, 'stt_'+i+'_entry', 'stt_'+i+'_entry_in', "{"+context_width+"{1'b0}}", `1'b1`, `clk_i`, `reset_ni`)=\
+
+assign stt_val_\=i=\ = stt_\=i=\_valid;
+assign stt_addr_\=i=\ = stt_\=i=\_addr;
+assign stt_ns_\=i=\ = stt_\=i=\_ns;
+
+\js }
+
+/////////
+//  Lookup Logic
+//
+\jsbegin
+var tr_ports = {};
+
+for (let i=0; i<nStt ;i++) {
+        tr_ports['in'+i] = "stt_"+i+"_tr";
+}
+
+tr_ports['sel']   = "stt_select_snp_rsp";
+tr_ports['out']   = "stt_tr";
+\jsend
+
+\=u.instance({
+        instanceName: 'u_tr',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : nStt,
+                        wMux             : 1
+        },
+        verilogParams: {},
+        ports: tr_ports
+})=\
+
+\jsbegin
+var iid_ports = {};
+
+for (let i=0; i<nStt ;i++) {
+        iid_ports['in'+i] = "stt_"+i+"_iid";
+}
+
+iid_ports['sel']   = "stt_select_snp_rsp";
+iid_ports['out']   = "stt_iid";
+\jsend
+
+\=u.instance({
+        instanceName: 'u_iid',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : nStt,
+                        wMux             : SRNI
+        },
+        verilogParams: {},
+        ports: iid_ports
+})=\
+
+\jsbegin
+var mid_ports = {};
+
+for (let i=0; i<nStt ;i++) {
+        mid_ports['in'+i] = "stt_"+i+"_mid";
+}
+
+mid_ports['sel']   = "stt_select_snp_rsp";
+mid_ports['out']   = "stt_mid";
+\jsend
+
+\=u.instance({
+        instanceName: 'u_mid',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : nStt,
+                        wMux             : SRNM
+        },
+        verilogParams: {},
+        ports: mid_ports
+})=\
+
+
+\jsbegin
+var pri_ports = {};
+
+for (let i=0; i<nStt ;i++) {
+        pri_ports['in'+i] = "stt_"+i+"_pri";
+}
+
+pri_ports['sel']   = "stt_select_snp_rsp";
+pri_ports['out']   = "stt_pri";
+\jsend
+
+\=u.instance({
+        instanceName: 'u_pri',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : nStt,
+                        wMux             : SRNP
+        },
+        verilogParams: {},
+        ports: pri_ports
+})=\
+
+/////////
+//  Control Logic
+//
+
+wire passthrough_snp_rsp = snp_req_valid_i & ~addr_match_snp_req;
+
+assign stt_snp_rsp = (|stt_wake);
+
+assign idle_o = |stt_valid;
+assign stt_full = &stt_valid;
+
+\js /////////
+\js //  Snoop Response Construction
+\js /////////
+
+assign snp_req_ready_o  = snp_req_valid_i & snp_rsp_ready_i & ~(|stt_wake) &
+                               ((~addr_match_snp_req) | 
+                                ( addr_match_snp_req & ~stt_full));
+			  
+assign snp_rsp_valid_o  = (|stt_wake) | (~(|stt_wake) & passthrough_snp_rsp);
+			  
+assign snp_rsp_trace_o  = (|stt_wake)           ? stt_tr :snp_req_tr_i;
+assign snp_rsp_tid_o    = (|stt_wake)           ? stt_iid : snp_req_iid_i;
+assign snp_rsp_mid_o    = (|stt_wake)           ? stt_mid : snp_req_mid_i;
+assign snp_rsp_rid_o    = (|stt_wake)           ? stt_mid : snp_req_mid_i;
+assign snp_rsp_pri_o    = (|stt_wake)           ? stt_pri : snp_req_pri_i;
+
+\js // Always a SnoopInv in the case of OWO
+assign snp_rsp_iid_o    = myid_i;
+assign snp_rsp_ql_o     = \=SPNL=\'h0;		  
+assign snp_rsp_cmd_o    = 8'hf2;
+assign snp_rsp_status_o = 8'h0;			 
+assign snp_rsp_mpf1_o   = \=SPN1=\'h0;
+
+\js } else {
+\js // Non OWO Implimentation
+assign snp_req_ready_o = 1'b0;
+
+assign snp_rsp_valid_o = 1'b0;
+assign snp_rsp_trace_o = 1'b0;
+assign snp_rsp_tid_o = \=SPNT=\'b0;
+assign snp_rsp_iid_o = \=SPNI=\'b0;
+assign snp_rsp_mid_o = \=SRNM=\'b0;
+assign snp_rsp_rid_o = \=SPNR=\'b0;
+assign snp_rsp_pri_o = \=SPNP=\'b0;
+assign snp_rsp_ql_o = \=SPNL=\'b0;
+assign snp_rsp_cmd_o = 8'b0;
+assign snp_rsp_status_o = 8'b0;
+assign snp_rsp_mpf1_o = \=SPN1=\'b0;
+
+assign idle_o = 1'b0;
+
+\js }
+
+endmodule

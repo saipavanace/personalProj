@@ -1,0 +1,152 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module implements a variable limit credit counter. The variable limit
+// is given as input through the CreditLimit_out signal of the CCF interface.
+// counter counts down as credits are used up 
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var m = obj.userLib;
+
+u.paramDefault('useOneCycleLateDecCount', 'boolean', false);
+u.paramDefault('useSecondIncrement', 'boolean', false);
+
+u.paramDefault('assertOn', 'boolean', false);
+u.paramDefault('clkInterface', 'object', null);
+u.paramDefault('ccfInterface', 'object', null);
+
+var useOneCycleLateDecCount = m.hierGetParam('useOneCycleLateDecCount', u.getParam);
+var useSecondIncrement = m.hierGetParam('useSecondIncrement', u.getParam);
+
+var assertOn         = m.hierGetParam('assertOn', u.getParam);
+var clkInterface     = m.hierGetParam('clkInterface', u.getParam);
+var ccfInterface     = m.hierGetParam('ccfInterface', u.getParam);
+
+var wLimit	     = Math.abs( ccfInterface.signals.CreditLimit_out );
+var wCounter         = wLimit+1;  // + 1 for the sign bit
+var nCredits         = Math.pow(2, wLimit) - 1; // Max num of credits
+
+u.port('input','dec_count', 1 ); // credit consume
+u.port('input','inc_count', 1 ); // credit return
+/* istanbul ignore if env ncore_3p7 */
+if (useSecondIncrement) {
+u.port('input','inc_count1', 1 ); // credit consume
+}
+u.port('output','credit_avail',1);
+u.port('output','credit_p1_avail',1);
+u.port('input', 'connected', 1);
+
+/* istanbul ignore if env ncore_3p7 */
+if (useOneCycleLateDecCount) {
+u.port('input', 'toggle_enable', 1);
+}
+
+u.interface(clkInterface.name, 'slave', clkInterface.signals);
+u.interface(ccfInterface.name, 'slave', ccfInterface.signals);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+wire dff_enable = 1'b1;
+
+wire [\=wCounter-1=\:0] credit_counter;
+wire [\=wCounter-1=\:0] credit_counter_in;
+wire [\=wCounter-1=\:0] delta_limit;
+wire [\=wLimit-1=\:0] last_limit;
+wire save_limit;
+wire credit_counter_en;
+wire credit_counter_wr;
+wire credit_counter_wr_q;
+wire wr_connect_state_d;
+wire wr_connect_state_q;
+
+wire credit_counter_is_empty;
+wire credit_counter_is_negative;
+wire credit_counter_is_full;
+wire credit_counter_is_gte_two;
+wire credit_counter_is_gt_one;
+wire credit_counter_is_one;
+
+wire credit_avail_org;
+
+assign credit_counter_wr   = inc_count | dec_count | save_limit |
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+ if (useSecondIncrement) {  \jsend
+                             inc_count1;
+\js } else {
+                             1'b0;
+\js }
+assign credit_counter_en   = credit_counter_wr & connected;
+wire credit_counter_in_overflow;
+assign {credit_counter_in_overflow,credit_counter_in}   = {1'b0, credit_counter}
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+ if (useSecondIncrement) {  \jsend
+                                            + {1'b0, {\=wCounter-1=\{1'b0}}, inc_count1}  
+\js }
+                                            + {1'b0, {\=wCounter-1=\{1'b0}}, inc_count} - {1'b0, {\=wCounter-1=\{1'b0}}, dec_count} + {1'b0, delta_limit};
+assign delta_limit         = {1'b0, \=ccfInterface.name=\CreditLimit_out} - {1'b0, last_limit};
+assign save_limit          = |delta_limit & connected;
+assign wr_connect_state_d  = \=ccfInterface.name=\CounterState_out == 7;  // When CounterState is disconnected (7) at reset but connected is set
+
+
+\=u.dffre(wCounter, 'credit_counter', 'credit_counter_in',  wCounter+"'d0", 'credit_counter_en', clkInterface.name+'clk', clkInterface.name+'reset_n')=\
+\=u.dffre(wLimit, 'last_limit', ccfInterface.name+'CreditLimit_out',  wLimit+"'d0", 'save_limit', clkInterface.name+'clk', clkInterface.name+'reset_n')=\
+\=u.dffre(1, 'credit_counter_wr_q', 'credit_counter_wr',  "1'd0", 'connected', clkInterface.name+'clk', clkInterface.name+'reset_n')=\
+\=u.dffre(1, 'wr_connect_state_q', 'wr_connect_state_d',  "1'd0", 'connected', clkInterface.name+'clk', clkInterface.name+'reset_n')=\
+
+assign credit_counter_is_empty      = credit_counter == \=wCounter=\'d0;
+assign credit_counter_is_one        = credit_counter == \=wCounter=\'d1;
+assign credit_counter_is_gt_one     = credit_counter > 1;
+assign credit_counter_is_gte_two    = credit_counter >= 2;
+assign credit_counter_is_negative   = credit_counter[\=wCounter-1=\];
+assign credit_counter_is_full       = (credit_counter == {1'b0, last_limit}) & ~credit_counter_is_empty;
+
+assign \=ccfInterface.name=\CounterState_in = { credit_counter_is_full, credit_counter_is_negative, credit_counter_is_empty };
+assign \=ccfInterface.name=\CounterState_wr = credit_counter_wr_q | wr_connect_state_q;
+assign credit_avail_org             = ~credit_counter_is_negative & ~credit_counter_is_empty;
+assign credit_p1_avail              = ~credit_counter_is_negative & credit_counter_is_gte_two;
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+ if (useOneCycleLateDecCount) { \jsend
+
+wire toggle;
+wire toggle_in = ~toggle_enable | dec_count | ~credit_counter_is_one ? 1'b0 : ~toggle;
+\=u.dffre(1, 'toggle', 'toggle_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+assign credit_avail = credit_counter_is_gt_one & ~credit_counter_is_negative ? credit_avail_org & (credit_counter_is_one ? toggle : 1'b1)
+                                                                             : credit_avail_org & toggle;
+\js } else {
+
+assign credit_avail = credit_avail_org;
+
+\js }
+
+\jsbegin
+//`ifdef OVL_ASSERT_ON
+//// synthesis_off
+//// pragma synthesis_off
+//// coverage off
+//
+//    property p_counter_underflow;
+//        @(posedge \=clkInterface.name=\clk) disable iff (~\=clkInterface.name=\reset_n)
+//        ((dec_count & ~inc_count) |-> (~credit_counter_is_empty));
+//    endproperty
+//
+//    assert_counter_underflow: assert property (p_counter_underflow)
+//        else begin $error("credit counter underflows !"); #100 $finish; end
+//
+//// coverage on
+//// pragma synthesis_on
+//// synthesis_on
+//`endif
+\jsend
+
+endmodule

@@ -1,0 +1,1805 @@
+{
+  "name": "ioaiu",
+  "version": "3.0",
+  "csr": {
+    "addressWidth": 12,
+    "width": 32,
+    "spaceBlock": [
+      {
+        "baseAddress": "0x0",
+        "registers": [
+          {
+            "name": "XAIUIDR",
+            "description": "XAIU Identification Register",
+            "csrDescription": "XAIU Identification Register",
+            "addressOffset": "0x0",
+            "fields": [
+              {
+                "name": "RPN",
+                "bitOffset": 0,
+                "bitWidth": "return derived.wRpn",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return rpn ? rpn : ((Array.isArray(primary.rpn) && primary.rpn.length === 1) ? primary.rpn[0] : primary.rpn)",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "XAIU Register Page Number (within its NRR)",
+                "scope": "All"
+              },
+              {
+                "name": "NRRI",
+                "bitOffset": 8,
+                "bitWidth": "return derived.wNrri",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.nrri",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Identifier of the Ncore 3 Register Region\nin which this unit resides",
+                "scope": "All"
+              },
+              {
+                "name": "NUnitId",
+                "bitOffset": 12,
+                "bitWidth": "return derived.wNUnitId",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.nUnitId",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Ncore 3 Unit identifier. ",
+                "scope": "All"
+              },
+              {
+                "name": "CoreId",
+                "bitOffset": 24,	
+                "condition": "return Array.isArray(derived.interfaces.axiInt) ? ((derived.interfaces.axiInt.length > 1) ? 1 : 0) : 0",
+                "resetOverloadFn": "return 0",		
+                "bitWidth": "2",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Ncore 3 Core identifier. ",
+                "scope": "All"
+              },
+              {
+                "name": "MultiCoreValid",
+                "bitOffset": 30,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "resetOverloadFn": "return 0",
+                "description": "Value of 1 indicates this block is a multicore block.",
+                "scope": "All"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x1",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Value of 1 validates this register. This bit\nis set to 1 if the unit is implemented.",
+                "scope": "All"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUFUIDR",
+            "description": "XAIU Fabric Unit Identification Register",
+            "csrDescription": "XAIU Fabric Unit Identification Register",
+            "addressOffset": "0x4",
+            "fields": [
+              {
+                "name": "FUnitId",
+                "bitOffset": 0,
+                "bitWidth": "return derived.wFUnitId",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.fUnitId",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Fabric Unit Identifier of the unit"
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCCR",
+            "description": "Credit Control Register",
+            "csrDescription": "Credit Control Register",
+            "addressOffset": "0xc00",
+            "condition": "return Math.max(derived.nDii, derived.nDce, derived.nDmi)",
+            "offsetStep": 4,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/swCreditMgtCSR.json#xCCR"
+            }
+          },
+          {
+            "name": "XAIURCCR",
+            "description": "Remote Credit Control Register",
+            "csrDescription": "Remote Credit Control Register",
+            "addressOffset": "0xcf0",
+            "condition": "return derived.nChiplets || 1",
+            "offsetStep": 4,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/swCreditMgtCSR.json#xRCCR"
+            }
+          },
+          {
+            "name": "XAIUHOMEDVE",
+            "description": "Global DVE Id Register ",
+            "csrDescription": "Global DVE Id Register ",
+            "addressOffset": "0x8",
+            "offsetStep": 0,
+            "fields": [
+               {
+                "name": "HomeDVEGlobalId",
+                "bitOffset": 0,
+                "bitWidth": 11,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global Id of local DVE",
+                "reset": "0x0"
+            },
+            {
+                "name": "HomeDVELinkId",
+                "bitOffset": 11,
+                "bitWidth": 2,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "LinkId to the remote DVE",
+                "reset": "0x0"
+            },
+            {
+                "name": "Rsvd0",
+                "bitOffset": 13,
+                "bitWidth": 19,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "All the bits of this field are set to 0",
+                "reset": "0x0"
+           }
+            ],
+             "condition": "return true"
+          },
+          {
+            "name": "XAIUEDR0",
+            "description": "Engineering Debug Register 0",
+            "csrDescription": "Credit on a per message type basis.",
+            "addressOffset": "0xa00",
+            "fields": [
+              {
+                "name": "MRC",
+                "bitOffset": 0,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "Command credit."
+              },
+              {
+                "name": "MRU",
+                "bitOffset": 8,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "Update credit."
+              },
+              {
+                "name": "MRR",
+                "bitOffset": 16,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "DTR credit."
+              },
+              {
+                "name": "MRW",
+                "bitOffset": 24,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "DTW credit."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUEDR1",
+            "description": "Engineering Debug Register 1",
+            "csrDescription": "Hardware control debug register.",
+            "addressOffset": "0xa04",
+            "fields": [
+              {
+                "name": "cfg",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": 8,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "Hardware control."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUEDR2",
+            "description": "Engineering Debug Register 2",
+            "csrDescription": "OTT pools.",
+            "addressOffset": "0xa08",
+            "fields": [
+              {
+                "name": "WR",
+                "bitOffset": 0,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "OTT Write pool."
+              },
+              {
+                "name": "RD",
+                "bitOffset": 16,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "OTT Read pool."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUEDR3",
+            "description": "Engineering Debug Register 3",
+            "csrDescription": "Limit OTT/STT sizes.",
+            "addressOffset": "0xa0c",
+            "fields": [
+              {
+                "name": "OTT",
+                "bitOffset": 0,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "OTT limit."
+              },
+              {
+                "name": "STT",
+                "bitOffset": 16,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "STT Limit."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUEDR4",
+            "description": "Engineering Debug Register 4",
+            "csrDescription": "Limit Read/Write operations.",
+            "addressOffset": "0xa10",
+            "fields": [
+              {
+                "name": "WR",
+                "bitOffset": 0,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "OTT Write limit."
+              },
+              {
+                "name": "RD",
+                "bitOffset": 16,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "OTT Read Limit."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUEDR5",
+            "description": "Engineering Debug Register 5",
+            "csrDescription": "Limit evictions.",
+            "addressOffset": "0xa14",
+            "fields": [
+              {
+                "name": "EV",
+                "bitOffset": 0,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Limit evictions."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUPCTCR",
+            "description": "XAIU Proxy Cache Transaction Control Register",
+            "csrDescription": "XAIU Proxy Cache Transaction Control Register",
+            "addressOffset": "0x300",
+            "condition": "return derived.useCache? true : false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "LookupEn",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit enables proxy cache.",
+                "scope": "All"
+              },
+              {
+                "name": "AllocEn",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit enables allocation into proxy cache.",
+                "scope": "All"
+              },
+              {
+                "name": "UpdateDis",
+                "bitOffset": 2,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit disables sending update commands for evictions.",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "XAIUPCTAR",
+            "description": "XAIU Proxy Cache Transaction Activity Register",
+            "csrDescription": "XAIU Proxy Cache Transaction Activity Register",
+            "addressOffset": "0x304",
+            "condition": "return derived.useCache? true : false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EvictActive",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when the unit is performing any proxy cache eviction activity and is cleared otherwise",
+                "scope": "All"
+              },
+              {
+                "name": "AllocActive",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when the unit is performing any proxy cache allocation activity and is cleared otherwise.",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "XAIUPCISR",
+            "description": "XAIU Proxy Cache Initialization Status Register",
+            "csrDescription": "XAIU Proxy Cache Initializtion Status Register",
+            "addressOffset": "0x30c",
+            "condition": "return derived.useCache ? true : false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "TagInitDone",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when PC tag initialization is done",
+                "scope": "All"
+              },
+              {
+                "name": "DataInitDone",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when PC data initialization is done",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "XAIUPCMCR",
+            "description": "XAIU Proxy Cache Maintenance Control Register",
+            "csrDescription": "XAIU Proxy Cache Cache Maintenance Control Register. Write to this register triggers the Maintenance Operation.",
+            "addressOffset": "0x310",
+            "condition": "return derived.useCache ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMCR"
+            }
+          },
+          {
+            "name": "XAIUPCMAR",
+            "description": "XAIU Proxy Cache Maintenance Activity Register",
+            "csrDescription": "XAIU Proxy Cache Maintenance Activity Register",
+            "addressOffset": "0x314",
+            "condition": "return derived.useCache ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMAR"
+            }
+          },
+          {
+            "name": "XAIUPCMLR0",
+            "description": "XAIU Proxy Cache Maintenance Location Register 0",
+            "csrDescription": "XAIU Proxy Cache Maintenance Location Register 0",
+            "addressOffset": "0x318",
+            "condition": "return derived.useCache ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMLR0"
+            }
+          },
+          {
+            "name": "XAIUPCMLR1",
+            "description": "XAIU Proxy Cache Maintenance Location Register 1",
+            "csrDescription": "XAIU Proxy Cache Maintenance Location Register 1",
+            "addressOffset": "0x31C",
+            "condition": "return derived.useCache ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMLR1"
+            }
+          },
+          {
+            "name": "XAIUPCMDR",
+            "description": "XAIU Proxy Cache Maintenance Data Register",
+            "csrDescription": "XAIU Proxy Cache Maintenance Data Register",
+            "addressOffset": "0x320",
+            "condition": "return derived.useCache ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMDR"
+            }
+          },
+          {
+            "name": "XAIUEDR6",
+            "description": "Engineering Debug Register 6",
+            "csrDescription": "Credit adjustment per target type basis: 0x1: Max 1. 0x2: Max 2. 0x3: Max 3. 0x5: Minus 1. 0x6: Minus 2. 0x7: Minus 3. 0x9: 1 read others writes. 0xa: Reserve 1 write. 0xb: No limit. 0xd: reserve 1 extra write, 0xe: reserve 2 extra writes, 0xf: reserve 3 extra writes, Others: no change",
+            "addressOffset": "0xa18",
+            "fields": [
+              {
+                "name": "DCE",
+                "bitOffset": 0,
+                "bitWidth": 4,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "DCE credit adjustment."
+              },
+              {
+                "name": "DMI",
+                "bitOffset": 4,
+                "bitWidth": 4,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "DMI credit adjustment."
+              },
+              {
+                "name": "DII",
+                "bitOffset": 8,
+                "bitWidth": 4,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "DII credit adjustment."
+              },
+              {
+                "name": "DVE",
+                "bitOffset": 12,
+                "bitWidth": 4,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "DVE credit adjustment."
+              },
+              {
+                "name": "QOS",
+                "bitOffset": 16,
+                "bitWidth": 4,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "QOS credit adjustment."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUEDR7",
+            "description": "Engineering Debug Register 7",
+            "csrDescription": "Specify period length for starvation detection",
+            "addressOffset": "0xa1c",
+            "fields": [
+              {
+                "name": "EVENT",
+                "bitOffset": 0,
+                "bitWidth": 12,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "Event counter period in granularity of 16."
+              },
+              {
+                "name": "TIME",
+                "bitOffset": 12,
+                "bitWidth": 20,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "Timer period in granularity of 2K."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUTAR",
+            "description": "Transaction Activity Register",
+            "csrDescription": "Transaction Activity Register",
+            "addressOffset": "0x44",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "TransActv",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "This bit is set when there is one or more active transactions inside the Unit."
+              },
+              {
+                "name": "SysCoConnecting",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "1 indicates that SysCo is in the process of connecting."
+              },
+              {
+                "name": "SysCoAttached",
+                "bitOffset": 5,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "1 indicates that SysCo is Attached; 0 indicates it is detached."
+              },
+              {
+                "name": "SysCoError",
+                "bitOffset": 6,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "1 indicates Error was detected during previous or current SysCo event. This bit clears itself when the SysCo process triggers next time."
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUUEDR",
+            "description": "XAIU Uncorrectable Error Detect Register",
+            "csrDescription": "Unit Uncorrectable Error Detect Register",
+            "addressOffset": "0x100",
+            "fields": [
+              {
+                "name": "ProtErrDetEn",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Protocol error detect enable: When set, errors will be detected from the protocol interface.",
+                "scope": "All"
+              },
+              {
+                "name": "TransErrDetEn",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+              },
+              {
+                "name": "MemErrDetEn",
+                "bitOffset": 2,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+              },
+              {
+                "name": "DecErrDetEn",
+                "bitOffset": 3,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Decode Error Enable. When set, this bit enables detection of address map uncorrectable error"
+              },
+              {
+                "name": "TimeoutErrDetEn",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Timeout protection error detection enable: When set, timeout errors will be detected."
+              },
+              {
+                "name": "SoftwareProgConfigErrEn",
+                "bitOffset": 5,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Software Programming or Configuration Error Enable. When set to 1, this bit enables the detection and logging of Software Programming or Configuration Error."
+              },
+              {
+                "name": "IntfCheckErrDetEn",
+                "bitOffset": 6,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Interface Checker Error Enable. When set to 1, this bit enables the detection and logging of Interface Checker Error."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUUEIR",
+            "description": "Unit Uncorrectable Error Interrupt Register",
+            "csrDescription": "Unit Uncorrectable Error Interrupt Register",
+            "addressOffset": "0x104",
+            "fields": [
+              {
+                "name": "ProtErrIntEn",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Protocol uncorrectable error interrupt enable.",
+                "scope": "All"
+              },
+              {
+                "name": "TransErrIntEn",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Concerto Transport uncorrectable error interrupt enable."
+              },
+              {
+                "name": "MemErrIntEn",
+                "bitOffset": 2,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "RAM memory uncorrectable error interrupt enable."
+              },
+              {
+                "name": "DecErrIntEn",
+                "bitOffset": 3,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Decode Error Interrupt Enable. When set, this bit enables the assertion of address map Uncorrectable Error Interrupt signal"
+              },
+              {
+                "name": "TimeoutErrIntEn",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Timeout uncorrectable error interrupt enable."
+              },
+              {
+                "name": "SoftwareProgConfigErrIntEn",
+                "bitOffset": 5,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Software Programming or Configuration Error Interrupt Enable. When set to 1, this bit enables the assertion of Software Programming or Configuration Error Interrupt signal"
+              },
+              {
+                "name": "IntfCheckErrIntEn",
+                "bitOffset": 6,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Interface Checker Error Interrupt Enable. When set to 1, this bit enables the assertion of Interface Checker Error Interrupt Signal."
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUUESR",
+            "description": "XAIU Uncorrectable Error Status Register",
+            "csrDescription": "XAIU Uncorrectable Error Status Register",
+            "addressOffset": "0x108",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Uncorrectable Error Valid bit is set.\n0x00: Data SRAM uncorrectable error\n0x01: Cache SRAM uncorrectable error (for proxy cache only)\n0x04: Native interface snoop response error\n0x07: Decode error \n0x08: Transport error \n0x09: Timeout error\n0x0a: Sys Event Error \n0x0b: SysCo Error \n0x0c: Software Programming or Configuration Error \nAll other encodings are reserved"
+                },
+                {
+                  "name": "ErrInfo",
+                  "description": "This field indicates additional information about logged error type, if the Uncorrectable Error Valid bit is set.\n If it is a data SRAM uncorrectable error then\n bits 2:0   3'b000 OTT data buffer (All other values reserved)\n bits 19:3  Reserved\n If it is a cache SRAM uncorrectable error then (for proxy cache only)\n bit  0     1'b0 Tag Array, 1'b1 Data Array\n bits 19:1  Reserved\n\n If it is a native interface snoop response error then \n bits 1:0   Response from the interface \n bit  2     Security attribute \n bits 19:3  Reserved \n If it is a decode error then \n bits 3:0   Type of decode error \n 4'b0000: No address hit \n 4'b0001: Multiple address hit \n 4'b0010: Illegal CSR access format \n 4'b0011: Illegal DII access type\n 4'b0100: Illegal security access \n 4'b0101 to 4'b1111: Reserved \n 4'b0100: unconnected DMI unit access \n 4'b0101: unconnected DII unit access \n 4'b0110: unconnected DCE unit access \n 4'b0111: No credits configured for access \n 4'b1000: Illegal security access \n bit  5:4   Command Type: Read 2'b00, Write 2'b01 \n bits 7:6   Reserved \n bits 19:8  Transaction Id/AxId \n\n If it is a transport error then \n bit  0     1'b0 Wrong target ID, 1'b1 SMI Protection \n bits 7:1   Reserved \n bits 19:8  Source Id \n\n If it is a timeout error then \n bits 1:0   2'b00 Reads, 2'b01 Writes, 2'b10 CMO/Dataless, 2'b11 Dvm \n bit  2     Security Attribute \n bits 7:3   Reserved \n bits 19:8  Transaction Id/AxiId \n\n If it is a Sys Event Error then \n bit  0     1'b0 Timeout error on message, 1'b1 Timeout error on interface \n bits 19:1  Reserved \n\n If it is a SysCo Error then \n bit  0     1'b0 Timeout error on message, 1'b1 External error reported by system response \n bits 19:1  Reserved \n\n If it is a Software Programming or Configuration error then \n bits 3:0   Type of error \n 4'b0000: Reserved \n 4'b0001: No credits configured for access \n 4'b0010: unconnected DMI unit access \n 4'b0011: unconnected DII unit access \n 4'b0101: unconnected DCE unit access \n 4'b0110 to 4'b1111: Reserved \n\n"
+                }
+              ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUUELR0",
+            "description": "XAIU Uncorrectable Error Location Registers 0",
+            "csrDescription": "XAIU Uncorrectable Error Location Registers 0",
+            "addressOffset": "0x10c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUUELR1",
+            "description": "XAIU Uncorrectable Error Location Registers 1",
+            "csrDescription": "XAIU Uncorrectable Error Location Registers 1",
+            "addressOffset": "0x110",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR1"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUUESAR",
+            "description": "XAIU Uncorrectable Error Status Alias Register",
+            "csrDescription": "XAIU Uncorrectable Error Status Alias Register",
+            "addressOffset": "0x114",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESAR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCECR",
+            "description": "XAIU Correctable Error Control Register",
+            "csrDescription": "XAIU Correctable Error Control Register",
+            "addressOffset": "0x140",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCECR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCESR",
+            "description": "XAIU Correctable Error Status Register",
+            "csrDescription": "XAIU Correctable Error Status Register",
+            "addressOffset": "0x144",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Correctable Error Valid bit is set.\n0x00: Data SRAM correctable error\n0x01: Cache SRAM correctable error (for proxy cache only)\n0x08: Transport Error\nAll other encodings are reserved"
+                },
+                {
+                  "name": "ErrInfo",
+                  "description": "This field indicates additional information about logged error type, if the Correctable Error Valid bit is set.\nIf it is a data SRAM correctable error then\nbits 2:0   3'b000 OTT data\nAll other encodings are reserved\nbits 15:3  Reserved\n\nIf it is a cache SRAM correctable error then\nbit  0     1'b0 Tag Array 1'b1 Data Array\nbits 15:1  Reserved\nIf it is a Transport Error then\nbits  5:0 Reserved\nbits 15:6 Source Id\n"
+                }
+              ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCELR0",
+            "description": "XAIU Correctable Error Location Registers 0",
+            "csrDescription": "XAIU Correctable Error Location Registers 0",
+            "addressOffset": "0x148",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCELR1",
+            "description": "XAIU Correctable Error Location Registers 1",
+            "csrDescription": "XAIU Correctable Error Location Registers 1",
+            "addressOffset": "0x14c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR1"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCESAR",
+            "description": "XAIU Correctable Error Status Alias Register",
+            "csrDescription": "XAIU Correctable Error Status Alias Register",
+            "addressOffset": "0x150",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESAR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCRTR",
+            "description": "XAIU Correctable Resiliency Threshold Register",
+            "csrDescription": "XAIU Correctable Resiliency Threshold Register",
+            "addressOffset": "0x17c",
+            "condition": "return derived.useResiliency? true : true  ",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/errCSR.json#xCRTR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUTOCR",
+            "description": "XAIU Timeout Control Register.\nControls timeout for transactions allocated in the transaction table.",
+            "csrDescription": "XAIU Timeout Control Register",
+            "addressOffset": "0x190",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUSEPTOCR",
+            "description": "XAIU System Event Protocol Timeout Control Register.\nControls timeout for receiving responses to system event messages that are issued to the network from this AIU.",
+            "csrDescription": "XAIU System Event Protocol Timeout Control Register",
+            "addressOffset": "0x194",
+            "condition": "return derived.interfaces.eventRequestInInt && !derived.interfaces.eventRequestInInt.SKIP ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUSCPTOCR",
+            "description": "XAIU System Coherency Protocol Timeout Control Register.\nControls timeout for receiving responses to system coherency messages that are issued to the network from this AIU.",
+            "csrDescription": "XAIU System Coherency Protocol Timeout Control Register",
+            "addressOffset": "0x198",
+            "condition": "return derived.concMuxMsgParams.rx.sysReq ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUEHTOCR",
+            "description": "XAIU Event Handshake Timeout Control Register.\nControls timeout for 1. Receiving an ack input assertion after asserting the req output on the eventRequestOutInt interface and 2. Receiving a req input deassertion after asserting the ack output on the eventRequestInInt interface.",
+            "csrDescription": "XAIU Event Handshake Timeout Control Register",
+            "addressOffset": "0x19C",
+            "condition": "return (derived.interfaces.uEvtOutInt && !derived.interfaces.uEvtOutInt.SKIP) || (derived.interfaces.eventRequestInInt && !derived.interfaces.eventRequestInInt.SKIP) || (derived.interfaces.eventRequestOutInt && !derived.interfaces.eventRequestOutInt.SKIP) ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUQOSCR",
+            "description": "XAIU QoS Control Register ",
+            "csrDescription": "XAIU QoS Control Register ",
+            "addressOffset": "0x200",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xQOSCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUQOSSR",
+            "description": "XAIU QoS Status Register ",
+            "csrDescription": "XAIU QoS Status Register ",
+            "addressOffset": "0x204",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xQOSSR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUGPRAR",
+            "description": "General Purpose Region Attribute Register",
+            "csrDescription": "General Purpose Region Attribute Register",
+            "addressOffset": "0x400",
+            "condition": "return derived.nGPRA",
+            "offsetStep": 16,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xGPRAR",
+              "descFields": []
+            },
+            "specialImplementation": false
+          },
+          {
+            "name": "XAIUGPRBLR",
+            "description": "General Purpose Region Base Address Register",
+            "csrDescription": "General Purpose Region Base Address Register",
+            "addressOffset": "0x404",
+            "condition": "return derived.nGPRA",
+            "offsetStep": 16,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xGPRBLR",
+              "descFields": []
+            },
+            "specialImplementation": false
+          },
+          {
+            "name": "XAIUCR",
+            "description": "XAIU Control Register",
+            "csrDescription": "OTT Control Register",
+            "addressOffset": "0x210",
+            "fields": [
+              {
+                "name": "WR",
+                "bitOffset": 0,
+                "bitWidth": 2,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "OTT Write pool. This setting controls the percentage of the shared OTT resource allocated to writes or evictions only \n0x0: None \n0x1: 1/6 \n0x2: 1/3 \n0x3: 1/2"
+              },
+              {
+                "name": "RD",
+                "bitOffset": 2,
+                "bitWidth": 2,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "OTT Read pool. This setting controls the percentage of the shared OTT resource allocated to reads or evictions only \n0x0: None \n0x1: 1/6 \n0x2: 1/3 \n0x3: 1/2"
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUGPRBHR",
+            "description": "General Purpose Region Base Address Register",
+            "csrDescription": "General Purpose Region Base Address Register",
+            "addressOffset": "0x408",
+            "condition": "return derived.nGPRA",
+            "offsetStep": 16,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xGPRBHR",
+              "descFields": []
+            },
+            "specialImplementation": false
+          },
+          {
+            "name": "XAIUBRAR",
+            "description": "Boot Region Attribute Register",
+            "csrDescription": "Boot Region Attribute Register",
+            "addressOffset": "0x3a0",
+            "fields": {
+              "reference": "$HW_NCR_CSR/boot_regionCSR.json#xBRAR",
+              "descFields": []
+            },
+            "specialImplementation": false
+          },
+          {
+            "name": "XAIUBRBLR",
+            "description": "Boot Region Base Low Register",
+            "csrDescription": "Boot Region Base Low Register",
+            "addressOffset": "0x3a4",
+            "fields": {
+              "reference": "$HW_NCR_CSR/boot_regionCSR.json#xBRBLR",
+              "descFields": []
+            },
+            "specialImplementation": false
+          },
+          {
+            "name": "XAIUBRBHR",
+            "description": "Boot Region Base High Register",
+            "csrDescription": "Boot Region Base High Register",
+            "addressOffset": "0x3a8",
+            "fields": {
+              "reference": "$HW_NCR_CSR/boot_regionCSR.json#xBRBHR",
+              "descFields": []
+            },
+            "specialImplementation": false
+          },
+          {
+            "name": "XAIUNRSBAR",
+            "description": "NRSBAR identifies the base address of the NRS",
+            "csrDescription": "NRS Base Address Register",
+            "addressOffset": "0x380",
+            "fields": {
+              "reference": "$HW_NCR_CSR/nrs_regionCSR.json#xNRSBAR",
+              "descFields": []
+            },
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUNRSBHR",
+            "description": "NRSBHR is used to stage the writing of the Base address of the NRS",
+            "csrDescription": "NRS Base Address Hold Register",
+            "addressOffset": "0x384",
+            "fields": {
+              "reference": "$HW_NCR_CSR/nrs_regionCSR.json#xNRSBHR",
+              "descFields": []
+            },
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUNRSBLR",
+            "description": "NRSBLR is used to load the NRSBAR from NRSBHR",
+            "csrDescription": "NRS Base Address Load Register",
+            "addressOffset": "0x388",
+            "fields": {
+              "reference": "$HW_NCR_CSR/nrs_regionCSR.json#xNRSBLR",
+              "descFields": []
+            },
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUAMIGR",
+            "description": "Active Memory Interleave Group Register",
+            "csrDescription": "Active Memory Interleave Group Register",
+            "addressOffset": "0x3c0",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xAMIGR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUMIFSR",
+            "description": "Memory Interleave Function Select Register",
+            "csrDescription": "Memory Interleave Function Select Register",
+            "addressOffset": "0x3c4",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xMIFSR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUGIUAMIGR",
+            "description": "Active Memory Interleave Group Register",
+            "csrDescription": "Active Memory Interleave Group Register",
+            "addressOffset": "0x3d0",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xAMIGR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "XAIUGIUMIFSR",
+            "description": "Memory Interleave Function Select Register",
+            "csrDescription": "Memory Interleave Function Select Register",
+            "addressOffset": "0x3d4",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xMIFSR",
+              "descFields": []
+            }
+          },
+	  {
+            "name": "XAIUCCTRLR",
+            "description": "XAIU Capture Control Register",
+            "csrDescription": "XAIU Capture Control Register",
+            "addressOffset": "0x900",
+            "condition": "return true",
+            "offsetStep": 0,
+	    "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_capture_CSR.json#xCCTRLR"
+            }
+          },
+	  {
+            "name": "XAIUTCTRLR",
+            "description": "XAIU Trace Trigger Control Register",
+            "csrDescription": "XAIU Trace Trigger Control Register",
+            "condition": "return derived.nTraceRegisters",
+            "offsetStep": 32,
+            "addressOffset": "0x904",
+            "fields": [
+			  {
+                "name": "native_trace_en",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "0: Ignore native trace signaling. 1: Allow native trace signaling to set trigger",
+                "reset": "const intf = Array.isArray(derived.interfaces.axiInt) ? derived.interfaces.axiInt[0] : derived.interfaces.axiInt; return intf.params.eTrace ? 1 : 0"
+            },
+            {
+                "name": "addr_match_en",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace on address range match",
+                "reset": 0
+              },
+              {
+                "name": "opcode_match_en",
+                "bitOffset": 2,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace on opcode match",
+                "reset": 0
+              },
+              {
+                "name": "memattr_match_en",
+                "bitOffset": 3,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace on memory attribute match",
+                "reset": 0
+              },
+              {
+                "name": "user_match_en",
+                "bitOffset": 4,
+                "bitWidth": "const intf = Array.isArray(derived.interfaces.axiInt) ? derived.interfaces.axiInt[0] : derived.interfaces.axiInt; return intf.params.wAwUser ? 1 : 0",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace if there is a match on specified user bits",
+                "reset": 0
+              },
+              {
+                "name": "target_type_match_en",
+                "bitOffset": 5,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable Trace if there is a match on specified target type",
+                "reset": 0
+              },
+              {
+                "name": "hut",
+                "bitOffset": 6,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Specify target type. 0: DMI, 1: DII",
+                "reset": 0
+              },
+              {
+                "name": "hui",
+                "bitOffset": 7,
+                "bitWidth": 5,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Specifies the HUI NunItID for DII, and MIG number for DII",
+                "reset": 0
+              },
+              {
+                "name": "range",
+                "bitOffset": 18,
+                "bitWidth": 6,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Address range size. This field indicates a binary number from 0 to 31 from which region's size is calculated as (Size of IG) * 2^(Size + 12) bytes",
+                "reset": 0
+              },
+              {
+                "name": "aw",
+                "bitOffset": 26,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Match memattr on AW channel",
+                "reset": 0
+              },
+              {
+                "name": "ar",
+                "bitOffset": 27,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Match memattr on AR channel",
+                "reset": 0
+              },
+              {
+                "name": "memattr",
+                "bitOffset": 28,
+                "bitWidth": 4,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Specifies memory attribute. Memattr on CHI, AxCache on AXI/ACE/ACE-Lite/ACE-Lite-E",
+                "reset": 0
+              }
+           ]
+          },
+          {
+            "name": "XAIUTBALR",
+            "description": "XAIU Trace Trigger Base Address Low Register",
+            "csrDescription": "XAIU Trace Trigger Base Address Low Register",
+            "condition": "return derived.nTraceRegisters",
+            "offsetStep": 32,
+            "addressOffset": "0x808",
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_trigger_CSR.json#xTBALR0"
+            }
+          },
+          {
+            "name": "XAIUTBAHR",
+            "description": "XAIU Trace Trigger Base Address High Register",
+            "csrDescription": "XAIU Trace Trigger Base Address High Register",
+            "condition": "return derived.nTraceRegisters",
+            "offsetStep": 32,
+            "addressOffset": "0x80c",
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_trigger_CSR.json#xTBAHR0"
+            }
+          },
+          {
+            "name": "XAIUTOPCR0",
+            "description": "XAIU Trace Trigger Opcode Register",
+            "csrDescription": "XAIU Trace Trigger Opcode Register",
+            "condition": "return derived.nTraceRegisters",
+            "offsetStep": 32,
+            "addressOffset": "0x810",
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_trigger_CSR.json#xTOPCR0"
+            }
+          },
+          {
+            "name": "XAIUTOPCR1",
+            "description": "XAIU Trace Trigger Opcode Register",
+            "csrDescription": "XAIU Trace Trigger Opcode Register",
+            "condition": "return derived.nTraceRegisters",
+            "offsetStep": 32,
+            "addressOffset": "0x814",
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_trigger_CSR.json#xTOPCR1"
+            }
+          },
+          {
+            "name": "XAIUTUBR",
+            "description": "XAIU Trace Trigger User Bits Register",
+            "csrDescription": "XAIU Trace Trigger User Bits Register",
+            "condition": "return derived.nTraceRegisters",
+            "offsetStep": 32,
+            "addressOffset": "0x818",
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_trigger_CSR.json#xTUBR0"
+            }
+          },
+          {
+            "name": "XAIUTUBMR",
+            "description": "XAIU Trace Trigger User Bits Mask Register",
+            "csrDescription": "XAIU Trace Trigger User Bits Mask Register",
+            "condition": "return derived.nTraceRegisters",
+            "offsetStep": 32,
+            "addressOffset": "0x81c",
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_trigger_CSR.json#xTUBMR0"
+            }
+          },
+          {
+            "name": "XAIUENGIDR",
+            "description": "XAIU Engineering ID Register ",
+            "csrDescription": "XAIU Engineering ID Register ",
+            "addressOffset": "0xff4",
+            "fields": [
+              {
+                "name": "EngVerId",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "The Engineering Version Identifier is a concatenation of two fields: {MPFHash[18:0], CHIP_ID[12:0]}. The CHIP_ID is obtained from a license file and the MPFHash is the last 19 bits obtained from the 128bit MD5 Hash.",
+                "scope": "Engg",
+                "reset": "return derived.engVerId"
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUCNTCR",
+            "description": "PMON Counter Control Register",
+            "csrDescription": "PMON Counter Control Register",
+            "addressOffset": "0xB00",
+	    "offsetStep" : 16,
+            "fields": {
+	    	      "descFields":[],
+		      "reference" : "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTCR"
+	    },
+            "condition": "return derived.nPerfCounters"
+          },
+          {
+            "name": "XAIUCNTVR",
+            "description": "PMON Counter Value Register",
+            "csrDescription": "PMON Counter Value Register",
+            "addressOffset": "0xB04",
+	    "offsetStep" : 16,
+            "fields": {
+	    	      "descFields":[],
+		      "reference" : "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTVR"
+	    },
+            "condition": "return derived.nPerfCounters"
+          },
+          {
+            "name": "XAIUCNTSR",
+            "description": "PMON Counter Saturation Register",
+            "csrDescription": "PMON Counter Saturation Register",
+            "addressOffset": "0xB08",
+	    "offsetStep" : 16,
+            "fields": {
+	    	      "descFields":[],
+		      "reference" : "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTSR"
+	    },
+            "condition": "return derived.nPerfCounters"
+          },
+          {
+            "name": "XAIUBCNTFR",
+            "description": "PMON BandWidth Counter Filter Register",
+            "csrDescription": "PMON BW Counter Filter Register",
+            "addressOffset": "0xB0C",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 16,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xBCNTFR"
+            }
+          },
+          {
+            "name": "XAIUBCNTMR",
+            "description": "PMON BandWidth Counter Mask Register",
+            "csrDescription": "PMON BW Counter Mask Register",
+            "addressOffset": "0xBC0",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 4,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xBCNTMR"
+            }
+          },
+          {
+            "name": "XAIULCNTCR",
+                        "description": "PMON Latency Counter Control Register",
+                        "csrDescription": "PMON Latency Counter Control Register",
+            "addressOffset": "0xC84",
+            "condition": "return derived.nPerfCounters>0 ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xLCNTCR"
+            }
+          },
+	   {
+            "name": "XAIUMCNTCR",
+	    "description": "PMON Main Counter Control Register",
+	    "csrDescription": "PMON Main Counter Control Register",
+            "addressOffset": "0xc80",
+            "condition": "return derived.nPerfCounters>0 ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xMCNTCR"
+            }
+          },
+
+          {
+            "name": "XAIUNRSAR",
+            "description": "XAIU Ncore Register Space Attribute",
+            "csrDescription": "XAIU Ncore Register Space Attribute Register",
+            "addressOffset": "0xff0",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xNRSAR",
+              "descFields": []
+            }
+          },	  
+          {
+            "name": "XAIUINFOR",
+            "description": "XAIU Information Register ",
+            "csrDescription": "XAIU Information Register ",
+            "addressOffset": "0xffc",
+            "fields": [
+              {
+                "name": "ImplVer",
+                "bitOffset": 0,
+                "bitWidth": 16,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Implementation Version",
+                "scope": "All",
+                "reset": "return derived.implVerId"
+              },
+              {
+                "name": "UT",
+                "bitOffset": 16,
+                "bitWidth": 4,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Unit Type: 0b000=Coherent Agent Interface Unit (CAIU), 0b001=Non-Coherent Agent Interface Unit (NCAIU), 0b010 - Non-coherent Agent Interface Unit with Proxy Cache (NCAIU)",
+                "scope": "All",
+                "reset": "const intf = Array.isArray(derived.interfaces.axiInt) ? derived.interfaces.axiInt[0] : derived.interfaces.axiInt; return intf.params.wCdData ? 0 : derived.useCache ? 2 : 1"
+              },
+              {
+                "name": "UST",
+                "bitOffset": 20,
+                "bitWidth": 4,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Unit Sub-Types: for CAIU 0b000=ACE, 0b001=CHI-A, 0b010=CHI-B, 0b011-0b111:Reserved; for NCAIU 0b000=AXI, 0b001=ACE-Lite, 0b010=ACE-Lite-E, 0b011-0b111=Reserved",
+                "scope": "All",
+                "reset": "const intf = Array.isArray(derived.interfaces.axiInt) ? derived.interfaces.axiInt[0] : derived.interfaces.axiInt; return intf.params.wCdData ? 0 : intf.params.eStash ? 2 : intf.params.eDomain ? 1 : 0"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Implemented",
+                "scope": "All",
+                "reset": 1
+              }
+            ],
+            "specialImplementation": false,
+            "condition": "return true"
+          },
+          {
+            "name": "XAIUTCR",
+            "description": "Transaction Control Register",
+            "csrDescription": "Transaction Control Register",
+            "addressOffset": "0x40",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EventDisable",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Setting this disables Event handling."
+              },
+              {
+                "name": "SysCoDisable",
+                "bitOffset": 8,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Setting this disables SysCo."
+              },
+              {
+                "name": "SysCoAttach",
+                "bitOffset": 9,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Writing 1 to this bit when the status register bit SysCoAttached is 0 starts an attach sequence. Writing 0 to this bit when the status register bit SysCoAttached is 1 starts a detach sequence."
+              },
+              {
+                "name": "TransOrderModeRd",
+                "bitOffset": 16,
+                "bitWidth": "2",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "const intf = Array.isArray(derived.interfaces.axiInt) ? derived.interfaces.axiInt[0] : derived.interfaces.axiInt; return intf.params.wCdData ? 3 : 2",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "This setting controls transaction ordering based on AXI ID \n0x0: Reserved \n0x1: Reserved \n0x2: PCIe ordering rules \n0x3: Strict request ordering mode"
+              },
+              {
+                "name": "TransOrderModeWr",
+                "bitOffset": 18,
+                "bitWidth": "2",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "const intf = Array.isArray(derived.interfaces.axiInt) ? derived.interfaces.axiInt[0] : derived.interfaces.axiInt; return intf.params.wCdData ? 3 : 2",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "This setting controls transaction ordering based on AXI ID \n0x0: Reserved \n0x1: Resreved \n0x2: PCIe ordering rules \n0x3: Strict request ordering mode"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+source ccov_chi_aiu_hw_cfg_20_exclude_coverCheck.do

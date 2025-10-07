@@ -1,0 +1,93 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2023 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DMI Timeout
+// Author: Benjamin Madon
+//
+// This module is used to implement timeout in RTT and WTT
+// It takes as an input the valid vector, a vector containing the entries being deallocated, a signal saying if there is a deallocation in this cycle
+// It also takes CSR controls for timeout
+// It returns a vector indicatinjg which entry has timed out. I fmultiple entries have timed out, the lowest eindex is returned.
+//It als returns a timeout valid indicating that an entry timed out
+//=============================================================================
+//Parameters
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+var tOCntOffset = 12; // 4K cycles
+var wTOCnt = 31 + tOCntOffset;
+var numEntries = u.getParam("numEntries");
+
+//Ports
+
+
+u.port('input', 'valid', numEntries);
+u.port('input', 'dealloc_valid', 1);
+u.port('input', 'dealloc_id', numEntries);
+
+u.port('input', 'csr_UEDR_TimeoutErrDetEn', 1);
+u.port('input', 'csr_UEDR_TimeoutReset', 1);
+u.port('input', 'csr_timeout_threshold', 31);
+
+u.port("output","timeout_ue_valid",1);
+u.port("output","timeout_sel_one",numEntries);
+
+u.interface('',       'slave', obj.lib.getParam('clkInterface'));
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+
+
+wire [\=wTOCnt-1=\:0] timeout_count, timeout_count_in;
+wire timeout_count_en;
+wire                      timeout_overflow_or;
+wire [\=numEntries-1=\:0] timeout_overflow;
+wire [\=numEntries-1=\:0] timeout_overflow_in;
+
+wire timeout_overflow_event;
+wire timeout_overflow_en;
+assign timeout_overflow_en = timeout_overflow_event | dealloc_valid;
+assign timeout_overflow_in = (valid & ~(dealloc_id & {\=numEntries=\{dealloc_valid}}) & {\=numEntries=\{timeout_overflow_event}}) | (timeout_overflow & ~(dealloc_id & {\=numEntries=\{dealloc_valid}}));
+
+\=obj.lib.dffre(numEntries,        'timeout_overflow', 'timeout_overflow_in',   numEntries+"'b0",        'timeout_overflow_en',    'clk',  'reset_n')=\
+
+// Timeout Counter
+
+assign timeout_count_in = ((timeout_count[\=wTOCnt-1=\:\=tOCntOffset=\] == csr_timeout_threshold) || csr_UEDR_TimeoutReset) ? 'b0: timeout_count + 1'b1;
+assign timeout_count_en = 1'b1;
+assign timeout_overflow_event = (timeout_count[\=wTOCnt-1=\:\=tOCntOffset=\] == csr_timeout_threshold) & (csr_timeout_threshold != 31'd0);
+assign timeout_ue_valid = timeout_overflow_event & timeout_overflow_or & csr_UEDR_TimeoutErrDetEn;
+
+\=u.instance({
+    portsDelimiter: '\n    ',
+    instanceName: 'u_timeout_overflow_or',
+    moduleName:   'logic_tree',
+    params: {
+      'width' : numEntries,
+      'logic' : '|'},
+    ports: {
+      'din'  : 'timeout_overflow',
+      'dout' : 'timeout_overflow_or'}})=\
+
+\=u.instance({
+  'portsDelimiter': '\n    ',
+  'instanceName': 'timeout_find_first',
+  'moduleName':   'arb_spri',
+  'params': {
+       width : numEntries
+     },
+  'verilogParams': {},
+  'ports': {
+      in_req    : 'timeout_overflow',
+      out_gnt   : 'timeout_sel_one',
+  }
+})=\
+
+\=u.dffre(wTOCnt,       'timeout_count',          'timeout_count_in',            wTOCnt+"'d0",       'timeout_count_en',             'clk',  'reset_n')=\
+
+endmodule

@@ -1,0 +1,217 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// DMI Atomic Op Processor
+// Aurthor: Tso-Wei Chang
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+//
+// Variables
+//
+var wSizeInByte = 5;
+var dw = obj.lib.getParam('dw');
+var wdw = Math.ceil(Math.log2(obj.lib.getParam("dw")));
+var wOpType = obj.lib.getParam('wOpType');
+var wAtomicType = obj.lib.getParam('wAtomicType');
+var wAddr = obj.lib.getParam('wAddr');
+var wMaxOpSize = 64; 
+//
+// Interfaces
+//
+obj.lib.interface('',           'slave', obj.lib.getParam('clkInterface'));
+obj.lib.interface('req_data_',  'slave', obj.lib.getParam('atomicDataInterface'),   ['swap_data', 'swap_be']);
+obj.lib.interface('req_',       'slave', obj.lib.getParam('atomicAddrInterface'),   ['id', 'valid', 'ready']);
+
+// 
+// Ports
+//
+obj.lib.port('output',  'opResult',             dw);
+obj.lib.port('input',   'memData',              dw);
+obj.lib.port('input',   'muxedCompLdStrData',   dw);
+obj.lib.port('input',   'muxedMemData',         dw);
+obj.lib.port('output',  'compCondTrue',          1);
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+    localparam  LD      = 2'b0,
+                STR     = 2'b01,
+                COMPARE = 2'b10,
+                SWAP    = 2'b11;
+    
+    localparam  ADD     = 3'b0,
+                CLR     = 3'b001,
+                EOR     = 3'b010,
+                SET     = 3'b011,
+                SMAX    = 3'b100,
+                SMIN    = 3'b101,
+                UMAX    = 3'b110,
+                UMIN    = 3'b111;
+\jsbegin
+    //
+    // Wires
+    //
+\jsend
+    \js //wire [\=dw-1=\:0]           opResultInt;
+    wire                        maxMinOp;
+    wire [\=wSizeInByte-1=\:0]  sizeInByte;
+    wire [\=wOpType-1=\:0]      opType;
+    wire [\=wAtomicType-1=\:0]  atomicType;
+    wire [\=dw-1=\:0]           memDataShifted;
+    wire [\=dw-1=\:0]           zeroPaddings = \=dw=\'b0;
+    wire [\=dw-1=\:0]           compLdStrData;
+    wire                        signMatch;
+    wire [\=wAddr-1=\:0]        addr;
+    wire [\=wMaxOpSize-1=\:0]   addResultShifted;
+    wire [\=dw-1=\:0]           addResult;
+    wire [\=dw-1=\:0]           compLdStrDataShifted;
+    wire [\=(dw/8)-1=\:0]       compLdStrDataBE;
+    wire [\=(wMaxOpSize/8)-1=\:0] cout;
+
+
+    assign opType               = req_op;
+    assign atomicType           = req_type;
+    assign compLdStrData        = req_data_compLdStr_data;
+    assign compLdStrDataBE      = req_data_compLdStr_be;
+    assign addr                 = req_addr[\=wAddr-1=\:0];
+
+    assign sizeInByte           = (\=wSizeInByte=\'b1 << req_size);
+
+    \js // Timing fix
+    wire                        compGtMem;
+    wire                        memGtComp;
+    \=obj.lib.instance({
+      'portsDelimiter': '\n      ',
+      'instanceName': 'u_comp_gt_mem',
+      'moduleName':   'greater_than',
+      'params': {
+        'width' : dw}, 
+      'ports': {
+        'a'  : 'muxedCompLdStrData',
+        'b'  : 'muxedMemData',
+        'gt' : 'compGtMem'}})=\
+    \=obj.lib.instance({
+      'portsDelimiter': '\n      ',
+      'instanceName': 'u_mem_gt_comp',
+      'moduleName':   'greater_than',
+      'params': {
+        'width' : dw}, 
+      'ports': {
+        'b'  : 'muxedCompLdStrData',
+        'a'  : 'muxedMemData',
+        'gt' : 'memGtComp'}})=\
+
+
+    wire [\=wdw -1=\:0] sign_index_full;
+
+    assign sign_index_full = {(\= (wSizeInByte-wAddr) > 0 ? "{"+(wSizeInByte-wAddr)+"'h0,addr}" :"addr"=\ + sizeInByte)*\=wdw=\'d8} - 1'b1;
+
+    assign maxMinOp             = ((opType == SMAX) | (opType == SMIN) | (opType == UMAX) | (opType == UMIN));
+    assign signMatch            = (compLdStrData[sign_index_full] == memData[sign_index_full]);
+    assign compCondTrue         = ((compGtMem)                                                                               & ((atomicType == LD) | (atomicType == STR)) & (opType == UMAX))|
+                                  ((memGtComp)                                                                               & ((atomicType == LD) | (atomicType == STR)) & (opType == UMIN))|
+                                  (((signMatch & (compGtMem))|(~signMatch & ~muxedCompLdStrData[sign_index_full])) & ((atomicType == LD) | (atomicType == STR)) & (opType == SMAX))|
+                                  (((signMatch & (memGtComp))|(~signMatch &  muxedCompLdStrData[sign_index_full])) & ((atomicType == LD) | (atomicType == STR)) & (opType == SMIN));
+\js// TODO: up to 64 bit operation
+    \js //Timing Fix
+    wire [5:0] op_sel;
+    assign op_sel[0] = (opType == CLR);
+    assign op_sel[1] = (opType == SET);
+    assign op_sel[2] = (opType == EOR);
+    assign op_sel[3] = maxMinOp & compCondTrue;
+    assign op_sel[4] = maxMinOp &~compCondTrue;
+    assign op_sel[5] = (opType == ADD);
+\js for(var i = 0; i < dw/8; i++) {
+    \js //Timing Fix
+    \js //assign opResultInt[\=(i+1)*8-1=\:\=i*8=\] = (((memData[\=(i+1)*8-1=\:\=i*8=\]&(~compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}})) | (memData[\=(i+1)*8-1=\:\=i*8=\] & {8{~compLdStrDataBE[\=i=\]}}))  & {8{op_sel[0]}})        |
+    \js //                                            ((memData[\=(i+1)*8-1=\:\=i*8=\] |( compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}})) & {8{op_sel[1]}})        |
+    \js //                                            ((memData[\=(i+1)*8-1=\:\=i*8=\] ^( compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}})) & {8{op_sel[2]}})        |
+    \js //                                            (                                (( compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}})  | (memData[\=(i+1)*8-1=\:\=i*8=\] & {8{~compLdStrDataBE[\=i=\]}}))  & {8{op_sel[3]}})|
+    \js //                                            (memData[\=(i+1)*8-1=\:\=i*8=\]                                                                          & {8{op_sel[4]}});
+    \js //
+    \js //assign opResult[\=(i+1)*8-1=\:\=i*8=\] = (op_sel[5])? (addResult[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}} | memData[\=(i+1)*8-1=\:\=i*8=\] & ~{8{compLdStrDataBE[\=i=\]}}) : opResultInt[\=(i+1)*8-1=\:\=i*8=\]; 
+    wire [7:0] din0_\=i=\;
+    wire [7:0] din1_\=i=\;
+    wire [7:0] din2_\=i=\;
+    wire [7:0] din3_\=i=\;
+    wire [7:0] din4_\=i=\;
+    wire [7:0] din5_\=i=\;
+    assign din0_\=i=\ = ((memData[\=(i+1)*8-1=\:\=i*8=\]&(~compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}})) | (memData[\=(i+1)*8-1=\:\=i*8=\] & {8{~compLdStrDataBE[\=i=\]}}));
+    assign din1_\=i=\ = (memData[\=(i+1)*8-1=\:\=i*8=\] |( compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}}));
+    assign din2_\=i=\ = (memData[\=(i+1)*8-1=\:\=i*8=\] ^( compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}}));
+    assign din3_\=i=\ = ((compLdStrData[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}})  | (memData[\=(i+1)*8-1=\:\=i*8=\] & {8{~compLdStrDataBE[\=i=\]}}));
+    assign din4_\=i=\ = memData[\=(i+1)*8-1=\:\=i*8=\];
+    assign din5_\=i=\ = (addResult[\=(i+1)*8-1=\:\=i*8=\] & {8{compLdStrDataBE[\=i=\]}} | memData[\=(i+1)*8-1=\:\=i*8=\] & ~{8{compLdStrDataBE[\=i=\]}});
+    \=obj.lib.instance({
+      portsDelimiter: '\n    ',
+      instanceName: 'u_op_result_mux_'+i,
+      moduleName:   'ao_mux',
+      params: {wMux: 8, nInputs: 6},
+      ports: {
+       'sel': 'op_sel', 
+       'in0': 'din0_'+i,
+       'in1': 'din1_'+i,
+       'in2': 'din2_'+i,
+       'in3': 'din3_'+i,
+       'in4': 'din4_'+i,
+       'in5': 'din5_'+i,
+       'out': 'opResult['+((i+1)*8-1)+':'+(i*8)+']'}})=\    
+\js }
+
+    \js // Timing Fix: replacing with custom shift right
+    \js // assign memDataShifted = (memData >> {addr, 3'b0});
+    \js // assign compLdStrDataShifted = (compLdStrData >> {addr, 3'b0});
+    \=obj.lib.instance({
+      portsDelimiter: '\n    ',
+      instanceName: 'u_shift_right_memData',
+      moduleName:   'shift_right',
+      params: {width: dw, minShiftSize: 8},
+      ports: {
+       'shift': 'addr', 
+       'din':   'memData',
+       'dout':  'memDataShifted'
+      }})=\    
+    \=obj.lib.instance({
+      portsDelimiter: '\n    ',
+      instanceName: 'u_shift_right_compLdStr',
+      moduleName:   'shift_right',
+      params: {width: dw, minShiftSize: 8},
+      ports: {
+       'shift': 'addr', 
+       'din':   'compLdStrData',
+       'dout':  'compLdStrDataShifted'
+      }})=\    
+    \js // Timing Fix: replacing add with custom adder
+    \js // assign addResultShifted = memDataShifted[\=wMaxOpSize-1=\:0] + compLdStrDataShifted[\=wMaxOpSize-1=\:0];
+    wire co_unused;
+    \=obj.lib.instance({
+      portsDelimiter: '\n    ',
+      instanceName: 'u_adder',
+      moduleName:   'adder',
+      params: {width: wMaxOpSize, cs_width: 8},
+      ports: {
+       'a': 'memDataShifted['+(wMaxOpSize-1)+':0]', 
+       'b': 'compLdStrDataShifted['+(wMaxOpSize-1)+':0]',
+       'co': 'co_unused',
+       's':  'addResultShifted'
+      }})=\
+    \js // Timing Fix: replacing with custom shift left
+    \js // assign addResult = ({\=dw-wMaxOpSize=\'b0, addResultShifted} << {addr, 3'b0});
+    \=obj.lib.instance({
+      portsDelimiter: '\n    ',
+      instanceName: 'u_shift_left_addResult',
+      moduleName:   'shift_left',
+      params: {width: dw, minShiftSize: 8},
+      ports: {
+       'shift': 'addr', 
+       'din':   '{'+(dw-wMaxOpSize)+"'b0, addResultShifted}",
+       'dout':  'addResult'
+      }})=\    
+
+\js    // TODO: add big endian support
+endmodule

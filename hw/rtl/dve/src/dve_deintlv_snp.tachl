@@ -1,0 +1,282 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2025 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DVE Deinterleaver for Snoop Request Message Pair that are chiplet ID interleaved
+// Author: Boon Chuan
+// Filename: dve_deintlv_snp.tachl
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var assertOn           = obj.lib.getParam('assertOn');
+var nChiplets          = obj.lib.getParam('nChiplets');
+var wChipletId         = obj.lib.getParam('wChipletId');
+var wDvmReqAddr        = obj.lib.getParam('wDvmReqAddr');    // AMBA 5 CHI DVM requires 44,45,46..52
+var wDvmReqAttr        = obj.lib.getParam('wDvmReqAttr');
+var wDvmReqAiuId       = obj.lib.getParam('wDvmReqAiuId');
+var wDvmReqMsgId       = obj.lib.getParam('wDvmReqMsgId');
+var wDvmReqQos         = obj.lib.getParam('wDvmReqQos');
+var wDvmReqPriority    = obj.lib.getParam('wDvmReqPriority');
+var nSkidEntries       = obj.lib.getParam('nSkidEntries');
+var nSttEntries        = obj.lib.getParam('nSttEntries');
+var wSttId             = obj.lib.getParam('wSttId');
+
+var wSkidEntries       = Math.max(1, log2ceil(nSkidEntries));
+var wSnpReqFifo        = 8 + wSttId + wDvmReqAddr + 8 + 8 + wDvmReqAttr + (wDvmReqAiuId * 2) + wDvmReqQos + wDvmReqPriority;
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+obj.lib.port('input',  'clk',      1);
+obj.lib.port('input',  'reset_n',  1);
+obj.lib.port('output', 'busy',     1);
+
+
+// Input DVM SNPreq
+obj.lib.port('input',  'in_dvm_snpreq_valid',  1);
+obj.lib.port('output', 'in_dvm_snpreq_ready',  1);
+obj.lib.port('input',  'in_dvm_snpreq_chipletid', wChipletId);
+obj.lib.port('input',  'in_dvm_snpreq_cmstatus', 8);
+obj.lib.port('input',  'in_dvm_snpreq_sttid',  wSttId);
+obj.lib.port('input',  'in_dvm_snpreq_addr',   wDvmReqAddr);
+obj.lib.port('input',  'in_dvm_snpreq_mpf1', 8); // vmidext is sent in snoop part 1
+obj.lib.port('input',  'in_dvm_snpreq_mpf2', wDvmReqAiuId);
+obj.lib.port('input',  'in_dvm_snpreq_mpf3', 8);
+obj.lib.port('input',  'in_dvm_snpreq_attr',   wDvmReqAttr);
+obj.lib.port('input',  'in_dvm_snpreq_aiuid',  wDvmReqAiuId);
+    if (wDvmReqQos > 0) {
+obj.lib.port('input',  'in_dvm_snpreq_qos',    wDvmReqQos);
+    }
+    if (wDvmReqPriority > 0) {
+obj.lib.port('input',  'in_dvm_snpreq_priority', wDvmReqPriority);
+    }
+
+// Output DVM SNPreq
+obj.lib.port('output', 'out_dvm_snpreq_valid',  1);
+obj.lib.port('input',  'out_dvm_snpreq_ready',  1);
+obj.lib.port('output', 'out_dvm_snpreq_chipletid', wChipletId);
+obj.lib.port('output', 'out_dvm_snpreq_cmstatus', 8);
+obj.lib.port('output', 'out_dvm_snpreq_sttid',  wSttId);
+obj.lib.port('output', 'out_dvm_snpreq_addr',   wDvmReqAddr);
+obj.lib.port('output', 'out_dvm_snpreq_mpf1', 8); // vmidext is sent in snoop part 1
+obj.lib.port('output', 'out_dvm_snpreq_mpf2', wDvmReqAiuId);
+obj.lib.port('output', 'out_dvm_snpreq_mpf3', 8);
+obj.lib.port('output', 'out_dvm_snpreq_attr',   wDvmReqAttr);
+obj.lib.port('output', 'out_dvm_snpreq_aiuid',  wDvmReqAiuId);
+    if (wDvmReqQos > 0) {
+obj.lib.port('output', 'out_dvm_snpreq_qos',    wDvmReqQos);
+    }
+    if (wDvmReqPriority > 0) {
+obj.lib.port('output',  'out_dvm_snpreq_priority', wDvmReqPriority);
+    }
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nChiplets; i++) {
+
+wire chiplet\=i=\_in_snpreq_fifo_select;
+
+wire chiplet\=i=\_in_snpreq_fifo__push_ready;
+wire chiplet\=i=\_in_snpreq_fifo__push_valid;
+wire [\=wSnpReqFifo-1=\:0] chiplet\=i=\_in_snpreq_fifo__push_bundle;
+wire [\=wSnpReqFifo-1=\:0] chiplet\=i=\_in_snpreq_fifo__pop_bundle;
+wire chiplet\=i=\_in_snpreq_fifo__pop_valid;
+wire chiplet\=i=\_in_snpreq_fifo__pop_ready;
+
+\js }
+
+wire [\=wSnpReqFifo-1=\:0] in_dvm_snpreq_bundle;
+wire [\=wSnpReqFifo-1=\:0] out_dvm_snpreq_bundle;
+
+\jsbegin
+//=============================================================================
+// Input SNPreq Bundle
+//=============================================================================
+\jsend
+
+assign in_dvm_snpreq_bundle = {
+
+    \js if (wDvmReqPriority > 0) {
+    in_dvm_snpreq_priority,
+    \js }
+    \js if (wDvmReqQos > 0) {
+    in_dvm_snpreq_qos,
+    \js }
+    in_dvm_snpreq_aiuid,
+    in_dvm_snpreq_attr,
+    in_dvm_snpreq_mpf3,
+    in_dvm_snpreq_mpf2,
+    in_dvm_snpreq_mpf1,
+    in_dvm_snpreq_addr,
+    in_dvm_snpreq_sttid,
+    in_dvm_snpreq_cmstatus
+
+    };
+
+\js for (var i=0; i < nChiplets; i++) {
+
+\jsbegin
+    var in_snpreqFifoParams = {
+        width       : wSnpReqFifo,
+        depth       : nSkidEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_in_snpreq_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'chiplet'+i+'_in_snpreq_fifo__push_bundle',
+        push_valid          : 'chiplet'+i+'_in_snpreq_fifo__push_valid',
+        push_ready          : 'chiplet'+i+'_in_snpreq_fifo__push_ready',
+        pop_data            : 'chiplet'+i+'_in_snpreq_fifo__pop_bundle',
+        pop_valid           : 'chiplet'+i+'_in_snpreq_fifo__pop_valid',
+        pop_ready           : 'chiplet'+i+'_in_snpreq_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'chiplet'+i+'_in_snpreq_fifo',
+        moduleName: 'fifo',
+        params : in_snpreqFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_in_snpreq_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+\js }
+
+    \js for (var i=0; i < nChiplets; i++) {
+assign chiplet\=i=\_in_snpreq_fifo_select       = (in_dvm_snpreq_chipletid == \=wChipletId=\'d\=i=\);
+assign chiplet\=i=\_in_snpreq_fifo__push_valid  = in_dvm_snpreq_valid & chiplet\=i=\_in_snpreq_fifo_select;
+assign chiplet\=i=\_in_snpreq_fifo__push_bundle = in_dvm_snpreq_bundle;
+    \js }
+
+assign in_dvm_snpreq_ready = 1'b0
+    \js for (var i=0; i < nChiplets; i++) {
+       | (chiplet\=i=\_in_snpreq_fifo_select & chiplet\=i=\_in_snpreq_fifo__push_ready)
+    \js }
+                           ;
+
+\jsbegin
+//=============================================================================
+// Round-robin Arbiter
+//=============================================================================
+\jsend
+
+wire [\=nChiplets-1=\:0] arb__sink_ready;
+wire [\=nChiplets-1=\:0] arb__sink_valid;
+wire [\=nChiplets-1=\:0] arb__sink_last;
+wire [\=nChiplets-1=\:0] arb__sink_grant;
+wire arb__source_ready;
+wire arb__source_valid;
+wire arb__source_last;
+
+\jsbegin
+    var arbParams = {
+        num_inputs  : nChiplets
+    };
+    var instance_ports_for_arb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sink_ready          : 'arb__sink_ready',
+        sink_valid          : 'arb__sink_valid',
+        sink_last           : 'arb__sink_last',
+        sink_grant          : 'arb__sink_grant',
+        source_ready        : 'arb__source_ready',
+        source_valid        : 'arb__source_valid',
+        source_last         : 'arb__source_last'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'arb',
+        moduleName: 'rr_arb_comb_mux',
+        params : arbParams,
+        verilogParams: {},
+        ports: instance_ports_for_arb,
+        portsDelimiter: '\n    '
+    })=\
+
+assign arb__sink_last = {\=nChiplets=\{1'b1}};
+
+    \js for (var i=0; i < nChiplets; i++) {
+assign arb__sink_valid[\=i=\] = chiplet\=i=\_in_snpreq_fifo__pop_valid;
+    \js }
+    \js for (var i=0; i < nChiplets; i++) {
+assign chiplet\=i=\_in_snpreq_fifo__pop_ready = arb__sink_ready[\=i=\];
+    \js }
+
+\jsbegin
+//=============================================================================
+// Output SNPreq
+//=============================================================================
+\jsend
+
+assign arb__source_ready = out_dvm_snpreq_ready;
+
+assign out_dvm_snpreq_valid = arb__source_valid;
+
+assign out_dvm_snpreq_chipletid = \=wChipletId=\'d0
+    \js for (var i=0; i < nChiplets; i++) {
+       | ({\=wChipletId=\{arb__sink_grant[\=i=\]}} & \=wChipletId=\'d\=i=\)
+    \js }
+                                ;
+
+assign out_dvm_snpreq_bundle = \=wSnpReqFifo=\'h0
+    \js for (var i=0; i < nChiplets; i++) {
+       | ({\=wSnpReqFifo=\{arb__sink_grant[\=i=\]}} & chiplet\=i=\_in_snpreq_fifo__pop_bundle)
+    \js }
+                             ;
+
+assign {
+
+    \js if (wDvmReqPriority > 0) {
+    out_dvm_snpreq_priority,
+    \js }
+    \js if (wDvmReqQos > 0) {
+    out_dvm_snpreq_qos,
+    \js }
+    out_dvm_snpreq_aiuid,
+    out_dvm_snpreq_attr,
+    out_dvm_snpreq_mpf3,
+    out_dvm_snpreq_mpf2,
+    out_dvm_snpreq_mpf1,
+    out_dvm_snpreq_addr,
+    out_dvm_snpreq_sttid,
+    out_dvm_snpreq_cmstatus
+
+    } = out_dvm_snpreq_bundle;
+
+\jsbegin
+//=============================================================================
+// Busy indicator
+//=============================================================================
+\jsend
+
+assign busy = 1'b0
+    \js for (var i=0; i < nChiplets; i++) {
+       | chiplet\=i=\_in_snpreq_fifo__pop_valid
+    \js }
+            ;
+
+endmodule

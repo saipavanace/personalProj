@@ -1,0 +1,94 @@
+<h1 id="Mappingcodeimprovingguideline-Motivation">Motivation</h1><p>The original motivation for mapping code revisiting is supporting object mapping right after the creation.</p><p>In the original code, the mapping is a stand-alone step that is done after the design is completely specified.<br/>This approach allows making assumptions about the availability of design parts that may not be valid at the time the object is created.<br/>Often these situations are end-up with a crash. So the decision was to make objects mappable at the creation one-by-one and revisit their mapping code for invalid assumptions.</p><h1 id="Mappingcodeimprovingguideline-Problems">Problems</h1><p>Mapping code analysis brings on the top some of the problems that can be also fixed during this project.</p><h2 id="Mappingcodeimprovingguideline-Duplicatedlow-levelcode">Duplicated low-level code</h2><p>It comes out that the mapping code uses low-level data model operations to complete its tasks.</p><p>For repetitive tasks (check hierarchy, create new sub-object, initialize a parameter) the code often becomes copied.</p><p>This leads to bloating a codebase and makes it more challenging to maintain.</p><h2 id="Mappingcodeimprovingguideline-Non-informativeerrors">Non-informative errors</h2><p>The mapping code usually does several operations and almost every operation may fail.</p><p>Unfortunately, mapping code often checks only a total result. The usual pattern is:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">AdmMapper::ParamMappingResult mapParameters(SomeObject&amp; obj) {
+  bool success = true;
+  success = operation1() &amp;&amp; success;
+  success = operation2() &amp;&amp; success;
+
+  ...
+  if (!success) {
+    sendError(&quot;Mapping failed&quot;);
+    return ParamMappingResult::FAIL;
+  } else {
+    return ParamMappingResult::SUCCESS;
+}</pre>
+</div></div><p>If the mapping fails it is not obvious what operation caused the problem.</p><h2 id="Mappingcodeimprovingguideline-Distinguisherrorandincompletemapping">Distinguish error and incomplete mapping</h2><p>Another challenge that becomes actual when the object is mapped right after the creation is how to separate situations when the real problem happened or just some design parts are not yet ready.</p><p>In the original mapping code, there were only two possible results (FAIL and SUCCESS).</p><h1 id="Mappingcodeimprovingguideline-Solutions">Solutions</h1><p>This part contains a description of ideas was implemented to solve problems mentioned before.</p><h2 id="Mappingcodeimprovingguideline-Hidingimplementationdetails">Hiding implementation details</h2><p>It was found that the already existing class <code>AdmMappable</code> contains all the data required for common operations.</p><p>So instead of taking its data and doing low-level operations with it:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">AdmMapper::ParamMappingResult mapParameters(SomeObject&amp; obj) {
+  datamodel::ObjectID mappedData = obj.getMappedData(); // data is exposed
+  datamodel::Object_addObject(mapped, ....);
+  ...
+}</pre>
+</div></div><p>we now delegate the operations to the object itself, thereby encapsulating its data (DAL layer objects):</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">AdmMapper::ParamMappingResult mapParameters(SomeObject&amp; obj) {
+  obj.createAdditionalSubobject(...); // data is hidden
+}</pre>
+</div></div><h2 id="Mappingcodeimprovingguideline-Incompletestatussupport">Incomplete status support</h2><p>To distinguish between the incomplete mapping and failed mapping the new status <code>AdmMapper::ParamMappingResult::INCOMPLETE</code> was introduced.</p><p>The meaning of status is the following:</p><p><br/></p><ul><li><code>AdmMapper::ParamMappingResult::PASS</code> means that all parameters were mapped without any issues</li><li><code>AdmMapper::ParamMappingResult::INCOMPLETE</code> means that some parameters were not mapped because of missed dependencies</li><li><code>AdmMapper::ParamMappingResult::FAIL </code>means that a critical issue happened. It can be an underlying operation fail and the user can not do anything with it but it should be reported</li></ul><h2 id="Mappingcodeimprovingguideline-Groupmappingcodeintoutilityfunctions">Group mapping code into utility functions</h2><p>The utility functions (which usually initialize parameter values based on other objects) can be split on two types:</p><ul><li><p>Self-contained. These functions have all the required data required for initialization. They return nothing and throw exceptions if something fails.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">void initializeSomeObjectParameters(AdmMappable obj&amp;, SomeObject&amp; someObject) {
+  operation1(...);
+  operation2(...);
+}</pre>
+</div></div></li><li><p class="auto-cursor-target">May be incomplete. These functions may depend on other design parts which may not be accessible when the function is called. They return true if everything was done, false if something was missed, and throw exceptions if there is a critical problem</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">bool initializeSomeObjectParameters(AdmMappable obj&amp;, SomeObject&amp; someObject) {
+  operation1(...);
+  if (someObject.getAdditionalObject()) {
+    operation2(...);
+    return true;
+  } else {
+   return false;
+  }
+}</pre>
+</div></div><p>If this operation returns false it doesn't mean that we have to stop mapping. The mapping should continue and return INCOMPLETE status in the end.</p></li></ul><h2 id="Mappingcodeimprovingguideline-Usingexceptionsforerrorhandling">Using exceptions for error handling</h2><p>As it was mentioned in the previous part the utility functions may throw exceptions.</p><p>Exceptions are intended for the fatal problems after which the rest mapping process does not make sense and has to be interrupted.</p><p>To simplify catching and handling, different problems the common base class was implemented</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">class FatalMappingErrorException: public std::exception {
+ ...
+ virtual void logCorrespondinError() const noexcept;
+};</pre>
+</div></div><p>This class provides a method to log the error in the log.</p><p>The idea is to put all required error context in place when the error happened and log this information in a uniform way when the exception is caught.</p><h3 id="Mappingcodeimprovingguideline-Exceptionsinmethodsandfreefunctions">Exceptions in methods and free functions</h3><p>To have some flexibility to work with exception free code the intention is to make <code>AdmMappable</code> class free from exceptions and provide additional free functions which throw.</p><p>For example, if the method may fail:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">class AdmMappable {
+ public:
+  bool createSubObjectOfType(...) noexcept;
+};</pre>
+</div></div><p>The corresponding free function will throw an exception:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">void addSubobjectOfTypeFor(AdmMappable&amp; mappable, ...) {
+  if (!mappable.createSubObjectOfType(...)) {
+    throw CannotCreateSubObjectOfType(...);
+  }
+}</pre>
+</div></div><h2 id="Mappingcodeimprovingguideline-Acommonstructureforparametersmappingcode">A common structure for parameters mapping code</h2><p>With all improvements described above the typical parameters mapping code should look like this:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">AdmMapper::ParamMappingResult mapParameters(SomeObject&amp; obj) {
+  AccumulativeMappingResut mappingResult;
+
+  try {
+    addAdditionalSubObjectOfType(obj, &quot;TypeA&quot;, &quot;path/to/add&quot;);
+    ininitializePostmapParameters(obj,
+      { {&quot;foo&quot;, 1},
+        {&quot;bar&quot;, HashString(&quot;hello&quot;)} });
+    selfContainedOperation1(obj, ...);
+    mappingResult.accountIntermediateResult(maybeIncompleteOperation(obj...);  
+  } catch (FatalMappingErrorException&amp; fatalProblem) {
+    fatalProblem.logCorrespondingError();
+    return AdmMapper::ParamMappingResult::FAIL;
+  } 
+  return mappingResult.summaryResult() ? AdmMapper::ParamMappingResult::PASS : AdmMapper::ParamMappingResult::INCOMPLETE;
+  ...
+}</pre>
+</div></div><h1 id="Mappingcodeimprovingguideline-Furtherimprovements">Further improvements</h1><p>This section contains the descriptions of potential improvements which can be implemented as a continuation of mapping improvement.</p><h2 id="Mappingcodeimprovingguideline-Convertutilityfunctionstoparameterdependencies">Convert utility functions to parameter dependencies</h2><p>The growing number of utility functions may help to determine dependencies between objects.</p><p>For example, all objects that use in mapping code this function:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">void initilizeClockSubdomainParameters(AdmMappable&amp; mappable, const ClockSubdomain&amp; clkSubdomain);</pre>
+</div></div><p>depend on the corresponding <code>ClockSubdomain</code> object and any change in <code>ClockSubdomain</code> parameters will have an impact on their mapping parameters.</p><p>Utility functions that may fail because of incomplete design mean that there are additional dependencies.</p><h2 id="Mappingcodeimprovingguideline-Extractadditionalinterfaces">Extract additional interfaces</h2><p>The more utility functions become methods of AdmMappable class the more it looks like that this class has several responsibilities</p><ul><li>Provide proper dispatching for a mappable object. All mappable objects are inherited from <code>AdmMappable</code> class and by this participate in double-dispatching mechanism run by AdmMapper</li><li>Provide an abstraction on underlying data model (DAL) objects</li></ul><p>One of the ideas is to extract the second responsibility in <code>MappedObject</code> interface.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">class MappedObject {
+ public:
+  virtual ~MappedObject() = default;
+
+  virtual bool ininitializePostmapParameter(...) = 0;
+  virtual optional&lt;MappedObject&amp;&gt; createSubobjectOfType(...) = 0;
+  virtual optional&lt;MappedObject&amp;&gt; getSubobjectByPath() = 0;
+  ...
+};</pre>
+</div></div><p>And provide an implementation operating with DAL data</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">class DalMappedObject final : public MappedObject {
+ public:
+  explicit DalMappedObject(const std::string&amp; mappedObjectTypeName);
+  ...
+
+ private:
+  datamodel::ObjectID mappedDataID_;
+};</pre>
+</div></div><p>Making mapping code to work with <code>MappedObject</code> interface may help to improve the testability of mapping code because it would be possible to stub <code>MappedObject</code> interface and check that proper values were set and sub-objects were created.</p><p><br/></p>

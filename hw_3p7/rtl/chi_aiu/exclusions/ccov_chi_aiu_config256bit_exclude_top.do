@@ -1,0 +1,1 @@
+source ccov_chi_aiu_config256bit_exclude_coverCheck.do

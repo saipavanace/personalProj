@@ -1,0 +1,73 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2021 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Read Pointer computed from DataID, CCID(= address[5:4]) and address[3] for
+// data width conversion from source with data width=wData= 128,256 to target
+// with data width 256,128,64.
+// The Read Pointer points to the first DW to be read out from the data buffer.
+//
+// Author: Boon Chuan
+// Filename: chi_drb_rptr.tachl
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+
+var wData = u.getParam('wData');
+
+//=============================================================================
+// Port declaration
+//=============================================================================
+
+u.port('input',  'ccid',            2);
+u.port('input',  'addr_bit3',       1);
+u.port('output', 'rptr_target_256', 3);
+u.port('output', 'rptr_target_128', 3);
+u.port('output', 'rptr_target_64',  3);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+wire dwid_0 = ((ccid[1:0] == 2'b00) & ~addr_bit3);
+wire dwid_1 = ((ccid[1:0] == 2'b00) &  addr_bit3);
+wire dwid_2 = ((ccid[1:0] == 2'b01) & ~addr_bit3);
+wire dwid_3 = ((ccid[1:0] == 2'b01) &  addr_bit3);
+wire dwid_4 = ((ccid[1:0] == 2'b10) & ~addr_bit3);
+wire dwid_5 = ((ccid[1:0] == 2'b10) &  addr_bit3);
+wire dwid_6 = ((ccid[1:0] == 2'b11) & ~addr_bit3);
+wire dwid_7 = ((ccid[1:0] == 2'b11) &  addr_bit3);
+
+\js if (wData == 128) {
+
+assign rptr_target_128 = ({3{(ccid == 2'b00)}} & 3'b000) | 
+                         ({3{(ccid == 2'b01)}} & 3'b010) |
+                         ({3{(ccid == 2'b10)}} & 3'b100) |
+                         ({3{(ccid == 2'b11)}} & 3'b110);
+
+assign rptr_target_256 = ({3{(ccid == 2'b01)}} & 3'b000) |
+                         ({3{(ccid == 2'b11)}} & 3'b100) |
+                         ({3{(ccid == 2'b00)}} & 3'b000) |
+                         ({3{(ccid == 2'b10)}} & 3'b100);
+
+assign rptr_target_64  = {ccid, addr_bit3} + {2'b00, addr_bit3};
+
+\js }
+
+\js if (wData == 256) {
+
+assign rptr_target_256 = (ccid[1] == 1'b0) ? 3'b000 : 3'b100;
+
+assign rptr_target_128 = {ccid[1], ccid[0], 1'b0} + {1'b0, ccid[0], 1'b0};
+
+assign rptr_target_64  = ({3{(dwid_0 | dwid_6)}} & 3'b000) |
+                         ({3{(dwid_1 | dwid_7)}} & 3'b010) |
+                         ({3{(dwid_2 | dwid_4)}} & 3'b100) |
+                         ({3{(dwid_3 | dwid_5)}} & 3'b110);
+
+\js }
+
+endmodule

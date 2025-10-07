@@ -1,0 +1,4 @@
+(function() {
+var toc =  [{"name":"2.2.1  File Menu","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Menus_and_Shortcuts.htm#1038487bc-1"},{"name":"2.2.2  Edit Menu","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Menus_and_Shortcuts.htm#1038559bc-2"},{"name":"2.2.3  Window Menu","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Menus_and_Shortcuts.htm#1038838bc-3"},{"name":"2.2.4  Help Menu","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Menus_and_Shortcuts.htm#1038800bc-4"}];
+window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
+})();

@@ -1,0 +1,75 @@
+<h2 id="Ncore3.6FSYS:Week#43:10/23/23to10/27/23-Highlights:"><strong>Highlights:</strong></h2><p>RTL issue : </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12995" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12995?src=confmacro" class="jira-issue-key">CONC-12995</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13038" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13038?src=confmacro" class="jira-issue-key">CONC-13038</a>
+                            </span>
+ </p><h2 id="Ncore3.6FSYS:Week#43:10/23/23to10/27/23-Activities:"><strong>Activities:</strong></h2><h3 id="Ncore3.6FSYS:Week#43:10/23/23to10/27/23-cyrille">cyrille</h3><p> </p><h3 id="Ncore3.6FSYS:Week#43:10/23/23to10/27/23-Abdelaziz">Abdelaziz</h3><p> </p><h3 id="Ncore3.6FSYS:Week#43:10/23/23to10/27/23-Naveen">Naveen</h3><p> </p><h3 id="Ncore3.6FSYS:Week#43:10/23/23to10/27/23-Urvish">Urvish</h3><p /><p><strong>DVM  : </strong></p><ul><li><p>  Opened <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13037" rel="nofollow">CONC-13037</a> : fsys_scb_ioaiu_predictor [smi_snpreq_ioaiu0] FSYS_SCB: SNPReq didn't match any pending transactions.</p><ul><li><p>DVM tests recently start failing with this fsys scoreboard error.   </p></li></ul></li><li><p>Done fix for ioaiu dvm func coverage code typos.</p></li><li><p>While working on <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-12877" rel="nofollow">CONC-12877</a>, Found timeout increase is needed. Hence, Increase in different timeouts. Disabled long delays inserted by chivip for SnpReq which caused timeout errors.</p></li><li><p>In DVM func coverage analysis, found that two-part dvms are not exercised. Hence Added multipart dvm stimulus from ioaiu.</p></li><li><p><strong>Opened rtl issue</strong> <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13038" rel="nofollow">CONC-13038</a> : axi_system[0].master[0] [track_timeout] : Timed out waiting for rvalid. DVE does not send DVMSNpReq(Sync) for this txn</p></li><li><p>Debugged/Resolved <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13045" rel="nofollow">CONC-13045</a> : two-part DVM case :  Invalid value for vmid_ext field for second part snpdvmop, observed value is 1011, expected value is 0</p><ul><li><p>   Opened solvnet case - <a class="external-link" href="https://solvnetplus.synopsys.com/s/case/5004w00002pvAGw/invalid-value-for-vmidext-field-for-second-part-snpdvmop-observed-value-is-1011-expected-value-is-0" rel="nofollow">invalid-value-for-vmidext-field-for-second-part-snpdvmop</a></p></li></ul></li><li><p>Verified <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13038" rel="nofollow">CONC-13038</a></p></li><li><p>Opened/Resolved <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13091" rel="nofollow">CONC-13091</a> : two-part DVM case : work on DVM constraints</p><ul><li><p>In multi part ioaiu dvm test sequence, Added Range, Num, Scale, TG and TTL fields constraints for tlbi range based &amp; non-range based operations. Also added addr constraint for second part if range-based tlbi. Fixed in io_subsys_snps_seq_lib.sv</p></li><li><p>for ioaiu dvm, only one cover bin left to achieve</p></li></ul></li></ul><p><strong>FSC :</strong></p><ul><li><p>Found &amp; spoke to cyrille about FSC exclusion coverbins in merged file taken from hw_cfg_60_4. Config has useresiliency==1 &amp; more ioaius. And we don't target it is FSC tests.</p></li><li><p>Resolved  <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-11908" rel="nofollow">CONC-11908</a> (&amp; connected jiras) push dv changes with rtl files(bistTimeoutControlEnable==true) </p><ul><li><p>Issue after merging DV files, checkin failed &amp; debug/fixed compile failures from checkin</p></li></ul></li><li><p>Opened <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13112" rel="nofollow">CONC-13112</a> : dce checkin tests fail</p></li><li><p>Opened/Resolved <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13111" rel="nofollow">CONC-13111</a> : FSC test stimulus &amp; checks correction for this case : useResiliency==1, ResilienceInfo.enableUnitDuplication==0</p></li><li><p>Worked on task Jira <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-12755" rel="nofollow">CONC-12755</a> : Verify memory ECC &amp; Parity protection when resiliency is disable</p><ul><li><p>For dmi case, I faced the issue reported in <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-12892" rel="nofollow">CONC-12892</a> </p></li><li><p>Implemented two cases which worked fine &amp; Test passes. </p><ul><li><p>dmi cmc datamem single bit error. Trigger dmiucesr - Cache Correctable Error. ErrorType=0x1 and ErrorInfo=0x1=Data Array And verify interrupt - gen_wrapper.dmi0_irq_c generation/clearing</p></li><li><p>dmi cmc datamem single bit error. Trigger dmiuuesr - Cache UnCorrectable Error. ErrorType=0x1 and ErrorInfo=0x1=Data Array And verify interrupt - gen_wrapper.dmi0_irq_uc gen/clear </p></li></ul></li></ul></li></ul><p><strong>Other : </strong></p><ul><li><p>Resolved(Done) <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13008" rel="nofollow">CONC-13008</a> : Synopsys AXI sequence Bringup on IOAIU Subsys</p></li><li><p>Debugged <a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-12995" rel="nofollow">CONC-12995</a> : [CHIAIU_ENUM_BOOT_SEQ] AIUUESR.ErrVld is found 0</p><ul><li><p><strong>In debug. Found a rtl issue.</strong></p></li></ul></li></ul>

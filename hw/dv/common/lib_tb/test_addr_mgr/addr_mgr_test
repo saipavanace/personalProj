@@ -1,0 +1,21 @@
+#!/bin/csh -fx
+# Usage: addr_mgr_test [+plusarg]
+
+#point to DV generated json file dv_sys_params.json
+set configfile = $WORK_TOP/dv/common/lib_tb/test_addr_mgr/dv_sys_params.json
+set plusarg = +interleaved_aius
+
+if ($#argv > 0) then
+    set configfile = $1
+endif
+
+if ($#argv > 1) then
+    set plusarg = $2
+endif
+
+##
+$WORK_TOP/dv/scripts/node_modules/.bin/prep -p $configfile -t $WORK_TOP/dv/common/lib_tb/addr_trans_mgr.sv -o $WORK_TOP/dv/common/lib_tb/test_addr_mgr/addr_trans_mgr.sv 
+
+$WORK_TOP/dv/scripts/node_modules/.bin/prep -p $configfile -t $WORK_TOP/dv/common/lib_tb/test_addr_mgr/js_test_addr_mgr.sv -o $WORK_TOP/dv/common/lib_tb/test_addr_mgr/test_addr_mgr.sv 
+
+vcs -sverilog -debug_pp -timescale=1ns/1ps +acc +vpi +define+VCS_SIM +vcs+lic+wait +incdir+$UVM_HOME/src $UVM_HOME/src/uvm.sv +lint=TFIPC-L +define+SYNOPSYS_SV +define+SVT_UVM_TECHNOLOGY $UVM_HOME/src/dpi/uvm_dpi.cc -CFLAGS -DVCS +define+UVM_PACKER_MAX_BYTES=1500000 +define+UVM_DISABLE_AUTO_ITEM_RECORDING +define+UVM_USE_CALLBACKS_OBJECTION_FOR_TEST_DONE addr_trans_mgr.sv test_addr_mgr.sv -l compile.log

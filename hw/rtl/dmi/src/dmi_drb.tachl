@@ -1,0 +1,510 @@
+\jsbegin
+//============================================================================
+// Copyright (C) 2019 Arteris, Inc.
+// All rights reserved.
+//============================================================================
+//
+// NAME: DMI Data Rotation Buffer
+//
+// AUTHOR : Tso-Wei Chang
+//
+// DESCRIPTION:
+//
+//============================================================================
+
+//============================================================================     
+// Variables
+//============================================================================
+   
+let u = obj.lib;
+let m = obj.userLib;
+
+//============================================================================
+// Parameters
+//============================================================================
+let dataInfoInterface   = u.getParam('dataInfoInterface');
+let dataInfoInterfaceNorbGen =m.deepCopy(dataInfoInterface);
+delete dataInfoInterfaceNorbGen["RBGen"]
+let clkInterface        = u.getParam('clkInterface');
+let bundleFunctions     = m.bundleFunctions;
+let wDataInfoBundle     = bundleFunctions.getBundleWidth(dataInfoInterface, [], u.bundle);
+let width               = u.getParam('width');
+let nBeats              = u.getParam('nBeats');
+let wBeats              = Math.log2(nBeats);
+let nDWsPerBeat         = width/64;
+let nDWs                = nDWsPerBeat * nBeats;
+let wDwid               = u.getParam('wDwid');
+let wIntfSize           = u.getParam('wIntfSize');
+let wTransSize          = u.getParam('wTransSize');
+let wrData              = m.ParamDefaultGet(u, 'wrData',    'int', 0);
+let wDataUser           = m.ParamDefaultGet(u, 'wUser',     'int', 0);
+let bypassable          = m.ParamDefaultGet(u, 'bypassable','int', 0);
+let depth               = m.ParamDefaultGet(u, 'depth',     'int', 2);
+let wDepth              = Math.log2(depth);
+let nRbs                = m.ParamDefaultGet(u, 'nRbs',      'int', 16);
+let coherent            = m.ParamDefaultGet(u, 'coherent',  'int',  0);
+let wInitiatorId        = (dataInfoInterface.rb_initiator_id != undefined) ? dataInfoInterface.rb_initiator_id : 0;
+let wQos                = (dataInfoInterface.qos != undefined) ? dataInfoInterface.qos : 0;
+let wMsgId              = (dataInfoInterface.message_id != undefined) ? dataInfoInterface.message_id : 0;
+var assertOn = obj.lib.getParam('assertOn');
+
+/* istanbul ignore next env ncore_3p2 */
+let wTm                 = (dataInfoInterface.tm != undefined) ? dataInfoInterface.tm : /* istanbul ignore next env ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */ 0;
+//console.log("DMI:dataInfoInterface = \n"+JSON.stringify(dataInfoInterface,null,8));
+//============================================================================
+// Ports
+//============================================================================
+// input
+u.port('input', 'intf_size', wIntfSize);
+u.port('input', 'data_beat_in', width);
+/* istanbul ignore if env ncore_3p0 */
+if( wrData == 1 ) {
+u.port('input', 'data_beat_in_be', width/8);
+} else {
+u.port('input', 'data_beat_in_err_type', 2);
+}
+u.port('input', 'critical_dw', wDwid);
+// ncore3.2 does not use w_user field
+/* istanbul ignore if env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+if ( wDataUser != 0 ) {
+u.port('input', 'data_beat_in_user', wDataUser);
+}
+u.port('input', 'data_beat_in_valid', 1);
+u.port('input', 'data_beat_in_last', 1);
+u.port('input', 'data_beat_in_dbad', nDWsPerBeat);
+
+// first double word DWID. assumption: inside single beat it will not wrap, dwid always increments
+u.port('input', 'data_beat_in_dwid', wDwid*nDWsPerBeat);
+u.port('input', 'data_beat_out_ready', 1);
+u.port('input', 'trans_size', wTransSize);
+
+u.port('output', 'data_beat_out', width);
+/* istanbul ignore if env ncore_3p0 */
+if( wrData == 1 ) {
+u.port('output', 'data_beat_out_be', width/8);
+if (coherent) {
+u.port('output', 'rb_id_retire_RBGen', 1);
+u.port('output', 'rb_id_retire_initiator_id', wInitiatorId);
+    if ( wQos != 0 ) {
+u.port('output', 'rb_id_retire_qos', wQos);
+    }
+    // TraceMe bit always present for ncore3.2
+    /* istanbul ignore else env ncore_3p2,ncore_3p4 ,ncore_3p6, ncore_3p7*/
+    if ( wTm != 0 ) {
+u.port('output', 'rb_id_retire_tm', wTm);
+    }
+} 
+u.port('output', 'rb_id_retire', nRbs);
+u.port('output', 'rb_id_retire_valid', 1);
+} else {
+u.port('output', 'data_beat_out_err_type', 2);
+}
+// ncore3.2 does not use w_user field
+/* istanbul ignore if env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+if (wDataUser != 0) {
+u.port('output', 'data_beat_out_user', wDataUser);
+}
+u.port('output', 'data_beat_out_dbad', nDWsPerBeat);
+u.port('output', 'data_beat_out_valid', 1);
+u.port('output', 'data_beat_out_last',  1);
+u.port('output', 'data_beat_out_dwid', wDwid*nDWsPerBeat);
+u.port('output', 'data_beat_in_ready', 1);
+
+//============================================================================
+// Interfaces
+//============================================================================
+u.interface('alloc_',  'slave',   dataInfoInterface);
+u.interface('lookup_', 'master',  dataInfoInterfaceNorbGen);
+u.interface('',        'slave',   clkInterface);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+\jsbegin
+//============================================================================
+// Wires
+//============================================================================
+\jsend
+
+wire [\=wDepth=\:0]             wr_ptr;
+wire [\=wDepth=\:0]             rd_ptr;
+wire [\=wDepth=\:0]             wr_ptr_next;
+wire [\=wDepth=\:0]             rd_ptr_next;
+wire                            wr_ptr_en;
+wire                            rd_ptr_en;
+wire                            full;
+wire                            empty;
+wire                            bypass;
+wire [\=wDataInfoBundle-1=\:0]  data_info_alloc;
+wire [\=wDataInfoBundle-1=\:0]  data_info_entry;
+
+wire lookup_RBGen;
+\js for ( var i = 0; i < depth; i++ ) {
+wire drb_entry_in_valid\=i=\;
+wire drb_entry_in_ready\=i=\;
+wire drb_entry_out_valid\=i=\;
+wire drb_entry_out_ready\=i=\;
+wire drb_entry_out_last\=i=\;
+wire drb_entry_empty\=i=\;
+wire [\=wDataInfoBundle-1=\:0]      lookup_info_\=i=\;
+
+wire [\=nDWsPerBeat-1=\:0]          drb_entry_out_dbad\=i=\;
+\jsbegin
+    /* istanbul ignore else env ncore_3p0 */
+    if ( wrData != 0 ) {
+\jsend
+wire [\=width/8-1=\:0]              drb_entry_out_be\=i=\;
+wire [\=nRbs-1=\:0]                 drb_entry_out_rb_id_retire\=i=\;
+wire                                drb_entry_out_rb_id_retire_valid\=i=\;
+\jsbegin
+if ( coherent ) {
+\jsend
+
+wire  drb_entry_out_rb_id_retire_RBGen\=i=\;
+
+wire [\=wInitiatorId-1=\:0]         drb_entry_out_rb_id_retire_initiator_id\=i=\;
+            \jsbegin
+            if ( wQos != 0 ) { \jsend
+wire [\=wQos-1=\:0]                 drb_entry_out_rb_id_retire_qos\=i=\;    
+            \jsbegin
+            } \jsend
+            \jsbegin
+            // TraceMe bit always present for ncore3.2
+            /* istanbul ignore else env ncore_3p2,ncore_3p4 ,ncore_3p6, ncore_3p7*/
+            if ( wTm != 0 ) { \jsend
+wire                                drb_entry_out_rb_id_retire_tm\=i=\;    
+            \jsbegin
+            } \jsend
+        \jsbegin
+        } \jsend
+    \jsbegin
+    } else { \jsend
+wire [1:0]                          drb_entry_out_err_type\=i=\;
+    \jsbegin
+    } \jsend
+wire [\=wDwid*nDWsPerBeat-1=\:0]    drb_entry_out_dwid\=i=\;
+wire [\=width-1=\:0]                drb_entry_out_data\=i=\;
+
+\jsbegin
+        // ncore3.2 does not use w_user field
+        /* istanbul ignore if env ncore_3p0,ncore_3p2,ncore_3p4 ,ncore_3p6, ncore_3p7*/
+        if ( wDataUser != 0 ) {
+\jsend
+wire [\=wDataUser-1=\:0]            drb_entry_out_user\=i=\;
+\js     }
+
+\=bundleFunctions.wiresFromInterface('lookup_'+i+'_', dataInfoInterface, [],  u.bundle)=\
+\js }
+\jsbegin
+    /* istanbul ignore else env ncore_3p0 */
+    if ( wrData != 0 ) {
+\jsend
+wire [\=depth-1=\:0] rb_id_retire_valid_vec;
+\js }
+
+\jsbegin
+//================================================================================
+// Data Rotation Buffer Entry Instantiation
+//================================================================================
+\jsend
+
+\jsbegin
+var drbEntryParams = { 
+    clkInterface        : clkInterface,
+    width               : width,
+    wDwid               : wDwid,
+    wIntfSize           : wIntfSize,
+    wTransSize          : wTransSize,
+    dataInfoInterface   : dataInfoInterface,
+    nBeats              : nBeats,
+    wrData              : wrData,
+    wUser               : wDataUser,
+    bypassable          : 0,
+    coherent            : coherent,
+    nRbs                : nRbs
+};
+
+\jsend
+
+\js for ( var i = 0; i < depth; i++ ) {
+
+\jsbegin
+var drbEntryPorts = {  
+    critical_dw         : 'critical_dw',
+    intf_size           : 'intf_size',
+    trans_size          : 'trans_size',
+    empty               : 'drb_entry_empty'+i,
+    data_beat_in        : 'data_beat_in',
+    data_beat_in_valid  : 'drb_entry_in_valid'+i,
+    data_beat_in_ready  : 'drb_entry_in_ready'+i,
+    data_beat_in_last   : 'data_beat_in_last',
+    data_beat_in_dwid   : 'data_beat_in_dwid',
+    data_beat_in_dbad   : 'data_beat_in_dbad',
+ 
+    data_beat_out_ready : 'drb_entry_out_ready'+i,
+    data_beat_out       : 'drb_entry_out_data'+i,
+    data_beat_out_dbad  : 'drb_entry_out_dbad'+i,
+    data_beat_out_valid : 'drb_entry_out_valid'+i,
+    data_beat_out_last  : 'drb_entry_out_last'+i,
+    data_beat_out_dwid  : 'drb_entry_out_dwid'+i
+};
+/* istanbul ignore else env ncore_3p0 */
+if ( wrData != 0 ) {
+    drbEntryPorts['data_beat_in_be'] = 'data_beat_in_be';
+    drbEntryPorts['data_beat_out_be'] = 'drb_entry_out_be'+i;
+    drbEntryPorts['rb_id_retire']     = 'drb_entry_out_rb_id_retire'+i;
+    drbEntryPorts['rb_id_retire_valid'] = 'drb_entry_out_rb_id_retire_valid'+i;
+if ( coherent ) {
+    drbEntryPorts['rb_id_retire_RBGen'] = 'drb_entry_out_rb_id_retire_RBGen'+i;
+    drbEntryPorts['rb_id_retire_initiator_id'] = 'drb_entry_out_rb_id_retire_initiator_id'+i;
+    if ( wQos != 0 ) {
+        drbEntryPorts['rb_id_retire_qos'] = 'drb_entry_out_rb_id_retire_qos'+i;
+    }
+    // TraceMe bit always present for ncore3.2
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+    if ( wTm != 0 ) {
+        drbEntryPorts['rb_id_retire_tm'] = 'drb_entry_out_rb_id_retire_tm'+i;
+    }
+}
+} else {
+    drbEntryPorts['data_beat_in_err_type'] = 'data_beat_in_err_type';
+    drbEntryPorts['data_beat_out_err_type'] = 'drb_entry_out_err_type'+i;
+}
+// ncore3.2 does not use w_user field
+/* istanbul ignore if env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+if ( wDataUser != 0 ) {
+drbEntryPorts['data_beat_in_user']    = 'data_beat_in_user';
+drbEntryPorts['data_beat_out_user']   = 'drb_entry_out_user'+i;
+}
+
+
+var drbEntryInterfaces = [];
+drbEntryInterfaces.push({modulePrefix: '',         localPrefix: '',                 interface: clkInterface       });
+drbEntryInterfaces.push({modulePrefix: 'alloc_',   localPrefix: 'alloc_',           interface: dataInfoInterface  });
+drbEntryInterfaces.push({modulePrefix: 'lookup_',  localPrefix: 'lookup_'+i+'_',    interface: dataInfoInterface  });
+
+
+\jsend
+
+\=obj.lib.instance({
+    instanceName:'drb_entry'+i,
+    moduleName  :'dmi_drb_entry',
+    params      : drbEntryParams,
+    ports       : drbEntryPorts,
+    interfaces  : drbEntryInterfaces,
+})=\
+
+\js }
+
+
+\jsbegin
+//================================================================================
+// Pointer Management
+//================================================================================
+\jsend
+
+\js var wIdx = Math.pow(2,wDepth);
+\js var wIdxW = Math.pow(2,wDepth+1);
+
+wire [\=wIdx-1=\:0]  rd_ptr_idx;
+wire [\=wIdx-1=\:0]  rd_ptr_idx_next;
+
+wire [\=wIdx-1=\:0]  wr_ptr_idx;
+wire [\=wIdx-1=\:0]  wr_ptr_idx_next;
+
+assign wr_ptr_next = wr_ptr + \=wDepth=\'d1;
+assign rd_ptr_next = rd_ptr + \=wDepth=\'d1;
+
+assign wr_ptr_en = ~bypass & data_beat_in_valid & data_beat_in_ready & data_beat_in_last;
+assign rd_ptr_en = ~bypass & data_beat_out_valid & data_beat_out_ready & data_beat_out_last;
+
+assign full = (wr_ptr[\=wDepth=\] != rd_ptr[\=wDepth=\]) && (wr_ptr[\=wDepth-1=\:0] == rd_ptr[\=wDepth-1=\:0]);
+assign empty = drb_entry_empty0 & drb_entry_empty1;
+
+\=obj.lib.dffre(wDepth+1, 'wr_ptr', 'wr_ptr_next', (wDepth+1)+"'b0", 'wr_ptr_en', 'clk', 'reset_n')=\
+\=obj.lib.dffre(wDepth+1, 'rd_ptr', 'rd_ptr_next', (wDepth+1)+"'b0", 'rd_ptr_en', 'clk', 'reset_n')=\
+
+assign rd_ptr_idx_next = (\=wIdx=\'b1) << rd_ptr_next[\=wDepth=\-1:0]; 
+\=obj.lib.dffre(wIdx, 'rd_ptr_idx', 'rd_ptr_idx_next', (wIdx)+"'b1", 'rd_ptr_en', 'clk', 'reset_n')=\
+
+assign wr_ptr_idx_next = (\=wIdx=\'b1) << wr_ptr_next[\=wDepth=\-1:0];
+\=obj.lib.dffre(wIdx, 'wr_ptr_idx', 'wr_ptr_idx_next', (wIdx)+"'b1", 'wr_ptr_en', 'clk', 'reset_n')=\
+
+
+\jsbegin
+//================================================================================
+// Input Demux
+//================================================================================
+\jsend
+\js for ( var i = 0 ; i < depth ; i++ ) {
+assign drb_entry_in_valid\=i=\ = (wr_ptr_idx[\=i=\]) & data_beat_in_valid & ~bypass ;
+\js }
+
+
+\jsbegin
+//================================================================================
+// Output Ready Demux
+//================================================================================
+\jsend
+
+\js for ( var i = 0 ; i < depth ; i++ ) {
+assign drb_entry_out_ready\=i=\ = (rd_ptr_idx[\=i=\]) & data_beat_out_ready;
+\js }
+
+\jsbegin
+//================================================================================
+// Output Mux 
+//================================================================================
+\jsend
+
+\js // TODO: examine this. does not need to connect internal ready.
+assign data_beat_in_ready = bypass ? data_beat_out_ready : !full;
+assign data_beat_out_valid = bypass ? data_beat_in_valid : 
+                             (rd_ptr_idx[0]) & drb_entry_out_valid0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                            |(rd_ptr_idx[\=i=\]) & drb_entry_out_valid\=i=\ 
+\js }
+                            ;
+
+assign data_beat_out = bypass ? data_beat_in :
+                       {\=width=\{(rd_ptr_idx[0])}} & drb_entry_out_data0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                      |{\=width=\{rd_ptr_idx[\=i=\]}} & drb_entry_out_data\=i=\ 
+\js }
+                      ;
+\jsbegin
+    /* istanbul ignore else env ncore_3p0 */
+    if( wrData != 0 ) {
+\jsend
+assign data_beat_out_be = bypass ? data_beat_in_be :
+                          {\=width/8=\{(rd_ptr_idx[0])}} & drb_entry_out_be0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                         |{\=width/8=\{(rd_ptr_idx[\=i=\])}} & drb_entry_out_be\=i=\ 
+\js }
+                         ;
+assign rb_id_retire = {\=nRbs=\{drb_entry_out_rb_id_retire_valid0}} & drb_entry_out_rb_id_retire0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                     |{\=nRbs=\{drb_entry_out_rb_id_retire_valid\=i=\}} & drb_entry_out_rb_id_retire\=i=\ 
+\js }
+                         ;
+\js if ( coherent ) {
+assign rb_id_retire_initiator_id = {\=wInitiatorId=\{drb_entry_out_rb_id_retire_valid0}} & drb_entry_out_rb_id_retire_initiator_id0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                                  |{\=wInitiatorId=\{drb_entry_out_rb_id_retire_valid\=i=\}} & drb_entry_out_rb_id_retire_initiator_id\=i=\ 
+\js }
+                                  ;
+
+\jsbegin
+// TraceMe bit always present for ncore3.2
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+if ( wTm != 0 ) { \jsend
+assign rb_id_retire_tm = {\=wTm=\{drb_entry_out_rb_id_retire_valid0}} & drb_entry_out_rb_id_retire_tm0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                                  |{\=wTm=\{drb_entry_out_rb_id_retire_valid\=i=\}} & drb_entry_out_rb_id_retire_tm\=i=\ 
+\js }
+                                  ;
+\jsbegin
+} \jsend
+\js if ( wQos != 0 ) {
+assign rb_id_retire_qos = {\=wQos=\{drb_entry_out_rb_id_retire_valid0}} & drb_entry_out_rb_id_retire_qos0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                                  |{\=wQos=\{drb_entry_out_rb_id_retire_valid\=i=\}} & drb_entry_out_rb_id_retire_qos\=i=\ 
+\js }
+                                  ;
+\js }
+
+    assign rb_id_retire_RBGen = drb_entry_out_rb_id_retire_valid\=0=\ & drb_entry_out_rb_id_retire_RBGen\=0=\ 
+        \js for ( var i = 1 ; i < depth ; i++ ) {
+                           |drb_entry_out_rb_id_retire_valid\=i=\ & drb_entry_out_rb_id_retire_RBGen\=i=\ 
+        \js }
+                                        ;
+    \js}
+assign rb_id_retire_valid_vec = {drb_entry_out_rb_id_retire_valid0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                                ,drb_entry_out_rb_id_retire_valid\=i=\
+\js }
+                                };
+
+assign rb_id_retire_valid = |rb_id_retire_valid_vec;
+\js }  else {
+assign data_beat_out_err_type = bypass ? data_beat_in_err_type :
+                          {2{(rd_ptr_idx[0])}} & drb_entry_out_err_type0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                         |{2{(rd_ptr_idx[\=i=\])}} & drb_entry_out_err_type\=i=\ 
+\js }
+                         ;
+\js }
+\jsbegin
+    // ncore3.2 does not use w_user field
+    /* istanbul ignore if env ncore_3p0,ncore_3p2,ncore_3p4 ,ncore_3p6, ncore_3p7*/
+    if (wDataUser != 0 ) {
+\jsend
+assign data_beat_out_user = bypass ? data_beat_in_user : 
+                            {\=wDataUser=\{(rd_ptr_idx[0])}} & drb_entry_out_user0
+\js     for ( var i = 1 ; i < depth ; i++ ) {
+                           |{\=wDataUser=\{(rd_ptr_idx[\=i=\])}} & drb_entry_out_user\=i=\ 
+\js     }
+                           ;
+\js }
+
+assign data_beat_out_dbad = bypass ? data_beat_in_dbad :
+                            {\=nDWsPerBeat=\{(rd_ptr_idx[0])}} & drb_entry_out_dbad0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                           |{\=nDWsPerBeat=\{(rd_ptr_idx[\=i=\])}} & drb_entry_out_dbad\=i=\ 
+\js }
+                           ;
+
+assign data_beat_out_dwid = bypass ? data_beat_in_dwid :
+                            {\=wDwid*nDWsPerBeat=\{(rd_ptr_idx[0])}} & drb_entry_out_dwid0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                           |{\=wDwid*nDWsPerBeat=\{(rd_ptr_idx[\=i=\])}} & drb_entry_out_dwid\=i=\ 
+\js }
+                           ;
+
+assign data_beat_out_last = bypass ? data_beat_in_last :
+                            (rd_ptr_idx[0]) & drb_entry_out_last0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                           |(rd_ptr_idx[\=i=\]) & drb_entry_out_last\=i=\ 
+\js }
+                           ;
+
+\jsbegin
+    // ncore3.2 has bypassable=0 for timing
+    /* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (!bypassable) {
+\jsend
+    assign bypass = 1'b0;
+\js } else {
+    assign bypass = empty & (intf_size == \=Math.log2(width/64)=\);
+\js }
+
+assign data_info_alloc = \=bundleFunctions.packetizeBundle('alloc_', dataInfoInterface, [], u.bundle)=\;
+
+\js for ( var i = 0 ; i < depth ; i++ ) {
+assign lookup_info_\=i=\ = \=bundleFunctions.packetizeBundle('lookup_'+i+'_', dataInfoInterface, [], u.bundle)=\;
+\js }
+
+assign data_info_entry = {\=wDataInfoBundle=\{(rd_ptr_idx[0])}} & lookup_info_0
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                        |{\=wDataInfoBundle=\{(rd_ptr_idx[\=i=\])}} & lookup_info_\=i=\
+\js }
+                        ;
+assign \=bundleFunctions.packetizeBundle('lookup_', dataInfoInterface, [], u.bundle)=\ = bypass? data_info_alloc : data_info_entry;
+
+\js if (wrData != 0) {
+    \js if (assertOn) {
+`ifdef OVL_ASSERT_ON
+// coverage off
+// synthesis off
+assert_implication #(0) assert_rb_id_retire_onehot (
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(rb_id_retire_valid),
+        .consequent_expr($onehot(rb_id_retire_valid_vec)));   
+// synthesis on
+// coverage on
+`endif
+\js }
+
+\js }
+endmodule

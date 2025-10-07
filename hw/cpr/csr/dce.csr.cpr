@@ -1,0 +1,4356 @@
+{
+  "name": "dce",
+  "version": "3.0",
+  "csr": {
+    "addressWidth": "12",
+    "width": 32,
+    "spaceBlock": [
+      {
+        "baseAddress": "0x0",
+        "registers": [
+          {
+            "name": "DCEUIDR",
+            "description": "DCEU Identification Register",
+            "csrDescription": "DCEU Identification Register",
+            "addressOffset": "0x0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "RPN",
+                "bitOffset": 0,
+                "bitWidth": "8",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "DCEU Register Page Number (within its NRR)",
+                "reset": "0x0",
+                "resetOverloadFn": "return (Array.isArray(primary.rpn) && primary.rpn.length === 1) ? primary.rpn[0] : primary.rpn"
+              },
+              {
+                "name": "NRRI",
+                "bitOffset": 8,
+                "bitWidth": "4",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Identifier of the Ncore 3 Register Region\nin which this DCEU resides",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.nrri;"
+              },
+              {
+                "name": "NUnitId",
+                "bitOffset": 12,
+                "bitWidth": "12",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Ncore 3 Unit identifier. ",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.nUnitId;"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Value of 1 validates this register. This bit\nis set to 1 if the DCEU is implemented.",
+                "reset": "0x1"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUFUIDR",
+            "description": "DCEU Fabric Unit Identification Register",
+            "csrDescription": "DCEU Fabric Unit Identification Register",
+            "addressOffset": "0x4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "FUnitId",
+                "bitOffset": 0,
+                "bitWidth": "16",
+                "resetOverloadFn": "return primary.fUnitId;",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Fabric Unit Identifier of the unit"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUTCR",
+            "description": "DCEU Transaction Control Register",
+            "csrDescription": "DCEU Transaction Control Register",
+            "addressOffset": "0x40",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EventDisable",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Setting this disables Event handling."
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUTAR",
+            "description": "DCEU Transaction Activity Register",
+            "csrDescription": "DCEU Transaction Activity Register",
+            "addressOffset": "0x44",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "TransActv",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "This bit is set when there is one or more active transactions inside the DCEU."
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUSER0",
+            "description": "DCEU Snoop Enable Register 0",
+            "csrDescription": "DCEU Snoop Enable Register 0",
+            "addressOffset": "0x50",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "SnpsEnb",
+                "bitOffset": 0,
+                "bitWidth": "return ((derived.nAius < 32) ? (derived.nAius - 0) : 32)",
+                "access": "RW",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+				"volatile": true,
+                "description": "Snoop Enable bits for Coherent agents 0..31. If a bit is set for an agent, Coherent-related snoop messages are enabled for that agent; otherwise, disabled.  Coherency for an agent is typically managed through SysCo or SysCo messaging; consequently these bit are typically for debug.  The agent # (i.e. bit) is determined by CAIUIDR.NUnitId value."
+              }
+            ],
+            "condition": "return (derived.nAius > 0)"
+          },
+          {
+            "name": "DCEUSER1",
+            "description": "DCEU Snoop Enable Register 1",
+            "csrDescription": "DCEU Snoop Enable Register 1",
+            "addressOffset": "0x54",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "SnpsEnb",
+                "bitOffset": 0,
+                "bitWidth": "return ((derived.nAius < 64) ? (derived.nAius - 32) : 32)",
+                "access": "RW",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+				"volatile": true,
+                "description": "Snoop Enable bits for Coherent agents 32..63. If a bit is set for an agent, Coherent-related snoop messages are enabled for that agent; otherwise, disabled.  Coherency for an agent is typically managed through SysCo or SysCo messaging; consequently these bit are typically for debug.  The agent # (i.e. bit) is determined by CAIUIDR.NUnitId value."
+              }
+            ],
+            "condition": "return (derived.nAius > 32)"
+          },
+          {
+            "name": "DCEUSER2",
+            "description": "DCEU Snoop Enable Register 2",
+            "csrDescription": "DCEU Snoop Enable Register 2",
+            "addressOffset": "0x58",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "SnpsEnb",
+                "bitOffset": 0,
+                "bitWidth": "return ((derived.nAius < 96) ? (derived.nAius - 64) : 32)",
+                "access": "RW",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+				"volatile": true,
+                "description": "Snoop Enable bits for Coherent agents 64..95. If a bit is set for an agent, Coherent-related snoop messages are enabled for that agent; otherwise, disabled.  Coherency for an agent is typically managed through SysCo or SysCo messaging; consequently these bit are typically for debug.  The agent # (i.e. bit) is determined by CAIUIDR.NUnitId value."
+              }
+            ],
+            "condition": "return (derived.nAius > 64)"
+          },
+          {
+            "name": "DCEUSER3",
+            "description": "DCEU Snoop Enable Register 3",
+            "csrDescription": "DCEU Snoop Enable Register 3",
+            "addressOffset": "0x5C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "SnpsEnb",
+                "bitOffset": 0,
+                "bitWidth": "return ((derived.nAius < 128) ? (derived.nAius - 96) : 32)",
+                "access": "RW",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+				"volatile": true,
+                "description": "Snoop Enable bits for Coherent agents 96..127. If a bit is set for an agent, Coherent-related snoop messages are enabled for that agent; otherwise, disabled.  Coherency for an agent is typically managed through SysCo or SysCo messaging; consequently these bit are typically for debug.  The agent # (i.e. bit) is determined by CAIUIDR.NUnitId value."
+              }
+            ],
+            "condition": "return (derived.nAius > 96)"
+          },
+          {
+            "name": "DCEUSFMCR",
+            "description": "DCEU Snoop Filter Maintenance Control Register",
+            "csrDescription": "DCEU Snoop Filter Maintenance Control Register",
+            "addressOffset": "0x240",
+            "condition": "return (derived.NullFilter ? false : true)",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "InitSnoopFilter",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Toggle the bit to start snoop filter initialization. "
+              }
+            ]
+          },
+          {
+            "name": "DCEUSFMAR",
+            "description": "DCEU Snoop Filter Maintenance Activity Register",
+            "csrDescription": "DCEU Snoop Filter Maintenance Activity Register",
+            "addressOffset": "0x244",
+            "condition": "return (derived.NullFilter ? false : true)",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "MntOpActv",
+                  "description": "This bit is set when any snoop filter maintenance is in progress and is clear otherwise"
+                }
+              ],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMAR"
+            }
+          },
+          {
+            "name": "DCEUCECR",
+            "description": "DCEU Correctable Error Control Register",
+            "csrDescription": "DCEU Correctable Error Control Register",
+            "addressOffset": "0x100",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCECR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUCESR",
+            "description": "DCEU Correctable Error Status Register",
+            "csrDescription": "DCEU Correctable Error Status Register",
+            "addressOffset": "0x104",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Correctable Error Valid bit is set.\n0x00:  Snoop filter SRAM correctable error\nAll other encodings are reserved"
+                },
+                {
+                  "name": "ErrInfo",
+                  "description": "This field indicates additional information about logged error type, if the Correctable Error Valid bit is set.\nIf it is a snoop filter SRAM correctable error then\nbits 1:0  2'b11 represent snoop filter (2'b00, 2'b01 and 2'b10: reserved)\nbits 7:2  Reserved\nbits 15:8 Represents the snoop filter number\n"
+                }
+              ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUCELR0",
+            "description": "DCEU Correctable Error Location Registers 0",
+            "csrDescription": "DCEU Correctable Error Location Registers 0",
+            "addressOffset": "0x108",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUCELR1",
+            "description": "DCEU Correctable Error Location Registers 1",
+            "csrDescription": "DCEU Correctable Error Location Registers 1",
+            "addressOffset": "0x10c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR1"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUCESAR",
+            "description": "DCEU Correctable Error Status Alias Register",
+            "csrDescription": "DCEU Correctable Error Status Alias Register",
+            "addressOffset": "0x110",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESAR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUUEDR",
+            "description": "DCEU Uncorrectable Error Detect Register",
+            "csrDescription": "DCEU Uncorrectable Error Detect Register",
+            "addressOffset": "0x140",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUEDR2noProt"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUUEIR",
+            "description": "DCEU Uncorrectable Error Interrupt Register",
+            "csrDescription": "DCEU Uncorrectable Error Interrupt Register",
+            "addressOffset": "0x144",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUEIR2noProt"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUUESR",
+            "description": "DCEU Uncorrectable Error Status Register",
+            "csrDescription": "DCEU Uncorrectable Error Status Register",
+            "addressOffset": "0x148",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Uncorrectable Error Valid bit is set.\n0x00: Snoop filter SRAM uncorrectable error\n0x08: Transport error \n0x09: Timeout error\nAll other encodings are reserved"
+                },
+                {
+                  "name": "ErrInfo",
+                  "description": "This field indicates additional information about logged error type, if the uncorrectable Error Valid bit is set.\nIf it is a snoop filter SRAM uncorrectable error then\nbits 1:0  2'b11 represent snoop filter (2'b00, 2'b01 and 2'b10: reserved)\nbits 7:2  Reserved\nbits 15:8 Represents the snoop filter number\n\nIf it is a transport error then \nbit  0    1'b0 represents wrong target ID; 1'b1 Reserved \nbits 5:1  Reserved\nbits 15:6 Represents source ID \n\nIf it is a time out error then \nbits 1:0  Reserved\nbit  2    Represents the security bit\nbits 15:3 Reserved \n"
+                }
+              ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUUELR0",
+            "description": "DCEU Uncorrectable Error Location Registers 0",
+            "csrDescription": "DCEU Uncorrectable Error Location Registers 0",
+            "addressOffset": "0x14c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUUELR1",
+            "description": "DCEU Uncorrectable Error Location Registers 1",
+            "csrDescription": "DCEU Uncorrectable Error Location Registers 1",
+            "addressOffset": "0x150",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ErrAddr",
+                "bitOffset": 0,
+                "bitWidth": "20",
+                "access": "RW",
+                "hardware": "WO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This field contains the high-order address bits of the transaction that encountered the error",
+                "scope": "All",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUUESAR",
+            "description": "DCEU Uncorrectable Error Status Alias Register",
+            "csrDescription": "DCEU Uncorrectable Error Status Alias Register",
+            "addressOffset": "0x154",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESAR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUCRTR",
+            "description": "DCEU Correctable Resiliency Threshold Register",
+            "csrDescription": "DCEU Correctable Resiliency Threshold Register",
+            "addressOffset": "0x180",
+            "condition": "return derived.useResiliency",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/errCSR.json#xCRTR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUENGIDR",
+            "description": "DCEU Engineering ID Register ",
+            "csrDescription": "DCEU Engineering ID Register ",
+            "addressOffset": "0xff4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EngVerId",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "The Engineering Version Identifier is a concatenation of two fields: {MPFHash[18:0], CHIP_ID[12:0]}. The CHIP_ID is obtained from a license file and the MPFHash is the last 19 bits obtained from the 128bit MD5 Hash.",
+                "scope": "Engg",
+                "reset": "return derived.engVerId"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUINFOR",
+            "description": "DCEU Information Register ",
+            "csrDescription": "DCEU Information Register ",
+            "addressOffset": "0xffc",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ImplVer",
+                "bitOffset": 0,
+                "bitWidth": 16,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Implementation Version",
+                "scope": "All",
+                "reset": "return derived.implVerId"
+              },
+              {
+                "name": "UT",
+                "bitOffset": 16,
+                "bitWidth": 4,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Unit Type: 0b1000=DCE Unit",
+                "scope": "All",
+                "reset": "0x8"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Implemented",
+                "scope": "All",
+                "reset": "0x1"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUGPRAR",
+            "description": "General Purpose Region Attribute Register",
+            "csrDescription": "General Pusrpose Region Attribute Register",
+            "addressOffset": "0x400",
+            "condition": "return derived.nGPRA",
+            "offsetStep": 16,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xGPRAR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUGPRBLR",
+            "description": "General Purpose Region Base Lower Register",
+            "csrDescription": "General Purpose Region Base Lower Register",
+            "addressOffset": "0x404",
+            "condition": "return derived.nGPRA",
+            "offsetStep": 16,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xGPRBLR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUGPRBHR",
+            "description": "General Purpose Region Base Higher Register",
+            "csrDescription": "General Purpose Region Base Higher Register",
+            "addressOffset": "0x408",
+            "condition": "return derived.nGPRA",
+            "offsetStep": 16,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xGPRBHR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUBRAR",
+            "description": "Boot Region Attribute Register",
+            "csrDescription": "Boot Region Attribute Register",
+            "addressOffset": "0x3a0",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/boot_regionCSR.json#xBRAR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUBRBLR",
+            "description": "Boot Region Base Lower Register",
+            "csrDescription": "Boot Region Base Lower Register",
+            "addressOffset": "0x3a4",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/boot_regionCSR.json#xBRBLR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUBRBHR",
+            "description": "Boot Region Base Higher Register",
+            "csrDescription": "Boot Region Base Higher Register",
+            "addressOffset": "0x3a8",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/boot_regionCSR.json#xBRBHR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUAMIGR",
+            "description": "Active Memory Interleave Group Register",
+            "csrDescription": "Active Memory Interleave Group Register",
+            "addressOffset": "0x3c0",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xAMIGR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUMIFSR",
+            "description": "Memory Interleave Function Select Register",
+            "csrDescription": "Memory Interleave Function Select Register",
+            "addressOffset": "0x3c4",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xMIFSR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUEDR0",
+            "description": "Engineering Debug Register 0",
+            "csrDescription": "Engineering Debug Register 0",
+            "addressOffset": "0xa00",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "CfgCtrl",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg"
+              }
+            ]
+          },
+          {
+            "name": "DCEUCCR",
+            "description": "Credit Control Register",
+            "csrDescription": "Credit Control Register",
+            "addressOffset": "0xc00",
+            "condition": "return derived.nDmis",
+            "offsetStep": 4,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/swCreditMgtCSR.json#DCECCR"
+            }
+          },
+          {
+            "name": "DCEUTOCR",
+            "description": "Timeout Control Register.\nControls timeout for transactions allocated in the ATT",
+            "csrDescription": "Timeout Control Register",
+            "addressOffset": "0x190",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUSEPTOCR",
+            "description": "DCEU System Event Protocol Timeout Control Register.\nControls timeout for receiving responses to system event messages that are issued to the network from this DCE",
+            "csrDescription": "DCEU System Event Protocol Timeout Control Register",
+            "addressOffset": "0x194",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCEUQOSCR",
+            "description": "QoS Control Register ",
+            "csrDescription": "QoS Control Register ",
+            "addressOffset": "0x200",
+            "condition": "return derived.fnEnableQos",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xQOSCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DCECNTCR",
+			"description": "PMON Counter Control Register",
+			"csrDescription": "PMON Counter Control Register",
+            "addressOffset": "0xb00",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 16,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTCR"
+            }
+          },
+          {
+            "name": "DCECNTVR",
+			"description": "PMON Counter Value Register",
+			"csrDescription": "PMON Counter Value Register Register",
+            "addressOffset": "0xb04",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 16,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTVR"
+            }
+          },
+          {
+            "name": "DCECNTSR",
+			"description": "PMON Counter Saturation Register",
+			"csrDescription": "PMON Counter Saturation Register",
+            "addressOffset": "0xb08",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 16,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTSR"
+            }
+          },
+          {
+            "name": "DCEMCNTCR",
+                        "description": "PMON Main Counter Control Register",
+                        "csrDescription": "PMON Main Counter Control Register",
+            "addressOffset": "0xc80",
+            "condition": "return derived.nPerfCounters ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xMCNTCR"
+            }
+          },
+          {
+            "name": "DCEUSBSIR",
+            "description": "DCEU Skid Buffer Size Info Register ",
+            "csrDescription": "DCEU Skid Buffer Size Info Register ",
+            "addressOffset": "0xff0",
+            "offsetStep": 0,
+            "fields": [
+                   {
+                    "name": "SkidBufArb",
+                    "bitOffset": 0,
+                    "bitWidth": "9",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": " return derived.nCMDSkidBufArb",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Depth of skid buffer visible to arbitration. This value determines the size of the arbitration window within which arriving requests are selected based on QoS, priority and arrival time. It is recommended to start with a reasonably value for performance analysis - the area of a skid buffer grows with the square of this number and larger options will also significantly impact timing",
+                    "scope": "All",
+                    "link": ""
+                  },
+                  {
+                    "name": "SkidBufSize",
+                    "bitOffset": 16,
+                    "bitWidth": "10",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": " return derived.nCMDSkidBufSize",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Total depth of skid buffer for CMD commands of DCE. The skid buffer is used to stage transaction requests from initiator agents. The number of required entries may be determined by traffic requirements and analysis using performance modeling. This value sets the total budget of protocol credits available for distribution",
+                    "scope": "All",
+                    "link": ""
+                  },
+                  {
+                    "name": "Valid",
+                    "bitOffset": 31,
+                    "bitWidth": "1",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": "return 0x1",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Valid bit, indicates presence of the register",
+                    "scope": "All",
+                    "link": ""
+                  }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DCEUCAMR0",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 0",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 0",
+            "addressOffset": "0x800",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA0",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 0. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA0",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 0, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA1",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 1) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 1. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA1",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 1) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 1, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 0) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR1",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 1",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 1",
+            "addressOffset": "0x804",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA2",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 2. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA2",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 2, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA3",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 2) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 3. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA3",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 2) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 3, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 2) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR2",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 2",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 2",
+            "addressOffset": "0x808",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA4",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 4. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA4",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 4, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA5",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 4) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 5. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA5",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 4) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 5, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 4) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR3",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 3",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 3",
+            "addressOffset": "0x80C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA6",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 6. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA6",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 6, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA7",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 6) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 7. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA7",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 6) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 7, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 6) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR4",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 4",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 4",
+            "addressOffset": "0x810",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA8",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 8. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA8",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 8, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA9",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 8) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 9. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA9",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 8) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 9, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 8) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR5",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 5",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 5",
+            "addressOffset": "0x814",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA10",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 10. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA10",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 10, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA11",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 10) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 11. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA11",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 10) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 11, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 10) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR6",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 6",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 6",
+            "addressOffset": "0x818",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA12",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 12. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA12",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 12, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA13",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 12) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 13. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA13",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 12) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 13, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 12) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR7",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 7",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 7",
+            "addressOffset": "0x81C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA14",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 14. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA14",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 14, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA15",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 14) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 15. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA15",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 14) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 15, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 14) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR8",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 8",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 8",
+            "addressOffset": "0x820",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA16",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 16. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA16",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 16, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA17",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 16) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 17. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA17",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 16) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 17, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 16) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR9",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 9",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 9",
+            "addressOffset": "0x824",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA18",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 18. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA18",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 18, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA19",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 18) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 19. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA19",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 18) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 19, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 18) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR10",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 10",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 10",
+            "addressOffset": "0x828",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA20",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 20. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA20",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 20, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA21",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 20) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 21. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA21",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 20) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 21, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 20) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR11",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 11",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 11",
+            "addressOffset": "0x82C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA22",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 22. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA22",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 22, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA23",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 22) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 23. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA23",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 22) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 23, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 22) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR12",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 12",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 12",
+            "addressOffset": "0x830",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA24",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 24. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA24",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 24, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA25",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 24) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 25. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA25",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 24) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 25, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 24) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR13",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 13",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 13",
+            "addressOffset": "0x834",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA26",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 26. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA26",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 26, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA27",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 26) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 27. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA27",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 26) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 27, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 26) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR14",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 14",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 14",
+            "addressOffset": "0x838",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA28",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 28. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA28",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 28, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA29",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 28) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 29. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA29",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 28) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 29, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 28) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR15",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 15",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 15",
+            "addressOffset": "0x83C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA30",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 30. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA30",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 30, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA31",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 30) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 31. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA31",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 30) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 31, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 30) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR16",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 16",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 16",
+            "addressOffset": "0x840",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA32",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 32. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA32",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 32, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA33",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 32) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 33. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA33",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 32) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 33, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 32) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR17",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 17",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 17",
+            "addressOffset": "0x844",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA34",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 34. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA34",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 34, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA35",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 34) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 35. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA35",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 34) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 35, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 34) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR18",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 18",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 18",
+            "addressOffset": "0x848",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA36",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 36. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA36",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 36, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA37",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 36) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 37. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA37",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 36) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 37, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 36) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR19",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 19",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 19",
+            "addressOffset": "0x84C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA38",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 38. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA38",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 38, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA39",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 38) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 39. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA39",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 38) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 39, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 38) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR20",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 20",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 20",
+            "addressOffset": "0x850",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA40",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 40. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA40",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 40, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA41",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 40) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 41. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA41",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 40) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 41, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 40) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR21",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 21",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 21",
+            "addressOffset": "0x854",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA42",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 42. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA42",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 42, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA43",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 42) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 43. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA43",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 42) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 43, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 42) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR22",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 22",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 22",
+            "addressOffset": "0x858",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA44",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 44. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA44",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 44, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA45",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 44) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 45. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA45",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 44) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 45, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 44) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR23",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 23",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 23",
+            "addressOffset": "0x85C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA46",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 46. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA46",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 46, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA47",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 46) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 47. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA47",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 46) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 47, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 46) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR24",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 24",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 24",
+            "addressOffset": "0x860",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA48",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 48. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA48",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 48, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA49",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 48) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 49. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA49",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 48) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 49, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 48) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR25",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 25",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 25",
+            "addressOffset": "0x864",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA50",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 50. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA50",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 50, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA51",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 50) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 51. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA51",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 50) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 51, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 50) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR26",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 26",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 26",
+            "addressOffset": "0x868",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA52",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 52. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA52",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 52, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA53",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 52) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 53. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA53",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 52) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 53, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 52) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR27",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 27",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 27",
+            "addressOffset": "0x86C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA54",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 54. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA54",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 54, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA55",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 54) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 55. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA55",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 54) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 55, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 54) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR28",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 28",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 28",
+            "addressOffset": "0x870",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA56",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 56. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA56",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 56, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA57",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 56) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 57. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA57",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 56) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 57, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 56) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR29",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 29",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 29",
+            "addressOffset": "0x874",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA58",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 58. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA58",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 58, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA59",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 58) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 59. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA59",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 58) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 59, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 58) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR30",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 30",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 30",
+            "addressOffset": "0x878",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA60",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 60. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA60",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 60, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA61",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 60) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 61. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA61",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 60) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 61, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 60) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR31",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 31",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 31",
+            "addressOffset": "0x87C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA62",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 62. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA62",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 62, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA63",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 62) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 63. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA63",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 62) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 63, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 62) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR32",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 32",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 32",
+            "addressOffset": "0x880",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA64",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 64. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA64",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 64, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA65",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 64) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 65. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA65",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 64) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 65, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 64) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR33",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 33",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 33",
+            "addressOffset": "0x884",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA66",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 66. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA66",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 66, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA67",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 66) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 67. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA67",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 66) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 67, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 66) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR34",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 34",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 34",
+            "addressOffset": "0x888",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA68",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 68. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA68",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 68, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA69",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 68) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 69. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA69",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 68) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 69, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 68) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR35",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 35",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 35",
+            "addressOffset": "0x88C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA70",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 70. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA70",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 70, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA71",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 70) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 71. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA71",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 70) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 71, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 70) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR36",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 36",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 36",
+            "addressOffset": "0x890",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA72",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 72. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA72",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 72, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA73",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 72) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 73. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA73",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 72) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 73, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 72) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR37",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 37",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 37",
+            "addressOffset": "0x894",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA74",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 74. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA74",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 74, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA75",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 74) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 75. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA75",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 74) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 75, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 74) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR38",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 38",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 38",
+            "addressOffset": "0x898",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA76",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 76. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA76",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 76, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA77",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 76) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 77. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA77",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 76) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 77, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 76) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR39",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 39",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 39",
+            "addressOffset": "0x89C",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA78",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 78. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA78",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 78, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA79",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 78) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 79. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA79",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 78) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 79, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 78) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR40",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 40",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 40",
+            "addressOffset": "0x8A0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA80",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 80. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA80",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 80, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA81",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 80) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 81. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA81",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 80) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 81, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 80) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR41",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 41",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 41",
+            "addressOffset": "0x8A4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA82",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 82. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA82",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 82, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA83",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 82) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 83. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA83",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 82) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 83, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 82) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR42",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 42",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 42",
+            "addressOffset": "0x8A8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA84",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 84. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA84",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 84, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA85",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 84) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 85. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA85",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 84) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 85, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 84) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR43",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 43",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 43",
+            "addressOffset": "0x8AC",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA86",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 86. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA86",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 86, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA87",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 86) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 87. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA87",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 86) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 87, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 86) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR44",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 44",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 44",
+            "addressOffset": "0x8B0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA88",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 88. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA88",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 88, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA89",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 88) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 89. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA89",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 88) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 89, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 88) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR45",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 45",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 45",
+            "addressOffset": "0x8B4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA90",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 90. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA90",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 90, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA91",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 90) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 91. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA91",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 90) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 91, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 90) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR46",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 46",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 46",
+            "addressOffset": "0x8B8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA92",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 92. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA92",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 92, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA93",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 92) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 93. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA93",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 92) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 93, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 92) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR47",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 47",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 47",
+            "addressOffset": "0x8BC",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA94",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 94. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA94",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 94, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA95",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 94) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 95. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA95",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 94) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 95, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 94) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR48",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 48",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 48",
+            "addressOffset": "0x8C0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA96",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 96. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA96",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 96, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA97",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 96) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 97. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA97",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 96) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 97, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 96) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR49",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 49",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 49",
+            "addressOffset": "0x8C4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA98",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 98. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA98",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 98, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA99",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 98) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 99. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA99",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 98) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 99, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 98) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR50",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 50",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 50",
+            "addressOffset": "0x8C8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA100",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 100. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA100",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 100, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA101",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 100) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 101. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA101",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 100) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 101, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 100) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR51",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 51",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 51",
+            "addressOffset": "0x8CC",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA102",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 102. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA102",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 102, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA103",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 102) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 103. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA103",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 102) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 103, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 102) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR52",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 52",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 52",
+            "addressOffset": "0x8D0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA104",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 104. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA104",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 104, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA105",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 104) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 105. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA105",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 104) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 105, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 104) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR53",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 53",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 53",
+            "addressOffset": "0x8D4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA106",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 106. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA106",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 106, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA107",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 106) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 107. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA107",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 106) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 107, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 106) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR54",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 54",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 54",
+            "addressOffset": "0x8D8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA108",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 108. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA108",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 108, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA109",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 108) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 109. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA109",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 108) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 109, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 108) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR55",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 55",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 55",
+            "addressOffset": "0x8DC",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA110",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 110. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA110",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 110, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA111",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 110) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 111. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA111",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 110) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 111, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 110) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR56",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 56",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 56",
+            "addressOffset": "0x8E0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA112",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 112. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA112",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 112, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA113",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 112) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 113. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA113",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 112) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 113, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 112) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR57",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 57",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 57",
+            "addressOffset": "0x8E4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA114",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 114. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA114",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 114, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA115",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 114) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 115. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA115",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 114) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 115, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 114) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR58",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 58",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 58",
+            "addressOffset": "0x8E8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA116",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 116. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA116",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 116, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA117",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 116) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 117. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA117",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 116) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 117, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 116) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR59",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 59",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 59",
+            "addressOffset": "0x8EC",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA118",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 118. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA118",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 118, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA119",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 118) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 119. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA119",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 118) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 119, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 118) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR60",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 60",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 60",
+            "addressOffset": "0x8F0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA120",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 120. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA120",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 120, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA121",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 120) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 121. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA121",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 120) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 121, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 120) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR61",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 61",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 61",
+            "addressOffset": "0x8F4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA122",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 122. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA122",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 122, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA123",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 122) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 123. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA123",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 122) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 123, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 122) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR62",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 62",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 62",
+            "addressOffset": "0x8F8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA124",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 124. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA124",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 124, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA125",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 124) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 125. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA125",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 124) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 125, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 124) ? true : false)"
+          },
+          {
+            "name": "DCEUCAMR63",
+            "description": "DCEU CachingAgentId to AIU Mapping Register 63",
+            "csrDescription": "DCEU CachingAgentId to AIU Mapping Register 63",
+            "addressOffset": "0x8FC",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "GlobalIdCA126",
+                "bitOffset": 0,
+                "bitWidth": 10,
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 126. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA126",
+                "bitOffset": 10,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 126, otherwise it's invalid.",
+                "reset": "0x0"
+              },
+              {
+                "name": "GlobalIdCA127",
+                "bitOffset": 16,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 126) ? 10 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Global ID of an AIU for Caching Agent 127. GlobalID = {2-bit ChipletId, 8-bit FUnitId}."
+              },
+              {
+                "name": "ValidCA127",
+                "bitOffset": 26,
+                "bitWidth": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 126) ? 1 : 0)",
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "1 indicates it's a valid mapping for Caching Agent 127, otherwise it's invalid.",
+                "reset": "0x0"
+              }
+            ],
+            "condition": "return ((derived.nChiplets > 1) && (derived.nCachingAgents > 126) ? true : false)"
+          }
+        ]
+      }
+    ]
+  }
+}

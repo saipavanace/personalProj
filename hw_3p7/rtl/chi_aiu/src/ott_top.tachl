@@ -1,0 +1,2652 @@
+//===========================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines single transaction table entry
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions             = m.bundleFunctions;
+
+// Local Functions
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+
+// Returns a subset of the credit control CSR interface that comprises the
+// CCF (Credit control field) interface for a given unit and CCR register
+function genCCFInterface(ccrCsrInterface, register, unit) {
+  var ccfSignalList       = ["CreditLimit_out", "CounterState_out", "CounterState_in", "CounterState_wr"];
+  var regUnitPrefix       = register+"_"+unit.toUpperCase();
+
+  var ccfSignalBundle     = {};
+
+  ccfSignalList.forEach( ccfSignalName => {
+    var ccrPortName       = regUnitPrefix+ccfSignalName;
+    ccfSignalBundle[ccfSignalName] = ccrCsrInterface.signals[ccrPortName];
+  });
+
+  return { name: ccrCsrInterface.name+regUnitPrefix, signals: ccfSignalBundle };
+}
+
+var clkInterface = {
+    clk: 1,
+    reset_n: 1
+}
+var assertOn = u.getParam('assertOn');
+var intf_size_width = u.getParam('intf_size_width');
+var dtw_dwid_width  = u.getParam('dtw_dwid_width');
+var nCHIReqInFlight  = u.getParam('nCHIReqInFlight'); //Number of credits with CHI
+var wCHIReqInFlight =  Math.max(log2ceil(nCHIReqInFlight), 1) ;
+var wCHIReqInFlightplusone = wCHIReqInFlight + 1;
+var nArbFifoEntries = u.getParam('nArbFifoEntries');
+var wArbFifoEntries = Math.max(log2ceil(nArbFifoEntries), 1) ;
+var wArbFifoEntriesplusone = wArbFifoEntries + 1;
+var nOttEntries  = u.getParam('nOttCtrlEntries'); //Number of OTT entries
+var wOttEntries =  Math.max(log2ceil(nOttEntries), 1) ;
+var wOttEntriesplusone = wOttEntries + 1;
+var nOttStashEntries  = u.getParam('nOttStashEntries'); //Number of Stashing entries reserved for Stashing in OTT
+var wOttStashEntries = Math.max(log2ceil(nOttStashEntries), 1);
+var nEntries  =  nOttEntries + nOttStashEntries; //Total number of OTT entries (CHI requests + stashing requests)
+var wEntries =  Math.max(log2ceil(nEntries),1) ;
+var ott_id_width = Math.max(log2ceil(nEntries),1);
+var wMsgId  =  u.getParam('DTWReqInterface').message_id; 
+var wBE     =  u.getParam('DTWReqInterface').be;
+var unit_id_width   = u.getParam('unit_id_width');
+var port_id_width   = u.getParam('port_id_width');
+var initiator_id_width = unit_id_width + port_id_width;
+var cm_type  = u.getParam('cm_type');
+var chi_cmd  = u.getParam('chi_cmd');
+var wAddr =  u.getParam('wAddr');
+var wCacheLineOffset =  u.getParam('wCacheLineOffset');
+var wData =  u.getParam('wData');
+var req_addr_width = u.getParam('CMDReqInterface').addr;
+var lpid_width   = Math.min(u.getParam('ReqInterface').LPID, 5);
+var opcode_width = u.getParam('ReqInterface').Opcode;
+var snpattr_width =  u.getParam('ReqInterface').SnpAttr;
+var wReqTxnID     =  u.getParam('ReqInterface').TxnID;
+var rsp_opcode_width =  u.getParam('RspInterface').OpCode;
+var poison_width = u.getParam('DatInterface').Poison;
+var qosInfo  = u.getParam('qosInfo');
+var num_pri_buckets =  qosInfo.qosMap.length;
+var pri_buckets_encoded_width =  Math.max(log2ceil(num_pri_buckets),1);
+var StarvThreshold  =   qosInfo.qosStarvationThreshold;
+var useQos = u.getParam('useQos');
+var useArbPipelined = (nOttEntries >= 64) ? 1 : 0; //(nOttEntries > 64) ? 1 : useQos;
+var tOCntOffset         = 12; // 4K cycles
+var starvCntOffset      = 0;
+var wStarvThreshold = m.ParamDefaultGet(u, 'wStarvThreshold',   'int',    useQos*16);
+var useTimeoutRef   = m.ParamDefaultGet(u, 'useTimeoutRef',     'int',    0);
+var wTimeoutThreshold   = m.ParamDefaultGet(obj.lib, 'wTimeoutThreshold', 'int',    20);
+var wTOCnt              = 31 + tOCntOffset;
+var wStarvCnt           = wStarvThreshold + starvCntOffset;
+var nDCEs               = u.getParam('nDCEs');
+var nDVEs               = u.getParam('nDVEs');
+var nDmis               = u.getParam('nDmis');
+var nDiis               = u.getParam('nDiis');
+var chi_b               = u.getParam('chi_b');
+var chi_e               = u.getParam('chi_e');
+var wFlit_TxnID         = u.getParam('wFlit_TxnID');
+var wRspFlit_FwdState_local = u.getParam('wRspFlit_FwdState_local');
+var wReqFlit_TraceTag_local = u.getParam('wReqFlit_TraceTag_local');
+var wReqFlit_StashNIDValid_local = u.getParam('wReqFlit_StashNIDValid_local');
+var wReqFlit_ReturnNID_local = u.getParam('wReqFlit_ReturnNID_local');
+var wReqFlit_ReturnTxnID_local = u.getParam('wReqFlit_ReturnTxnID_local');
+var wDatFlit_TraceTag_local = u.getParam('wDatFlit_TraceTag_local');
+var wDatFlit_Homenode_ID_local = u.getParam('wDatFlit_Homenode_ID_local');
+var wSnpFlit_FwdNID_local  = u.getParam('wSnpFlit_FwdNID_local');
+var wPriority = u.getParam('DTWReqInterface').priority;
+var wDbad  = u.getParam('DTRReqRxInterface').dbad;
+var interfaces         = u.getParam('interfaces');
+var aiu_interfaces    = u.getParam('chiInterface');
+var enPoison = interfaces.chiInt.params.enPoison;
+var dtw_aux_width = u.getParam('DTWReqInterface').aux;
+var wFlit_Addr    = interfaces.chiInt.params.wAddr;
+var wAddr_diff = wAddr - wFlit_Addr;
+var wCHIReqInFlight =  Math.max(log2ceil(nCHIReqInFlight), 1) ;
+var wCHIReqInFlightplusone = wCHIReqInFlight + 1;
+var age_arb_fifo_depth = Math.min(chi_e ? 64 : 32, nOttEntries); //nCHIReqInFlight;
+
+var reqInterface             = { name: "REQ_", signals: u.getParam('ReqInterface') };
+var dat_flit_interface       = u.getParam('DatInterface');
+var rsp_flit_interface       = u.getParam('RspInterface');
+var ccrCsrInterface          = u.getParam('ccrCsrInterface');
+
+u.interface('',             'slave', clkInterface);
+u.interface('RXDAT_',       'slave', u.getParam('DatInterface'));
+u.interface('RXRSPFLIT_',   'slave', u.getParam('RspInterface'));
+u.interface('RXREQFLIT_',   'slave', u.getParam('ReqInterface'));
+u.interface('STT_RXDATFLIT_',   'slave', u.getParam('DatInterface'),['TgtID','BE','Data','TraceTag', 'DataID', 'CCID', 'Resp', 'RespErr', 'Homenode_ID', 'QoS']);
+u.interface('cmd_rsp_slv_', 'slave', u.getParam('CMDRspInterface'));
+u.interface('dtw_rsp_slv_', 'slave', u.getParam('DTWRspInterface'));
+u.interface('str_req_slv_', 'slave', u.getParam('STRReqInterface'));
+u.interface('dtr_req_slv_', 'slave', u.getParam('DTRReqRxInterface'), ['valid', 'ready']);
+u.interface('cmp_rsp_slv_', 'slave', u.getParam('CMPRspInterface'));
+
+u.interface('TXSNPFLIT_',   'slave'  , u.getParam('CHI_SnpInterface'));
+u.interface('TXDATFLIT_',   'master' , u.getParam('DatInterface'));
+u.interface('TXRSPFLIT_',   'master' , u.getParam('RspInterface'));
+u.interface('cmd_req_mst_', 'master' , u.getParam('CMDReqInterface'));
+u.interface('dtw_req_mst_', 'master' , u.getParam('DTWReqInterface'));
+
+if (chi_e) {
+u.interface('dtwzero_req_mst_', 'master' , u.getParam('DTWReqInterface'));
+}
+
+u.interface('str_rsp_mst_', 'master' , u.getParam('STRRspInterface'));
+u.interface('dtr_rsp_mst_', 'master' , u.getParam('DTRRspTxInterface'));
+u.interface(ccrCsrInterface.name, 'slave' , ccrCsrInterface.signals);
+
+  for (var i = 0; i < nDmis; i++) {
+u.port('input',  'dmi'+i+'_f_unit_id', unit_id_width);
+    }
+    for (var i = 0; i < nDiis; i++) {
+u.port('input',  'dii'+i+'_f_unit_id', unit_id_width);
+    }
+    for (var i = 0; i < nDCEs; i++) {
+u.port('input',  'dce'+i+'_f_unit_id', unit_id_width);
+    }
+u.port('input','dve_f_unit_id',unit_id_width);
+
+u.port('output','rn_rsp_valid',1);
+u.port('input','rn_rsp_ready',1);
+
+u.port('input', 'dtr_req_slv_valid',1);
+u.port('input', 'dtr_req_target_id_mismatch',1);
+u.port('input', 'dtr_req_transport_err',1);
+u.port('output','dtr_req_slv_ready',1);
+
+u.port('input','rx_data_valid',1);
+u.port('input', 'RXDAT_LAST',1);
+u.port('input', 'RXDAT_DWID', dtw_dwid_width);
+u.port('input', 'dtw_data_TxnID', wFlit_TxnID);
+u.port('input', 'stt_chi_rx_dat_flitv_d1',1);
+u.port('input', 'chi_tx_snp_flitv_a1',1);
+
+u.port('input', 'csr_block_dvm_sync', 1);
+
+u.port('input', 'csr_access_nrs_valid', 1); //i.e. CAIUNRSAR_NRSAR_out
+
+u.port('input', 'q_nrs_region_hit',1);
+u.port('input', 'q_gpr_region_hit',1);
+u.port('input', 'q_bra_region_hit',1);
+u.port('input', 'q_csr_access_nrs_error',1);
+u.port('input', 'q_unconnected_dmi_access',1);
+u.port('input', 'q_unconnected_dii_access',1);
+u.port('input', 'q_unconnected_dce_access',1);
+u.port('input', 'q_addr_map_error_raw',1);
+u.port('output','q_addr_map_error',1);
+u.port('output','q_nsx_access_error',1);
+u.port('output','no_credits_access_error',1);
+u.port('output', 'no_credits_access_error_addr', wAddr);
+
+u.port('input','tracetagTrigger', 1); // traceTagTrigger (its valid signal is req_valid) is to go into the CMDreq TM (TraceMe) bit.
+u.port('input','req_valid',1);
+u.port('input','rx_rsp_valid',1);
+
+u.port('input','my_f_unit_id',unit_id_width);
+u.port('input','aiu_dve_f_unit_id',unit_id_width);
+u.port('input','aiu_dmi_f_unit_id',unit_id_width);
+u.port('input','aiu_dii_f_unit_id',unit_id_width);
+u.port('input','map_target_f_unit_id',unit_id_width);
+u.port('input','map_dce_f_unit_id',unit_id_width);
+u.port('input','dce_id', 5);
+u.port('input','dmi_id', 5);
+u.port('input','dii_id', 5);
+u.port('input','dce_id_valid', 1);
+u.port('input','dmi_id_valid', 1);
+u.port('input','dii_id_valid', 1);
+u.port('input','nrs_selfidr_hit',1);
+u.port('input','aiu_id_reg_rd_data',32);
+if (useQos) {
+u.port('input','csr_starv_count_threshold',wStarvThreshold);
+}
+u.port('input',  'csr_timeout_threshold', 31);
+u.port('input',  'csr_timeout_ref_en', 1);
+
+u.port('output', 'txdat_valid',1);
+u.port('input',  'txdat_ready',1);
+
+u.port('output', 'num_free_entries', wOttEntriesplusone);
+u.port('output', 'num_free_entries_arb', wArbFifoEntriesplusone);
+u.port('output', 'stash_entries_full', 1);
+u.port('output', 'ott_initvec_stash', nOttStashEntries);
+u.port('output', 'entry_validvec_stash', nOttStashEntries);
+u.port('output', 'ott_busy', 1);
+u.port('output', 'age_arb_active', 1);
+u.port('output', 'unsupported_dii_cmd', 1);
+u.port('output', 'timeout_error', 1);
+u.port('output', 'timeout_addr', wAddr);
+u.port('output', 'timeout_ns', 1);
+u.port('output', 'timeout_cmd_read', 1);
+u.port('output', 'timeout_cmd_write', 1);
+u.port('output', 'timeout_cmd_dataless', 1);
+u.port('output', 'timeout_cmd_writeevictorevict', 1);
+u.port('output', 'timeout_cmd_dvm', 1);
+u.port('output', 'timeout_cmd_txn_id', wReqTxnID);
+u.port('output', 'rn_rsp_out_write', 1);
+u.port('output', 'dvm_entry_write', 1);
+u.port('output', 'ott_data_ready', 1);
+
+u.port('output', 'ott_dtw_size', 3);
+u.port('output', 'ott_pre_trans_size', 3);
+u.port('input',  'RXDATFLIT_pre_TxnID', wFlit_TxnID);
+
+u.port('output', 'outstanding_coherent_count_zero', 1);
+
+u.port('output', 'pmon_num_active_entries', wOttEntriesplusone);
+u.port('output', 'pmon_starvation_event', 1);
+u.port('output', 'pmon_addr_collision', 1);
+
+u.port('output', 'w_starve', 2);
+
+u.port('input', 'GPRAR_NSX', 2);
+
+u.port('output', 'alloc', nOttEntries);
+u.port('output', 'dealloc', nOttEntries);
+u.port('input', 'hexAiuDceVec', nDCEs);
+u.port('input', 'hexAiuDmiVec', nDmis);
+u.port('input', 'hexAiuDiiVec', nDiis);
+
+u.port('input', 'bist_timeout_trigger', 1);
+
+u.port('input', 'aiu_node_stash_target_init', 1);
+u.port('output', 'sel_initvec_stash', nOttStashEntries);
+u.port('input', 'snp_req_order_fifo__pop_sel_initvec_stash', nOttStashEntries);
+
+var rn_rsp_bus_width = bundleFunctions.getBundleWidth(rsp_flit_interface, ['valid','ready'] , obj.lib.bundle); 
+
+var cmd_out_bus_width = (bundleFunctions.getBundleWidth(u.getParam('ReqInterface'), ['SrcID','TxnID','LikelyShared','AllowRetry','PCrdType','ExCompAck','TraceTag'], obj.lib.bundle) + 1 + 8 + wPriority + 6 + 1 + 1); 
+
+var cmd_req_bus_width = bundleFunctions.getBundleWidth(u.getParam('CMDReqInterface'), ['valid','ready'], obj.lib.bundle) ; 
+
+var dtr_rsp_tx_width = bundleFunctions.getBundleWidth(u.getParam('DTRRspTxInterface'), ['valid','ready','last'], obj.lib.bundle); 
+
+var str_rsp_tx_width = bundleFunctions.getBundleWidth(u.getParam('STRRspInterface'), ['valid','ready','last'], obj.lib.bundle); 
+
+var dtw_req_ott_bundle_width = bundleFunctions.getBundleWidth(u.getParam('DTWReqInterface'), ['valid','ready','last','data','be','aux','dwid','dbad'], obj.lib.bundle) + 2;
+var dtw_data_out_width = dtw_req_ott_bundle_width ;
+
+var rddata_bundle_width = bundleFunctions.getBundleWidth(dat_flit_interface, ['Poison','Data','BE','DataID', 'Homenode_ID'], obj.lib.bundle) + 3 + 1 + 1;
+
+var cmd_data_width = cmd_out_bus_width + unit_id_width;
+
+var num_dw = (wData/64);
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+wire [\=nOttEntries-1=\:0] no_credits_access_error_vec;
+wire [\=nOttEntries-1=\:0] no_credits_access_error_vec_one_hot;
+wire [2:0] DVM_OPCODE_SYNC = 3'b100;
+    \js for (var i = 0; i < nDmis; i++) {
+wire [\=nOttEntries-1=\:0] select_dmi\=i=\;
+    \js }
+    \js for (var i = 0; i < nDiis; i++) {
+wire [\=nOttEntries-1=\:0] select_dii\=i=\;
+    \js }
+    \js for (var i = 0; i < nDCEs; i++) {
+wire [\=nOttEntries-1=\:0] select_dce\=i=\;
+    \js }
+wire [\=nOttEntries-1=\:0] select_dve0;
+
+wire [\=rddata_bundle_width-1=\:0] rd_data_out;
+wire [\=nEntries-1=\:0] dtr_req_slv_r_message_id_onehot;
+wire [\=nOttEntries-1=\:0] error_dtr_sel_entry;
+wire [\=nEntries-1=\:0] sel_rddat_dtr_entry_onehot;
+
+wire [1:0] txdat_data_id;
+wire [1:0] chunk_id;
+wire [1:0] chunk_id_next;
+wire [1:0] chunk_id_beat;
+
+wire self_id_rd_pending;
+
+wire selfid_data_sent;
+wire drop_dtr, drop_dtr_in;
+wire dtr_error_valid;
+wire dtr_error_ready;
+wire send_error_dtr;
+
+wire [2:0] q_dtr_beat_count;
+wire [7:0] num_dtr_data_bytes;
+wire [2:0] num_dtr_beats_int;
+wire [7:0] num_dtr_beats_inta;
+wire [2:0] num_dtr_beats, dtr_error_num_dtr_beats;
+wire [2:0] q_dtr_cmd_size;
+wire [2:0] dtr_cmd_size_mod;
+
+wire stashing_entry;
+
+wire [\=nOttEntries-1=\:0] owo_dependency, dvm_sync_dependency;
+wire [\=nOttEntries-1=\:0] q_cmd_owo_entry, q_cmd_dvm_sync_entry;
+wire [\=nOttEntries-1=\:0] q_cmd_req_all_flag_entry;
+wire [\=nOttEntries-1=\:0] selfid_data_sent_entry;
+wire [\=nOttEntries-1=\:0] q_nrs_selfidr_hit_entry;
+wire [\=nOttEntries-1=\:0] q_illegal_cmd_detected_entry;
+wire [\=initiator_id_width-1=\:0] init_id;
+wire tracetagTrigger_d;
+wire req_valid_d;
+wire illegal_txn;
+wire illegal_cmd_detected;
+wire str_req_error;
+wire [\=opcode_width-1=\:0] rx_req_opcode_d;
+wire [\=opcode_width-1=\:0] rx_req_opcode_in;
+
+wire rx_req_ns_d;
+wire [1:0] q_GPRAR_NSX;
+
+wire [\=wAddr-1=\:0] rx_req_addr_d;
+wire [\=lpid_width-1=\:0] rx_req_lpid_d;
+wire [\=snpattr_width-1=\:0] rx_req_snpattr_d;
+wire [\=snpattr_width-1=\:0] rx_req_snpattr;
+wire [\=unit_id_width-1=\:0] q_map_target_f_unit_id;
+wire [31:0] dce_id_onehot;
+wire [31:0] dmi_id_onehot;
+wire [31:0] dii_id_onehot;
+
+wire owo_fifo_push_valid, owo_fifo_push_valid_org;
+wire owo_fifo_push_ready;
+wire [\=wOttEntries-1=\:0] owo_fifo_push_data;
+wire [\=wOttEntries-1=\:0] owo_fifo_pop_data;
+wire owo_fifo_pop_valid;
+wire owo_fifo_pop_ready;
+
+wire dvm_sync_fifo_push_valid;
+wire dvm_sync_fifo_push_ready;
+wire [\=wOttEntries-1=\:0] dvm_sync_fifo_push_data;
+wire [\=wOttEntries-1=\:0] dvm_sync_fifo_pop_data;
+wire dvm_sync_fifo_pop_valid;
+wire dvm_sync_fifo_pop_ready;
+
+wire cmd_id_fifo_push_valid;
+wire cmd_id_fifo_push_ready;
+wire [\=nOttEntries-1=\:0] cmd_id_fifo_push_data;
+wire [\=nOttEntries-1=\:0] cmd_id_fifo_pop_data;
+wire dtr_error_last;
+wire [\=nEntries-1=\:0] ott_timeout_overflow;
+wire timeout_overflow_event;
+wire timeout_overflow_event_clr;
+
+wire [\=wOttEntries-1=\:0] ott_entry_num_cmdmux;
+wire [\=nOttEntries-1=\:0] ott_entry_num_cmdmux_onehot;
+wire [\=unit_id_width-1=\:0] map_target_f_unit_id_d;
+wire [\=unit_id_width-1=\:0] map_dce_f_unit_id_d;
+
+wire entry_validvec_early_or;
+
+wire [\=wOttEntries-1=\:0] sel_initvec_encode;
+wire [\=nOttEntries-1=\:0] sel_initvec ;
+
+wire stash_valid;
+wire [\=nEntries-1=\:0] initvec_d;
+wire [\=nEntries-1=\:0] initvec;
+
+wire [\=nOttEntries-1=\:0] entry_coherentvec ;
+wire [\=nEntries-1=\:0] entry_validvec , entry_validvec_early;
+wire [\=nOttEntries-1=\:0] entry_validvec_del ;
+wire [\=nOttEntries-1=\:0] entry_validvec_ott ;
+wire [\=nOttEntries-1=\:0] rn_rsp_out_req_vec ;
+wire [\=nOttEntries-1=\:0] rn_rsp_out_req_ack_vec ;
+wire [\=nEntries-1=\:0] dtr_rsp_out_req_vec ;
+wire [\=nEntries-1=\:0] dtr_rsp_out_req_ack_vec ;
+wire [\=nOttEntries-1=\:0] cmd_out_req_vec, fake_cmd_out_req_vec ;
+wire [\=nOttEntries-1=\:0] cmd_out_req_ack_vec;
+wire [\=nOttEntries-1=\:0] str_rsp_out_req_vec ;
+wire [\=nOttEntries-1=\:0] str_rsp_out_req_ack_vec ;
+wire [\=nOttEntries-1=\:0] age_arb_req_vec;
+wire [\=nOttEntries-1=\:0] age_arb_grant_vec ;
+wire age_arb_grant ;
+wire age_arb_grant_ack, fake_cmd_out_ack;
+wire [\=nOttEntries-1=\:0] age_fifo_grant;
+wire [\=nOttEntries-1=\:0] age_fifo_initvec;
+wire [\=age_arb_fifo_depth-1=\:0] age_arb_valid_vec ;
+wire [\=wOttEntries-1=\:0] age_fifo_pop_index ;
+wire [\=wOttEntries-1=\:0] age_fifo_grant_index ;
+
+wire dve_credits_avail ;
+wire [\=u.getParam('nDCEs')-1=\:0] dce_credits_avail ; 
+wire [\=u.getParam('nDmis')-1=\:0] dmi_credits_avail ;
+wire [\=u.getParam('nDiis')-1=\:0] dii_credits_avail ;
+
+wire [\=cmd_data_width-1=\:0] cmd_out_data_with_ottid_pop_data ;
+
+wire [\=cmd_out_bus_width-1=\:0] cmd_out_data ;
+
+wire [\=nOttEntries-1=\:0] q_dce_depnd_valid;
+wire [\=nOttEntries-1=\:0] atomic_coh_in_progress, combined_wr_in_progress, mru_excl_in_progress, mru_excl_in_progress_for_addr_llist;
+wire [7:0] concerto_cmd ;
+wire [7:0] concerto_cmd_in ;
+wire [\=nOttEntries-1=\:0] error_dtr_detected;
+wire [\=nOttEntries-1=\:0] error_dtr_detected_ott;
+wire [\=nOttEntries-1=\:0] error_dtr_detected_done;
+wire dtr_error_flag_d;
+wire dtr_error_flag;
+
+wire [2:0] cmd_size;
+wire [2:0] dtr_cmd_size;
+wire atomic_compare;
+
+\js for (var i = 0; i < nOttEntries; i++ ) {
+wire [\=rddata_bundle_width-1=\:0] rd_data_out\=i=\;
+wire [\=dtw_data_out_width-1=\:0] dtw_data_out\=i=\;
+wire [\=rn_rsp_bus_width-1=\:0] rn_rsp_out_data\=i=\ ;
+wire [\=cmd_out_bus_width-1=\:0] cmd_out_data\=i=\ ;
+wire [\=wEntries-1=\:0] ott_entry_num\=i=\  = \=wEntries=\'d\=i=\;
+wire [\=unit_id_width-1=\:0] cmd_req_target_f_unit_id\=i=\;
+wire [\=unit_id_width-1=\:0] q_map_target_f_unit_id\=i=\;
+wire [\=cmd_data_width-1=\:0] cmd_out_data_with_ottid\=i=\ = {q_map_target_f_unit_id\=i=\, cmd_out_data\=i=\} ;
+wire [\=str_rsp_tx_width-1=\:0] str_rsp_out_data\=i=\ ;
+wire [\=dtr_rsp_tx_width-1=\:0] dtr_rsp_out_data\=i=\ ;
+wire [2:0] q_cmd_size\=i=\;
+wire [\=wAddr-1=\:0] ott_entry\=i=\_addr;
+wire ott_entry\=i=\_ns;
+wire ott_entry\=i=\_reads;
+wire ott_entry\=i=\_writes;
+wire ott_entry\=i=\_dataless;
+wire ott_entry\=i=\_writeevictorevict;
+wire ott_entry\=i=\_dvm;
+wire [\=wReqTxnID-1=\:0] ott_entry\=i=\_txn_id;
+wire [\=lpid_width-1=\:0] ott_entry\=i=\_lpid;
+wire ott_entry\=i=\_nc_cmd;
+wire ott_entry\=i=\_ott_cmds_to_non_coh_space;
+\js }
+
+\js for (var i = nOttEntries; i < (nOttEntries + nOttStashEntries); i++ ) {
+wire [\=rddata_bundle_width-1=\:0] rd_data_out\=i=\;
+wire [\=wEntries-1=\:0] ott_entry_num\=i=\  = \=wEntries=\'d\=i=\;
+wire [\=dtr_rsp_tx_width-1=\:0] dtr_rsp_out_data\=i=\ ;
+\js }
+
+\js if (wPriority > 0) {
+    \js for (var i = 0; i < nOttEntries; i++ ) {
+wire [\=wPriority-1=\:0] ott_entry\=i=\_prio;
+wire [\=wPriority-1=\:0] ott_entry\=i=\_prio_arb;
+    \js }
+\js }
+
+wire dvm_entry_write_q;
+
+\js if (useQos) {
+wire [\=nOttEntries-1=\:0]  starv_mode_vec;
+\js }
+
+wire dff_enable = 1'b1;
+
+wire [\=wOttEntriesplusone-1=\:0] num_free_entries_q;
+
+wire atomic_in;
+wire atomic;
+wire cmds_to_non_coh_space;
+wire prefetch;
+
+
+\js if (chi_e) {
+
+wire [\=nOttEntries-1=\:0] dtwzero_arb__sink_ready;
+wire [\=nOttEntries-1=\:0] dtwzero_arb__sink_valid;
+wire [\=nOttEntries-1=\:0] dtwzero_arb__sink_last;
+wire [\=nOttEntries-1=\:0] dtwzero_arb__sink_grant;
+wire dtwzero_arb__source_ready;
+wire dtwzero_arb__source_valid;
+wire dtwzero_arb__source_last;
+
+wire dtwzero_str_req_error;
+wire dtwzero_illegal_cmd_detected;
+
+wire [\=dtw_data_out_width-1=\:0] dtwzero_data_out;
+
+\js }
+
+wire [\=nDCEs-1=\:0] hexAiuDceVec_sig = hexAiuDceVec;
+wire [\=nDmis-1=\:0] hexAiuDmiVec_sig = hexAiuDmiVec;
+wire [\=nDiis-1=\:0] hexAiuDiiVec_sig = hexAiuDiiVec;
+
+//============================================================================
+// Register inputs from Address Map
+//============================================================================
+
+assign dce_id_onehot = 32'b1 << dce_id[4:0];
+assign dmi_id_onehot = 32'b1 << dmi_id[4:0];
+assign dii_id_onehot = 32'b1 << dii_id[4:0];
+
+    \js if((nDCEs)>1){
+wire [\=nDCEs-1=\:0] req_in_dce_id = dce_id_onehot[\=nDCEs-1=\:0] & {\=nDCEs=\{dce_id_valid}}; 
+wire [\=nDCEs-1=\:0] req_in_dce_id_d, zero_dce_credit_limit;
+\=u.dffre(nDCEs, 'req_in_dce_id_d', 'req_in_dce_id', nDCEs+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+    \js } else {
+wire req_in_dce_id = dce_id_valid ;
+wire req_in_dce_id_d, zero_dce_credit_limit;
+\=u.dffre(1, 'req_in_dce_id_d', 'req_in_dce_id', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+    \js }
+
+    \js if((nDmis)>1){
+wire [\=nDmis-1=\:0] req_in_dmi_id = dmi_id_onehot[\=nDmis-1=\:0] & {\=nDmis=\{dmi_id_valid}}; 
+wire [\=nDmis-1=\:0] req_in_dmi_id_d, zero_dmi_credit_limit;
+\=u.dffre(nDmis, 'req_in_dmi_id_d', 'req_in_dmi_id', nDmis+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+    \js } else {
+wire req_in_dmi_id = dmi_id_valid;
+wire req_in_dmi_id_d, zero_dmi_credit_limit;
+\=u.dffre(1, 'req_in_dmi_id_d', 'req_in_dmi_id', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+    \js }
+
+    \jsbegin
+    // multiple DIIs covered at fsys
+    /* istanbul ignore else env ncore_3p6, ncore_3p7 */
+    if((nDiis)>1){ \jsend
+wire [\=nDiis-1=\:0] req_in_dii_id = dii_id_onehot[\=nDiis-1=\:0] & {\=nDiis=\{dii_id_valid}}; 
+wire [\=nDiis-1=\:0] req_in_dii_id_d, zero_dii_credit_limit;
+\=u.dffre(nDiis, 'req_in_dii_id_d', 'req_in_dii_id', nDiis+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+    \js } else {
+wire req_in_dii_id = dii_id_valid;
+wire req_in_dii_id_d, zero_dii_credit_limit;
+\=u.dffre(1, 'req_in_dii_id_d', 'req_in_dii_id', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+    \js }
+
+\=u.dffre(unit_id_width, 'map_target_f_unit_id_d', 'map_target_f_unit_id', unit_id_width+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(unit_id_width, 'map_dce_f_unit_id_d',    'map_dce_f_unit_id',    unit_id_width+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire dii_id_valid_d;
+\=u.dffre(1, 'dii_id_valid_d', 'dii_id_valid', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign q_nsx_access_error = ~q_nrs_region_hit & q_gpr_region_hit & ~q_GPRAR_NSX[0] ? rx_req_ns_d : 1'b0;
+
+assign q_addr_map_error = q_addr_map_error_raw
+                        | unsupported_dii_cmd
+                        | q_csr_access_nrs_error
+                        | q_unconnected_dmi_access
+                        | q_unconnected_dii_access
+                        | (q_unconnected_dce_access & ~cmds_to_non_coh_space & ~prefetch & ~(atomic & ~rx_req_snpattr_d[0]))
+                        | q_nsx_access_error
+                        ;
+
+//============================================================================
+// Non coherent commands
+//============================================================================
+
+wire nc_cmd_in = (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpPtl=\)
+               | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpFull=\)
+               | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.ReadNoSnp=\)
+\js if (chi_e) {
+               | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpZero=\)
+               | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanSh=\)      
+               | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanInv=\)     
+               | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\)
+\js }
+               ;
+wire nc_cmd;
+
+\=u.dffre(1, 'nc_cmd', 'nc_cmd_in', "1'b0",  'req_valid', 'clk', 'reset_n')=\
+
+wire cmos_cmd_non_coh_in = (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.CleanShared=\)
+                         | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.CleanSharedPersist=\)
+                         | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.CleanInvalid=\)
+                         | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.MakeInvalid=\)
+\js if (chi_e) {
+                         | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.CleanSharedPersistSep=\)
+                         | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanSh=\)      
+                         | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanInv=\)     
+                         | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\)
+\js }
+                         ;
+
+wire cmds_to_non_coh_space_in = (nc_cmd_in | cmos_cmd_non_coh_in) & ~rx_req_snpattr[0];
+
+wire unsupported_dii_cmd_in = dii_id_valid & ~cmds_to_non_coh_space_in & req_valid & (rx_req_opcode_in != \=opcode_width=\'b0) & ~dvm_entry_write;
+
+\=u.dffre(1, 'unsupported_dii_cmd', 'unsupported_dii_cmd_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'cmds_to_non_coh_space', 'cmds_to_non_coh_space_in', "1'b0",  'req_valid', 'clk', 'reset_n')=\
+
+//============================================================================
+// Atomic command
+//============================================================================
+
+wire atomic_read_in   = (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_ADD=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_CLR=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_EOR=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_SET=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_SMAX=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_SMIN=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_UMAX=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicLoad_UMIN=\);
+
+wire atomic_write_in  = (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_ADD=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_CLR=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_EOR=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_SET=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_SMAX=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_SMIN=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_UMAX=\)
+                      | (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicStore_UMIN=\);
+
+wire atomic_swap_in   = (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicSwap=\);
+
+wire atomic_comp_in   = (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.AtomicCompare=\);
+
+assign atomic_in = atomic_read_in | atomic_write_in | atomic_swap_in | atomic_comp_in;
+
+\=u.dffre(1, 'atomic', 'atomic_in', "1'b0",  'req_valid', 'clk', 'reset_n')=\
+
+//============================================================================
+// Prefetch command
+//============================================================================
+
+wire prefetch_in = (rx_req_opcode_in == \=opcode_width=\\=chi_cmd.PrefetchTgt=\) ;
+\=u.dffre(1, 'prefetch', 'prefetch_in', "1'b0",  'req_valid', 'clk', 'reset_n')=\
+
+//============================================================================
+// DVM command
+//============================================================================
+
+assign dvm_entry_write = req_valid & (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.DVMOp=\);
+
+\=u.dffre(1, 'dvm_entry_write_q', 'dvm_entry_write', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+
+//============================================================================
+// one-hot multiplexer select
+//============================================================================
+
+wire [\=nOttEntries-1=\:0] wr_data_muxsel_onehot = (\=nOttEntries=\'b1 << RXDAT_TxnID[\=wOttEntries-1=\:0])
+            & {\=nOttEntries=\{((RXDAT_OpCode == \=u.getParam('DatInterface').OpCode=\\=chi_cmd.CopyBackWrData=\) |
+                                (RXDAT_OpCode == \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NonCopyBackWrData=\) |
+\js if (chi_e) {
+                                (RXDAT_OpCode == \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NCBWrDataCompAck=\) |
+\js }
+                                (RXDAT_OpCode == \=u.getParam('DatInterface').OpCode=\\=chi_cmd.WriteDataCancel=\))}};
+
+wire [\=nOttEntries-1=\:0] wr_data_in_onehot = wr_data_muxsel_onehot & {\=nOttEntries=\{rx_data_valid}};
+
+wire [\=nEntries-1=\:0] rn_rsp_in_onehot = (\=nEntries=\'b1 << RXRSPFLIT_TxnID[\=wEntries-1=\:0]) & {\=nEntries=\{rx_rsp_valid & (RXRSPFLIT_OpCode == \=rsp_opcode_width=\\=chi_cmd.CompAck=\)}};
+
+wire [\=nOttEntries-1=\:0] cmd_rsp_in_onehot = (\=nOttEntries=\'b1 << cmd_rsp_slv_r_message_id[\=wMsgId-1=\:0]) & {\=nOttEntries=\{cmd_rsp_slv_valid & cmd_rsp_slv_ready}};
+
+wire [\=nOttEntries-1=\:0] str_req_in_onehot = (\=nOttEntries=\'b1 << str_req_slv_r_message_id[\=wMsgId-1=\:0]) & {\=nOttEntries=\{str_req_slv_valid & str_req_slv_ready}};
+
+wire [\=nEntries-1=\:0] dtr_req_in_onehot = (\=nEntries=\'b1 << dtr_req_slv_r_message_id[\=wMsgId-1=\:0]) & {\=nEntries=\{dtr_req_slv_valid & dtr_req_slv_ready}};
+
+
+// Since DTW responses can be sent from both OTT & STT, the message id of the DTW requuests are differentiated by setting the MSB bit of snoop DTW to high and OTT DTW to low.
+
+wire [\=nOttEntries-1=\:0] dtw_rsp_in_onehot = (\=nOttEntries=\'b1 << dtw_rsp_slv_r_message_id[\=wMsgId-2=\:0]) & ({\=nOttEntries=\{dtw_rsp_slv_valid & ~dtw_rsp_slv_r_message_id[\=wMsgId-1=\]}}); 
+
+
+// CMP responses for DVM requests
+
+wire [\=nOttEntries-1=\:0] cmp_rsp_in_onehot = (\=nOttEntries=\'b1 << cmp_rsp_slv_r_message_id[\=wMsgId-2=\:0]) & ({\=nOttEntries=\{cmp_rsp_slv_valid & ~cmp_rsp_slv_r_message_id[\=wMsgId-1=\]}});
+
+
+assign cmd_rsp_slv_ready = 1'b1 ; 
+assign dtw_rsp_slv_ready = 1'b1 ;
+assign str_req_slv_ready = 1'b1 ;
+assign cmp_rsp_slv_ready = 1'b1 ;
+
+  \=u.instance({
+    instanceName: 'u_entry_validvec_early_or',
+    moduleName:   'logic_tree',
+    params: {'width' : nEntries,
+             'logic' : '|'},
+    ports: { 'din'  : 'entry_validvec_early',
+             'dout' : 'entry_validvec_early_or' }
+    })=\
+
+assign entry_validvec_ott   = entry_validvec[\=nOttEntries-1=\:0];
+assign entry_validvec_stash = entry_validvec[\=nEntries-1=\:\=nOttEntries=\];
+
+\=u.dffre(1, 'ott_busy', 'entry_validvec_early_or', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign initvec = { (sel_initvec_stash & {\=nOttStashEntries=\{stash_valid}}), (sel_initvec & {\=nOttEntries=\{req_valid}}) };
+
+assign ott_initvec_stash = { (sel_initvec_stash & {\=nOttStashEntries=\{stash_valid}}) };
+
+//============================================================================
+// Credit Counters for DMI, DII, DCE, DVE
+//============================================================================
+
+wire [\=nDmis-1=\:0] dmi_cmd_crd_con;
+wire [\=nDmis-1=\:0] dmi_cmd_crd_rtn;
+wire [\=nDiis-1=\:0] dii_cmd_crd_con;
+wire [\=nDiis-1=\:0] dii_cmd_crd_rtn;
+wire [\=nDCEs-1=\:0] dce_cmd_crd_con;
+wire [\=nDCEs-1=\:0] dce_cmd_crd_rtn;
+wire                 dve_cmd_crd_con;
+wire                 dve_cmd_crd_rtn;
+wire [\=unit_id_width-1=\:0] cmd_rsp_init_f_unit_id;
+wire [\=unit_id_width-1=\:0] out_cmd_req_target_f_unit_id;
+
+wire cmd_credit_consumed = cmd_id_fifo_push_valid & cmd_id_fifo_push_ready;
+
+assign  cmd_rsp_init_f_unit_id   = cmd_rsp_slv_initiator_id[\=initiator_id_width=\-1: \=port_id_width=\]; 
+
+\js for (var i = 0; i < nDmis; i++) {
+     assign dmi_cmd_crd_con[\=i=\] = {|{age_arb_grant_vec & select_dmi\=i=\}} & cmd_credit_consumed;
+     assign dmi_cmd_crd_rtn[\=i=\] = (cmd_rsp_init_f_unit_id   == dmi\=i=\_f_unit_id) & cmd_rsp_slv_valid; 
+\js }
+
+\js for (var i = 0; i < nDiis; i++) {
+     assign dii_cmd_crd_con[\=i=\] = {|{age_arb_grant_vec & select_dii\=i=\}}  & cmd_credit_consumed;
+     assign dii_cmd_crd_rtn[\=i=\] = (cmd_rsp_init_f_unit_id   == dii\=i=\_f_unit_id) & cmd_rsp_slv_valid;
+\js }
+
+\js for (var i = 0; i < nDCEs; i++) {
+     assign dce_cmd_crd_con[\=i=\] = {|{age_arb_grant_vec & select_dce\=i=\}}  & cmd_credit_consumed;
+     assign dce_cmd_crd_rtn[\=i=\] = (cmd_rsp_init_f_unit_id   == dce\=i=\_f_unit_id) & cmd_rsp_slv_valid;
+\js }
+
+     assign dve_cmd_crd_con = {|{age_arb_grant_vec & select_dve0}} & cmd_credit_consumed;
+     assign dve_cmd_crd_rtn = (cmd_rsp_init_f_unit_id   == dve_f_unit_id) & cmd_rsp_slv_valid;
+
+\jsbegin
+var ccrPorts         = m.queryCsrInterfacePorts( ccrCsrInterface, 'slave' ); // Returns an object with methods to compute names, widths of ports in a CSR-Interface
+var units            = [ 'dce', 'dmi', 'dii' ];
+var nUnits           = [ nDCEs, nDmis, nDiis ];
+var connectivity     = [ 'hexAiuDceVec_sig', 'hexAiuDmiVec_sig', 'hexAiuDiiVec_sig' ];
+
+
+  for (var i = 0; i < units.length; i++ ) {
+    for (var k = 0; k < nUnits[i]; k++ ) {
+      var unitCaps     = units[i].toUpperCase();
+      var creditCounterPorts = {
+          inc_count       : units[i]+'_cmd_crd_rtn['+k+']',
+          dec_count       : units[i]+'_cmd_crd_con['+k+']',
+          connected       : connectivity[i]+"["+k+"]",
+          credit_avail    : units[i]+'_credits_avail['+k+']',
+          credit_p1_avail : 'unconnected_p1_avail_'+i+'_'+k
+      }
+      if (useArbPipelined) {
+          creditCounterPorts["toggle_enable"] = 'select_'+units[i]+k+'_or';
+      }
+      // Create a CCF (Credit control field) interface for the credit counter
+      var ccfInterface    = genCCFInterface(ccrCsrInterface, "CCR"+k, units[i]);
+\jsend
+
+      wire select_\=units[i]=\\=k=\_or = {|{select_\=units[i]=\\=k=\}};
+        \js if (nUnits[i] == 1) {
+      assign zero_\=units[i]=\_credit_limit = ~{|{\=ccfInterface.name=\CreditLimit_out}};
+        \js } else {
+      assign zero_\=units[i]=\_credit_limit[\=k=\] = ~{|{\=ccfInterface.name=\CreditLimit_out}};
+        \js }
+
+      wire unconnected_p1_avail_\=i=\_\=k=\;
+      // Credit counter for \=unitCaps=\\=k=\
+      \=obj.lib.instance({
+          instanceName: 'credit_ctrl_'+units[i]+'_'+k,
+          moduleName: 'variable_limit_credit_counter',
+          params: {
+            assertOn: assertOn,
+            useOneCycleLateDecCount: useArbPipelined,
+            clkInterface: {name: "", signals: clkInterface },
+            ccfInterface: {name: "", signals: ccfInterface.signals}
+          },
+          ports: creditCounterPorts,
+          interfaces: [
+	  	    {modulePrefix: '', localPrefix: '', interface: clkInterface },
+	  	    {modulePrefix: '', localPrefix: ccfInterface.name, interface: ccfInterface.signals}
+          ] 
+      })=\
+\jsbegin
+    }
+  }
+\jsend
+
+
+ // Credit counter for DVE (Fixed credit limit counter only)
+ wire select_dve0_or = {|{select_dve0}};
+
+ \=obj.lib.instance({
+        instanceName: 'credit_ctrl_dve',
+        moduleName: 'credit_counter_cmd',
+        params: { nCredits : u.getParam('nDVECredits'), assertOn: assertOn, useArbPipelined : useArbPipelined },
+        ports: { dec_count :  'dve_cmd_crd_con' , inc_count : 'dve_cmd_crd_rtn', credit_avail : 'dve_credits_avail', toggle_enable: 'select_dve0_or'},
+        interfaces: [{modulePrefix: '', localPrefix: '', interface: clkInterface }]
+ })=\
+
+
+// No credits error Mux
+\=obj.lib.instance({
+    instanceName: 'u_find_first_ott_entry_uce',
+    moduleName: 'find_first_one',
+    params: { width : nOttEntries },
+    ports: {
+      invec : "no_credits_access_error_vec",
+      outvec : "no_credits_access_error_vec_one_hot"
+    },
+    portsDelimiter: '\n    '
+})=\
+
+
+\jsbegin
+var noCreditsErrorMux           = {};
+
+for (var i=0; i < nOttEntries; i++) {
+  noCreditsErrorMux['in'+i]       = 'ott_entry'+i+"_addr";
+}
+noCreditsErrorMux['sel']        = 'no_credits_access_error_vec_one_hot';
+noCreditsErrorMux['out']        = 'no_credits_access_error_addr';
+noCreditsErrorMux['sel_valid']  = 'no_credits_access_error'; // This output is an OR of all select bits \jsend
+
+\=u.instance({
+    instanceName: 'u_mux_no_credits_error',
+    moduleName: 'ao_mux',
+    params: {
+              nInputs          : nOttEntries,
+              wMux             : wAddr,
+              addSelectValid   : true
+    },
+    ports: noCreditsErrorMux 
+})=\
+
+
+//============================================================================
+// cmd_out bundle one-hot multiplexing using cmd_id_fifo_pop_data (i.e. ott_entry_num_cmdmux_onehot)
+//============================================================================
+
+assign out_cmd_req_target_f_unit_id = ({\=unit_id_width=\{ott_entry_num_cmdmux_onehot[0]}} & cmd_req_target_f_unit_id0)
+        \js for (var entry = 1 ; entry < nOttEntries; entry++) {
+                                    | ({\=unit_id_width=\{ott_entry_num_cmdmux_onehot[\=entry=\]}} & cmd_req_target_f_unit_id\=entry=\)
+        \js }
+                                    ;
+
+assign cmd_out_data_with_ottid_pop_data = ({\=cmd_data_width=\{ott_entry_num_cmdmux_onehot[0]}} & cmd_out_data_with_ottid0)
+        \js for (var entry = 1 ; entry < nOttEntries; entry++) {
+                                        | ({\=cmd_data_width=\{ott_entry_num_cmdmux_onehot[\=entry=\]}} & cmd_out_data_with_ottid\=entry=\)
+        \js }
+                                        ;
+
+assign {q_map_target_f_unit_id, cmd_out_data} = cmd_out_data_with_ottid_pop_data ;
+
+//============================================================================
+// Mapping QoS to Priority
+//
+//    RXREQFLIT_QoS -> req_pri_mapped -> req_pri_mapped_encoded
+//============================================================================
+
+\jsbegin
+/* istanbul ignore else env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (num_pri_buckets > 0) {
+\jsend
+wire [\=num_pri_buckets-1=\:0] req_pri_mapped;
+\js }
+
+
+\js if (wPriority > 0) {
+wire [\=wPriority-1=\:0] req_pri_mapped_encoded;
+\js } else {
+wire req_pri_mapped_encoded;
+\js }
+
+
+
+
+\js if (wPriority > 0) {
+reg [\=wPriority-1=\:0] req_pri_mapped_encoded_reg;
+    always @* begin
+        case (1'b1)
+\js       for (var entry = 0 ; entry < num_pri_buckets; entry++) {
+             (req_pri_mapped[\=entry=\] ):
+                          req_pri_mapped_encoded_reg =  \=wPriority=\'d\=entry=\;
+\js        }
+               default:
+                          req_pri_mapped_encoded_reg =  \=wPriority=\'d0;
+        endcase
+    end
+assign req_pri_mapped_encoded = req_pri_mapped_encoded_reg;
+\js } else {
+assign req_pri_mapped_encoded = 1'b0;
+\js }
+
+
+\jsbegin
+/* istanbul ignore else env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (num_pri_buckets > 0) {
+\jsend
+\=u.instance({
+    instanceName: 'map_qos_to_pri',
+    moduleName: 'map_qos_to_pri',
+    params: {
+        qosInfo: qosInfo,
+        useQos : useQos,
+        clkInterface: clkInterface
+    },
+    verilogParams: {},
+    ports: {
+      rx_req_qos: 'RXREQFLIT_QoS',
+      req_pri   : 'req_pri_mapped'
+        },
+    interfaces: [
+    {
+        modulePrefix: '',
+        localPrefix:  '',
+        interface: clkInterface
+    }],
+    portsDelimiter: '\n        '
+})=\
+
+\js }
+
+//=============================================================================
+// ott_req_valid
+//=============================================================================
+
+wire stashing_snoop = (TXSNPFLIT_OpCode == \=chi_cmd.SnpUniqueStash=\) | (TXSNPFLIT_OpCode == \=chi_cmd.SnpMakeInvalidStash=\) | (TXSNPFLIT_OpCode == \=chi_cmd.SnpStashUnique=\) | (TXSNPFLIT_OpCode == \=chi_cmd.SnpStashShared=\) ;
+wire stash_valid_org = chi_tx_snp_flitv_a1 & stashing_snoop & {|{snp_req_order_fifo__pop_sel_initvec_stash}}; 
+assign stash_valid = aiu_node_stash_target_init & {|{sel_initvec_stash}}; 
+
+wire ott_req_valid = req_valid | stash_valid_org;
+
+wire [\=nOttStashEntries-1=\:0] SNP_valid_vec = {\=nOttStashEntries=\{chi_tx_snp_flitv_a1 & stashing_snoop}} & snp_req_order_fifo__pop_sel_initvec_stash;
+
+//=============================================================================
+// stash_entries_full i.e. stash entries all in use
+//=============================================================================
+
+assign stash_entries_full = {&{entry_validvec[\=nEntries=\-1:\=nOttEntries=\]}};
+
+//=============================================================================
+// initiator id
+//=============================================================================
+
+assign init_id = ({{\=port_id_width=\{1'b0}}, my_f_unit_id} << \=port_id_width=\);
+
+//=============================================================================
+// OTT CHI TXDAT arbiter for these requests: DTRreq, Error, SelfID
+//=============================================================================
+
+wire [2:0] txdat_arb__sink_ready;
+wire [2:0] txdat_arb__sink_valid;
+wire [2:0] txdat_arb__sink_last;
+wire [2:0] txdat_arb__sink_grant;
+wire txdat_arb__source_ready;
+wire txdat_arb__source_valid;
+wire txdat_arb__source_last;
+
+\jsbegin
+    var txdatArbParams = {
+        num_inputs  : 3
+    };
+    var instance_ports_for_txdat_arb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sink_ready          : 'txdat_arb__sink_ready',
+        sink_valid          : 'txdat_arb__sink_valid',
+        sink_last           : 'txdat_arb__sink_last',
+        sink_grant          : 'txdat_arb__sink_grant',
+        source_ready        : 'txdat_arb__source_ready',
+        source_valid        : 'txdat_arb__source_valid',
+        source_last         : 'txdat_arb__source_last'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'txdat_arb',
+        moduleName: 'rr_arb_comb_mux',
+        params : txdatArbParams,
+        verilogParams: {},
+        ports: instance_ports_for_txdat_arb,
+        portsDelimiter: '\n    '
+    })=\
+
+assign txdat_arb__sink_valid[0] = dtr_req_slv_valid & ~drop_dtr;
+assign txdat_arb__sink_valid[1] = dtr_error_valid;
+assign txdat_arb__sink_valid[2] = self_id_rd_pending;
+
+assign txdat_arb__sink_last[0] = dtr_req_slv_last | drop_dtr_in;
+assign txdat_arb__sink_last[1] = dtr_error_last;
+assign txdat_arb__sink_last[2] = 1'b1;
+
+assign txdat_valid             = txdat_arb__source_valid;
+assign txdat_arb__source_ready = txdat_ready;
+
+assign dtr_req_slv_ready = txdat_arb__sink_ready[0] | drop_dtr | dtr_req_target_id_mismatch | dtr_req_transport_err;
+assign dtr_error_ready   = txdat_arb__sink_ready[1];
+assign selfid_data_sent  = txdat_arb__sink_ready[2] & txdat_arb__sink_valid[2];
+wire [31:0] aiu_id_reg_rd_data_mux = TXDATFLIT_RespErr[1] ? 32'b0 : aiu_id_reg_rd_data;
+assign TXDATFLIT_Data = ({\=wData=\{txdat_arb__sink_grant[0]}} & dtr_req_slv_data) |
+                        ({\=wData=\{txdat_arb__sink_grant[1]}} & \=wData=\'b0) |
+                        ({\=wData=\{txdat_arb__sink_grant[2]}} & {\=wData-32=\'b0, aiu_id_reg_rd_data_mux});
+
+assign TXDATFLIT_BE   = ({\=wBE=\{txdat_arb__sink_grant[0]}} & dtr_req_slv_be) |
+                        ({\=wBE=\{txdat_arb__sink_grant[1]}} & \=wBE=\'b0) |
+                        ({\=wBE=\{txdat_arb__sink_grant[2]}} & {\=wBE=\{~TXDATFLIT_RespErr[1]}});
+
+\js if(enPoison == true) {
+assign TXDATFLIT_Poison = ({\=poison_width=\{txdat_arb__sink_grant[0]}} & dtr_req_slv_dbad) |
+                          ({\=poison_width=\{txdat_arb__sink_grant[1]}} & {\=poison_width=\{1'b1}}) |
+                          ({\=poison_width=\{txdat_arb__sink_grant[2]}} & {\=poison_width=\{TXDATFLIT_RespErr[1]}});
+\js }
+
+assign TXDATFLIT_DataID = ({2{txdat_arb__sink_grant[0]}} & {dtr_req_slv_dwid[2], ((\=wData=\ == 128) ? dtr_req_slv_dwid[1] : 1'b0)}) |
+                          ({2{txdat_arb__sink_grant[1]}} & chunk_id_beat) |
+                          ({2{txdat_arb__sink_grant[2]}} & 2'b0);
+
+//
+//DTR -> CHI TXDAT data beats
+//
+
+\js if (wDatFlit_Homenode_ID_local > 0) {
+assign TXDATFLIT_Homenode_ID = TXDATFLIT_SrcID;
+\js }
+
+assign {atomic_compare, stashing_entry, cmd_size, \=bundleFunctions.packetizeBundle('TXDATFLIT_', dat_flit_interface , ['Poison', 'Data','BE','DataID', 'Homenode_ID'] , obj.lib.bundle )=\} = rd_data_out  ;
+
+assign rd_data_out = ({\=rddata_bundle_width=\{sel_rddat_dtr_entry_onehot[0]}} & rd_data_out0)
+            \js for (var i=1; i < nEntries; i++) {
+                   | ({\=rddata_bundle_width=\{sel_rddat_dtr_entry_onehot[\=i=\]}} & rd_data_out\=i=\)
+            \js }
+                   ;
+
+assign sel_rddat_dtr_entry_onehot = ({\=nEntries=\{txdat_arb__sink_grant[0]}} & dtr_req_slv_r_message_id_onehot)
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (nOttStashEntries > 0) {
+    \jsend
+                                  | ({\=nEntries=\{txdat_arb__sink_grant[1]}} & {{\=nOttStashEntries=\{1'b0}}, error_dtr_sel_entry})
+                                  | ({\=nEntries=\{txdat_arb__sink_grant[2]}} & {{\=nOttStashEntries=\{1'b0}}, q_nrs_selfidr_hit_entry})
+    \js } else {
+                                  | ({\=nEntries=\{txdat_arb__sink_grant[1]}} & error_dtr_sel_entry})
+                                  | ({\=nEntries=\{txdat_arb__sink_grant[2]}} & q_nrs_selfidr_hit_entry)
+    \js }
+                                  ;
+
+assign dtr_req_slv_r_message_id_onehot = \=nEntries=\'d1 << dtr_req_slv_r_message_id[\=wMsgId-1=\:0];
+
+//=============================================================================
+// drop_dtr
+//
+// If DMI/DII sends more beats than required (if DMI/DII width is larger than CHI AIU and read size is smaller than DMI/DII width),
+// CHI AIU is required to drop these extra beats and not send them to the CHI processor. 
+//=============================================================================
+
+wire       dtr_beat_count_en = dtr_req_slv_valid & dtr_req_slv_ready;
+wire [2:0] dtr_beat_count_in = dtr_req_slv_last ? 3'b0 : q_dtr_beat_count + 3'b1;
+
+\=u.dffre(3, 'q_dtr_beat_count', 'dtr_beat_count_in', "3'b0", 'dtr_beat_count_en', 'clk', 'reset_n')=\
+
+assign drop_dtr_in = (dtr_beat_count_in > num_dtr_beats) & dtr_req_slv_valid;
+
+\=u.dffre(1, 'drop_dtr', 'drop_dtr_in', "1'b0", 'dtr_beat_count_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// dtr_error_valid
+// send_error_dtr
+// error_dtr_sel_entry
+// error_dtr_detected_done
+//=============================================================================
+
+assign dtr_error_valid = send_error_dtr;
+
+assign send_error_dtr = |{error_dtr_detected};
+
+     \=u.instance({
+          instanceName: 'u_find_first_error_dtr_detected',
+          moduleName: 'find_first_one',
+          params: { width : nOttEntries } ,
+         verilogParams: {},
+          ports: { invec : "error_dtr_detected_ott" ,
+                   outvec : "error_dtr_sel_entry"
+                 },
+          portsDelimiter: '\n    '
+    })=\
+
+assign error_dtr_detected_done = error_dtr_sel_entry & {\=nOttEntries=\{dtr_error_ready & dtr_error_last}};
+
+
+wire error_dtr_init;
+
+wire error_dtr_detected_hold_set   = error_dtr_init;
+wire error_dtr_detected_hold_reset = dtr_error_valid & dtr_error_ready & dtr_error_last;
+wire error_dtr_detected_hold_en    = error_dtr_detected_hold_set | error_dtr_detected_hold_reset;
+wire [\=nOttEntries-1=\:0] error_dtr_detected_hold;
+wire [\=nOttEntries-1=\:0] error_dtr_detected_hold_in =
+        error_dtr_detected_hold_set   ? error_dtr_detected[\=nOttEntries-1=\:0] :
+        error_dtr_detected_hold_reset ? \=nOttEntries=\'b0 :
+                                        error_dtr_detected_hold;
+
+\=u.dffre(nOttEntries, 'error_dtr_detected_hold', 'error_dtr_detected_hold_in', nOttEntries+"'b0", 'error_dtr_detected_hold_en', 'clk', 'reset_n')=\
+
+assign error_dtr_detected_ott = error_dtr_init ? error_dtr_detected[\=nOttEntries-1=\:0] : error_dtr_detected_hold[\=nOttEntries-1=\:0];
+
+//=============================================================================
+// The DataID sent on CHI data channel is derived from the dwid on the dtr request.
+// For 128 bit interface, the dwid  will be 001_000, 011_010, 101_100, 111_110  to indicate the placement of the 128 bit chunk within a 512 bit cache line.
+// For 256 bit interface, the dwid  will be  011_010_001_000 & 111_110_101_100.
+// DataID sent to CHI processor can be derived by looking at [2:1] of the dwid.
+// See TXDATFLIT_DataID.
+//=============================================================================
+
+wire err_dtr_count_en;
+wire [2:0] err_dtr_count_in;
+wire [2:0] err_dtr_count;
+wire new_error_dtr_d;
+
+assign chunk_id_beat = error_dtr_init | (err_dtr_count == 3'b0) ? txdat_data_id : chunk_id_next;
+
+//Adjust the dataID as per the datawidth
+assign txdat_data_id =  (\=wData=\ == 128) ? (TXDATFLIT_CCID)  : ( (\=wData=\ == 256) ? ({TXDATFLIT_CCID[1],1'b0}) : 2'h0 ); 
+assign chunk_id_next =  (\=wData=\ == 128) ? ( (chunk_id & ~num_dtr_beats[1:0]) | ((chunk_id + 2'h1) & num_dtr_beats[1:0]) ) : ( (\=wData=\ == 256) ? (chunk_id + 2'h2) : 2'h0 ); 
+
+wire chunk_id_en = dtr_error_valid & dtr_error_ready;
+
+\=u.dffre(2, 'chunk_id', 'chunk_id_beat', "2'b0", 'chunk_id_en', 'clk', 'reset_n')=\
+
+//------------------
+// DTR for error case
+//------------------
+assign error_dtr_init = dtr_error_valid & ~dtr_error_flag_d;
+
+assign dtr_error_flag = (error_dtr_init | dtr_error_flag_d) & ~dtr_error_last;
+
+\=u.dffre(1, 'dtr_error_flag_d', 'dtr_error_flag', "1'b0", 'err_dtr_count_en', 'clk', 'reset_n')=\
+
+
+assign dtr_error_last = (err_dtr_count == dtr_error_num_dtr_beats);
+
+assign err_dtr_count_in = dtr_error_last ? 3'b0 : (err_dtr_count + 3'b1);
+
+assign err_dtr_count_en = dtr_error_valid & dtr_error_ready;
+
+\=u.dffre(3, 'err_dtr_count', 'err_dtr_count_in', "3'b0", "err_dtr_count_en", 'clk', 'reset_n')=\
+
+//------------------
+// num_dtr_beats
+//------------------
+//For Atomic compares, the expected DTR size is half of the comand size. (CHI B spec: 2.10.5)
+
+assign dtr_cmd_size = stashing_entry ? 3'b110 : atomic_compare ? (cmd_size - 3'd1) : cmd_size;
+
+\=u.dffre(3, 'q_dtr_cmd_size', 'dtr_cmd_size', "3'b0", 'error_dtr_init', 'clk', 'reset_n')=\
+
+assign dtr_cmd_size_mod = dtr_error_flag_d ? q_dtr_cmd_size : dtr_cmd_size;
+
+assign num_dtr_data_bytes = 8'b1 << dtr_cmd_size;
+assign num_dtr_beats_inta = num_dtr_data_bytes / 8'd\=wBE=\;
+assign num_dtr_beats_int = (num_dtr_beats_inta[2:0] == 3'b0) ? 3'b1 : num_dtr_beats_inta[2:0];
+
+assign num_dtr_beats = (num_dtr_beats_int != 3'b0) ? (num_dtr_beats_int - 3'b1) : 3'b0;
+
+//=============================================================================
+//Self Identification register Read
+// If the address of the incoming non-coherent read command matches the Self Identification register,
+// the contents of the CAIUIDR are returned to the agent.
+//=============================================================================
+
+wire hit_en = req_valid;
+
+wire nrs_selfidr_hit_d;
+
+\=u.dffre(1, 'nrs_selfidr_hit_d', 'nrs_selfidr_hit', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire q_nrs_selfidr_hit;
+
+assign q_nrs_selfidr_hit = |{q_nrs_selfidr_hit_entry};
+
+assign self_id_rd_pending = q_nrs_selfidr_hit;
+
+assign selfid_data_sent_entry = {\=nOttEntries=\{selfid_data_sent}} & q_nrs_selfidr_hit_entry;
+
+//=============================================================================
+// Capture registers on req_valid
+//=============================================================================
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wAddr_diff > 0) {
+\jsend
+wire [\=wAddr-1=\:0] chi_rx_req_addr = {\=wAddr- wFlit_Addr=\'b0, RXREQFLIT_Addr};
+\js } else {
+wire [\=wAddr-1=\:0] chi_rx_req_addr = RXREQFLIT_Addr;
+\js }
+
+\js if(opcode_width == 5) {
+assign rx_req_opcode_in = {1'b0,RXREQFLIT_Opcode};
+\js } else {
+assign rx_req_opcode_in = RXREQFLIT_Opcode;
+\js }
+
+assign rx_req_snpattr = RXREQFLIT_SnpAttr;
+
+\=u.dffre(snpattr_width, 'rx_req_snpattr_d', 'rx_req_snpattr', snpattr_width+"'b0", 'req_valid', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'rx_req_ns_d', 'RXREQFLIT_NS', "1'b0", 'req_valid', 'clk', 'reset_n')=\
+\=u.dffre(2, 'q_GPRAR_NSX', 'GPRAR_NSX',    "2'b0", 'req_valid', 'clk', 'reset_n')=\
+
+\=u.dffre(wAddr, 'rx_req_addr_d', 'chi_rx_req_addr', wAddr+"'b0", 'req_valid', 'clk', 'reset_n')=\
+
+\=u.dffre(lpid_width, 'rx_req_lpid_d', 'RXREQFLIT_LPID['+(lpid_width-1)+':0]', lpid_width+"'b0", 'req_valid', 'clk', 'reset_n')=\
+
+\=u.dffre(opcode_width, 'rx_req_opcode_d', 'rx_req_opcode_in', opcode_width+"'b0", 'req_valid', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'req_valid_d', 'req_valid', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'tracetagTrigger_d', 'tracetagTrigger', "1'b0", "req_valid", 'clk', 'reset_n')=\
+
+//=============================================================================
+// OTT Entries
+// OTT Stash Entries
+//=============================================================================
+
+\jsbegin
+
+var ott_ports_array = [];
+var ott_stash_ports_array = [];
+
+for (var i = 0; i < nOttEntries; i++ ) {
+
+    var ott_ports = {
+        dvm_sync_dependency   : 'dvm_sync_dependency['+i+']',
+        owo_dependency        : 'owo_dependency['+i+']',
+        q_cmd_dvm_sync_entry  : 'q_cmd_dvm_sync_entry['+i+']',
+        q_cmd_owo_entry       : 'q_cmd_owo_entry['+i+']',
+        q_cmd_req_all_flag_entry     : 'q_cmd_req_all_flag_entry['+i+']',
+        q_nrs_selfidr_hit_entry      : 'q_nrs_selfidr_hit_entry['+i+']',
+        q_illegal_cmd_detected_entry : 'q_illegal_cmd_detected_entry['+i+']',
+        RXDAT_LAST            : 'RXDAT_LAST',
+        init                  : 'initvec['+i+"]",
+        init_d                : 'initvec_d['+i+"]",
+        init_d_cmds_to_non_coh_space : 'cmds_to_non_coh_space',
+        tracetagTrigger_d     : 'tracetagTrigger_d',
+        nrs_selfidr_hit       : 'nrs_selfidr_hit',
+        selfid_data_sent      : 'selfid_data_sent_entry['+i+']',
+        hit_en                : 'hit_en',
+        entry_coherent        : 'entry_coherentvec['+i+"]",
+        entry_valid           : 'entry_validvec['+i+"]",
+        entry_valid_del       : 'entry_validvec_del['+i+"]",
+        entry_valid_early     : 'entry_validvec_early['+i+"]",
+        error_dtr_detected   : 'error_dtr_detected['+i+"]",
+        wr_data_sel           : 'wr_data_in_onehot['+i+"]",
+        rn_rsp_sel            : 'rn_rsp_in_onehot['+i+"]",
+        cmd_rsp_sel           : 'cmd_rsp_in_onehot['+i+"]",
+        dtwrsp_sel            : 'dtw_rsp_in_onehot['+i+"]",
+        cmprsp_sel            : 'cmp_rsp_in_onehot['+i+"]",
+        str_req_sel 	      : 'str_req_in_onehot['+i+"]",
+        dtr_req_sel           : 'dtr_req_in_onehot['+i+"]",
+        error_dtr_detected_done : 'error_dtr_detected_done['+i+"]",
+        atomic_coh_in_progress: 'atomic_coh_in_progress['+i+']',
+        combined_wr_in_progress: 'combined_wr_in_progress['+i+']',
+        mru_excl_in_progress  : 'mru_excl_in_progress['+i+']',
+        mru_excl_in_progress_for_addr_llist  : 'mru_excl_in_progress_for_addr_llist['+i+']',
+        rd_data_out           : 'rd_data_out'+i ,
+        dtw_data_out          : 'dtw_data_out'+i,
+        q_cmd_size            : 'q_cmd_size'+i,
+        q_cmd_addr            : 'ott_entry'+i+'_addr',
+        q_cmd_ns              : 'ott_entry'+i+'_ns',
+        reads                 : 'ott_entry'+i+'_reads',
+        writes                : 'ott_entry'+i+'_writes',
+        dataless              : 'ott_entry'+i+'_dataless',
+        writeevictorevict     : 'ott_entry'+i+'_writeevictorevict',
+        dvm                   : 'ott_entry'+i+'_dvm',
+        txnID                 : 'ott_entry'+i+'_txn_id',
+        q_cmd_lpid            : 'ott_entry'+i+'_lpid', 
+        nc_cmd                : 'ott_entry'+i+'_nc_cmd', 
+        ott_cmds_to_non_coh_space : 'ott_entry'+i+'_ott_cmds_to_non_coh_space', 
+        rn_rsp_out_req        : 'rn_rsp_out_req_vec['+i+']',
+        dtr_rsp_out_req       : 'dtr_rsp_out_req_vec['+i+']',
+        cmd_out_req           : 'cmd_out_req_vec['+i+']',
+        fake_cmd_out_req      : 'fake_cmd_out_req_vec['+i+']',
+        str_rsp_out_req       : 'str_rsp_out_req_vec['+i+']', 
+        rn_rsp_out_data       : 'rn_rsp_out_data'+i,
+        dtr_rsp_out_data      : 'dtr_rsp_out_data'+i,
+        cmd_out_data          : 'cmd_out_data'+i,
+        ott_entry_num         : 'ott_entry_num'+i,
+        cmd_req_target_f_unit_id: 'cmd_req_target_f_unit_id'+i,
+        q_map_target_f_unit_id: 'q_map_target_f_unit_id'+i,
+        q_addr_map_error      : 'q_addr_map_error',  
+        str_rsp_out_data      : 'str_rsp_out_data'+i      , 
+        rn_rsp_out_ack        : 'rn_rsp_out_req_ack_vec['+i+']',
+        dtr_rsp_out_ack       : 'dtr_rsp_out_req_ack_vec['+i+']',
+        cmd_out_ack           : 'cmd_out_req_ack_vec['+i+"]",
+        str_rsp_out_ack       : 'str_rsp_out_req_ack_vec['+i+']',
+        q_dce_depnd_valid     : 'q_dce_depnd_valid['+i+']',
+        zero_dce_credit_limit   : 'zero_dce_credit_limit',
+        zero_dmi_credit_limit   : 'zero_dmi_credit_limit',
+        zero_dii_credit_limit   : 'zero_dii_credit_limit',
+        no_credits_access_error : 'no_credits_access_error_vec['+i+']',
+        dce_credits_avail     : 'dce_credits_avail',
+        dve_credits_avail     : 'dve_credits_avail',
+        dmi_credits_avail     : 'dmi_credits_avail',
+        dii_credits_avail     : 'dii_credits_avail',
+        req_in_dce_id_d       : 'req_in_dce_id_d' ,      
+        req_in_dmi_id_d       : 'req_in_dmi_id_d' ,      
+        req_in_dii_id_d       : 'req_in_dii_id_d' ,
+        rx_rsp_valid          : 'rx_rsp_valid',
+        concerto_cmd          : 'concerto_cmd',
+        illegal_txn           : 'illegal_txn',
+        init_id               : 'init_id',
+        my_f_unit_id          : 'my_f_unit_id',
+        aiu_dve_f_unit_id     : 'aiu_dve_f_unit_id',
+        map_target_f_unit_id_d  : 'map_target_f_unit_id_d',
+        map_dce_f_unit_id_d     : 'map_dce_f_unit_id_d',
+        req_pri_mapped        : 'req_pri_mapped_encoded',
+        timeout_overflow_event : 'timeout_overflow_event',
+        timeout_overflow_event_clr : 'timeout_overflow_event_clr',
+        timeout_overflow      : 'ott_timeout_overflow['+i+']',
+        dealloc               : 'dealloc['+i+']'
+    }
+    for (var k = 0; k < nDmis; k++) {
+        ott_ports['select_dmi'+k] = 'select_dmi'+k+'['+i+']';
+    }
+    for (var k = 0; k < nDiis; k++) {
+        ott_ports['select_dii'+k] = 'select_dii'+k+'['+i+']';
+    }
+    for (var k = 0; k < nDCEs; k++) {
+        ott_ports['select_dce'+k] = 'select_dce'+k+'['+i+']';
+    }
+    ott_ports['select_dve0'] = 'select_dve0['+i+']';
+
+    if (wPriority > 0) {
+        ott_ports['q_req_pri'] = 'ott_entry'+i+'_prio';
+        ott_ports['entry_req_pri'] = 'ott_entry'+i+'_prio_arb';
+        ott_ports['starv'] = 'starv_mode_vec['+i+']';
+    }
+    if (chi_e) {
+        ott_ports['dtwzero_out_req'] = 'dtwzero_arb__sink_valid['+i+']'; 
+        ott_ports['dtwzero_out_ack'] = 'dtwzero_arb__sink_ready['+i+']';        
+    }
+    ott_ports_array.push(ott_ports);
+}
+
+for (var i = nOttEntries; i < (nOttEntries + nOttStashEntries); i++ ) {
+
+    var ott_stash_ports = {
+        init                  : 'initvec['+i+"]",
+        init_d                : 'initvec_d['+i+"]",
+        SNP_valid             : 'SNP_valid_vec['+(i - nOttEntries)+"]",
+        entry_valid           : 'entry_validvec['+i+"]",
+        entry_valid_early     : 'entry_validvec_early['+i+"]",
+        rn_rsp_sel            : 'rn_rsp_in_onehot['+i+"]",
+        dtr_req_sel           : 'dtr_req_in_onehot['+i+"]",
+        rd_data_out           : 'rd_data_out'+i ,
+        dtr_rsp_out_req       : 'dtr_rsp_out_req_vec['+i+']',
+        dtr_rsp_out_data      : 'dtr_rsp_out_data'+i,
+        ott_entry_num         : 'ott_entry_num'+i,
+        dtr_rsp_out_ack       : 'dtr_rsp_out_req_ack_vec['+i+']',
+        rx_rsp_valid          : 'rx_rsp_valid',
+        stt_chi_rx_dat_flitv_d1   : 'stt_chi_rx_dat_flitv_d1',
+        init_id               : 'init_id',
+        my_f_unit_id          : 'my_f_unit_id',
+        timeout_overflow_event : 'timeout_overflow_event',
+        timeout_overflow_event_clr : 'timeout_overflow_event_clr',
+        timeout_overflow      : 'ott_timeout_overflow['+i+']'
+    }
+    ott_stash_ports_array.push(ott_stash_ports);
+}
+
+\jsend
+
+// OTT Entries
+
+\js for (var i = 0; i < nOttEntries; i++ ) {
+
+        \=u.instance({
+            instanceName: 'entry'+i,
+            moduleName: 'ott_entry',
+            params: { 
+                      assertOn             : assertOn,
+                      interfaces           : interfaces,
+                      ReqInterface         : u.getParam('ReqInterface') ,
+                      CHI_SnpInterface     : u.getParam('CHI_SnpInterface'),
+                      DTRRspTxInterface    : u.getParam('DTRRspTxInterface'),
+                      STRRspInterface      : u.getParam('STRRspInterface'),
+                      DTWReqInterface      : u.getParam('DTWReqInterface') ,
+                      wAddr                : u.getParam('wAddr'),
+                      wData                : u.getParam('wData'),
+                      wOttEntries          : wOttEntries,
+                      wEntries             : wEntries ,
+                      DatInterface         : u.getParam('DatInterface') ,
+                      RspInterface         : u.getParam('RspInterface'),
+                      CMDRspInterface      : u.getParam('CMDRspInterface') ,
+                      DTWRspInterface      : u.getParam('DTWRspInterface'),
+                      STRReqInterface      : u.getParam('STRReqInterface'),
+                      DTRReqRxInterface    : u.getParam('DTRReqRxInterface'),
+                      CMPRspInterface      : u.getParam('CMPRspInterface') ,
+                      nDCEs                : u.getParam('nDCEs'),
+                      nDVEs                : u.getParam('nDVEs'),
+                      nDmis                : u.getParam('nDmis'),
+                      nDiis                : u.getParam('nDiis'),
+                      initiator_id_width   : initiator_id_width,
+                      unit_id_width        : unit_id_width,
+                      port_id_width        : port_id_width,
+                      cm_type              : cm_type,
+                      chi_cmd              : chi_cmd,
+                      chi_b                : chi_b,
+                      chi_e                : chi_e,
+                      qosInfo              : qosInfo,
+                      intf_size_width      : intf_size_width,
+                      wRspFlit_FwdState_local : wRspFlit_FwdState_local,
+                      wDatFlit_TraceTag_local : wDatFlit_TraceTag_local,
+                      wDatFlit_Homenode_ID_local : wDatFlit_Homenode_ID_local,
+                      wSnpFlit_FwdNID_local : wSnpFlit_FwdNID_local,
+                    },
+            verilogParams: {},
+            ports: ott_ports_array[i],
+            interfaces : [
+{ modulePrefix: ''  , localPrefix : '' , interface : clkInterface },
+{ modulePrefix: 'REQ_'  , localPrefix : 'RXREQFLIT_' , interface : u.getParam('ReqInterface')} ,
+{ modulePrefix: 'RXDAT_', localPrefix : 'RXDAT_' , interface : u.getParam('DatInterface'), exclude : ['TgtID','BE','Data', 'Homenode_ID']},
+{ modulePrefix: 'RXRSP_', localPrefix : 'RXRSPFLIT_' , interface : u.getParam('RspInterface'),exclude : ['QoS','TgtID','PCrdType']},
+{ modulePrefix: 'cmd_rsp_slv_', localPrefix : 'cmd_rsp_slv_' , interface : u.getParam('CMDRspInterface'),exclude : ['valid','ready','last','initiator_id','message_id','r_message_id'] },
+{ modulePrefix: 'dtw_rsp_slv_', localPrefix : 'dtw_rsp_slv_' , interface : u.getParam('DTWRspInterface'),exclude : ['valid','ready','last','initiator_id','message_id','r_message_id'] },
+{ modulePrefix: 'cmp_rsp_slv_', localPrefix : 'cmp_rsp_slv_' , interface : u.getParam('CMPRspInterface'),exclude : ['valid','ready','last','initiator_id','message_id','r_message_id'] },
+{ modulePrefix: 'str_req_slv_', localPrefix : 'str_req_slv_' , interface : u.getParam('STRReqInterface'),exclude : ['valid','ready','last' ] },
+{ modulePrefix: 'dtr_req_slv_', localPrefix : 'dtr_req_slv_' , interface : u.getParam('DTRReqRxInterface'),exclude : ['ready','target_id','tr','mpf1','data','be'] }
+],
+            portsDelimiter: '\n    '
+        })=\
+
+\js }
+
+// OTT Stash Entries
+
+\js for (var i = nOttEntries; i < (nOttEntries + nOttStashEntries); i++ ) {
+
+        \=u.instance({
+            instanceName: 'entry'+i,
+            moduleName: 'ott_stash_entry',
+            params: { 
+                      assertOn             : assertOn,
+                      chi_e                : chi_e,
+                      interfaces           : interfaces,
+                      ReqInterface         : u.getParam('ReqInterface') ,
+                      CHI_SnpInterface     : u.getParam('CHI_SnpInterface'),
+                      DTRRspTxInterface    : u.getParam('DTRRspTxInterface'),
+                      STRRspInterface      : u.getParam('STRRspInterface'),
+                      DTWReqInterface      : u.getParam('DTWReqInterface') ,
+                      wAddr                : u.getParam('wAddr'),
+                      wData                : u.getParam('wData'),
+                      wEntries             : wEntries ,
+                      DatInterface         : u.getParam('DatInterface') ,
+                      RspInterface         : u.getParam('RspInterface'),
+                      CMDRspInterface      : u.getParam('CMDRspInterface') ,
+                      DTWRspInterface      : u.getParam('DTWRspInterface'),
+                      STRReqInterface      : u.getParam('STRReqInterface'),
+                      DTRReqRxInterface    : u.getParam('DTRReqRxInterface'),
+                      CMPRspInterface      : u.getParam('CMPRspInterface') ,
+                      nDCEs                : u.getParam('nDCEs'),
+                      nDVEs                : u.getParam('nDVEs'),
+                      nDmis                : u.getParam('nDmis'),
+                      nDiis                : u.getParam('nDiis'),
+                      initiator_id_width   : initiator_id_width,
+                      unit_id_width        : unit_id_width,
+                      port_id_width        : port_id_width,
+                      cm_type              : cm_type,
+                      chi_cmd              : chi_cmd,
+                      chi_b                : chi_b,
+                      chi_e                : chi_e,
+                      qosInfo              : qosInfo,
+                      intf_size_width      : intf_size_width,
+                      wRspFlit_FwdState_local : wRspFlit_FwdState_local,
+                      wDatFlit_TraceTag_local : wDatFlit_TraceTag_local,
+                      wDatFlit_Homenode_ID_local : wDatFlit_Homenode_ID_local,
+                      wSnpFlit_FwdNID_local : wSnpFlit_FwdNID_local,
+                    },
+            verilogParams: {},
+            ports: ott_stash_ports_array[i-nOttEntries],
+            interfaces : [
+{ modulePrefix: ''  , localPrefix : '' , interface : clkInterface },
+{ modulePrefix: 'SNP_'  , localPrefix : 'TXSNPFLIT_' , interface : u.getParam('CHI_SnpInterface'),exclude : ['FwdTxnID', 'OpCode', 'NS', 'DoNotGoToSD', 'RetToSrc', 'TraceTag']},
+{ modulePrefix : 'STT_RXDATFLIT_', localPrefix: 'STT_RXDATFLIT_' ,   interface : dat_flit_interface, exclude : ['Data', 'BE', 'TraceTag', 'DataID', 'CCID', 'Resp', 'RespErr', 'Homenode_ID', 'TgtID', 'QoS']},
+{ modulePrefix: 'RXRSP_', localPrefix : 'RXRSPFLIT_' , interface : u.getParam('RspInterface'),exclude : ['QoS','TgtID','PCrdType']},
+{ modulePrefix: 'dtr_req_slv_', localPrefix : 'dtr_req_slv_' , interface : u.getParam('DTRReqRxInterface'),exclude : ['ready','target_id','tr','mpf1','data','be'] }
+],
+            portsDelimiter: '\n    '
+        })=\
+
+\js }
+
+//=============================================================================
+// CHI rn_rsp Arbiter
+//=============================================================================
+
+wire [\=rn_rsp_bus_width-1=\:0] rn_rsp_out_data ;
+wire [\=dtr_rsp_tx_width-1=\:0] dtr_rsp_out_data;
+wire [\=str_rsp_tx_width-1=\:0] str_rsp_out_data;
+
+wire [\=nOttEntries-1=\:0] rn_rsp_arb__sink_ready;
+wire [\=nOttEntries-1=\:0] rn_rsp_arb__sink_valid;
+wire [\=nOttEntries-1=\:0] rn_rsp_arb__sink_last; 
+wire [\=nOttEntries-1=\:0] rn_rsp_arb__sink_grant;
+wire rn_rsp_arb__source_ready;
+wire rn_rsp_arb__source_valid;
+wire rn_rsp_arb__source_last;
+
+\jsbegin
+    var rnRspArbParams = {
+        num_inputs  : nOttEntries
+    };
+    var instance_ports_for_rn_rsp_arb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sink_ready          : 'rn_rsp_arb__sink_ready',
+        sink_valid          : 'rn_rsp_arb__sink_valid',
+        sink_last           : 'rn_rsp_arb__sink_last',
+        sink_grant          : 'rn_rsp_arb__sink_grant',
+        source_ready        : 'rn_rsp_arb__source_ready',
+        source_valid        : 'rn_rsp_arb__source_valid',
+        source_last         : 'rn_rsp_arb__source_last'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'rn_rsp_arb',
+        moduleName: 'rr_arb_comb_mux',
+        params : rnRspArbParams,
+        verilogParams: {},
+        ports: instance_ports_for_rn_rsp_arb,
+        portsDelimiter: '\n    '
+    })=\
+
+assign rn_rsp_arb__sink_valid = rn_rsp_out_req_vec;
+assign rn_rsp_out_req_ack_vec = rn_rsp_arb__sink_ready;
+assign rn_rsp_arb__sink_last  = {\=nOttEntries=\{1'b1}};
+
+assign rn_rsp_valid             = rn_rsp_arb__source_valid;
+assign rn_rsp_arb__source_ready = rn_rsp_ready;
+
+\jsbegin
+var rnRspDataMuxPorts = {};
+for (var i=0; i < nOttEntries; i++) {
+rnRspDataMuxPorts['in'+i]       = 'rn_rsp_out_data'+i;
+}
+rnRspDataMuxPorts['sel']        = 'rn_rsp_arb__sink_grant';
+rnRspDataMuxPorts['out']        = 'rn_rsp_out_data'; \jsend
+
+    \=u.instance({
+        instanceName: 'u_mux_rn_rsp_data',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : nOttEntries,
+                        wMux             : rn_rsp_bus_width
+        },
+        ports: rnRspDataMuxPorts 
+    })=\
+
+
+\jsbegin
+var rnRspWritesMuxPorts = {};
+for (var i=0; i < nOttEntries; i++) {
+rnRspWritesMuxPorts['in'+i]       = 'ott_entry'+i+'_writes';
+}
+rnRspWritesMuxPorts['sel']        = 'rn_rsp_arb__sink_grant';
+rnRspWritesMuxPorts['out']        = 'rn_rsp_out_write'; \jsend
+
+    \=u.instance({
+        instanceName: 'u_mux_rn_rsp_writes',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : nOttEntries,
+                        wMux             : 1
+        },
+        ports: rnRspWritesMuxPorts 
+    })=\
+
+//=============================================================================
+// DTRrsp Arbiter
+//=============================================================================
+
+wire [\=nEntries-1=\:0] dtr_rsp_arb__sink_ready;
+wire [\=nEntries-1=\:0] dtr_rsp_arb__sink_valid;
+wire [\=nEntries-1=\:0] dtr_rsp_arb__sink_last; 
+wire [\=nEntries-1=\:0] dtr_rsp_arb__sink_grant;
+wire dtr_rsp_arb__source_ready;
+wire dtr_rsp_arb__source_valid;
+wire dtr_rsp_arb__source_last;
+
+\jsbegin
+    var dtrRspArbParams = {
+        num_inputs  : nEntries
+    };
+    var instance_ports_for_dtr_rsp_arb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sink_ready          : 'dtr_rsp_arb__sink_ready',
+        sink_valid          : 'dtr_rsp_arb__sink_valid',
+        sink_last           : 'dtr_rsp_arb__sink_last',
+        sink_grant          : 'dtr_rsp_arb__sink_grant',
+        source_ready        : 'dtr_rsp_arb__source_ready',
+        source_valid        : 'dtr_rsp_arb__source_valid',
+        source_last         : 'dtr_rsp_arb__source_last'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'dtr_rsp_arb',
+        moduleName: 'rr_arb_comb_mux',
+        params : dtrRspArbParams,
+        verilogParams: {},
+        ports: instance_ports_for_dtr_rsp_arb,
+        portsDelimiter: '\n    '
+    })=\
+
+assign dtr_rsp_arb__sink_valid = dtr_rsp_out_req_vec;
+assign dtr_rsp_out_req_ack_vec = dtr_rsp_arb__sink_ready;
+assign dtr_rsp_arb__sink_last  = {\=nEntries=\{1'b1}};
+
+assign dtr_rsp_mst_valid         = dtr_rsp_arb__source_valid;
+assign dtr_rsp_arb__source_ready = dtr_rsp_mst_ready;
+
+assign dtr_rsp_out_data = ({\=dtr_rsp_tx_width=\{dtr_rsp_arb__sink_grant[0]}} & dtr_rsp_out_data0)
+            \js for (var i = 1; i < nEntries; i++ ) {
+                       | ({\=dtr_rsp_tx_width=\{dtr_rsp_arb__sink_grant[\=i=\]}} & dtr_rsp_out_data\=i=\)
+            \js }
+                       ;
+
+//=============================================================================
+// STRrsp Arbiter
+//=============================================================================
+
+wire [\=nOttEntries-1=\:0] str_rsp_arb__sink_ready;
+wire [\=nOttEntries-1=\:0] str_rsp_arb__sink_valid;
+wire [\=nOttEntries-1=\:0] str_rsp_arb__sink_last; 
+wire [\=nOttEntries-1=\:0] str_rsp_arb__sink_grant;
+wire str_rsp_arb__source_ready;
+wire str_rsp_arb__source_valid;
+wire str_rsp_arb__source_last;
+
+\jsbegin
+    var strRspArbParams = {
+        num_inputs  : nOttEntries
+    };
+    var instance_ports_for_str_rsp_arb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sink_ready          : 'str_rsp_arb__sink_ready',
+        sink_valid          : 'str_rsp_arb__sink_valid',
+        sink_last           : 'str_rsp_arb__sink_last',
+        sink_grant          : 'str_rsp_arb__sink_grant',
+        source_ready        : 'str_rsp_arb__source_ready',
+        source_valid        : 'str_rsp_arb__source_valid',
+        source_last         : 'str_rsp_arb__source_last'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'str_rsp_arb',
+        moduleName: 'rr_arb_comb_mux',
+        params : strRspArbParams,
+        verilogParams: {},
+        ports: instance_ports_for_str_rsp_arb,
+        portsDelimiter: '\n    '
+    })=\
+
+assign str_rsp_arb__sink_valid = str_rsp_out_req_vec;
+assign str_rsp_out_req_ack_vec = str_rsp_arb__sink_ready;
+assign str_rsp_arb__sink_last  = {\=nOttEntries=\{1'b1}};
+
+assign str_rsp_mst_valid         = str_rsp_arb__source_valid;
+assign str_rsp_arb__source_ready = str_rsp_mst_ready;
+
+assign str_rsp_out_data = ({\=str_rsp_tx_width=\{str_rsp_arb__sink_grant[0]}} & str_rsp_out_data0)
+            \js for (var i = 1; i < nOttEntries; i++ ) {
+                       | ({\=str_rsp_tx_width=\{str_rsp_arb__sink_grant[\=i=\]}} & str_rsp_out_data\=i=\)
+            \js }
+                       ;
+
+//=============================================================================
+// Find first available entry from OTT Entries
+//=============================================================================
+
+   \=u.instance({
+          instanceName: 'init_ott',
+          moduleName: 'find_first_one',
+          params: { width : nOttEntries } ,
+          verilogParams: {},
+          ports: { invec : "~entry_validvec_ott" ,
+                   outvec : "sel_initvec"
+                 },
+          portsDelimiter: '\n    '
+    })=\
+
+//=============================================================================
+// Find first available entry from OTT Stash Entries
+//=============================================================================
+
+   \=u.instance({
+          instanceName: 'init_ott_stash',
+          moduleName: 'find_first_one',
+          params: { width : nOttStashEntries } ,
+          verilogParams: {},
+          ports: { invec : "~entry_validvec_stash" ,
+                   outvec : "sel_initvec_stash"
+                 },
+          portsDelimiter: '\n    '
+    })=\
+
+//=============================================================================
+// Format OTT cmd_out bundle to CMDreq message format
+//=============================================================================
+
+wire [\=cmd_req_bus_width-1=\:0] cmd_req_data ;
+
+   \=u.instance({
+          instanceName: 'command_packet_formatter',
+          moduleName: 'command_packet_formatter',
+          params: {
+                    chi_e              : chi_e,
+                    interfaces         : interfaces,
+                    ReqInterface       : u.getParam('ReqInterface') ,
+                    CMDReqInterface    : u.getParam('CMDReqInterface'),
+                    wAddr              : u.getParam('wAddr'),
+                    wData              : u.getParam('wData'),
+                    wOttEntries        : wOttEntries,
+                    cm_type            : cm_type,
+                    chi_cmd            : chi_cmd,
+                    unit_id_width      : unit_id_width,
+                    port_id_width      : port_id_width,
+                    initiator_id_width : initiator_id_width,
+                    lpid_width         : lpid_width,
+                    qosInfo            : qosInfo,
+                    wReqFlit_TraceTag_local : wReqFlit_TraceTag_local,
+                    wReqFlit_StashNIDValid_local : wReqFlit_StashNIDValid_local,
+                    wReqFlit_ReturnNID_local : wReqFlit_ReturnNID_local,
+                    wReqFlit_ReturnTxnID_local : wReqFlit_ReturnTxnID_local
+
+                  } ,
+          verilogParams: {},
+          ports: { clk                    : 'clk',
+                   reset_n                : 'reset_n',
+                   init_id                : 'init_id',
+                   q_map_target_f_unit_id : 'q_map_target_f_unit_id',
+                   out_cmd_req_target_f_unit_id : 'out_cmd_req_target_f_unit_id',
+                   cmd_out_data           : "cmd_out_data" ,
+                   cmd_req_data           : "cmd_req_data",
+                   ott_entry_num_cmdmux   : "ott_entry_num_cmdmux",
+                 },
+          portsDelimiter: '\n    '
+    })=\
+
+//=============================================================================
+// drop_dtw (dropping CHI write data) for error cases
+//=============================================================================
+
+wire drop_dtw = rx_data_valid & ((RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.CopyBackWrData=\ ) |
+                                 (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NonCopyBackWrData=\) |
+\js if (chi_e) {
+                                 (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NCBWrDataCompAck=\) |
+\js }
+                                 (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.WriteDataCancel=\))
+              & (illegal_cmd_detected | str_req_error);
+
+//=============================================================================
+// dtw_data_out one-hot multiplexing. dtw_data_out is a bundle for dtw.
+//=============================================================================
+
+wire [\=dtw_data_out_width-1=\:0] dtw_data_out;
+
+assign dtw_data_out = ({\=dtw_data_out_width=\{wr_data_muxsel_onehot[0]}} & dtw_data_out0)
+\jsbegin
+for (var i = 1; i < nOttEntries; i++ ) {
+\jsend
+    |  ({\=dtw_data_out_width=\{wr_data_muxsel_onehot[\=i=\]}} & dtw_data_out\=i=\)
+\jsbegin
+}
+\jsend
+;
+
+//=============================================================================
+// Look up OTT entries' cmd_size, using TxnID as OTT index
+//=============================================================================
+
+reg [2:0] pre_trans_size_reg;
+
+  always @* begin
+        case (RXDATFLIT_pre_TxnID)
+            \js for (i=0; i < nOttEntries; i++) {
+             \=i=\:  pre_trans_size_reg = q_cmd_size\=i=\;
+            \js }
+               default:  pre_trans_size_reg = 3'b0;
+        endcase
+    end
+
+assign ott_pre_trans_size = pre_trans_size_reg;
+
+//=============================================================================
+// Look up OTT entries' cmd_size, using TxnID as OTT index
+//=============================================================================
+
+reg  [2:0] dtw_size_reg;
+
+assign ott_dtw_size = dtw_size_reg;
+
+  always @* begin
+        case (dtw_data_TxnID)
+            \js for (i=0; i < nOttEntries; i++) {
+             \=i=\:  dtw_size_reg = q_cmd_size\=i=\;
+            \js }
+               default:  dtw_size_reg = 3'b0;
+        endcase
+    end
+
+//=============================================================================
+// Unpacking for bundles rn_rsp_out, cmd_req, dtr_rsp, str_rsp, dtw
+//=============================================================================
+
+assign  \=bundleFunctions.packetizeBundle('TXRSPFLIT_', rsp_flit_interface ,['valid','ready'],obj.lib.bundle )=\ = rn_rsp_out_data;
+
+assign \=bundleFunctions.packetizeBundle('cmd_req_mst_', u.getParam('CMDReqInterface') ,['valid','ready','last'],obj.lib.bundle )=\ = cmd_req_data ;
+
+assign \=bundleFunctions.packetizeBundle('dtr_rsp_mst_', u.getParam('DTRRspTxInterface') ,['valid','ready','last'],obj.lib.bundle )=\ = dtr_rsp_out_data  ;
+
+assign \=bundleFunctions.packetizeBundle('str_rsp_mst_', u.getParam('STRRspInterface') ,['valid','ready','last'],obj.lib.bundle )=\ = str_rsp_out_data  ;
+
+assign {str_req_error, illegal_cmd_detected, \=bundleFunctions.packetizeBundle('dtw_req_mst_', u.getParam('DTWReqInterface') ,['valid','ready','last','data','be','aux','dwid','dbad'],obj.lib.bundle )=\} = dtw_data_out  ;
+
+\js if (chi_e) {
+
+assign {dtwzero_str_req_error, dtwzero_illegal_cmd_detected, \=bundleFunctions.packetizeBundle('dtwzero_req_mst_', u.getParam('DTWReqInterface') ,['valid','ready','last','data','be','aux','dwid','dbad'],obj.lib.bundle )=\} = dtwzero_data_out  ;
+
+\js }
+
+//=============================================================================
+// dtw_req_mst_valid
+//=============================================================================
+
+assign dtw_req_mst_valid = rx_data_valid & ((RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.CopyBackWrData=\) |
+                                            (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NonCopyBackWrData=\) |
+\js if (chi_e) {
+                                            (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NCBWrDataCompAck=\) |
+\js }
+                                            (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.WriteDataCancel=\))
+                         & ~illegal_cmd_detected & ~str_req_error & ~(dtw_req_mst_cm_type == 8'd0); 
+
+assign dtw_req_mst_data = RXDAT_Data ;
+assign dtw_req_mst_be   = RXDAT_BE ;
+assign dtw_req_mst_dwid = RXDAT_DWID;
+assign dtw_req_mst_last = RXDAT_LAST;
+
+wire   drop_dtw_str_error = rx_data_valid & ((RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.CopyBackWrData=\) |
+                                             (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NonCopyBackWrData=\) |
+\js if (chi_e) {
+                                            (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.NCBWrDataCompAck=\) |
+\js }
+                                             (RXDAT_OpCode== \=u.getParam('DatInterface').OpCode=\\=chi_cmd.WriteDataCancel=\))
+                          & ((~illegal_cmd_detected & str_req_error) | (dtw_req_mst_cm_type == 8'd0) | illegal_cmd_detected);
+
+\js if(enPoison == true){
+assign dtw_req_mst_dbad = {\=num_dw=\{RXDAT_RespErr[1]}} | RXDAT_Poison ;
+\js } else {
+assign dtw_req_mst_dbad = {\=num_dw=\{RXDAT_RespErr[1]}} ;
+\js } 
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (dtw_aux_width > 0) {
+\jsend
+assign dtw_req_mst_aux  = \=dtw_aux_width=\'b0;
+\js }
+
+//=============================================================================
+// dtwzero_data_out for CHI-E WriteNoSnpZero and WriteUniqueZero
+//=============================================================================
+
+\js if (chi_e) {
+
+assign dtwzero_arb__sink_last = {\=nOttEntries=\{1'b1}};
+
+\jsbegin
+    var dtwzeroArbParams = {
+        num_inputs  : nOttEntries
+    };
+    var instance_ports_for_dtwzero_arb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sink_ready          : 'dtwzero_arb__sink_ready',
+        sink_valid          : 'dtwzero_arb__sink_valid',
+        sink_last           : 'dtwzero_arb__sink_last',
+        sink_grant          : 'dtwzero_arb__sink_grant',
+        source_ready        : 'dtwzero_arb__source_ready',
+        source_valid        : 'dtwzero_arb__source_valid',
+        source_last         : 'dtwzero_arb__source_last'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'dtwzero_arb',
+        moduleName: 'rr_arb_comb_mux',
+        params : dtwzeroArbParams,
+        verilogParams: {},
+        ports: instance_ports_for_dtwzero_arb,
+        portsDelimiter: '\n    '
+    })=\
+
+assign dtwzero_data_out = ({\=dtw_data_out_width=\{dtwzero_arb__sink_grant[0]}} & dtw_data_out0)
+\js for (var i = 1; i < nOttEntries; i++ ) {
+    |  ({\=dtw_data_out_width=\{dtwzero_arb__sink_grant[\=i=\]}} & dtw_data_out\=i=\)
+\js }
+;
+
+\js }
+
+//=============================================================================
+// DTWreq for CHI-E WriteNoSnpZero and WriteUniqueZero
+//=============================================================================
+
+\js if (chi_e) {
+
+wire       dtwzero_count_en;
+wire [1:0] dtwzero_count_in;
+wire [1:0] dtwzero_count;
+wire [1:0] dtwzero_num_beats;
+
+    \js if (wData == 128) {
+assign dtwzero_num_beats = 2'h3; // 4 beats for 128-bit data interface
+    \js } else if (wData == 256) { 
+assign dtwzero_num_beats = 2'h1; // 2 beats for 256-bit data interface
+    \js } else {
+assign dtwzero_num_beats = 2'h0; // 1 beat for 512-bit data interface
+    \js }
+
+assign dtwzero_count_in = dtwzero_req_mst_last ? 2'b0 : (dtwzero_count + 2'b1);
+
+assign dtwzero_count_en = dtwzero_req_mst_valid & dtwzero_req_mst_ready;
+
+\=u.dffre(2, 'dtwzero_count', 'dtwzero_count_in', "2'b0", "dtwzero_count_en", 'clk', 'reset_n')=\
+
+
+assign dtwzero_req_mst_valid = dtwzero_arb__source_valid;
+
+assign dtwzero_arb__source_ready = dtwzero_req_mst_ready & dtwzero_req_mst_last;
+
+assign dtwzero_req_mst_last = (dtwzero_count == dtwzero_num_beats);
+
+    \js if (wData == 128) {
+assign dtwzero_req_mst_dwid = ({\=dtw_dwid_width=\{dtwzero_count == 2'b00}} & \=dtw_dwid_width=\'b001_000)
+                            | ({\=dtw_dwid_width=\{dtwzero_count == 2'b01}} & \=dtw_dwid_width=\'b011_010) 
+                            | ({\=dtw_dwid_width=\{dtwzero_count == 2'b10}} & \=dtw_dwid_width=\'b101_100) 
+                            | ({\=dtw_dwid_width=\{dtwzero_count == 2'b11}} & \=dtw_dwid_width=\'b111_110) 
+                            ;
+    \jsbegin
+    /* istanbul ignore next env ncore_3p6, ncore_3p7 */
+    } else if (wData == 256) { \jsend
+assign dtwzero_req_mst_dwid = ({\=dtw_dwid_width=\{dtwzero_count == 2'b00}} & \=dtw_dwid_width=\'b011_010_001_000)
+                            | ({\=dtw_dwid_width=\{dtwzero_count == 2'b01}} & \=dtw_dwid_width=\'b111_110_101_100) 
+                            ;
+    \jsbegin
+    } else { \jsend
+assign dtwzero_req_mst_dwid = \=dtw_dwid_width=\'b111_110_101_100_011_010_001_000;
+    \js }
+
+assign dtwzero_req_mst_be   = {\=u.getParam('DTWReqInterface').be=\{1'b1}};
+
+assign dtwzero_req_mst_data = \=u.getParam('DTWReqInterface').data=\'h0;
+
+assign dtwzero_req_mst_dbad = \=u.getParam('DTWReqInterface').dbad=\'h0;
+
+    \js if (dtw_aux_width > 0) {
+assign dtwzero_req_mst_aux = \=u.getParam('DTWReqInterface').aux=\'h0;
+    \js }
+
+\js }
+
+//=============================================================================
+// Number of free entries
+// OTT is loaded on init while Arbiter FIFO is loaded on init_d (one cycle late)
+//=============================================================================
+
+// Synthesis is expected to optimize this logic
+
+assign num_free_entries =
+           { \=wOttEntries=\'b0 , ~entry_validvec[0] }
+\js for (var i = 1; i < nOttEntries ; i++ ) {
+         + { \=wOttEntries=\'b0 , ~entry_validvec[\=i=\] }
+\js }
+         ;
+
+assign num_free_entries_arb =
+           { \=wArbFifoEntries=\'b0 , ~age_arb_valid_vec[0] }
+\js for (var i = 1; i < age_arb_fifo_depth; i++ ) {
+         + { \=wArbFifoEntries=\'b0 , ~age_arb_valid_vec[\=i=\] }
+\js }
+         - { \=wArbFifoEntries=\'b0, ~{&{age_arb_valid_vec}} }
+         ;
+
+
+\=u.dffre(wOttEntriesplusone, 'num_free_entries_q', 'num_free_entries', wOttEntriesplusone+"'b0",  'dff_enable', 'clk', 'reset_n')=\
+
+assign pmon_num_active_entries = \=wOttEntriesplusone=\'d\=nOttEntries=\ - num_free_entries_q;
+
+//=============================================================================
+// Mapping CHI to Concerto command opcode
+//=============================================================================
+
+ \=obj.lib.instance({
+        instanceName: 'chi_to_concerto_cmd',
+        moduleName: 'chi_to_concerto_cmd',
+        params: {
+                 chi_e           : chi_e,
+                 opcode_width    : opcode_width,
+                 cm_type         : cm_type,
+                 chi_cmd         : chi_cmd },
+        verilogParams: {},
+        ports: {
+                chi_cmd : "rx_req_opcode_in" ,
+                conc_cmd : "concerto_cmd_in" },
+        portsDelimiter: '\n'
+    })=\
+
+wire illegal_txn_in = (concerto_cmd_in == 8'hff) & (rx_req_opcode_in != \=opcode_width=\'b0);
+
+\=u.dffre(1, 'illegal_txn', 'illegal_txn_in', "1'b0",  'req_valid', 'clk', 'reset_n')=\
+
+\=u.dffre(8, 'concerto_cmd', 'concerto_cmd_in', "8'b0",  'req_valid', 'clk', 'reset_n')=\
+
+\jsbegin
+//=============================================================================
+// Command ID Buffer FIFO
+//=============================================================================
+\jsend
+
+wire cmd_id_fifo_pop_valid;
+wire cmd_id_fifo_pop_ready;
+
+\jsbegin
+    var cmd_id_fifo_params = {
+        width       : nOttEntries,
+        depth       : 2,
+        bypass_mode : 0,
+        zerodepth   : useArbPipelined
+    };
+    var instance_ports_for_cmd_id_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'cmd_id_fifo_push_data',
+        push_valid          : 'cmd_id_fifo_push_valid',
+        push_ready          : 'cmd_id_fifo_push_ready',
+        pop_data            : 'cmd_id_fifo_pop_data',
+        pop_valid           : 'cmd_id_fifo_pop_valid',
+        pop_ready           : 'cmd_id_fifo_pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'cmd_id_fifo',
+        moduleName: 'fifo',
+        params : cmd_id_fifo_params,
+        verilogParams: {},
+        ports: instance_ports_for_cmd_id_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+assign cmd_id_fifo_push_data = age_arb_grant_vec[\=nOttEntries-1=\:0];
+
+assign ott_entry_num_cmdmux_onehot = cmd_id_fifo_pop_data;
+
+assign ott_entry_num_cmdmux = ({\=wOttEntries=\{ott_entry_num_cmdmux_onehot[0]}} & ott_entry_num0[\=wOttEntries-1=\:0])
+        \js for (var entry = 1 ; entry < nOttEntries; entry++) {
+                               | ({\=wOttEntries=\{ott_entry_num_cmdmux_onehot[\=entry=\]}} & ott_entry_num\=entry=\[\=wOttEntries-1=\:0])
+        \js }
+                               ;
+
+assign cmd_id_fifo_push_valid = {|{age_arb_grant_vec[\=nOttEntries-1=\:0] & ~fake_cmd_out_req_vec[\=nOttEntries-1=\:0]}};
+
+assign cmd_req_mst_valid = cmd_id_fifo_pop_valid;
+
+assign cmd_id_fifo_pop_ready = cmd_req_mst_ready;
+
+wire cmd_req_mst_last = cmd_req_mst_valid;
+
+//============================================================================
+// Command Request Arbiter
+//============================================================================
+
+// If the command request is a coherent atomic, then it should not be popped out of the age fifo after sending the coherent part to DCE
+// as the non coherent part of the command still needs to be sent after receiving the STR from DCE.
+
+assign cmd_out_req_ack_vec[\=nOttEntries-1=\:0] = age_arb_grant_vec[\=nOttEntries-1=\:0] & ({\=nOttEntries=\{cmd_id_fifo_push_ready}} | fake_cmd_out_req_vec[\=nOttEntries-1=\:0]);
+
+assign age_fifo_grant = age_arb_grant_vec[\=nOttEntries-1=\:0] & (({\=nOttEntries=\{cmd_id_fifo_push_ready}} & ~atomic_coh_in_progress[\=nOttEntries-1=\:0] & ~combined_wr_in_progress[\=nOttEntries-1=\:0] & ~mru_excl_in_progress[\=nOttEntries-1=\:0]) | fake_cmd_out_req_vec[\=nOttEntries-1=\:0]);
+
+wire age_fifo_pop_in = {|{age_fifo_grant}};
+wire age_fifo_pop;
+
+\=u.dffre(1, 'age_fifo_pop', 'age_fifo_pop_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire age_fifo_push = req_valid_d & ~(nrs_selfidr_hit_d | q_addr_map_error | illegal_txn | no_credits_access_error);
+
+assign age_arb_req_vec = fake_cmd_out_req_vec[\=nOttEntries-1=\:0] | cmd_out_req_vec[\=nOttEntries-1=\:0];
+
+assign age_fifo_initvec = initvec_d[\=nOttEntries-1=\:0];
+
+wire age_arb_empty;
+wire age_arb_full;
+
+assign age_arb_active = ~age_arb_empty;
+
+\=u.dffre(wOttEntries, 'age_fifo_pop_index', 'age_fifo_grant_index', wOttEntries+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\jsbegin
+    var com_arb_params = {
+        assertOn: assertOn,
+        usePipe: useArbPipelined,
+        nPorts: nOttEntries,
+        wPorts: wOttEntries,
+        nEntries: age_arb_fifo_depth
+    };
+    var com_arb_ports = {
+        clk:        'clk',
+        reset_n:    'reset_n',
+        empty:      'age_arb_empty',
+        full:       'age_arb_full',
+        valid_vec:  'age_arb_valid_vec',
+        push_en:    'age_fifo_push',
+        pop_en:     'age_fifo_pop',
+        pop_index:  'age_fifo_pop_index',
+        push_index: 'age_fifo_initvec',
+        req_vec:    'age_arb_req_vec',
+        grant_ack:  'age_arb_grant_ack',
+        grant_vec:  'age_arb_grant_vec',
+        grant:      'age_arb_grant',
+        grant_index:'age_fifo_grant_index',
+    };
+
+if (wPriority > 0) {
+    com_arb_params['nPrio']  = num_pri_buckets;
+    com_arb_params['wPrio']  = wPriority;
+        for (var i = 0; i < nOttEntries; i++) {
+    com_arb_ports['req'+i+'_prio'] = 'ott_entry'+i+'_prio_arb';
+        }
+\jsend
+
+    \=u.instance({
+        instanceName: 'com_arb_qos_age',
+        moduleName: 'com_arb_qos_age',
+        params: com_arb_params,
+        ports: com_arb_ports,
+        portsDelimiter: '\n        '
+    })=\
+
+\jsbegin
+} else {
+\jsend
+
+    \=u.instance({
+        instanceName: 'com_arb_age_buf',
+        moduleName: 'com_arb_age_buf',
+        params: com_arb_params,
+        ports: com_arb_ports,
+        portsDelimiter: '\n        '
+    })=\
+
+\js }
+
+assign fake_cmd_out_ack = {|{ fake_cmd_out_req_vec &  age_arb_grant_vec }};
+
+assign age_arb_grant_ack = cmd_id_fifo_push_ready | fake_cmd_out_ack;
+
+//============================================================================
+// Starvation & Timeout
+//============================================================================
+
+\jsbegin
+
+// Starvation Avoidance has two phases:
+// 
+// Starvation Detection phase:
+// One global counter is designed to count commands sent. 
+// Once the counter reaches a programmable threshold, an overflow bit in all valid entries which have not sent out a command 
+// and have their protocol dependencies (Address, AXI ID etc.) resolved is set. 
+// This indicates the start of the period where the entry must make forward progress. 
+// The Overflow bit will be cleared if the entry sends a command. 
+// If the global counter reaches the threshold again while the overflow bit is still set, 
+// then that entry is starving because it hasn??t made progress for at least one complete period. 
+// The state machine now enters Starvation mode.
+// 
+// Starvation Handling phase:
+// In this mode the only requests that are marked as starved can arbitrate and send commands out. 
+// The global counter will be paused in this mode. 
+// Once all the starved requests have been serviced the normal processing resumes and the global counter resumes counting. 
+
+\jsend
+
+\js if (useQos) {
+wire starv_en = {|{csr_starv_count_threshold}};
+wire [\=wStarvThreshold-1=\:0] starv_threshold = csr_starv_count_threshold;
+wire qos_disable = 1'b0;
+\js }
+
+\js if (useQos) {
+wire [\=wStarvCnt-1=\:0]    starv_count;
+wire [\=wStarvCnt-1=\:0]    starv_count_in;
+wire                        starv_count_en;
+wire [\=nOttEntries-1=\:0]  entry_starv;
+wire                        entry_starv_en;
+wire [\=nOttEntries-1=\:0]  entry_starv_overflow;
+wire                        entry_starv_overflow_en;
+wire                        starv_overflow_hit;
+wire                        starv_overflow_hit_q;
+wire                        starv_overflow_event;
+wire                        starv_mode;
+wire                        starv_mode_q;
+wire                        starv_mode_qq;
+wire [\=nOttEntries-1=\:0]  entry_starv_in;
+wire [\=nOttEntries-1=\:0]  entry_starv_overflow_in;
+wire                        command_sent = (cmd_id_fifo_push_valid & cmd_id_fifo_push_ready);
+wire                        starv_count_hit = (starv_count[\=wStarvCnt-1=\:\=starvCntOffset=\] == starv_threshold);
+
+assign starv_count_in = starv_count_hit ? \=wStarvCnt=\'d0 : starv_count + 1'b1;
+assign starv_count_en = ~starv_mode & starv_en & ~qos_disable & command_sent;
+
+assign starv_overflow_hit = starv_count_hit & starv_en & ~qos_disable;
+assign starv_overflow_event = starv_overflow_hit & ~starv_overflow_hit_q;
+
+assign entry_starv_in  = (entry_starv_overflow & {\=nOttEntries=\{starv_overflow_event}});
+assign entry_starv_en = starv_overflow_event ;
+
+assign entry_starv_overflow_in = starv_overflow_event ? q_cmd_req_all_flag_entry : (entry_starv_overflow & ~age_arb_grant_vec); 
+assign entry_starv_overflow_en = starv_overflow_event | command_sent;
+
+assign starv_mode_vec = q_cmd_req_all_flag_entry & entry_starv & entry_starv_overflow & {\=nOttEntries=\{starv_en & ~qos_disable}};
+assign starv_mode = {|{q_cmd_req_all_flag_entry & entry_starv & entry_starv_overflow}} & starv_en & ~qos_disable;
+
+\=u.dffre(1,            'starv_overflow_hit_q',   'starv_overflow_hit',       "1'b0",             'dff_enable',               'clk',  'reset_n')=\
+\=u.dffre(wStarvCnt,    'starv_count',            'starv_count_in',           wStarvCnt+"'d0",    'starv_count_en',           'clk',  'reset_n')=\
+\=u.dffre(nOttEntries,  'entry_starv',            'entry_starv_in',           nOttEntries+"'d0",  'entry_starv_en',           'clk',  'reset_n')=\
+\=u.dffre(nOttEntries,  'entry_starv_overflow',   'entry_starv_overflow_in',  nOttEntries+"'d0",  'entry_starv_overflow_en',  'clk',  'reset_n')=\
+\js }
+
+\js if (useQos) {
+assign w_starve[1] = starv_mode & ~starv_mode_q;
+assign w_starve[0] = ~starv_mode & starv_mode_q;
+\js } else {
+assign w_starve[1] = 1'b0;
+assign w_starve[0] = 1'b0;
+\js }
+
+
+
+// Timeout Counter
+
+wire [30:0] csr_timeout_threshold_mod = csr_timeout_threshold;
+
+wire t_cfg_timeout, timeout_trigger_os_falling, timeout_trigger_os, t_sv_timeout_bist;
+
+    \=obj.lib.instance({
+        instanceName: 'u_timeout',
+        moduleName: 'ncore3_timeout',
+        params: {
+        },
+        ports: {
+           clk_i                : 'clk',
+           reset_ni             : 'reset_n',
+           uerrs_en_bit_3       : "1'b1",
+           external_i           : "1'b0",
+           cfg_external_i       : 'csr_timeout_ref_en',
+           cfg_top_i            : 'csr_timeout_threshold_mod',
+           cfg_tperiod_i        : "32'b0",
+           bist_timeout_trigger : 'bist_timeout_trigger',
+           t_sv_timeout_bist    : 't_sv_timeout_bist',
+           t_sv_ovt             : 'timeout_overflow_event',
+           t_sv_ovt_clr         : 'timeout_overflow_event_clr',
+           t_cfg_timeout        : 't_cfg_timeout',
+           timeout_trigger_os_falling : 'timeout_trigger_os_falling',
+           timeout_trigger_os         : 'timeout_trigger_os'
+        }
+    })=\
+
+wire [\=nOttEntries-1=\:0]  entry_timeout_overflow;
+
+assign entry_timeout_overflow = ott_timeout_overflow[\=nOttEntries-1=\:0];
+
+assign timeout_error = (|entry_timeout_overflow) | t_sv_timeout_bist;
+
+reg [\=wAddr=\:0] timeout_addr_ns_reg;
+reg [\=wReqTxnID+4=\:0] timeout_cmd_reg;
+
+ always @* begin
+        case (1'b1)
+            \js for (i=0; i < nOttEntries; i++) {
+             entry_timeout_overflow[\=i=\]:  begin 
+                                               timeout_addr_ns_reg = {ott_entry\=i=\_ns, ott_entry\=i=\_addr};
+                                               timeout_cmd_reg     = {ott_entry\=i=\_txn_id, ott_entry\=i=\_writeevictorevict, ott_entry\=i=\_dvm, ott_entry\=i=\_dataless, ott_entry\=i=\_writes, ott_entry\=i=\_reads};
+                                             end
+            \js }
+               default:  begin
+                              timeout_addr_ns_reg = {1'b0,\=wAddr=\'b0};
+                              timeout_cmd_reg     = \=wReqTxnID+5=\'h0;
+                         end
+        endcase
+    end
+
+assign timeout_addr  = timeout_addr_ns_reg[\=wAddr-1=\:0];
+assign timeout_ns    = timeout_addr_ns_reg[\=wAddr=\];
+assign {timeout_cmd_txn_id, timeout_cmd_writeevictorevict, timeout_cmd_dvm, timeout_cmd_dataless, timeout_cmd_write, timeout_cmd_read} = timeout_cmd_reg;
+
+//============================================================================
+// Address Dependency
+//============================================================================
+
+wire [\=nOttEntries-1=\:0] addr_match;
+
+    \js for (var entry = 0 ; entry < nOttEntries; entry++) {
+assign addr_match[\=entry=\] = (ott_entry\=entry=\_addr[\=wAddr-1=\:\=wCacheLineOffset=\] == rx_req_addr_d[\=wAddr-1=\:\=wCacheLineOffset=\]) &
+                               ((ott_entry\=entry=\_ott_cmds_to_non_coh_space & cmds_to_non_coh_space & (ott_entry\=entry=\_lpid == rx_req_lpid_d)) | (~ott_entry\=entry=\_ott_cmds_to_non_coh_space & ~cmds_to_non_coh_space)) &
+                               entry_validvec_del[\=entry=\] &
+                               req_valid_d;
+    \js }
+
+wire addr_llist__entry_alloc_vld;
+wire [\=nOttEntries-1=\:0] addr_llist__entry_alloc_id_onehot;
+wire [\=nOttEntries-1=\:0] addr_llist__entry_dealloc_multihot;
+wire [\=nOttEntries-1=\:0] addr_llist__entry_collision_vlds_fast;
+wire [\=nOttEntries-1=\:0] addr_llist__entry_collision_vlds;
+wire [\=wOttEntries-1=\:0] addr_llist__entry_collision_id;
+
+wire [\=nOttEntries-1=\:0] addr_llist__entry_youngest;
+wire [\=nOttEntries-1=\:0] addr_llist__entry_depend;
+wire [\=nOttEntries-1=\:0] addr_llist__entry_depend_set;
+wire [\=nOttEntries-1=\:0] addr_llist__entry_depend_clear;
+
+wire [\=nOttEntries-1=\:0] arid_llist_depend;
+
+    \jsbegin
+        var addr_llist_params = {
+            output_active      : 0,
+            output_dependee_id : 0,
+            assertOn     : assertOn,
+            nEntries     : nOttEntries
+        };
+        var instance_ports_for_addr_llist = {
+            clk                             : 'clk',
+            reset_n                         : 'reset_n',
+            entry_alloc_vld                 : 'addr_llist__entry_alloc_vld',
+            entry_alloc_id_onehot           : 'addr_llist__entry_alloc_id_onehot',
+            entry_dealloc_multihot          : 'addr_llist__entry_dealloc_multihot',
+            entry_collision_vlds            : 'addr_llist__entry_collision_vlds',
+            entry_collision_id              : 'addr_llist__entry_collision_id',
+            entry_youngest                  : 'addr_llist__entry_youngest',
+            entry_depend                    : 'addr_llist__entry_depend',
+            entry_depend_set                : 'addr_llist__entry_depend_set',
+            entry_depend_clear              : 'addr_llist__entry_depend_clear'
+        };
+    \jsend
+        \=obj.lib.instance({
+            instanceName: 'u_addr_llist',
+            moduleName: 'chi_llist',
+            params: addr_llist_params,
+            verilogParams: {},
+            ports: instance_ports_for_addr_llist,
+            portsDelimiter: '\n    '
+        })=\
+
+assign addr_llist__entry_alloc_vld         = req_valid_d & ~q_addr_map_error & ~no_credits_access_error & ~illegal_txn & ~q_nrs_selfidr_hit & ~dvm_entry_write_q;
+assign addr_llist__entry_alloc_id_onehot   = initvec_d[\=nOttEntries-1=\:0];
+assign addr_llist__entry_dealloc_multihot  = ((\=nOttEntries=\'b1 << str_req_slv_r_message_id[\=wMsgId-1=\:0]) & {\=nOttEntries=\{str_req_slv_valid}} & ((~atomic_coh_in_progress[\=nOttEntries-1=\:0] & ~combined_wr_in_progress[\=nOttEntries-1=\:0] & ~mru_excl_in_progress_for_addr_llist[\=nOttEntries-1=\:0]) | ({\=nOttEntries=\{str_req_slv_cm_status[7]}})))
+                                           |
+                                             ((\=nOttEntries=\'b1 << dtw_rsp_slv_r_message_id[\=wMsgId-1=\:0]) & {\=nOttEntries=\{dtw_rsp_slv_valid}} & combined_wr_in_progress[\=nOttEntries-1=\:0] & {\=nOttEntries=\{dtw_rsp_slv_cm_status[7]}}); //CONC-12521
+assign addr_llist__entry_collision_vlds_fast = addr_match & addr_llist__entry_youngest;
+assign addr_llist__entry_collision_vlds      = addr_llist__entry_collision_vlds_fast & ~addr_llist__entry_dealloc_multihot;
+
+    \=obj.lib.instance({
+        instanceName: 'u_addr_llist__entry_collision_id',
+        moduleName: 'encoder',
+        params: { width : nOttEntries },
+        ports: {
+            invector : 'addr_llist__entry_collision_vlds_fast', outdecode : 'addr_llist__entry_collision_id'
+        }
+    })=\
+
+
+assign q_dce_depnd_valid = addr_llist__entry_depend;
+
+//============================================================================
+// ott_data_ready
+//============================================================================
+
+assign ott_data_ready = (dtw_req_mst_valid & dtw_req_mst_ready)
+                      | drop_dtw_str_error
+                      ;
+
+//============================================================================
+// outstanding_coherent_count_zero
+//============================================================================
+
+assign outstanding_coherent_count_zero = ~{|{entry_coherentvec[\=nOttEntries-1=\:0]}};
+
+//============================================================================
+// Perf Monitor: QoS Starvations occurred
+//============================================================================
+
+\js if (useQos) {
+
+\=u.dffre(1, 'starv_mode_q', 'starv_mode', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'starv_mode_qq', 'starv_mode_q', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+
+assign pmon_starvation_event = starv_mode_q & ~starv_mode_qq;
+
+\js } else {
+
+assign pmon_starvation_event = 1'b0;
+
+\js }
+
+//============================================================================
+// Perf Monitor: Address Collision
+//============================================================================
+
+wire pmon_addr_collision_in = {|{addr_match}};
+
+\=u.dffre(1, 'pmon_addr_collision', 'pmon_addr_collision_in', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+
+
+//==================================================================================
+// Perf Monitor: OTT allocations. 
+//==================================================================================
+assign alloc		   = initvec[\=nOttEntries-1=\:0];
+
+//=============================================================================
+// OWO FIFO
+//=============================================================================
+
+\jsbegin
+    var owo_fifo_params = {
+        width       : wOttEntries,
+        depth       : nOttEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_owo_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'owo_fifo_push_data',
+        push_valid          : 'owo_fifo_push_valid',
+        push_ready          : 'owo_fifo_push_ready',
+        pop_data            : 'owo_fifo_pop_data',
+        pop_valid           : 'owo_fifo_pop_valid',
+        pop_ready           : 'owo_fifo_pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'owo_fifo',
+        moduleName: 'fifo',
+        params : owo_fifo_params,
+        ports: instance_ports_for_owo_fifo
+    })=\
+
+    \=obj.lib.instance({
+        instanceName: 'u_sel_initvec_encode',
+        moduleName: 'encoder',
+        params: { width : nOttEntries },
+        ports: {
+            invector : 'sel_initvec', outdecode : 'sel_initvec_encode'
+        }
+    })=\
+
+wire owo_fifo_push_valid_sig = req_valid
+                           & (RXREQFLIT_Order == 2'b10)
+                           & RXREQFLIT_ExCompAck
+                           & (   (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteNoSnpFull=\)
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteNoSnpPtl=\)
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteUniqueFull=\)
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteUniquePtl=\)
+\js if (chi_e) {
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteNoSnpZero=\)
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanSh=\)
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanInv=\)
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\)
+                               | (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.WriteUniqueZero=\)
+\js }
+                             );
+assign owo_fifo_push_valid = owo_fifo_push_valid_org & ~illegal_txn & ~q_addr_map_error & ~no_credits_access_error;
+
+\=u.dffre(1, 'owo_fifo_push_valid_org', 'owo_fifo_push_valid_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(wOttEntries, 'owo_fifo_push_data', 'sel_initvec_encode', wOttEntries+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+// Both OTT and STT can issue DTWreq. To differentiate, the MS bit of DTWreq message_id (corresponds to DTWrsp r_message_id) is used: 0 is OTT, 1 is STT.
+
+wire owo_fifo_pop_ready_sig = owo_fifo_pop_valid & (
+    (dtw_rsp_slv_valid & dtw_rsp_slv_ready & (dtw_rsp_slv_r_message_id[\=wOttEntries-1=\:0] == owo_fifo_pop_data) & ~dtw_rsp_slv_r_message_id[\=wMsgId-1=\])
+  | (str_req_slv_valid & str_req_slv_ready & (str_req_slv_r_message_id[\=wOttEntries-1=\:0] == owo_fifo_pop_data) & str_req_slv_cm_status[7])
+);
+
+\=u.dffre(1, 'owo_fifo_pop_ready', 'owo_fifo_pop_ready_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\js for (var i = 0; i < nOttEntries; i++) {
+assign owo_dependency[\=i=\] = q_cmd_owo_entry[\=i=\] ? (owo_fifo_pop_valid & (owo_fifo_pop_data == \=wOttEntries=\'d\=i=\) ? 1'b0 : 1'b1) : 1'b0;
+\js }
+
+//=============================================================================
+// DVM Sync FIFO
+//=============================================================================
+
+\jsbegin
+    var dvm_sync_fifo_params = {
+        width       : wOttEntries,
+        depth       : nOttEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_dvm_sync_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'dvm_sync_fifo_push_data',
+        push_valid          : 'dvm_sync_fifo_push_valid',
+        push_ready          : 'dvm_sync_fifo_push_ready',
+        pop_data            : 'dvm_sync_fifo_pop_data',
+        pop_valid           : 'dvm_sync_fifo_pop_valid',
+        pop_ready           : 'dvm_sync_fifo_pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'dvm_sync_fifo',
+        moduleName: 'fifo',
+        params : dvm_sync_fifo_params,
+        ports: instance_ports_for_dvm_sync_fifo
+    })=\
+
+wire dvm_sync_fifo_push_valid_sig = req_valid & (RXREQFLIT_Opcode == \=opcode_width=\\=chi_cmd.DVMOp=\) & (RXREQFLIT_Addr[13:11] == DVM_OPCODE_SYNC);
+
+\=u.dffre(1, 'dvm_sync_fifo_push_valid', 'dvm_sync_fifo_push_valid_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(wOttEntries, 'dvm_sync_fifo_push_data', 'sel_initvec_encode', wOttEntries+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire dvm_sync_fifo_pop_ready_sig = dvm_sync_fifo_pop_valid & (
+    (str_rsp_mst_valid & str_rsp_mst_ready & (str_rsp_mst_message_id[\=wOttEntries-1=\:0] == dvm_sync_fifo_pop_data))
+);
+
+\=u.dffre(1, 'dvm_sync_fifo_pop_ready', 'dvm_sync_fifo_pop_ready_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\js for (var i = 0; i < nOttEntries; i++) {
+assign dvm_sync_dependency[\=i=\] = ~csr_block_dvm_sync ? 1'b0 : q_cmd_dvm_sync_entry[\=i=\] ? (dvm_sync_fifo_pop_valid & (dvm_sync_fifo_pop_data == \=wOttEntries=\'d\=i=\) ? 1'b0 : 1'b1) : 1'b0;
+\js }
+
+\jsbegin
+//============================================================================
+// dtr_error_num_dtr_beats
+//============================================================================
+\jsend
+
+wire       dtr_error_atomic_compare;
+wire       dtr_error_stashing_entry;
+wire [2:0] dtr_error_cmd_size;
+wire [4:0] dtr_error_rd_data_out;
+wire [2:0] dtr_error_dtr_cmd_size;
+wire [7:0] dtr_error_num_dtr_data_bytes;
+wire [2:0] dtr_error_num_dtr_beats_int;
+wire [7:0] dtr_error_num_dtr_beats_inta;
+
+assign {dtr_error_atomic_compare, dtr_error_stashing_entry, dtr_error_cmd_size} = dtr_error_rd_data_out;
+
+assign dtr_error_rd_data_out = ({5{error_dtr_sel_entry[0]}} & rd_data_out0[\=rddata_bundle_width-1=\:\=rddata_bundle_width-5=\])
+            \js for (var i=1; i < nOttEntries; i++) {
+                     | ({5{error_dtr_sel_entry[\=i=\]}} & rd_data_out\=i=\[\=rddata_bundle_width-1=\:\=rddata_bundle_width-5=\])
+            \js }
+                             ;
+
+//For Atomic compares, the expected DTR size is half of the comand size. (CHI B spec: 2.10.5)
+
+assign dtr_error_dtr_cmd_size = dtr_error_stashing_entry ? 3'b110 : dtr_error_atomic_compare ? (dtr_error_cmd_size - 3'd1) : dtr_error_cmd_size;
+
+assign dtr_error_num_dtr_data_bytes = 8'b1 << dtr_error_dtr_cmd_size;
+assign dtr_error_num_dtr_beats_inta = dtr_error_num_dtr_data_bytes / 8'd\=wBE=\;
+assign dtr_error_num_dtr_beats_int = (dtr_error_num_dtr_beats_inta[2:0] == 3'b0) ? 3'b1 : dtr_error_num_dtr_beats_inta[2:0];
+
+assign dtr_error_num_dtr_beats = (dtr_error_num_dtr_beats_int != 3'b0) ? (dtr_error_num_dtr_beats_int - 3'b1) : 3'b0;
+
+\jsbegin
+//============================================================================
+// Assertions
+//============================================================================
+\jsend
+
+\js if (assertOn) {
+`ifdef OVL_ASSERT_ON
+// synthesis_off
+// pragma synthesis_off
+// coverage off
+
+    property p_collision_vlds_onehot0;
+        @(posedge clk) disable iff (~reset_n)
+        (addr_llist__entry_alloc_vld) |-> $onehot0(addr_llist__entry_collision_vlds_fast);
+    endproperty
+
+    assert_collision_vlds_onehot0: assert property (p_collision_vlds_onehot0)
+        else begin $error("addr_llist__entry_collision_vlds_fast must be onehot0 !"); #100 $finish; end
+
+    property p_youngest_addr_match_onehot0;
+        @(posedge clk) disable iff (~reset_n)
+        (req_valid_d) |-> $onehot0(addr_match & addr_llist__entry_youngest);
+    endproperty
+
+    assert_youngest_addr_match_onehot0: assert property (p_youngest_addr_match_onehot0)
+        else begin $error("addr_match & addr_llist__entry_youngest must be onehot0 when req_valid_d !"); #100 $finish; end
+
+
+wire [\=unit_id_width-1=\:0] cmd_req_target_f_unit_id;
+
+assign cmd_req_target_f_unit_id = ({\=unit_id_width=\{age_arb_grant_vec[0]}} & cmd_req_target_f_unit_id0)
+        \js for (var entry = 1 ; entry < nOttEntries; entry++) {
+                                | ({\=unit_id_width=\{age_arb_grant_vec[\=entry=\]}} & cmd_req_target_f_unit_id\=entry=\)
+        \js }
+                                ;
+
+wire [\=nDmis-1=\:0] ref_dmi_cmd_crd_con;
+wire [\=nDiis-1=\:0] ref_dii_cmd_crd_con;
+wire [\=nDCEs-1=\:0] ref_dce_cmd_crd_con;
+wire                 ref_dve_cmd_crd_con;
+
+ \js for (var i = 0; i < nDmis; i++) {
+assign ref_dmi_cmd_crd_con[\=i=\] = (cmd_req_target_f_unit_id == dmi\=i=\_f_unit_id) & cmd_credit_consumed;
+ \js }
+ 
+ \js for (var i = 0; i < nDiis; i++) {
+assign ref_dii_cmd_crd_con[\=i=\] = (cmd_req_target_f_unit_id == dii\=i=\_f_unit_id) & cmd_credit_consumed;
+ \js }
+ 
+ \js for (var i = 0; i < nDCEs; i++) {
+assign ref_dce_cmd_crd_con[\=i=\] = (cmd_req_target_f_unit_id == dce\=i=\_f_unit_id) & cmd_credit_consumed;
+ \js   }
+ 
+assign ref_dve_cmd_crd_con = (cmd_req_target_f_unit_id == dve_f_unit_id) & cmd_credit_consumed;
+
+    property p_cmd_credit_consumed;
+        @(posedge clk) disable iff (~reset_n)
+        (cmd_credit_consumed) |-> ({ref_dmi_cmd_crd_con, ref_dii_cmd_crd_con, ref_dce_cmd_crd_con, ref_dve_cmd_crd_con} == {dmi_cmd_crd_con, dii_cmd_crd_con, dce_cmd_crd_con, dve_cmd_crd_con});
+    endproperty
+
+    assert_cmd_credit_consumed: assert property (p_cmd_credit_consumed)
+        else begin $error("cmd_credit_consumed hitting the wrong command credit counter !"); #100 $finish; end
+
+// coverage on
+// pragma synthesis_on
+// synthesis_on
+`endif
+\js }
+
+endmodule

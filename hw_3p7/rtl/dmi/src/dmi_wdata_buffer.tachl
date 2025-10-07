@@ -1,0 +1,334 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DMI Write Data Buffer
+// Author: Steve Kromer
+//
+// Buffers to hold write data between protocol and resource block, to manage
+// separation of write address and data with no bubbles. Enables
+// * Acceptance of 2nd address while still getting data for 1st address
+// * Storage of data while address is in lookup
+// * Storage of data while transaction is in replay q
+// * Storage of data while scheduling DTWMergeMRD
+// * Sending of atomic op in parallel with previous write data
+// 
+// Future enhancements
+//   Separate atomic port
+//   Fast clean
+//   merge buffer for partial
+//   compress if < cacheline instead of full cacheline per buffer
+//   split c/nc data bus in parallel as long as not both last
+//=============================================================================
+
+// Variables
+var u                  = obj.lib;
+var bundleFunctions    = obj.userLib.bundleFunctions;
+var wCacheLineOffset   = u.getParam('wCacheLineOffset');
+var cmType             = obj.lib.getParam('cmType');
+
+var clkInterface       = u.getParam('clkInterface');
+var writeAddrInterface = u.getParam('writeAddrInterface');
+var writeDataInterface = u.getParam('writeDataInterface');
+var writeDataBufferInterface = u.getParam('writeDataBufferInterface');
+
+var wData              = writeDataInterface['data'];
+var nBeats             = (1<<wCacheLineOffset) / (wData/8);
+var wBeats             = Math.log2(nBeats);
+var wDataInterface     = bundleFunctions.getBundleWidth(writeDataInterface, ['valid', 'ready'], obj.lib.bundle);
+
+// size a multiple of cachelines, minimum of 4 cachelines.
+var nWriteBuffers      = u.getParam('nWriteBuffers');
+var bufferSize         = nWriteBuffers * nBeats;
+var wSize              = Math.log2(bufferSize);
+var nPorts             = 2;
+var assertOn = obj.lib.getParam('assertOn');
+//
+// Interfaces
+//
+// Clk
+u.interface('',                 'slave',  clkInterface);
+
+// Addr
+u.interface('write_prot_',      'slave',  writeAddrInterface);
+u.interface('write_res_',       'master', writeAddrInterface);
+
+// Data
+u.interface('write_prot_data_', 'slave',  writeDataInterface);
+u.port('input',  'wrdata0_unlock',        1);
+u.port('input',  'wrdata0_unlock_id',     writeAddrInterface['trans_id']);
+for (var i = 0; i < nPorts; i++) {
+u.interface('wrdata'+i+'_',     'slave',  writeDataBufferInterface);
+}
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+localparam WM_INV   = \=cmType['DtwMrgMrdInv']=\;
+localparam WM_RSCLN = \=cmType['DtwMrgMrdSCln']=\;
+localparam WM_RSDTY = \=cmType['DtwMrgMrdSDty']=\;
+localparam WM_RUCLN = \=cmType['DtwMrgMrdUCln']=\;
+localparam WM_RUDTY = \=cmType['DtwMrgMrdUDty']=\;
+
+    function automatic is_dtwmergemrd;
+      input [\=writeAddrInterface['cm_type']-1=\:0] cm_type;
+      begin
+          is_dtwmergemrd = (cm_type == WM_INV)   |
+                        // (cm_type == WM_RSCLN) | (cm_type == WM_RSDTY) |
+                           (cm_type == WM_RUCLN) | (cm_type == WM_RUDTY);
+      end
+    endfunction
+
+// Address is a pass through, but only accept address if there is room in data buffer,
+// and we assign data buffer pointer on the way out so that downstream logic can access it
+
+    wire [\=Math.log2(nWriteBuffers)-1=\:0] write_res_id;
+
+    wire rdptr_go;
+    wire [\=bufferSize-1=\:0] rdptr_clr;
+    wire [\=bufferSize-1=\:0] rdptr_done;
+\js for (var i = 0; i < nPorts; i++) {
+    wire rdptr\=i=\_go;
+    wire [\=wSize-1=\:0] rdptr\=i=\;
+    wire [\=bufferSize-1=\:0] rdptr\=i=\_done;
+    wire dealloc\=i=\_valid;
+    wire [\=Math.log2(nWriteBuffers)-1=\:0] dealloc\=i=\_id;
+\js }
+
+    \=obj.lib.instance({
+        instanceName: 'write_buffer_flm',
+        moduleName: 'dmi_flm',
+        params: { clkInterface: obj.lib.getParam('clkInterface'),
+                  dealloc_ports: 2,
+                  idNum: nWriteBuffers,
+                  idWidth: Math.log2(nWriteBuffers)
+        },
+        ports: {  pre_alloc_valid: 'write_prot_valid',
+                  pre_alloc_ready: 'write_prot_ready',
+                  pre_alloc_last:  '1\'b1',
+                  alloc_valid:     'write_res_valid',
+                  alloc_ready:     'write_res_ready',
+                  alloc_id:        'write_res_id',
+                  dealloc_valid0:  'dealloc0_valid',
+                  dealloc_id0:     'dealloc0_id',
+                  dealloc_valid1:  'dealloc1_valid',
+                  dealloc_id1:     'dealloc1_id'
+               },
+        interfaces: [{modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface')}],
+        portsDelimiter: '\n        '
+    })=\
+
+                                                      
+    assign write_res_trans_id = {write_res_id, \=wBeats=\'b0};
+    \=bundleFunctions.assignByBundle('write_res_', 'write_prot_', writeAddrInterface, [ 'valid', 'ready','trans_id' ], u.bundle)=\
+
+// Valid bit for each data beat
+    wire [\=bufferSize-1=\:0] buffer_valid;
+    wire [\=bufferSize-1=\:0] buffer_valid_set;
+    wire [\=bufferSize-1=\:0] buffer_valid_d;
+    wire [\=bufferSize-1=\:0] buffer_valid_clr;
+    wire buffer_valid_en;
+    wire write_prot_go;
+    wire [\=wSize-1=\:0] wrptr;
+
+    \=u.dffre(bufferSize,        'buffer_valid',   'buffer_valid_d',       bufferSize+"'b0",  'buffer_valid_en', 'clk', 'reset_n')=\
+
+    assign write_prot_go    = (write_prot_data_valid & write_prot_data_ready);
+
+    assign buffer_valid_en  = write_prot_go | rdptr_go;
+    assign buffer_valid_set = write_prot_go ? (\=bufferSize=\'b1 << wrptr) : \=bufferSize=\'d0;
+    assign buffer_valid_clr = rdptr_go ? rdptr_clr : \=bufferSize=\'d0;
+    assign buffer_valid_d   = buffer_valid_set | (buffer_valid & ~buffer_valid_clr);
+
+//======================== Lock
+// All data buffers are deallocated upon read EXCEPT some cases of DTWMergeMRD which require 2 reads
+// because data is sent on AXI write and DTR in these cases:
+//   * no ccp present (known up front)
+//   * ccp miss non allocate (not known until p2)
+// To manage this, DTWMergeMRD creates a lock on buffer which only allows dealloc if 
+//   * read with lock, after reading from both ports 0 and 1
+//   * unlock if ccp hit and read from port0
+//   * unlock if ccp miss with allocate, then only need ot read from port1
+// It is assumed that port0 is ccp and port1 is merge buffer, and lock only implemented for dtwmergemrd
+// otherwise locks won't work.
+
+    wire [\=nWriteBuffers-1=\:0] buffer_lock;
+    wire [\=nWriteBuffers-1=\:0] buffer_lock_new;
+    wire [\=nWriteBuffers-1=\:0] buffer_lock_d;
+    wire [\=nWriteBuffers-1=\:0] buffer_lock_clr;
+    wire                         buffer_lock_en;
+
+    \=u.dffre(nWriteBuffers,        'buffer_lock',   'buffer_lock_d',       nWriteBuffers+"'b0",  'buffer_lock_en', 'clk', 'reset_n')=\
+
+    assign buffer_lock_en  = wrdata0_unlock | (write_prot_valid & write_prot_ready);
+    assign buffer_lock_new = (write_prot_valid & write_prot_ready) ? (\=nWriteBuffers=\'b1 << write_res_id) : \=nWriteBuffers=\'d0;
+    assign buffer_lock_clr = wrdata0_unlock ? (\=nWriteBuffers=\'b1 << (wrdata0_unlock_id[\=wSize-1=\:\=wBeats=\])) : \=nWriteBuffers=\'d0;
+    assign buffer_lock_d   = ( buffer_lock_new & {\=nWriteBuffers=\{is_dtwmergemrd(write_prot_cm_type) & ~(write_prot_cm_type == WM_RUDTY)}}) |
+                             (~buffer_lock_new & buffer_lock & ~buffer_lock_clr);
+
+// Read flag for each data beat
+    wire [\=bufferSize-1=\:0] read_done;
+    wire [\=bufferSize-1=\:0] read_done_set;
+    wire [\=bufferSize-1=\:0] read_done_d;
+    wire [\=bufferSize-1=\:0] read_done_clr;
+    wire read_done_en;
+
+    \=u.dffre(bufferSize,        'read_done',   'read_done_d',       bufferSize+"'b0",  'read_done_en', 'clk', 'reset_n')=\
+
+    assign read_done_en  = write_prot_go | rdptr_go;
+    assign read_done_set = rdptr_go ? rdptr_done : \=bufferSize=\'d0 ;
+    assign read_done_clr = write_prot_go ? (\=bufferSize=\'b1 << wrptr) : \=bufferSize=\'d0 ;
+    assign read_done_d   = read_done_set | (read_done & ~read_done_clr);
+
+    reg [\=bufferSize-1=\:0] dealloc_en;
+    reg [\=bufferSize-1=\:0] rdptr0_dec;
+    integer i;
+    always @(*) begin
+        rdptr0_dec = (\=bufferSize=\'b1 << rdptr0);
+        for (i = 0; i < \=bufferSize=\; i = i + 1) begin
+            if (rdptr0_go & rdptr1_go & (rdptr0 == rdptr1))
+                dealloc_en[i] = read_done[i] | ~buffer_lock[i>>\=wBeats=\] | buffer_lock_clr[i>>\=wBeats=\] | rdptr0_dec[i];
+            else
+                dealloc_en[i] = read_done[i] | ~buffer_lock[i>>\=wBeats=\] | buffer_lock_clr[i>>\=wBeats=\];
+        end
+    end
+
+// Fifo so that can receive multiple addresses while still receiving data from first address
+// wrptr points to buffer to receive each entry, count until get last then pop from fifo
+    wire push_wrptr_valid;
+    wire push_wrptr_ready;
+    wire wrptr_valid;
+    wire wrptr_ready;
+    wire [\=wSize-1=\:0] wrptr_start;
+    wire [\=wSize-1=\:0] wrptr_inc;
+    wire [\=wSize-1=\:0] wrptr_inc_d;
+    wire wrptr_sel_inc;
+    wire wrptr_sel_inc_d;
+
+    \=obj.lib.instance({
+        instanceName: 'input_data',
+        moduleName: 'fifo',
+        params: {
+            width: wSize,
+            depth: nWriteBuffers,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        }],
+        ports: {
+            push_valid: 'push_wrptr_valid',
+            push_ready: 'push_wrptr_ready',
+            push_data:  'write_res_trans_id',
+            pop_valid:  'wrptr_valid',
+            pop_ready:  'wrptr_ready',
+            pop_data:   'wrptr_start'
+        },
+        portsDelimiter: '\n        '
+    })=\
+    assign push_wrptr_valid   = (write_prot_valid & write_prot_ready);
+    assign wrptr_ready        = write_prot_go & write_prot_data_last;
+
+    // guaranteed can accept data if we have a valid wrptr
+    assign write_prot_data_ready = wrptr_valid;
+
+// Counter for receiving data from upstream
+//
+    \=u.dffre(wSize, 'wrptr_inc',       'wrptr_inc_d',      wSize+"'b0",    'write_prot_go', 'clk', 'reset_n')=\
+    \=u.dffre(1,     'wrptr_sel_inc',   'wrptr_sel_inc_d',       "1'b0",    'write_prot_go', 'clk', 'reset_n')=\
+
+    assign wrptr_sel_inc_d = ~write_prot_data_last;
+    assign wrptr_inc_d     = wrptr + 1'b1;
+    assign wrptr           = wrptr_sel_inc ? wrptr_inc : wrptr_start;
+
+// Data buffer to hold several cachelines
+    wire [\=wDataInterface-1=\:0] buffer[\=bufferSize-1=\:0];
+    wire [\=wDataInterface-1=\:0] buffer_wrdata;
+
+
+    assign buffer_wrdata = \=bundleFunctions.packetizeBundle('write_prot_data_', writeDataInterface, ['ready','valid','trans_id'], obj.lib.bundle)=\;
+\js for (var entry = 0; entry < bufferSize; entry++) {
+
+    wire [\=wDataInterface-1=\:0] buffer_\=entry=\;
+    assign buffer[\=entry=\] = buffer_\=entry=\;
+
+    \=u.dffre(wDataInterface,     'buffer_'+entry,   'buffer_wrdata',       wDataInterface+"'b0",    'buffer_valid_set['+entry+']', 'clk', 'reset_n')=\
+
+\js }
+
+\jsbegin
+var go  = 'rdptr0_go ';
+var done = 'rdptr0_done';
+for (var i = 1; i < nPorts; i++) {
+go  = go  + '| rdptr' + i + '_go ';
+done = done + '| rdptr' + i + '_done';
+}
+\jsend
+    assign rdptr_go         = \=go=\;
+    assign rdptr_done       = \=done=\;
+    assign rdptr_clr        = rdptr_done & dealloc_en;
+
+\js for (var i = 0; i < nPorts; i++) {
+//======================== Port \=i=\======================== 
+    wire rdptr\=i=\_en;
+    assign rdptr\=i=\_go        = (wrdata\=i=\_valid & wrdata\=i=\_ready);
+    assign rdptr\=i=\_done      = rdptr\=i=\_go ? (\=bufferSize=\'b1 << rdptr\=i=\) : \=bufferSize=\'d0;
+    assign rdptr\=i=\_en        = rdptr\=i=\_go | (wrdata\=i=\_req_valid & wrdata\=i=\_req_ready);
+
+// Counter for sending data on downstream port
+    wire [\=wSize-1=\:0] rdptr\=i=\_next;
+    wire [\=wSize-1=\:0] rdptr\=i=\_next_d;
+    wire rdptr\=i=\_busy;
+    wire rdptr\=i=\_busy_d;
+
+    \=u.dffre(wSize,    'rdptr'+i+'_next',   'rdptr'+i+'_next_d',  wSize+"'b0",  'rdptr'+i+'_en', 'clk', 'reset_n')=\
+    \=u.dffre(1,        'rdptr'+i+'_busy',   'rdptr'+i+'_busy_d',       "1'b0",  'rdptr'+i+'_en', 'clk', 'reset_n')=\
+
+    assign rdptr\=i=\_busy_d    = rdptr\=i=\_en & ~(rdptr\=i=\_go & wrdata\=i=\_last);
+    assign rdptr\=i=\_next_d    = rdptr\=i=\_go ? rdptr\=i=\ + 1'b1 : rdptr\=i=\;
+    assign rdptr\=i=\           = rdptr\=i=\_busy ? rdptr\=i=\_next : wrdata\=i=\_req_id[\=wSize-1=\:0];
+
+    assign dealloc\=i=\_valid   = rdptr\=i=\_go & wrdata\=i=\_last & dealloc_en[rdptr\=i=\];
+    assign dealloc\=i=\_id      = rdptr\=i=\[\=wSize-1=\:\=wBeats=\];
+
+    assign wrdata\=i=\_req_ready= ~rdptr\=i=\_busy;
+    assign wrdata\=i=\_valid    = buffer_valid[rdptr\=i=\] & 
+                                  ((wrdata\=i=\_req_valid & wrdata\=i=\_req_ready) | rdptr\=i=\_busy);
+    assign \=bundleFunctions.packetizeBundle('wrdata'+i+'_', writeDataInterface, ['ready','valid','trans_id'], obj.lib.bundle)=\ = buffer[rdptr\=i=\];
+
+\js }
+
+\js if (assertOn) {
+    `ifdef OVL_ASSERT_ON
+    // coverage off
+    // synthesis off
+    // synopsys translate_off
+    // should never write to valid buffer
+    assert_never #(0) assert_wdata_overflow(
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(|(buffer_valid_set & buffer_valid))
+    );
+
+    // shouldn't read same buffer from 2 ports if buffer is unlocked.
+    // not true anymore for DTWMrgMrdUdty, which only read from port1
+//    assert_implication #(0) assert_double_read_unlocked (
+//        .clk(clk),
+//        .reset_n(reset_n),
+//        .antecedent_expr(rdptr0_busy & rdptr1_busy & (rdptr0[\=wSize-1=\:\=wBeats=\]==rdptr1[\=wSize-1=\:\=wBeats=\])),
+//        .consequent_expr(buffer_lock[rdptr0[\=wSize-1=\:\=wBeats=\]])
+//    );
+    // synopsys translate_on
+    // synthesis on
+    // coverage on
+    `endif
+
+\js }
+
+
+endmodule

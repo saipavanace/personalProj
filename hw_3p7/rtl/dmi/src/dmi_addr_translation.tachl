@@ -1,0 +1,61 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Dmi address translation Unit
+// Author: Tso-Wei Chang
+// 
+//=========================================================================
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+var wAddr = obj.lib.getParam('wAddr');
+var useAddrTranslation = obj.lib.getParam('useAddrTranslation');
+var nAddrTransRegisters = useAddrTranslation? obj.lib.getParam('nAddrTransRegisters') : 0;
+var addrTransInterface = obj.lib.getParam('addrTransInterface');
+var csrAddrTransInterface = obj.lib.getParam('csrAddrTransInterface');
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+obj.lib.interface('', 'slave', addrTransInterface);
+obj.lib.interface('', 'slave', csrAddrTransInterface);
+
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+\js for(var i =0; i < nAddrTransRegisters; i++) {
+wire [\=wAddr-20-1=\:0] mask\=i=\;
+assign mask\=i=\ = ((\=wAddr-20=\'b1 << csr_ATER_\=i=\_Mask) - 1'b1);
+
+wire [\=wAddr-20-1=\:0] write_to_addr_masked\=i=\;
+wire [\=wAddr-20-1=\:0] read_to_addr_masked\=i=\;
+
+assign write_to_addr_masked\=i=\ = (write_trans_addr[\=wAddr-1=\:20] & mask\=i=\) | (csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:0] & ~mask\=i=\);
+assign read_to_addr_masked\=i=\  = (read_trans_addr [\=wAddr-1=\:20] & mask\=i=\) | (csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:0] & ~mask\=i=\);
+\js }
+assign read_trans_addr_t = 
+\js for(var i =0; i < nAddrTransRegisters; i++) {
+    (((read_trans_addr[\=wAddr-1=\:20] & ~mask\=i=\) == (csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:0] & ~mask\=i=\)) & csr_ATER_\=i=\_Valid)? {read_to_addr_masked\=i=\, read_trans_addr[19:0]} :
+
+\js }
+    read_trans_addr;
+
+assign write_trans_addr_t =
+\js for(var i =0; i < nAddrTransRegisters; i++) {
+    (((write_trans_addr[\=wAddr-1=\:20] & ~mask\=i=\) == (csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:0] & ~mask\=i=\)) & csr_ATER_\=i=\_Valid)? {write_to_addr_masked\=i=\, write_trans_addr[19:0]} :
+
+\js }
+    write_trans_addr;
+
+endmodule

@@ -1,0 +1,125 @@
+\jsbegin
+var u = obj.lib;
+
+// Parameters
+
+var AW  = u.getParam('AW');  // address width
+var KW  = u.getParam('KW');  // tag width
+var SW  = u.getParam('SW');  // set width
+var CLO = u.getParam('CLO'); // cache line offset
+var PriSubDiagAddrBits = u.getParam('PriSubDiagAddrBits');
+var SecSubRows         = u.getParam('SecSubRows');
+
+// Ports
+
+u.port('input',  'lu_addr_i',     AW);
+u.port('output', 'lu_addr_index', SW);
+u.port('output', 'lu_addr_tag',   KW);
+
+u.port('input',  'wr_addr_i',     AW);
+u.port('output', 'wr_addr_index', SW);
+u.port('output', 'wr_addr_tag',   KW);
+
+u.port('input',  'w_rc_tag',   KW);
+u.port('input',  'w_rc_index', SW);
+u.port('output', 'w_rc_addr',  AW);
+
+\jsend
+
+module \=u.getModuleName()=\
+        (\=u.getPorts('\n\t')=\
+);
+
+///////////////////////////////////////////////////////////////////////////////
+// lu_addr_index
+// wr_addr_index
+///////////////////////////////////////////////////////////////////////////////
+
+    \jsbegin
+    var set_select_params = {  PriSubDiagAddrBits : PriSubDiagAddrBits,
+                               SecSubRows         : SecSubRows,
+                               wAddr              : AW
+                            };
+    var instance_ports_for_gen_lu_addr_index = {
+        addr_in             : 'lu_addr_i',
+        index_out           : 'lu_addr_index'
+    };
+    var instance_ports_for_gen_wr_addr_index = {
+        addr_in             : 'wr_addr_i',
+        index_out           : 'wr_addr_index'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'u_gen_lu_addr_index',
+        moduleName: 'set_select',
+        params : set_select_params,
+        verilogParams: {},
+        ports: instance_ports_for_gen_lu_addr_index
+    })=\
+    \=u.instance({
+        instanceName: 'u_gen_wr_addr_index',
+        moduleName: 'set_select',
+        params : set_select_params,
+        verilogParams: {},
+        ports: instance_ports_for_gen_wr_addr_index
+    })=\
+
+///////////////////////////////////////////////////////////////////////////////
+// lu_addr_tag
+// wr_addr_tag
+///////////////////////////////////////////////////////////////////////////////
+
+\jsbegin
+    var gen_addr_tag_params = { PriSubDiagAddrBits     : PriSubDiagAddrBits,
+                                wAddr                  : AW,
+                                wCacheLineOffset       : CLO
+                              };
+    var instance_ports_for_gen_lu_addr_tag = {
+        addr_in             : 'lu_addr_i',
+        tag_out             : 'lu_addr_tag'
+    };
+    var instance_ports_for_gen_wr_addr_tag = {
+        addr_in             : 'wr_addr_i',
+        tag_out             : 'wr_addr_tag'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'u_gen_lu_addr_tag',
+        moduleName: 'tag_gen',
+        params : gen_addr_tag_params,
+        verilogParams: {},
+        ports: instance_ports_for_gen_lu_addr_tag
+    })=\
+    \=u.instance({
+        instanceName: 'u_gen_wr_addr_tag',
+        moduleName: 'tag_gen',
+        params : gen_addr_tag_params,
+        verilogParams: {},
+        ports: instance_ports_for_gen_wr_addr_tag
+    })=\
+
+///////////////////////////////////////////////////////////////////////////////
+// w_rc_addr
+///////////////////////////////////////////////////////////////////////////////
+
+\jsbegin
+    var gen_rc_addr_params = { PriSubDiagAddrBits     : PriSubDiagAddrBits,
+                               SecSubRows             : SecSubRows,
+                               wAddr                  : AW,
+                               wCacheLineOffset       : CLO
+                             };
+    var instance_ports_for_gen_rc_addr = {
+        addr_out            : 'w_rc_addr',
+        tag_in              : 'w_rc_tag',
+        index_in            : 'w_rc_index'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'u_gen_rc_addr',
+        moduleName: 'addr_gen',
+        params : gen_rc_addr_params,
+        verilogParams: {},
+        ports: instance_ports_for_gen_rc_addr
+    })=\
+
+endmodule

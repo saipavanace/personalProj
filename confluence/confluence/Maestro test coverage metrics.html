@@ -1,0 +1,17 @@
+<p>Maestro test coverage metrics can be found <a class="external-link" href="http://dashboard-maestro.arteris.com:5601/app/dashboards#/view/ddc8eef0-5d51-11ec-8b00-431695efd256?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-30d%2Fd,to:now))" rel="nofollow">here</a>.</p><h1 id="Maestrotestcoveragemetrics-Buildingtestscoveragemetricslocally.">Building tests coverage metrics locally.</h1><h2 id="Maestrotestcoveragemetrics-Buildandgeneratealltestscoverage.">Build and generate all tests coverage.</h2><ol start="1"><li><p>Build Maestro using using </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">make build_cov</pre>
+</div></div><p>(see <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/2fd7f33e7327dbc40a155a8707afcfd3ae82918d/Makefile#L237" rel="nofollow">target here</a>)<br/></p></li><li><p>Run tests and generate rapport using</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">make test_only_cov</pre>
+</div></div></li></ol><h2 id="Maestrotestcoveragemetrics-BuildandgenerateGUIonlytestscoverage."> Build and generate GUI only tests coverage. <br/></h2><ol start="1"><li><p>Build Maestro using using </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">make build_cov</pre>
+</div></div></li><li><p>Run gui tests using:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># cleanup all previous coverage data (delete all *.gcda files)
+find -type f -name &#39;*.gcda&#39; | xargs rm
+
+# run tests (will regenerate .gcda files)
+cd build_cov &amp;&amp; ctest -R “tst_gui*”</pre>
+</div></div></li><li><p>generate GUI coverage data and rapport:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">mkdir -p coverage
+cd coverage; ../scripts/metrics/gui_coverage.sh
+Firefox coverage/gui/index.html</pre>
+</div></div><p>(see <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/2fd7f33e7327dbc40a155a8707afcfd3ae82918d/scripts/metrics/gui_coverage.sh" rel="nofollow">script file here</a>)</p></li></ol><p /><p />

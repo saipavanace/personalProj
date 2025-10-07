@@ -1,0 +1,513 @@
+/* This file is included in svt_axi_port_defines.svi*/
+<%
+//Embedded javascript code to figure number of blocks
+  var pidx = 0;
+  var mst_axiaiu_idx = 0;
+  var slv_axiaiu_idx = 0;
+  var max_addr_width = 0;
+  var max_data_width = 0;
+  var max_id_width = 0;
+  var max_addr_user_width = 0;
+  var max_data_user_width = 0;
+  var max_resp_user_width = 0;
+  var axi_if_in_aius = 0;
+  var ace_liteE_if_in_aius = 0;
+  var ace_if_in_aius = 0;
+  const aiu_axiInt = [];
+  let computedAxiInt;
+
+
+var ioaiu_idx=0; 
+var ioaiu_idx_with_multi_core=0; 
+var numAce=0; 
+for(var pidx = 0; pidx < obj.nAIUs; pidx++) {
+    if(!obj.AiuInfo[pidx].fnNativeInterface.match("CHI")) {
+        if ((obj.AiuInfo[pidx].fnNativeInterface != 'AXI4') && (obj.AiuInfo[pidx].fnNativeInterface != 'AXI5')) {
+            numAce = numAce + 1;
+        }
+        for(var i=0; i<obj.AiuInfo[pidx].nNativeInterfacePorts; i++) {%>
+           `define SVT_IOAIU<%=ioaiu_idx%>_<%=i%>_MASTER_SEQR_PATH m_concerto_env.snps.svt.amba_system_env.axi_system[0].sequencer.master_sequencer[<%=ioaiu_idx_with_multi_core%>]
+<%           ioaiu_idx_with_multi_core = ioaiu_idx_with_multi_core + 1;
+         }
+        ioaiu_idx = ioaiu_idx + 1;
+    }
+}
+
+   
+if (obj.testBench == "io_aiu") {
+  if(Array.isArray(obj.interfaces.axiInt)){
+      computedAxiInt = obj.interfaces.axiInt[0];
+      console.log(JSON.stringify(computedAxiInt));
+  }else{
+      computedAxiInt = obj.interfaces.axiInt;
+  }
+}
+
+  for(var pidx = 0; pidx < obj.nAIUs; pidx++) {
+      if((obj.AiuInfo[pidx].fnNativeInterface.indexOf('CHI') < 0) && Array.isArray(obj.AiuInfo[pidx].interfaces.axiInt)) {
+          aiu_axiInt[pidx] = obj.AiuInfo[pidx].interfaces.axiInt[0];
+      } else {
+          aiu_axiInt[pidx] = obj.AiuInfo[pidx].interfaces.axiInt;
+      }
+  }
+
+  if (obj.testBench == "fsys") {
+    for(pidx = 0; pidx < obj.nAIUs; pidx++) { 
+      if((obj.AiuInfo[pidx].fnNativeInterface == 'AXI5')||(obj.AiuInfo[pidx].fnNativeInterface == 'AXI4')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE5')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE-LITE')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACELITE-E')) {
+  for (var mpu_io = 0; mpu_io < obj.AiuInfo[pidx].nNativeInterfacePorts; mpu_io++){
+
+        if(max_data_width<aiu_axiInt[pidx].params.wData) {
+            max_data_width = aiu_axiInt[pidx].params.wData;
+        }
+        if(max_addr_width<aiu_axiInt[pidx].params.wAddr) {
+            max_addr_width = aiu_axiInt[pidx].params.wAddr;
+        }
+        if(max_id_width<aiu_axiInt[pidx].params.wArId) {
+            max_id_width = aiu_axiInt[pidx].params.wArId;
+        }
+        if(max_id_width<aiu_axiInt[pidx].params.wAwId) {
+            max_id_width = aiu_axiInt[pidx].params.wAwId;
+        }
+        if(max_addr_user_width<aiu_axiInt[pidx].params.wArUser && aiu_axiInt[pidx].params.wArUser>0) {
+            max_addr_user_width = aiu_axiInt[pidx].params.wArUser;
+        }
+        if(max_addr_user_width<aiu_axiInt[pidx].params.wAwUser && aiu_axiInt[pidx].params.wAwUser>0) {
+            max_addr_user_width= aiu_axiInt[pidx].params.wAwUser;
+        }
+        if(max_data_user_width<aiu_axiInt[pidx].params.wRUser && aiu_axiInt[pidx].params.wRUser>0) {
+            max_data_user_width = aiu_axiInt[pidx].params.wRUser;
+        }
+        if(max_data_user_width<aiu_axiInt[pidx].params.wWUser && aiu_axiInt[pidx].params.wWUser>0) {
+            max_data_user_width= aiu_axiInt[pidx].params.wWUser;
+        }
+        if(max_resp_user_width<aiu_axiInt[pidx].params.wBUser && aiu_axiInt[pidx].params.wBUser>0) {
+            max_resp_user_width= aiu_axiInt[pidx].params.wBUser;
+        }
+        if(obj.AiuInfo[pidx].fnNativeInterface == 'ACELITE-E') {
+            ace_liteE_if_in_aius = 1;
+        }
+        if(obj.AiuInfo[pidx].fnNativeInterface == 'ACE' || obj.AiuInfo[pidx].fnNativeInterface == 'ACE5') {
+            ace_if_in_aius = 1;
+        }
+        mst_axiaiu_idx++; 
+        axi_if_in_aius = 1;
+      } } 
+    } 
+
+    var pidx = 0;
+    for(var pidx = 0; pidx < obj.nDIIs; pidx++) { 
+      if (obj.DiiInfo[pidx].configuration == 0) {   					      
+        if(obj.DiiInfo[pidx].interfaces.axiInt.direction == 'master') { 
+          if(max_data_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wData) {
+              max_data_width = obj.DiiInfo[pidx].interfaces.axiInt.params.wData;
+          }
+          if(max_addr_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wAddr) {
+              max_addr_width = obj.DiiInfo[pidx].interfaces.axiInt.params.wAddr;
+          }
+          if(max_id_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wAwId) {
+              max_id_width = obj.DiiInfo[pidx].interfaces.axiInt.params.wAwId;
+          }
+          if(max_id_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wArId) {
+              max_id_width = obj.DiiInfo[pidx].interfaces.axiInt.params.wArId;
+          }
+          if(max_addr_user_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wArUser && obj.DiiInfo[pidx].interfaces.axiInt.params.wArUser>0) {
+              max_addr_user_width = obj.DiiInfo[pidx].interfaces.axiInt.params.wArUser;
+          }
+          if(max_addr_user_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wAwUser && obj.DiiInfo[pidx].interfaces.axiInt.params.wAwUser>0) {
+              max_addr_user_width= obj.DiiInfo[pidx].interfaces.axiInt.params.wAwUser;
+          }
+          if(max_data_user_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wRUser && obj.DiiInfo[pidx].interfaces.axiInt.params.wRUser>0) {
+              max_data_user_width = obj.DiiInfo[pidx].interfaces.axiInt.params.wRUser;
+          }
+          if(max_data_user_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wWUser && obj.DiiInfo[pidx].interfaces.axiInt.params.wWUser>0) {
+              max_data_user_width= obj.DiiInfo[pidx].interfaces.axiInt.params.wWUser;
+          }
+          if(max_resp_user_width<obj.DiiInfo[pidx].interfaces.axiInt.params.wBUser && obj.DiiInfo[pidx].interfaces.axiInt.params.wBUser>0) {
+              max_resp_user_width= obj.DiiInfo[pidx].interfaces.axiInt.params.wBUser;
+          }
+          slv_axiaiu_idx ++;
+        }
+    }}
+
+    var pidx = 0;
+    for(var pidx = 0; pidx < obj.nDMIs; pidx++) { 
+      if(obj.DmiInfo[pidx].interfaces.axiInt.direction == 'master') { 
+        if(max_data_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wData) {
+            max_data_width = obj.DmiInfo[pidx].interfaces.axiInt.params.wData;
+        }
+        if(max_addr_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wAddr) {
+            max_addr_width = obj.DmiInfo[pidx].interfaces.axiInt.params.wAddr;
+        }
+        if(max_id_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wAwId) {
+            max_id_width = obj.DmiInfo[pidx].interfaces.axiInt.params.wAwId;
+        }
+        if(max_id_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wArId) {
+            max_id_width = obj.DmiInfo[pidx].interfaces.axiInt.params.wArId;
+        }
+        if(max_addr_user_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wArUser && obj.DmiInfo[pidx].interfaces.axiInt.params.wArUser>0) {
+            max_addr_user_width = obj.DmiInfo[pidx].interfaces.axiInt.params.wArUser;
+        }
+        if(max_addr_user_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wAwUser && obj.DmiInfo[pidx].interfaces.axiInt.params.wAwUser>0) {
+            max_addr_user_width= obj.DmiInfo[pidx].interfaces.axiInt.params.wAwUser;
+        }
+        if(max_data_user_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wRUser && obj.DmiInfo[pidx].interfaces.axiInt.params.wRUser>0) {
+            max_data_user_width = obj.DmiInfo[pidx].interfaces.axiInt.params.wRUser;
+        }
+        if(max_data_user_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wWUser && obj.DmiInfo[pidx].interfaces.axiInt.params.wWUser>0) {
+            max_data_user_width= obj.DmiInfo[pidx].interfaces.axiInt.params.wWUser;
+        }
+        if(max_resp_user_width<obj.DmiInfo[pidx].interfaces.axiInt.params.wBUser && obj.DmiInfo[pidx].interfaces.axiInt.params.wBUser>0) {
+            max_resp_user_width= obj.DmiInfo[pidx].interfaces.axiInt.params.wBUser;
+        }
+        slv_axiaiu_idx ++;
+      }
+    }
+  } 
+  if (obj.testBench == "io_aiu") { 
+    max_data_width = computedAxiInt.params.wData;
+    max_addr_width = computedAxiInt.params.wAddr;
+    max_id_width = computedAxiInt.params.wArId;
+    if(max_id_width<computedAxiInt.params.wAwId) {
+      max_id_width = computedAxiInt.params.wAwId;
+    }
+    mst_axiaiu_idx++; 
+  }
+%>
+
+<%
+var axiObj = {};
+
+for(pidx = 0; pidx < obj.nAIUs; pidx++) { 
+if(((obj.AiuInfo[pidx].fnNativeInterface == 'AXI5')||(obj.AiuInfo[pidx].fnNativeInterface == 'AXI4')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE5')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE-LITE')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACELITE-E')) && (obj.AiuInfo[pidx].strRtlNamePrefix==obj.BlockId || obj.testBench != "io_aiu")) {
+//IOAIU_stuff_only
+axiObj.WAWID               = aiu_axiInt[pidx].params.wAwId; 
+axiObj.WARID               = aiu_axiInt[pidx].params.wArId; 
+axiObj.WAXID               = Math.max(axiObj.WAWID, axiObj.WARID); 
+axiObj.WAXADDR             = 40;
+axiObj.WXDATA              = aiu_axiInt[pidx].params.wData;
+axiObj.WCDDATA             = aiu_axiInt[pidx].params.wData;
+
+
+axiObj.WLOGXDATA           = Math.ceil(Math.log2(axiObj.WXDATA/8));
+axiObj.WAWUSER             = 4;
+axiObj.WWUSER              = 4; //FIXME: axiObj should be 0 in V1
+axiObj.WBUSER              = 4; //FIXME: axiObj should be 0 in V1
+axiObj.WARUSER             = 4;
+axiObj.WRUSER              = 4; //FIXME: axiObj should be 0 in V1
+axiObj.WUSEACECACHE        = 0;
+axiObj.WUSEACEQOS          = 0; 
+axiObj.WUSEACEREGION       = 0; 
+axiObj.WUSEACEDOMAIN       = 0; 
+axiObj.WUSEACEUNIQUE       = 0; 
+axiObj.WUSEACEPROT         = 0; 
+axiObj.WUSEACEUSER         = 0;
+axiObj.CAXLEN              = 8; 
+axiObj.CAXSIZE             = 3;
+axiObj.CAXBURST            = 2;
+axiObj.CAXLOCK             = 1;
+axiObj.CAXCACHE            = 4;
+axiObj.CAXPROT             = 3;
+axiObj.CAXQOS              = 4;
+axiObj.CAXREGION           = 4;
+axiObj.CARSNOOP            = 4;
+axiObj.CAWSNOOP            = 4; // Changed to 4 in ACE LITE E
+axiObj.CACSNOOP            = 4;
+axiObj.CAXDOMAIN           = 2;
+axiObj.CAXBAR              = 2;
+axiObj.CBRESP              = 2;
+axiObj.CCRRESP             = 5;
+axiObj.CRRESPPASSDIRTYBIT  = 2;
+axiObj.CRRESPISSHAREDBIT   = 3;
+axiObj.CCRRESPDATXFERBIT   = 0;
+axiObj.CCRRESPERRBIT       = 1;
+axiObj.CCRRESPPASSDIRTYBIT = 2;
+axiObj.CCRRESPISSHAREDBIT  = 3;
+axiObj.CCRRESPWASUNIQUEBIT = 4;
+
+// AXI-LITE-E signal widths
+axiObj.WAWATOP             = 6;
+axiObj.WARVMIDEXT          = 4;
+axiObj.WACVMIDEXT          = 4;
+axiObj.WAWSTASHNID         = 11;
+axiObj.WAWSTASHLPID        = 5;
+axiObj.WRPOISON            = (axiObj.WXDATA < 64) ? 1 : axiObj.WXDATA/64;
+axiObj.WWPOISON            = (axiObj.WXDATA < 64) ? 1 : axiObj.WXDATA/64;
+axiObj.WCDPOISON           = (axiObj.WXDATA < 64) ? 1 : axiObj.WXDATA/64;
+axiObj.WRDATACHK           = axiObj.WXDATA/8;
+axiObj.WWDATACHK           = axiObj.WXDATA/8;
+axiObj.WCDDATACHK          = axiObj.WXDATA/8;
+axiObj.WARLOOP             = 8;
+axiObj.WAWLOOP             = 8;
+axiObj.WRLOOP              = 8;
+axiObj.WBLOOP              = 8;
+axiObj.WAXMMUSID           = 32;
+axiObj.WAXMMUSSID          = 20;
+axiObj.WARNSAID            = 4;
+axiObj.WAWNSAID            = 4;
+axiObj.WCRNSAID            = 4;
+
+
+axiObj.WAWID   = aiu_axiInt[pidx].params.wAwId;
+axiObj.WARID   = aiu_axiInt[pidx].params.wArId;
+
+axiObj.WAXID   = Math.max(axiObj.WAWID, axiObj.WARID);
+axiObj.WXDATA  = aiu_axiInt[pidx].params.wData;
+axiObj.WCDDATA = aiu_axiInt[pidx].params.wData; 
+axiObj.WAXADDR = aiu_axiInt[pidx].params.wAddr;
+
+axiObj.WARID         = aiu_axiInt[pidx].params.wArId; 	 
+axiObj.WAWID         = aiu_axiInt[pidx].params.wAwId; 	 
+axiObj.WXDATA        = aiu_axiInt[pidx].params.wData;
+axiObj.WLOGXDATA     = Math.ceil(Math.log2(axiObj.WXDATA/8));
+axiObj.WAXADDR       = aiu_axiInt[pidx].params.wAddr;
+
+if((obj.AiuInfo[pidx].fnNativeInterface == 'AXI5')||(obj.AiuInfo[pidx].fnNativeInterface == 'AXI4')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE-LITE')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACELITE-E')) {
+axiObj.WCDDATA   = aiu_axiInt[pidx].params.wData;
+} else {
+axiObj.WCDDATA   = aiu_axiInt[pidx].params.wCdData;
+}
+if((obj.AiuInfo[pidx].fnNativeInterface == 'ACE')||(obj.AiuInfo[pidx].fnNativeInterface == 'ACE5')) {
+axiObj.CRRESP              = 4;
+} else {
+axiObj.CRRESP              = 2;
+}
+
+axiObj.WAWUSER       = aiu_axiInt[pidx].params.wAwUser;
+axiObj.WARUSER       = aiu_axiInt[pidx].params.wArUser;
+
+axiObj.WWUSER        = aiu_axiInt[pidx].params.wWUser; 
+axiObj.WRUSER        = aiu_axiInt[pidx].params.wRUser; 
+ 
+axiObj.WBUSER        = aiu_axiInt[pidx].params.wBUser;  
+
+axiObj.WUSEACECACHE  = aiu_axiInt[pidx].params.useAceCache  ? 1 : 0;
+axiObj.WUSEACEPROT   = aiu_axiInt[pidx].params.wProt   ? 1 : 0; 
+axiObj.WUSEACEQOS    = aiu_axiInt[pidx].params.wQos    ? 1 : 0;
+axiObj.WUSEACEREGION = aiu_axiInt[pidx].params.wRegion ? 1 : 0; 
+axiObj.WUSEACEDOMAIN = aiu_axiInt[pidx].params.useAceDomain ? 1 : 0; 
+axiObj.WUSEACEUNIQUE = aiu_axiInt[pidx].params.useAceUnique ? 1 : 0; 
+axiObj.WUSEACEUSER   = (aiu_axiInt[pidx].params.wArUser + aiu_axiInt[pidx].params.wAwUser)>0 ? 1: 0;
+
+break; } }
+%>
+
+<%
+const idArray     = [max_id_width, axiObj.WAWID, axiObj.WARID];
+var   idBiggest   = Math.max(...idArray);
+
+//Issue with AXI Spec:8.3.2 vs Synopsys SVT_AXI_MAX_ADDR_USER_WIDTH,SVT_AXI_MAX_DATA_USER_WIDTH (commong for both rd,wr channels)
+const userAddrArray   = [axiObj.WARUSER, axiObj.WAWUSER];
+var   userAddrBiggest = Math.max(...userAddrArray);
+
+const userDataArray   = [axiObj.WWUSER, axiObj.WRUSER];
+var   userDataBiggest = Math.max(...userDataArray);
+
+var userAddr = (userAddrBiggest==0) ? 1 : userAddrBiggest; //resolve as scalar 1-bit
+var userData = (userDataBiggest==0) ? 1 : userDataBiggest; 
+var userResp = (axiObj.WBUSER==0)   ? 1 : axiObj.WBUSER;  
+%>
+
+
+                                      
+//Interface specific defines
+
+<% if (ioaiu_idx_with_multi_core > 0) { %>
+`define IO_UNITS_CNT_NON_ZERO
+<% } %>
+
+`define SVT_VIRTUAL_SEQR_PATH m_concerto_env.snps.svt.amba_system_env.axi_system[0].sequencer
+<% if(obj.testBench != "io_aiu") {%>
+`define NUM_IOAIU_SVT_MASTERS <%=ioaiu_idx_with_multi_core%>
+`define NUM_ACE_SVT_MASTERS <%=numAce%>
+ <%} else {%> 
+ `define NUM_IOAIU_SVT_MASTERS 1
+ `define NUM_ACE_SVT_MASTERS 1
+ <%}%>
+
+
+    
+`define SVT_ACE5_ENABLE
+
+<% if (obj.testBench == "fsys") { %>
+<% if (ace_liteE_if_in_aius==1 || ace_if_in_aius==1) { %>    
+`define SVT_ACE5_ENABLE
+<% } %>
+`undef SVT_AMBA_INTERFACE_METHOD_DISABLE
+`define SVT_AXI_MAX_DATA_WIDTH <%=max_data_width%>
+`define SVT_AXI_MAX_ADDR_WIDTH <%=max_addr_width%> + 1 // adding 1 to account for NS bit
+`define SVT_AXI_ADDR_WIDTH <%=max_addr_width%>
+`define SVT_AXI_MAX_ID_WIDTH   <%=max_id_width%>
+
+// `define SVT_AXI_MAX_LP_MASTERS 1   //TODO: add param   
+//Error-[IIXMR] Invalid index in cross-module reference
+///engr/dev/tools/synopsys/vip_amba_svt_T-2022.03/vip/svt/amba_svt/latest/sverilog/include/svt_axi_if.svi, 160
+//  Invalid index in cross-module reference due to index is out of bound.
+`ifdef VCS
+`define SVT_AXI_MAX_LP_MASTERS 16   //Hack to fix above error for VCS simulator
+`else
+`define SVT_AXI_MAX_LP_MASTERS 1  
+`endif
+
+<% if(mst_axiaiu_idx>0) { %>
+`define SVT_AXI_MAX_NUM_MASTERS_<%=mst_axiaiu_idx%>
+<% } %>
+`ifdef USE_VIP_SNPS_AXI_SLAVES
+`define SVT_AXI_MAX_NUM_SLAVES_<%=slv_axiaiu_idx%>
+`else // `ifdef USE_VIP_SNPS_AXI_SLAVES
+`define SVT_AXI_MAX_NUM_SLAVES_0
+`endif // `ifdef USE_VIP_SNPS_AXI_SLAVES ... `else
+
+`define SVT_AXI_INACTIVE_CHAN_LOW_VAL 0
+
+
+<% if(axi_if_in_aius==1) { %>
+`define SVT_AXI_MAX_BURST_LENGTH_WIDTH  <%=axiObj.CAXLEN%>
+`define SVT_AXI_SIZE_WIDTH              <%=axiObj.CAXSIZE%>
+`define SVT_AXI_BURST_WIDTH             <%=axiObj.CAXBURST%>
+`define SVT_AXI_LOCK_WIDTH              <%=axiObj.CAXLOCK%>
+`define SVT_AXI_LOCK_WIDTH_AS_ONE                         
+`define SVT_AXI_CACHE_WIDTH             <%=axiObj.CAXCACHE%>
+`define SVT_AXI_PROT_WIDTH              <%=axiObj.CAXPROT%>
+`define SVT_AXI_STASH_NID_WIDTH         <%=axiObj.WAWSTASHNID%>
+`define SVT_AXI_STASH_LPID_WIDTH        <%=axiObj.WAWSTASHLPID%>
+`define SVT_ACE5_ATOMIC_TYPE_WIDTH      <%=axiObj.WAWATOP  %>
+`define SVT_AXI_ACE_DOMAIN_WIDTH        <%=axiObj.CAXDOMAIN%>
+`define SVT_AXI_ACE_WSNOOP_WIDTH        <%=axiObj.CAWSNOOP%>
+`define SVT_AXI_ACE_BARRIER_WIDTH       <%=axiObj.CAXBAR%>
+`define SVT_AXI_MAX_VMIDEXT_WIDTH       <%=axiObj.WARVMIDEXT%>
+`define SVT_AXI_ACE_RSNOOP_WIDTH        <%=axiObj.CARSNOOP%>
+`define SVT_AXI_RESP_WIDTH              <%=axiObj.CRRESP %>
+`define SVT_AXI_REGION_WIDTH            <%=axiObj.CAXREGION%>
+`define SVT_AXI_QOS_WIDTH               <%=axiObj.CAXQOS%>
+<% if(max_addr_user_width>0) { %>
+`define SVT_AXI_MAX_ADDR_USER_WIDTH     <%=max_addr_user_width%> 
+<% } %>
+<% if(max_data_user_width>0) { %>
+`define SVT_AXI_MAX_DATA_USER_WIDTH     <%=max_data_user_width%> 
+<% } %>
+<% if(max_resp_user_width>0) { %>
+`define SVT_AXI_MAX_BRESP_USER_WIDTH    <%=max_resp_user_width%> 
+<% } %>
+//`define SVT_AXI_ACE_SNOOP_ADDR_WIDTH    <%=axiObj.WAXADDR%>
+`define SVT_AXI_ACE_SNOOP_ADDR_WIDTH    `SVT_AXI_MAX_ADDR_WIDTH
+`define SVT_AXI_ACE_SNOOP_TYPE_WIDTH    <%=axiObj.CACSNOOP%>
+`define SVT_AXI_ACE_SNOOP_PROT_WIDTH    <%=axiObj.CAXPROT%>
+`define SVT_AXI_ACE_SNOOP_RESP_WIDTH    <%=axiObj.CCRRESP  %>
+<% } %>
+//`define SVT_AXI_ACE_SNOOP_DATA_WIDTH    <%=axiObj.WCDDATA%>
+`ifdef SVT_AXI_LONG_DELAY
+ // `define SVT_AXI_MAX_AXI3_GENERIC_DELAY  4096 // <== Generic delay used for all delays unless user overrides it 
+ // `define SVT_AXI_MAX_ADDR_VALID_DELAY 4096 // <== addr_ready_delay
+ // `define SVT_AXI_MAX_ADDR_DELAY 4096 // <== addr_ready_delay
+ // `define `SVT_AXI_MAX_WREADY_DELAY 1024// <-- wvalid_delay
+ // `define `SVT_AXI_MAX_RREADY_DELAY 1024// <-- rvalid_delay
+    `define SVT_AXI_MAX_AXI3_GENERIC_DELAY  100     // <== Generic delay used for all delays unless user overrides it 
+  `define SVT_AXI_MIN_WRITE_RESP_DELAY  30     // <== Generic delay used for all delays unless user overrides it 
+   `define SVT_AXI_MAX_CRREADY_DELAY   50
+  `define SVT_AXI_MAX_WRITE_RESP_DELAY 60
+  `define SVT_AXI_MAX_ADDR_VALID_DELAY 100     // <== addr_ready_delay
+  `define SVT_AXI_MAX_ADDR_DELAY 200     // <== addr_ready_delay
+  `define SVT_AXI_MAX_WREADY_DELAY 50 // <-- wvalid_delay
+  `define SVT_AXI_MAX_RREADY_DELAY 50
+`elsif DIRECTED_TEST_FOR_DII
+  `define SVT_AXI_MAX_WVALID_DELAY 2
+	`define SVT_AXI_MAX_NUM_OUTSTANDING_XACT 1000
+  `define SVT_AXI_MAX_ADDR_VALID_DELAY 2     // <== addr_ready_delay
+  `define SVT_AXI_MIN_WRITE_RESP_DELAY 30     // <== Generic delay used for all delays unless user overrides it 
+  `define SVT_AXI_MAX_WRITE_RESP_DELAY 100
+  `define SVT_AXI_MASTER_IF_SETUP_TIME 0
+  `define SVT_AXI_MASTER_IF_HOLD_TIME 0
+`else
+  `define SVT_AXI_MAX_AXI3_GENERIC_DELAY  16     // <== Generic delay used for all delays unless user overrides it 
+  `define SVT_AXI_MAX_ADDR_VALID_DELAY 16     // <== addr_ready_delay
+  `define SVT_AXI_MAX_ADDR_DELAY 16     // <== addr_ready_delay
+  `define SVT_AXI_MAX_WREADY_DELAY 16 // <-- wvalid_delay
+  `define SVT_AXI_MAX_RREADY_DELAY 16 // <-- rvalid_delay
+`endif
+`define SVT_AXI_MAX_RVALID_DELAY 128
+`define SVT_AXI_MAX_WRITE_RESP_DELAY 128
+
+<% } %>
+<% if (obj.testBench == "io_aiu") { %>
+`define SVT_AXI_MAX_DATA_WIDTH <%=max_data_width%>
+`define SVT_AXI_MAX_ADDR_WIDTH <%=max_addr_width%> + 1 // Adding 1 to account for NS bit
+`define SVT_AXI_ADDR_WIDTH <%=max_addr_width%> 
+`define SVT_AXI_MAX_ID_WIDTH   <%=max_id_width%>
+
+`define SVT_AXI_MAX_LP_MASTERS 16   //TODO: add param
+`define SVT_AXI_MAX_NUM_MASTERS_<%=mst_axiaiu_idx%>
+`define SVT_AXI_MAX_NUM_SLAVES_0
+
+`define SVT_AXI_INACTIVE_CHAN_LOW_VAL 0
+
+`define SVT_AXI_MAX_BURST_LENGTH_WIDTH  <%=axiObj.CAXLEN%>
+`define SVT_AXI_SIZE_WIDTH              <%=axiObj.CAXSIZE%>
+`define SVT_AXI_BURST_WIDTH             <%=axiObj.CAXBURST%>
+`define SVT_AXI_LOCK_WIDTH              <%=axiObj.CAXLOCK%>
+`define SVT_AXI_CACHE_WIDTH             <%=axiObj.CAXCACHE%>
+`define SVT_AXI_PROT_WIDTH              <%=axiObj.CAXPROT%>
+`define SVT_AXI_STASH_NID_WIDTH         <%=axiObj.WAWSTASHNID%>
+`define SVT_AXI_STASH_LPID_WIDTH        <%=axiObj.WAWSTASHLPID%>
+`define SVT_ACE5_ATOMIC_TYPE_WIDTH      <%=axiObj.WAWATOP  %>
+`define SVT_AXI_ACE_DOMAIN_WIDTH        <%=axiObj.CAXDOMAIN%>
+`define SVT_AXI_ACE_WSNOOP_WIDTH        <%=axiObj.CAWSNOOP%>
+`define SVT_AXI_ACE_BARRIER_WIDTH       <%=axiObj.CAXBAR%>
+`define SVT_AXI_MAX_VMIDEXT_WIDTH       <%=axiObj.WARVMIDEXT%>
+`define SVT_AXI_ACE_RSNOOP_WIDTH        <%=axiObj.CARSNOOP%>
+`define SVT_AXI_RESP_WIDTH              <%=axiObj.CRRESP %>
+`define SVT_AXI_REGION_WIDTH            <%=axiObj.CAXREGION%>
+`define SVT_AXI_QOS_WIDTH               <%=axiObj.CAXQOS%>
+`define SVT_AXI_MAX_ADDR_USER_WIDTH     <%=userAddr%> 
+`define SVT_AXI_MAX_DATA_USER_WIDTH     <%=userData%> 
+`define SVT_AXI_MAX_BRESP_USER_WIDTH    <%=userResp%> 
+//`define SVT_AXI_ACE_SNOOP_ADDR_WIDTH    <%=axiObj.WAXADDR%>
+`define SVT_AXI_ACE_SNOOP_ADDR_WIDTH    `SVT_AXI_MAX_ADDR_WIDTH
+`define SVT_AXI_ACE_SNOOP_TYPE_WIDTH    <%=axiObj.CACSNOOP%>
+`define SVT_AXI_ACE_SNOOP_PROT_WIDTH    <%=axiObj.CAXPROT%>
+`define SVT_AXI_ACE_SNOOP_RESP_WIDTH    <%=axiObj.CCRRESP  %>
+`define SVT_AXI_ACE_SNOOP_DATA_WIDTH    <%=axiObj.WCDDATA%>
+<% } %>
+
+<% if(slv_axiaiu_idx>0) { %>
+<% if(max_addr_user_width>0) { %>
+`define SVT_AXI_MAX_ADDR_USER_WIDTH     <%=max_addr_user_width%> 
+<% } %>
+<% if(max_data_user_width>0) { %>
+`define SVT_AXI_MAX_DATA_USER_WIDTH     <%=max_data_user_width%> 
+<% } %>
+<% if(max_resp_user_width>0) { %>
+`define SVT_AXI_MAX_BRESP_USER_WIDTH    <%=max_resp_user_width%> 
+<% }} %>
+
+//`define SVT_AXI_MAX_DATA_WIDTH <%=max_data_width%>
+//`define SVT_AXI_MAX_LP_MASTERS 16   //TODO: add param
+//`define SVT_AXI_MAX_NUM_MASTERS_<%=mst_axiaiu_idx%>
+//`define SVT_AXI_MAX_NUM_SLAVES_0
+//
+//`define SVT_AXI_INACTIVE_CHAN_LOW_VAL 0
+//
+//`define SVT_AXI_MAX_BURST_LENGTH_WIDTH  <%=axiObj.CAXLEN%>
+//`define SVT_AXI_SIZE_WIDTH              <%=axiObj.CAXSIZE%>
+//`define SVT_AXI_BURST_WIDTH             <%=axiObj.CAXBURST%>
+//`define SVT_AXI_LOCK_WIDTH              <%=axiObj.CAXLOCK%>
+//`define SVT_AXI_CACHE_WIDTH             <%=axiObj.CAXCACHE%>
+//`define SVT_AXI_PROT_WIDTH              <%=axiObj.CAXPROT%>
+//`define SVT_AXI_STASH_NID_WIDTH         <%=axiObj.WAWSTASHNID%>
+//`define SVT_AXI_STASH_LPID_WIDTH        <%=axiObj.WAWSTASHLPID%>
+//`define SVT_ACE5_ATOMIC_TYPE_WIDTH      <%=axiObj.WAWATOP  %>
+//`define SVT_AXI_ACE_DOMAIN_WIDTH        <%=axiObj.CAXDOMAIN%>
+//`define SVT_AXI_ACE_WSNOOP_WIDTH        <%=axiObj.CAWSNOOP%>
+//`define SVT_AXI_ACE_BARRIER_WIDTH       <%=axiObj.CAXBAR%>
+//`define SVT_AXI_MAX_VMIDEXT_WIDTH       <%=axiObj.WARVMIDEXT%>
+//`define SVT_AXI_ACE_RSNOOP_WIDTH        <%=axiObj.CARSNOOP%>
+//`define SVT_AXI_RESP_WIDTH              <%=axiObj.CRRESP %>
+//`define SVT_AXI_REGION_WIDTH            <%=axiObj.CAXREGION%>
+//`define SVT_AXI_QOS_WIDTH               <%=axiObj.CAXQOS%>
+//`define SVT_AXI_MAX_ADDR_USER_WIDTH     <%=userAddr%> 
+//`define SVT_AXI_MAX_DATA_USER_WIDTH     <%=userData%> 
+//`define SVT_AXI_MAX_BRESP_USER_WIDTH    <%=userResp%> 
+//`define SVT_AXI_ACE_SNOOP_ADDR_WIDTH    <%=axiObj.WAXADDR%>
+//`define SVT_AXI_ACE_SNOOP_TYPE_WIDTH    <%=axiObj.CACSNOOP%>
+//`define SVT_AXI_ACE_SNOOP_PROT_WIDTH    <%=axiObj.CAXPROT%>
+//`define SVT_AXI_ACE_SNOOP_RESP_WIDTH    <%=axiObj.CCRRESP  %>
+//`define SVT_AXI_ACE_SNOOP_DATA_WIDTH    <%=axiObj.WCDDATA%>

@@ -1,0 +1,481 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// DII Request FIFO control module
+\jsend
+
+\jsbegin
+var u = obj.lib;
+\jsend
+
+\jsbegin
+    u.paramDefault('assertOn','int',0);
+
+    var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+    var assertOn           = obj.lib.getParam('assertOn');
+    var cmd_addr_width     = u.getParam('wAddr');
+    var axi_has_user       = u.getParam('hasUser');
+    var axi_user_width     = u.getParam('wUser');
+    var cmd_has_aux        = u.getParam('hasAux');
+    var cmd_intf_width     = u.getParam('wIntfSize');
+    var cmd_aux_width      = u.getParam('wAux');
+    var cmd_pri_width      = u.getParam('wPri');
+    var cmd_ql_width       = u.getParam('wQl');    
+    var cmd_mpf1_width     = u.getParam('wMpf1');
+    var cmd_mpf2_width     = u.getParam('wMpf2');
+    var cmd_tof_width      = u.getParam('wTOF');
+    var tid_width          = u.getParam('wMsgId');
+    var init_id_width      = u.getParam('wInitiatorId');
+    var cmd_attr_width     = u.getParam('cmd_attr_width');
+    var cm_type_width      = u.getParam('wCmType');
+    var cmd_size_width     = u.getParam('wSize'); 
+    var cmd_qos_width      = u.getParam('wQos');
+    var hasNs              = u.getParam('hasNs');
+    var configuration      = u.getParam('configuration');
+    var wCacheLineOffset   = u.getParam('wCacheLineOffset');
+    var nExclusiveEntries= u.getParam('nExclusiveEntries');
+
+    var axi_data_width     = u.getParam('axi_data_width');
+    var axi_id_width       = u.getParam('axi_id_width');
+    var axi_id_num_wr      = u.getParam('axi_id_num_wr');
+    var axi_id_num_rd      = u.getParam('axi_id_num_rd');
+    var fnNativeInterface  = u.getParam('fnNativeInterface');
+    
+    var CmdClnInv          = u.getParam('cmType','CmdClnInv'); 
+    var CmdMkInv           = u.getParam('cmType','CmdMkInv'); 
+    var CmdRdNC            = u.getParam('cmType','CmdRdNC');
+    var CmdWrNCPtl         = u.getParam('cmType','CmdWrNCPtl'); 
+    var CmdWrNCFull        = u.getParam('cmType','CmdWrNCFull'); 
+    var CmdClnShPsist      = u.getParam('cmType','CmdClnShPsist'); 
+    var CmdClnVld          = u.getParam('cmType','CmdClnVld'); 
+
+   var wFUnitId            = u.getParam('wFUnitId');
+   var wFPortId            = obj.lib.getParam('wFPortId');
+   
+   var useSysReqSender		= obj.lib.getParam('useSysReqSender');
+
+   let clkInterface			= { name: "", signals: { clk: 1, reset_n: 1 } };
+
+// Fields of the command  and message header used by DII are : Message type(8 bits), Tid , Init id, Address, Attribute(17 bits), Mpf2, Size(3 bits), Tof, Qos(4 bits), Aux (Optional Bits)
+    var cmd_req_width     = cm_type_width + tid_width + wFUnitId + cmd_addr_width + cmd_attr_width + cmd_mpf1_width + cmd_mpf2_width  + cmd_size_width + cmd_tof_width + cmd_qos_width + cmd_aux_width + cmd_intf_width + cmd_pri_width + cmd_ql_width;
+ // Always have sysReq this release.
+ /* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (useSysReqSender) {
+var reqAckEventInterface = obj.userLib.ParamDefaultGet(obj.lib, 'reqAckEventInterface', 'object', {});
+}
+
+
+// Function to convert an interface {{name, signals}) to a { modulePrefix, localPrefix, interface} object
+// that is used to specify how local interfaces are mapped to module interfaces of an instance
+function getModuleLocalPrefixAndInterface (intrface) {
+	const modulePrefix		= intrface.name;
+	const localPrefix		= intrface.name;
+	return { modulePrefix, localPrefix, "interface": intrface.signals };
+}
+
+\jsend
+
+
+\jsbegin
+//=========================================================================
+// ports
+//=========================================================================
+u.port('input',  'clk', 1);
+u.port('input',  'reset_n', 1);
+
+u.port('input',  'cmd_req_fifo_valid',  1);
+u.port('input',  'cmd_req_fifo_empty',  1);
+u.port('input',  'cmd_req_fifo_data', cmd_req_width);
+u.port('input',  'cmd_resp_fifo_ready', 1);
+u.port('input',  'str_req_rd_fifo_in_ready', 1);
+
+u.port('input',  'wtt_addr_ewa_match',  1);
+
+u.port('input',  'rtt_empty',  1);
+u.port('input',  'wtt_empty',  1);
+u.port('input',  'rtt_full',  1);
+u.port('input',  'wtt_full',  1);
+
+u.port('output', 'out_cmd_req_fifo_ready', 1);
+u.port('output', 'rtt_allocate_new_entry', 1);
+u.port('output', 'wtt_allocate_new_entry', 1);
+// Always have sysReq this release.
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (useSysReqSender) {
+  u.port('output', 'evt_buffer_busy', 1);
+}
+
+obj.lib.interface('tt_', 'master', obj.lib.getParam('TT1'));
+// Always have sysReq this release.
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (useSysReqSender) {
+   obj.lib.interface(reqAckEventInterface.name, 'master', reqAckEventInterface.signals);
+}
+
+\jsend
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+\jsbegin
+
+ var cmd_attr_lsb = cmd_addr_width;
+ var cmd_attr_msb = cmd_addr_width + cmd_attr_width - 1;
+
+ var cmd_ordering_lsb = cmd_attr_lsb + 9;
+ var cmd_ordering_msb = cmd_attr_lsb + 10;
+
+ var cmd_lock_lsb = cmd_attr_lsb + 11;
+ var cmd_lock_msb = cmd_attr_lsb + 12;
+
+ var cmd_attr_vz = cmd_attr_lsb + 0;
+ var cmd_attr_ac = cmd_attr_lsb + 1;
+ var cmd_attr_ca = cmd_attr_lsb + 2;
+ var cmd_attr_ch = cmd_attr_lsb + 3;
+ var cmd_attr_st = cmd_attr_lsb + 4;
+ var cmd_attr_es = cmd_attr_lsb + 6;
+ var cmd_attr_ns = cmd_attr_lsb + 7;
+ 
+ // Always have NS bit this release.
+ /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+ if(hasNs == 'Y') {
+ var cmd_attr_pr = cmd_attr_lsb + 8;
+ var cmd_attr_tm = cmd_attr_lsb + 15;
+ } else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+ var cmd_attr_pr = cmd_attr_lsb + 7;
+ var cmd_attr_tm = cmd_attr_lsb + 14;
+ }
+
+ //cmd_attr_aux_lsb = cmd_attr_lsb + 4;
+ //cmd_attr_aux_msb = cmd_attr_lsb + 4;
+
+ var cmd_size_lsb = cmd_addr_width + cmd_attr_width;
+ var cmd_size_msb = cmd_addr_width + cmd_attr_width + cmd_size_width - 1;
+
+ var cmd_tof_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width;
+ var cmd_tof_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width - 1;
+
+ var cmd_qos_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width;
+ var cmd_qos_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width - 1;
+
+ var cmd_tid_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width ;
+ var cmd_tid_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width - 1;
+
+ var cm_type_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width ;
+ var cm_type_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width -1;
+
+ var init_id_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width; 
+ var init_id_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId -1;
+
+ var cmd_mpf1_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId ;
+ var cmd_mpf1_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width -1;
+
+ var cmd_mpf2_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width;
+ var cmd_mpf2_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width -1;
+
+ var cmd_aux_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width;
+ var cmd_aux_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width -1;
+
+ var cmd_intfsize_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width;
+ var cmd_intfsize_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width -1;
+
+ var cmd_ql_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width;
+ var cmd_ql_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width + cmd_ql_width-1;
+
+ var cmd_pri_lsb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width + cmd_ql_width;
+ var cmd_pri_msb = cmd_addr_width + cmd_attr_width + cmd_size_width + cmd_tof_width + cmd_qos_width + tid_width + cm_type_width + wFUnitId + cmd_mpf1_width + cmd_mpf2_width + cmd_aux_width + cmd_intf_width + cmd_ql_width + cmd_pri_width-1;
+\jsend
+// CMO Operation 
+\js // For ACE-L the full CMO type should be stored to properlly drive the command down stream
+assign tt_cmo = (cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdClnInv=\) |
+                (cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdMkInv=\) |
+		(cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdClnShPsist=\ |
+		(cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdClnVld=\));
+		
+//Read request
+// AXI - If it is a CMO two things can happen
+//  1) No  match is seen and the STRReq is immediantly sent
+//  2) An  match is seen and the CMO will get an entry in the RTT table until all blocking transactions to that Cacheline are completed.
+// ACE-L - It will be propogated to the ACE interface through the rtt
+\jsbegin
+// Always AXI this release.
+ /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if ( fnNativeInterface == "AXI4" | fnNativeInterface == "AXI3"  | fnNativeInterface == "AXI"){
+\jsend
+assign rtt_allocate_new_entry = cmd_req_fifo_valid & ~rtt_full & (cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdRdNC=\ | (tt_cmo & wtt_addr_ewa_match)) & cmd_resp_fifo_ready & str_req_rd_fifo_in_ready;
+\js } else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+assign rtt_allocate_new_entry = cmd_req_fifo_valid & ~rtt_full & (cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdRdNC=\ | tt_cmo) & cmd_resp_fifo_ready & str_req_rd_fifo_in_ready;
+\js }
+ 
+//Write request
+assign wtt_allocate_new_entry = cmd_req_fifo_valid & ~wtt_full & ((cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdWrNCPtl=\) |
+                                                                  (cmd_req_fifo_data[\=cm_type_msb=\:\=cm_type_lsb=\] == \=CmdWrNCFull=\)) & cmd_resp_fifo_ready & str_req_rd_fifo_in_ready;
+
+//Read out request from Command request FIFO
+ \jsbegin
+ /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+ if ( fnNativeInterface == "AXI3" | fnNativeInterface == "AXI4" | fnNativeInterface == "AXI" ){
+ \jsend
+assign out_cmd_req_fifo_ready =  ~cmd_req_fifo_empty & (rtt_allocate_new_entry | wtt_allocate_new_entry | (tt_cmo & !wtt_addr_ewa_match)) & cmd_resp_fifo_ready & str_req_rd_fifo_in_ready;
+\js } else {
+assign out_cmd_req_fifo_ready =  ~cmd_req_fifo_empty & (rtt_allocate_new_entry | wtt_allocate_new_entry) & cmd_resp_fifo_ready & str_req_rd_fifo_in_ready;
+\js }
+
+// isNarrow Check
+wire [1:0] mpf1_burst = cmd_req_fifo_data[\=cmd_mpf1_lsb + 7=\:\=cmd_mpf1_lsb + 6=\];
+wire [2:0] mpf1_asize = cmd_req_fifo_data[\=cmd_mpf1_lsb + 5=\:\=cmd_mpf1_lsb + 3=\];
+wire [2:0] mpf1_alen  = cmd_req_fifo_data[\=cmd_mpf1_lsb + 2=\:\=cmd_mpf1_lsb + 0=\];
+
+wire mpf1_valid = cmd_req_fifo_data[\=cmd_attr_st=\] & ~cmd_req_fifo_data[\=cmd_attr_ca=\] & (tt_tof != \=cmd_tof_width=\'b1);
+
+\jsbegin
+// Leaving assert off. should remove
+/* istanbul ignore if env ncore_3p4,ncore_3p6,ncore_3p7 */
+if (assertOn) { \jsend
+// synopsys translate_off
+    property p_ca_st_1;
+        @(posedge clk) disable iff (~reset_n)
+            ~(cmd_req_fifo_data[\=cmd_attr_st=\] & cmd_req_fifo_data[\=cmd_attr_ca=\]);
+    endproperty
+
+    assert_ca_st_1: assert property (p_ca_st_1)
+        else begin $error("DII waived CA and ST bits being 1 simultanuously. !"); #100 $finish; end
+// synopsys translate_on
+\jsbegin
+} \jsend
+
+reg r_narrow;
+
+reg  [5:0] asize_aligned_address;
+wire [5:0] end_address;
+reg  [5:0] transaction_size;
+reg        endAddrIsAligned;
+reg        addrIsAligned;
+reg        optimizeNarrow;
+
+assign end_address      = asize_aligned_address + transaction_size;
+
+always @ (*) begin
+  case(mpf1_asize)
+   3'b000: begin
+         transaction_size      =  ({3'b0,mpf1_alen} + 6'd1) << 6'd0;
+	 asize_aligned_address =  cmd_req_fifo_data[5:0];
+   end
+   3'b001: begin
+         transaction_size      =  ({3'b0,mpf1_alen} + 6'd1) << 6'd1;
+	 asize_aligned_address =  {cmd_req_fifo_data[5:1],1'b0};	 
+   end
+   3'b010: begin
+         transaction_size      =  ({3'b0,mpf1_alen} + 6'd1) << 6'd2;
+	 asize_aligned_address =  {cmd_req_fifo_data[5:2],2'b0};	 
+   end
+   3'b011: begin
+         transaction_size      =  ({3'b0,mpf1_alen} + 6'd1) << 6'd3;
+	 asize_aligned_address =  {cmd_req_fifo_data[5:3],3'b0};	 
+   end
+   3'b100: begin
+         transaction_size      =  ({3'b0,mpf1_alen} + 6'd1) << 6'd4;
+	 asize_aligned_address =  {cmd_req_fifo_data[5:4],4'b0};	 
+   end
+   3'b101: begin
+         transaction_size      =  ({3'b0,mpf1_alen} + 6'd1) << 6'd5;
+	 asize_aligned_address =  {cmd_req_fifo_data[4],5'b0};	 
+   end
+   default: begin
+         transaction_size      =  ({3'b0,mpf1_alen} + 6'd1) << 6'd6;
+	 asize_aligned_address =  6'h0;	 	 
+   end
+  endcase
+end
+
+always @ (*) begin
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if(axi_data_width == 32) {
+\jsend
+  endAddrIsAligned   = ~(|end_address[1:0]);
+  addrIsAligned      = ~(|cmd_req_fifo_data[1:0]);
+\js } else if (axi_data_width ==  64) {
+  endAddrIsAligned   = ~(|end_address[2:0]);
+  addrIsAligned      = ~(|cmd_req_fifo_data[2:0]);
+\js } else if (axi_data_width ==  128) {
+  endAddrIsAligned   = ~(|end_address[3:0]);
+  addrIsAligned      = ~(|cmd_req_fifo_data[3:0]);
+\js } else  {
+  endAddrIsAligned   = ~(|end_address[4:0]);
+  addrIsAligned      = ~(|cmd_req_fifo_data[4:0]);
+\js } 
+
+  optimizeNarrow = (endAddrIsAligned | (addrIsAligned & (transaction_size <= \=axi_data_width/8=\) & mpf1_alen[0]) | (mpf1_alen == 0)) & ~tt_st;
+
+  \jsbegin
+			/* istanbul ignore if env ncore_3p7 */
+  			 if ( configuration ) { \jsend
+  if(mpf1_valid & (mpf1_asize < \=log2ceil(axi_data_width/8)=\) & (mpf1_alen != 0)) begin
+  \js } else {
+  if(mpf1_valid & (mpf1_asize < \=log2ceil(axi_data_width/8)=\) & ((mpf1_alen != 0) | tt_st)) begin
+  \js }
+    r_narrow = ~optimizeNarrow;
+  end else begin
+    r_narrow = 1'b0;
+  end
+end
+
+assign tt_narrow = r_narrow;
+
+//RTT or WTT entry fields
+assign tt_addr = cmd_req_fifo_data[\=cmd_addr_width-1=\:0]; 
+
+//For attribute, store bits used by DTR & DTW attribute fields (VZ (bit 16), AC (bit 15), TS (bit 14), NS (bit 10), RL(bit[1:0]), TR (bit 0))
+
+assign tt_size = cmd_req_fifo_data[\=cmd_size_msb=\:\=cmd_size_lsb=\];
+
+assign tt_tof = cmd_req_fifo_data[\=cmd_tof_msb=\:\=cmd_tof_lsb=\];
+
+assign tt_intfsize = cmd_req_fifo_data[\=cmd_intfsize_msb=\:\=cmd_intfsize_lsb=\];
+
+assign tt_tid = cmd_req_fifo_data[\=cmd_tid_msb=\:\=cmd_tid_lsb=\];
+
+assign tt_ordering = (tt_cmo) ? 2'b0:
+                     (tt_lock) ? (2'b10 | cmd_req_fifo_data[\=cmd_ordering_msb=\:\=cmd_ordering_lsb=\]) : cmd_req_fifo_data[\=cmd_ordering_msb=\:\=cmd_ordering_lsb=\];
+
+assign tt_prot = {1'b0,
+                 \jsbegin
+		 // Always have NS bit this release.
+		 /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+		 if (hasNs == 'Y') {
+		 \jsend
+		 cmd_req_fifo_data[\=cmd_attr_ns=\],
+		 \jsbegin
+		 } else  /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+		 \jsend
+		 1'b0,
+		 \js }
+		 cmd_req_fifo_data[\=cmd_attr_pr=\]}; //Bit 2 - 0, Bit 1 - NS, , Bit 0 - PR 
+
+assign tt_lock = cmd_req_fifo_data[\=cmd_attr_es=\];  //cmd_req_fifo_data[\=cmd_lock_msb=\:\=cmd_lock_lsb=\];
+
+assign tt_init_id = cmd_req_fifo_data[\=init_id_msb=\:\=init_id_lsb=\];
+
+assign tt_mpf1 = cmd_req_fifo_data[\=cmd_mpf1_msb=\:\=cmd_mpf1_lsb=\];
+
+assign tt_mpf2 = cmd_req_fifo_data[\=cmd_mpf2_msb=\:\=cmd_mpf2_lsb=\];
+
+\jsbegin
+// No ql for this release
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if(cmd_ql_msb + 1 != cmd_ql_lsb) {
+\jsend
+assign tt_ql = cmd_req_fifo_data[\=cmd_ql_msb=\:\=cmd_ql_lsb=\];
+\js }
+
+\js if(cmd_pri_msb + 1 != cmd_pri_lsb) {
+assign tt_priority = cmd_req_fifo_data[\=cmd_pri_msb=\:\=cmd_pri_lsb=\];
+\js }
+
+\js if(cmd_qos_msb + 1 != cmd_qos_lsb) {
+assign tt_qos = cmd_req_fifo_data[\=cmd_qos_msb=\:\=cmd_qos_lsb=\];
+\js }
+
+assign tt_st = cmd_req_fifo_data[\=cmd_attr_st=\];
+assign tt_ca = cmd_req_fifo_data[\=cmd_attr_ca=\];
+assign tt_ac = cmd_req_fifo_data[\=cmd_attr_ac=\];
+
+\js if (nExclusiveEntries!= 0) { 
+   assign tt_vz = (tt_lock) ? cmd_req_fifo_data[\=cmd_attr_vz=\] & tt_ex_pass : cmd_req_fifo_data[\=cmd_attr_vz=\];
+\js } else {
+   assign tt_vz = cmd_req_fifo_data[\=cmd_attr_vz=\];
+\js}
+
+assign tt_ch = cmd_req_fifo_data[\=cmd_attr_ch=\];
+assign tt_tm = cmd_req_fifo_data[\=cmd_attr_tm=\];
+
+\jsbegin
+if(axi_has_user == "Y") {
+// For 3.0 if User Exists, Aux Exists. wAux == wUser
+/* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if(cmd_has_aux == "N") {
+\jsend
+assign tt_user = 'h0;
+\jsbegin
+} else if(axi_user_width <= cmd_aux_width) {
+\jsend
+assign tt_user = cmd_req_fifo_data[\=cmd_aux_lsb=\+\=axi_user_width=\-1:\=cmd_aux_lsb=\];
+\jsbegin
+} else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+\jsend
+assign tt_user = {\=axi_user_width - cmd_aux_width=\'b0, cmd_req_fifo_data[\=cmd_aux_lsb=\+\=axi_user_width=\-1:\=cmd_aux_lsb=\]};
+\jsbegin
+}
+}
+\jsend
+
+//============================================================================
+// Exclusive monitor instanciation
+//============================================================================
+\jsbegin
+var wmpf2 = (cmd_mpf2_msb - cmd_mpf2_lsb) + 1;
+\jsend
+
+wire excl_valid = rtt_allocate_new_entry | wtt_allocate_new_entry;
+wire exmon_event;
+
+\js if (nExclusiveEntries!= 0) { 
+  \=obj.lib.instance({
+    instanceName        : 'dii_exclusive_monitor',
+    moduleName          : 'ncore_exclusive_monitor',
+    params              : { nExclusiveEntries  : nExclusiveEntries,
+                            wAddr            : cmd_addr_width,
+                            wmpf2            : wmpf2,
+                            wInitiatorId     : (init_id_msb - init_id_lsb) + 1,
+                            wSecurity        : 1,
+                            wCacheLineOffset : wCacheLineOffset,
+                            assertOn         : assertOn
+                          },
+    verilogParams       : {},
+    ports               : { clk : "clk",
+                            reset_n:"reset_n",
+                            valid: "excl_valid",
+                            lock_op:"tt_lock",
+                            msg_type_load : "rtt_allocate_new_entry",
+                            msg_type_store: "wtt_allocate_new_entry",
+                            address :"tt_addr",
+                            mpf2 : "tt_mpf2",
+                            initiator_id : "tt_init_id",
+                            security : "cmd_req_fifo_data["+cmd_attr_ns+"]",
+                            ex_pass : "tt_ex_pass",
+			    exmon_event : "exmon_event"
+                        }
+  })=\
+
+\js } else {
+  assign tt_ex_pass = 1'b1;
+  assign exmon_event = 1'b0;
+\jsbegin }
+
+//============================================================================
+//Evt buffer instance for exmon event
+//============================================================================
+// Always have sysReq this release.
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (useSysReqSender) { \jsend
+  \=obj.lib.instance({
+    instanceName: 'dii_exmon_evt_buffer',
+    moduleName: 'dce_evt_buffer',
+    params: { clkInterface, reqAckEventInterface },
+    interfaces: [clkInterface, reqAckEventInterface].map( getModuleLocalPrefixAndInterface ), // Array of interfaces is converted to array of {modulePrefix, localPrefix, interface} objects 
+    ports: {
+          en		: 'exmon_event',
+	  busy		: 'evt_buffer_busy'
+    }
+  })=\
+
+\jsbegin 
+} \jsend
+
+endmodule

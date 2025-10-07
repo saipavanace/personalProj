@@ -1,0 +1,356 @@
+<p>It is a generic hardware library component module that multiplexes Concerto message TX ports to assigned SMI TX ports, and demultiplexes from assigned SMI RX ports to Concerto message RX ports.</p><p><br/></p><p><strong>References</strong></p><p><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16169712/Arch+Ncore+3.X+Docs?preview=/16169712/16325434/ConcertoCProtocolArch_0_90_NoCB.pdf" rel="nofollow">Arch Ncore 3.X Docs - Engineering - Confluence (atlassian.net)</a> Concerto Messaging Protocol Spec, Chapter 4 Concerto C Messages. </p><p><a href="https://arterisip.atlassian.net/wiki/pages/viewpageattachments.action?pageId=16160902&amp;preview=%2F16160902%2F16246308%2FPacketProtocol.docx" rel="nofollow">Attachments - HW-CTF Old Packet Protocol - Engineering - Confluence (atlassian.net)</a> Section 4.2 Messages</p><p><br/></p><p><strong>TACHL Parameters</strong></p><p>wFPortId - width of FPortId (for Ncore3, Maestro always sets it to 1, and FPortId is always tied to 1'b0).</p><p>wFUnitId - width of FUnitId</p><p>smiTxPortInterfaces - an array of SMI TX Ports interfaces</p><p>smiRxPortInterfaces - an array of SMI RX Ports interfaces</p><p>concertoTxInterfaces - an array of Concerto Message TX interfaces</p><p>concertoRxInterfaces - an array of Concerto Message RX interfaces</p><p>smiHeaderSignalsToProtect - an array of SMI header signals to protect</p><p>concHeaderSignals - an array of Concerto Message header signals</p><p>concDataSignals - an array of Concerto Message data signals</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Example of TACHL Parameters passed into Concerto MUX:
+
+{ 
+  wFPortId: 1,
+  wFUnitId: 5,
+  smiTxPortInterfaces: [
+  { 
+    name: &#39;smi_tx0_&#39;,
+    params: {
+      &quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;protection&quot;:&quot;none&quot;,&quot;fnMsgClass&quot;:[&quot;cmd_req_&quot;,&quot;sys_req_tx_&quot;],&quot;fPortId&quot;:[&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;],&quot;fnMsgCmType&quot;:[&quot;8&#39;b00??_????&quot;,&quot;8&#39;b0111_1011&quot;],&quot;dpPresent&quot;:0,&quot;wData&quot;:0
+    },
+    signals: {
+      &quot;ndp_targ_id&quot;:6,&quot;ndp_steer&quot;:0,&quot;ndp_src_id&quot;:6,&quot;ndp_sec_fail&quot;:0,&quot;ndp_sec&quot;:0,&quot;ndp_sb_prot_b&quot;:0,&quot;ndp_sb_prot&quot;:0,&quot;ndp_route&quot;:0,&quot;ndp_qos&quot;:0,&quot;ndp_pressure&quot;:0,
+      &quot;ndp_pkt_type&quot;:0,&quot;ndp_pkt_id&quot;:0,&quot;ndp_ordering_model&quot;:0,&quot;ndp_ordering_id&quot;:0,&quot;ndp_ndp_len&quot;:8,&quot;ndp_ndp&quot;:112,&quot;ndp_multi_mask&quot;:0,&quot;ndp_multi_label&quot;:0,&quot;ndp_msg_vnid&quot;:0,
+      &quot;ndp_msg_valid&quot;:1,&quot;ndp_msg_user&quot;:0,&quot;ndp_msg_type_attr&quot;:0,&quot;ndp_msg_type&quot;:8,&quot;ndp_msg_txn_resp&quot;:0,&quot;ndp_msg_txn_hdr_region&quot;:0,&quot;ndp_msg_txn_hdr_memattr&quot;:0,
+      &quot;ndp_msg_txn_hdr_maxbsize&quot;:0,&quot;ndp_msg_txn_hdr_btype&quot;:0,&quot;ndp_msg_txn_hdr_bsize&quot;:0,&quot;ndp_msg_txn_hdr_atomic&quot;:0,&quot;ndp_msg_txn_hdr&quot;:0,&quot;ndp_msg_tier&quot;:0,&quot;ndp_msg_seqnum&quot;:0,
+      &quot;ndp_msg_sec&quot;:0,&quot;ndp_msg_ready&quot;:-1,&quot;ndp_msg_qos&quot;:0,&quot;ndp_msg_pri&quot;:3,&quot;ndp_msg_poison&quot;:0,&quot;ndp_msg_len&quot;:0,&quot;ndp_msg_id&quot;:7,&quot;ndp_msg_err&quot;:0,&quot;ndp_msg_class&quot;:0,&quot;ndp_msg_addr&quot;:0,&quot;ndp_dp_present&quot;:1,&quot;ndp_chl_id&quot;:0
+    },
+    dpSignals: {
+      &quot;dp_valid&quot;:0,&quot;dp_user&quot;:0,&quot;dp_sb_prot_b&quot;:0,&quot;dp_sb_prot&quot;:0,&quot;dp_resp&quot;:0,&quot;dp_ready&quot;:0,&quot;dp_last&quot;:0,&quot;dp_id&quot;:0,&quot;dp_ib_prot&quot;:0,&quot;dp_err&quot;:0,&quot;dp_dummy&quot;:0,&quot;dp_data&quot;:0,&quot;dp_be&quot;:0,&quot;dp_p_last&quot;:0
+    } 
+  },
+  { 
+    name: &#39;smi_tx1_&#39;,
+    params: {
+      &quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;protection&quot;:&quot;none&quot;,&quot;fnMsgClass&quot;:[&quot;str_rsp_&quot;,&quot;dtr_rsp_tx_&quot;,&quot;snp_rsp_&quot;,&quot;sys_rsp_tx_&quot;],&quot;fPortId&quot;:[&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;],
+      &quot;fnMsgCmType&quot;:[&quot;8&#39;b1111_0111&quot;,&quot;8&#39;b1111_0100&quot;,&quot;8&#39;b1111_0010&quot;,&quot;8&#39;b1111_1011&quot;],&quot;dpPresent&quot;:0,&quot;wData&quot;:0
+    },
+    signals: {
+      &quot;ndp_targ_id&quot;:6,&quot;ndp_steer&quot;:0,&quot;ndp_src_id&quot;:6,&quot;ndp_sec_fail&quot;:0,&quot;ndp_sec&quot;:0,&quot;ndp_sb_prot_b&quot;:0,&quot;ndp_sb_prot&quot;:0,&quot;ndp_route&quot;:0,&quot;ndp_qos&quot;:0,&quot;ndp_pressure&quot;:0,
+      &quot;ndp_pkt_type&quot;:0,&quot;ndp_pkt_id&quot;:0,&quot;ndp_ordering_model&quot;:0,&quot;ndp_ordering_id&quot;:0,&quot;ndp_ndp_len&quot;:8,&quot;ndp_ndp&quot;:26,&quot;ndp_multi_mask&quot;:0,&quot;ndp_multi_label&quot;:0,&quot;ndp_msg_vnid&quot;:0,
+      &quot;ndp_msg_valid&quot;:1,&quot;ndp_msg_user&quot;:0,&quot;ndp_msg_type_attr&quot;:0,&quot;ndp_msg_type&quot;:8,&quot;ndp_msg_txn_resp&quot;:0,&quot;ndp_msg_txn_hdr_region&quot;:0,&quot;ndp_msg_txn_hdr_memattr&quot;:0,
+      &quot;ndp_msg_txn_hdr_maxbsize&quot;:0,&quot;ndp_msg_txn_hdr_btype&quot;:0,&quot;ndp_msg_txn_hdr_bsize&quot;:0,&quot;ndp_msg_txn_hdr_atomic&quot;:0,&quot;ndp_msg_txn_hdr&quot;:0,&quot;ndp_msg_tier&quot;:0,&quot;ndp_msg_seqnum&quot;:0,
+      &quot;ndp_msg_sec&quot;:0,&quot;ndp_msg_ready&quot;:-1,&quot;ndp_msg_qos&quot;:0,&quot;ndp_msg_pri&quot;:3,&quot;ndp_msg_poison&quot;:0,&quot;ndp_msg_len&quot;:0,&quot;ndp_msg_id&quot;:7,&quot;ndp_msg_err&quot;:0,&quot;ndp_msg_class&quot;:0,&quot;ndp_msg_addr&quot;:0,&quot;ndp_dp_present&quot;:1,&quot;ndp_chl_id&quot;:0
+    },
+    dpSignals: {&quot;dp_valid&quot;:0,&quot;dp_user&quot;:0,&quot;dp_sb_prot_b&quot;:0,&quot;dp_sb_prot&quot;:0,&quot;dp_resp&quot;:0,&quot;dp_ready&quot;:0,&quot;dp_last&quot;:0,&quot;dp_id&quot;:0,&quot;dp_ib_prot&quot;:0,&quot;dp_err&quot;:0,&quot;dp_dummy&quot;:0,&quot;dp_data&quot;:0,&quot;dp_be&quot;:0,&quot;dp_p_last&quot;:0}},
+  },
+  { 
+    name: &#39;smi_tx2_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;protection&quot;:&quot;none&quot;,&quot;fnMsgClass&quot;:[&quot;dtr_req_tx_&quot;,&quot;dtw_req_&quot;,&quot;dtw_dbg_req_&quot;],&quot;fPortId&quot;:[&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;],&quot;fnMsgCmType&quot;:[&quot;8&#39;b1000_????&quot;,&quot;8&#39;b1001_????&quot;,&quot;8&#39;b1010_0000&quot;],&quot;dpPresent&quot;:1,&quot;wData&quot;:256},
+    signals: {
+      &quot;ndp_targ_id&quot;:6,&quot;ndp_steer&quot;:0,&quot;ndp_src_id&quot;:6,&quot;ndp_sec_fail&quot;:0,&quot;ndp_sec&quot;:0,&quot;ndp_sb_prot_b&quot;:0,&quot;ndp_sb_prot&quot;:0,&quot;ndp_route&quot;:0,&quot;ndp_qos&quot;:0,&quot;ndp_pressure&quot;:0,
+      &quot;ndp_pkt_type&quot;:0,&quot;ndp_pkt_id&quot;:0,&quot;ndp_ordering_model&quot;:0,&quot;ndp_ordering_id&quot;:0,&quot;ndp_ndp_len&quot;:8,&quot;ndp_ndp&quot;:40,&quot;ndp_multi_mask&quot;:0,&quot;ndp_multi_label&quot;:0,&quot;ndp_msg_vnid&quot;:0,
+      &quot;ndp_msg_valid&quot;:1,&quot;ndp_msg_user&quot;:0,&quot;ndp_msg_type_attr&quot;:0,&quot;ndp_msg_type&quot;:8,&quot;ndp_msg_txn_resp&quot;:0,&quot;ndp_msg_txn_hdr_region&quot;:0,&quot;ndp_msg_txn_hdr_memattr&quot;:0,
+      &quot;ndp_msg_txn_hdr_maxbsize&quot;:0,&quot;ndp_msg_txn_hdr_btype&quot;:0,&quot;ndp_msg_txn_hdr_bsize&quot;:0,&quot;ndp_msg_txn_hdr_atomic&quot;:0,&quot;ndp_msg_txn_hdr&quot;:0,&quot;ndp_msg_tier&quot;:0,&quot;ndp_msg_seqnum&quot;:0,
+      &quot;ndp_msg_sec&quot;:0,&quot;ndp_msg_ready&quot;:-1,&quot;ndp_msg_qos&quot;:0,&quot;ndp_msg_pri&quot;:3,&quot;ndp_msg_poison&quot;:0,&quot;ndp_msg_len&quot;:0,&quot;ndp_msg_id&quot;:7,&quot;ndp_msg_err&quot;:0,&quot;ndp_msg_class&quot;:0,&quot;ndp_msg_addr&quot;:0,&quot;ndp_dp_present&quot;:1,&quot;ndp_chl_id&quot;:0
+    },
+    dpSignals: {&quot;dp_valid&quot;:1,&quot;dp_user&quot;:48,&quot;dp_sb_prot_b&quot;:0,&quot;dp_sb_prot&quot;:0,&quot;dp_resp&quot;:0,&quot;dp_ready&quot;:-1,&quot;dp_last&quot;:1,&quot;dp_id&quot;:0,&quot;dp_ib_prot&quot;:0,&quot;dp_err&quot;:0,&quot;dp_dummy&quot;:0,&quot;dp_data&quot;:256,&quot;dp_be&quot;:0,&quot;dp_p_last&quot;:0}}
+  }
+  ],
+  smiRxPortInterfaces: [ 
+  { 
+    name: &#39;smi_rx0_&#39;,
+    params: {
+      &quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;protection&quot;:&quot;none&quot;,&quot;fnMsgClass&quot;:[&quot;str_req_&quot;,&quot;snp_req_&quot;,&quot;sys_req_rx_&quot;],&quot;fPortId&quot;:[&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;],
+      &quot;fnMsgCmType&quot;:[&quot;8&#39;b0111_1010&quot;,&quot;8&#39;b010?_????&quot;,&quot;8&#39;b0111_1011&quot;],&quot;dpPresent&quot;:0,&quot;wData&quot;:0
+    },
+    signals: {
+      &quot;ndp_targ_id&quot;:6,&quot;ndp_steer&quot;:0,&quot;ndp_src_id&quot;:6,&quot;ndp_sec_fail&quot;:0,&quot;ndp_sec&quot;:0,&quot;ndp_sb_prot_b&quot;:0,&quot;ndp_sb_prot&quot;:0,&quot;ndp_route&quot;:0,&quot;ndp_qos&quot;:0,&quot;ndp_pressure&quot;:0,
+      &quot;ndp_pkt_type&quot;:0,&quot;ndp_pkt_id&quot;:0,&quot;ndp_ordering_model&quot;:0,&quot;ndp_ordering_id&quot;:0,&quot;ndp_ndp_len&quot;:8,&quot;ndp_ndp&quot;:112,&quot;ndp_multi_mask&quot;:0,&quot;ndp_multi_label&quot;:0,&quot;ndp_msg_vnid&quot;:0,
+      &quot;ndp_msg_valid&quot;:1,&quot;ndp_msg_user&quot;:0,&quot;ndp_msg_type_attr&quot;:0,&quot;ndp_msg_type&quot;:8,&quot;ndp_msg_txn_resp&quot;:0,&quot;ndp_msg_txn_hdr_region&quot;:0,&quot;ndp_msg_txn_hdr_memattr&quot;:0,
+      &quot;ndp_msg_txn_hdr_maxbsize&quot;:0,&quot;ndp_msg_txn_hdr_btype&quot;:0,&quot;ndp_msg_txn_hdr_bsize&quot;:0,&quot;ndp_msg_txn_hdr_atomic&quot;:0,&quot;ndp_msg_txn_hdr&quot;:0,&quot;ndp_msg_tier&quot;:0,&quot;ndp_msg_seqnum&quot;:0,
+      &quot;ndp_msg_sec&quot;:0,&quot;ndp_msg_ready&quot;:-1,&quot;ndp_msg_qos&quot;:0,&quot;ndp_msg_pri&quot;:3,&quot;ndp_msg_poison&quot;:0,&quot;ndp_msg_len&quot;:0,&quot;ndp_msg_id&quot;:7,&quot;ndp_msg_err&quot;:0,&quot;ndp_msg_class&quot;:0,&quot;ndp_msg_addr&quot;:0,&quot;ndp_dp_present&quot;:1,&quot;ndp_chl_id&quot;:0
+    },
+    dpSignals: {&quot;dp_valid&quot;:0,&quot;dp_user&quot;:0,&quot;dp_sb_prot_b&quot;:0,&quot;dp_sb_prot&quot;:0,&quot;dp_resp&quot;:0,&quot;dp_ready&quot;:0,&quot;dp_last&quot;:0,&quot;dp_id&quot;:0,&quot;dp_ib_prot&quot;:0,&quot;dp_err&quot;:0,&quot;dp_dummy&quot;:0,&quot;dp_data&quot;:0,&quot;dp_be&quot;:0,&quot;dp_p_last&quot;:0}},
+  },
+  { 
+    name: &#39;smi_rx1_&#39;,
+    params: {
+      &quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;protection&quot;:&quot;none&quot;,&quot;fnMsgClass&quot;:[&quot;cmd_rsp_&quot;,&quot;dtw_rsp_&quot;,&quot;dtw_dbg_rsp_&quot;,&quot;dtr_rsp_rx_&quot;,&quot;cmp_rsp_&quot;,&quot;sys_rsp_rx_&quot;],&quot;fPortId&quot;:[&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;,&quot;1&#39;d0&quot;],
+      &quot;fnMsgCmType&quot;:[&quot;8&#39;b1111_000?&quot;,&quot;8&#39;b1111_0011&quot;,&quot;8&#39;b1111_1111&quot;,&quot;8&#39;b1111_0100&quot;,&quot;8&#39;b1111_1100&quot;,&quot;8&#39;b1111_1011&quot;],&quot;dpPresent&quot;:0,&quot;wData&quot;:0
+    },
+    signals: {
+      &quot;ndp_targ_id&quot;:6,&quot;ndp_steer&quot;:0,&quot;ndp_src_id&quot;:6,&quot;ndp_sec_fail&quot;:0,&quot;ndp_sec&quot;:0,&quot;ndp_sb_prot_b&quot;:0,&quot;ndp_sb_prot&quot;:0,&quot;ndp_route&quot;:0,&quot;ndp_qos&quot;:0,&quot;ndp_pressure&quot;:0,
+      &quot;ndp_pkt_type&quot;:0,&quot;ndp_pkt_id&quot;:0,&quot;ndp_ordering_model&quot;:0,&quot;ndp_ordering_id&quot;:0,&quot;ndp_ndp_len&quot;:8,&quot;ndp_ndp&quot;:26,&quot;ndp_multi_mask&quot;:0,&quot;ndp_multi_label&quot;:0,&quot;ndp_msg_vnid&quot;:0,
+      &quot;ndp_msg_valid&quot;:1,&quot;ndp_msg_user&quot;:0,&quot;ndp_msg_type_attr&quot;:0,&quot;ndp_msg_type&quot;:8,&quot;ndp_msg_txn_resp&quot;:0,&quot;ndp_msg_txn_hdr_region&quot;:0,&quot;ndp_msg_txn_hdr_memattr&quot;:0,
+      &quot;ndp_msg_txn_hdr_maxbsize&quot;:0,&quot;ndp_msg_txn_hdr_btype&quot;:0,&quot;ndp_msg_txn_hdr_bsize&quot;:0,&quot;ndp_msg_txn_hdr_atomic&quot;:0,&quot;ndp_msg_txn_hdr&quot;:0,&quot;ndp_msg_tier&quot;:0,&quot;ndp_msg_seqnum&quot;:0,
+      &quot;ndp_msg_sec&quot;:0,&quot;ndp_msg_ready&quot;:-1,&quot;ndp_msg_qos&quot;:0,&quot;ndp_msg_pri&quot;:3,&quot;ndp_msg_poison&quot;:0,&quot;ndp_msg_len&quot;:0,&quot;ndp_msg_id&quot;:7,&quot;ndp_msg_err&quot;:0,&quot;ndp_msg_class&quot;:0,&quot;ndp_msg_addr&quot;:0,&quot;ndp_dp_present&quot;:1,&quot;ndp_chl_id&quot;:0
+    },
+    dpSignals: {&quot;dp_valid&quot;:1,&quot;dp_user&quot;:48,&quot;dp_sb_prot_b&quot;:0,&quot;dp_sb_prot&quot;:0,&quot;dp_resp&quot;:0,&quot;dp_ready&quot;:-1,&quot;dp_last&quot;:1,&quot;dp_id&quot;:0,&quot;dp_ib_prot&quot;:0,&quot;dp_err&quot;:0,&quot;dp_dummy&quot;:0,&quot;dp_data&quot;:256,&quot;dp_be&quot;:0,&quot;dp_p_last&quot;:0}}],
+  },
+  { 
+    name: &#39;smi_rx2_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;protection&quot;:&quot;none&quot;,&quot;fnMsgClass&quot;:[&quot;dtr_req_rx_&quot;],&quot;fPortId&quot;:[&quot;1&#39;d0&quot;],&quot;fnMsgCmType&quot;:[&quot;8&#39;b1000_????&quot;],&quot;dpPresent&quot;:1,&quot;wData&quot;:256},
+    signals: {
+      &quot;ndp_targ_id&quot;:6,&quot;ndp_steer&quot;:0,&quot;ndp_src_id&quot;:6,&quot;ndp_sec_fail&quot;:0,&quot;ndp_sec&quot;:0,&quot;ndp_sb_prot_b&quot;:0,&quot;ndp_sb_prot&quot;:0,&quot;ndp_route&quot;:0,&quot;ndp_qos&quot;:0,&quot;ndp_pressure&quot;:0,
+      &quot;ndp_pkt_type&quot;:0,&quot;ndp_pkt_id&quot;:0,&quot;ndp_ordering_model&quot;:0,&quot;ndp_ordering_id&quot;:0,&quot;ndp_ndp_len&quot;:8,&quot;ndp_ndp&quot;:40,&quot;ndp_multi_mask&quot;:0,&quot;ndp_multi_label&quot;:0,&quot;ndp_msg_vnid&quot;:0,
+      &quot;ndp_msg_valid&quot;:1,&quot;ndp_msg_user&quot;:0,&quot;ndp_msg_type_attr&quot;:0,&quot;ndp_msg_type&quot;:8,&quot;ndp_msg_txn_resp&quot;:0,&quot;ndp_msg_txn_hdr_region&quot;:0,&quot;ndp_msg_txn_hdr_memattr&quot;:0,
+      &quot;ndp_msg_txn_hdr_maxbsize&quot;:0,&quot;ndp_msg_txn_hdr_btype&quot;:0,&quot;ndp_msg_txn_hdr_bsize&quot;:0,&quot;ndp_msg_txn_hdr_atomic&quot;:0,&quot;ndp_msg_txn_hdr&quot;:0,&quot;ndp_msg_tier&quot;:0,&quot;ndp_msg_seqnum&quot;:0,
+      &quot;ndp_msg_sec&quot;:0,&quot;ndp_msg_ready&quot;:-1,&quot;ndp_msg_qos&quot;:0,&quot;ndp_msg_pri&quot;:3,&quot;ndp_msg_poison&quot;:0,&quot;ndp_msg_len&quot;:0,&quot;ndp_msg_id&quot;:7,&quot;ndp_msg_err&quot;:0,&quot;ndp_msg_class&quot;:0,&quot;ndp_msg_addr&quot;:0,&quot;ndp_dp_present&quot;:1,&quot;ndp_chl_id&quot;:0
+    },
+    dpSignals: {&quot;dp_valid&quot;:1,&quot;dp_user&quot;:48,&quot;dp_sb_prot_b&quot;:0,&quot;dp_sb_prot&quot;:0,&quot;dp_resp&quot;:0,&quot;dp_ready&quot;:-1,&quot;dp_last&quot;:1,&quot;dp_id&quot;:0,&quot;dp_ib_prot&quot;:0,&quot;dp_err&quot;:0,&quot;dp_dummy&quot;:0,&quot;dp_data&quot;:256,&quot;dp_be&quot;:0,&quot;dp_p_last&quot;:0}}],
+  } 
+  ],
+  concertoTxInterfaces: [
+  { 
+    name: &#39;cmd_req_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:104,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;qos&quot;,&quot;tof&quot;,&quot;d_id&quot;,&quot;intf_size&quot;,&quot;size&quot;,&quot;mpf2&quot;,&quot;mpf1&quot;,&quot;rl&quot;,&quot;lk&quot;,&quot;or&quot;,&quot;pr&quot;,&quot;ns&quot;,&quot;es&quot;,&quot;en&quot;,&quot;st&quot;,&quot;ch&quot;,&quot;ac&quot;,&quot;ca&quot;,&quot;vz&quot;,&quot;addr&quot;,&quot;cm_status&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {
+      &quot;m_prot&quot;:0,&quot;aux&quot;:0,&quot;qos&quot;:4,&quot;tof&quot;:3,&quot;d_id&quot;:5,&quot;intf_size&quot;:2,&quot;size&quot;:3,&quot;mpf2&quot;:11,&quot;mpf1&quot;:8,&quot;rl&quot;:2,&quot;lk&quot;:2,&quot;or&quot;:2,&quot;pr&quot;:1,&quot;ns&quot;:1,&quot;es&quot;:1,&quot;en&quot;:1,&quot;st&quot;:1,&quot;ch&quot;:1,&quot;ac&quot;:1,&quot;ca&quot;:1,&quot;vz&quot;:1,
+      &quot;addr&quot;:44,&quot;cm_status&quot;:8,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1
+    } 
+  },
+  { 
+    name: &#39;str_rsp_&#39;,
+    params: {&quot;enablePipe&quot;:1,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:16,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;dtr_req_tx_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:1,&quot;wNdpBits&quot;:26,&quot;wDpBits&quot;:256,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;mpf1&quot;,&quot;rl&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;,&quot;data&quot;],
+    dpOrder: [&quot;dbad&quot;,&quot;dwid&quot;,&quot;be&quot;],
+    signals: {
+      &quot;last&quot;:1,&quot;m_prot&quot;:0,&quot;aux&quot;:0,&quot;mpf1&quot;:8,&quot;rl&quot;:2,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;data&quot;:256,&quot;dbad&quot;:4,&quot;dwid&quot;:12,&quot;dprot&quot;:0,&quot;be&quot;:32,&quot;user&quot;:0,
+      &quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1
+    }
+  },
+  { 
+    name: &#39;dtr_rsp_tx_&#39;,
+    params: {&quot;enablePipe&quot;:1,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:16,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1} 
+  },
+  { 
+    name: &#39;dtw_req_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:1,&quot;wNdpBits&quot;:40,&quot;wDpBits&quot;:256,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;intf_size&quot;,&quot;mpf2&quot;,&quot;mpf1&quot;,&quot;primary&quot;,&quot;rl&quot;,&quot;cm_status&quot;,&quot;rb_id&quot;,&quot;tm&quot;,&quot;data&quot;],
+    dpOrder: [&quot;dbad&quot;,&quot;dwid&quot;,&quot;be&quot;],
+    signals: {
+      &quot;last&quot;:1,&quot;m_prot&quot;:0,&quot;aux&quot;:0,&quot;intf_size&quot;:2,&quot;mpf2&quot;:11,&quot;mpf1&quot;:8,&quot;primary&quot;:1,&quot;rl&quot;:2,&quot;cm_status&quot;:8,&quot;rb_id&quot;:7,&quot;tm&quot;:1,
+      &quot;data&quot;:256,&quot;dbad&quot;:4,&quot;dwid&quot;:12,&quot;dprot&quot;:0,&quot;be&quot;:32,&quot;user&quot;:0,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,
+      &quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1
+    }
+  },
+  { name: &#39;dtw_dbg_req_&#39;,
+    params: {&quot;enablePipe&quot;:1,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:1,&quot;wNdpBits&quot;:11,&quot;wDpBits&quot;:256,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;rl&quot;,&quot;cm_status&quot;,&quot;tm&quot;,&quot;data&quot;],
+    dpOrder: [&quot;dbad&quot;,&quot;dwid&quot;,&quot;be&quot;],
+    signals: {
+      &quot;last&quot;:1,&quot;m_prot&quot;:0,&quot;aux&quot;:0,&quot;rl&quot;:2,&quot;cm_status&quot;:8,&quot;tm&quot;:1,&quot;data&quot;:256,&quot;dbad&quot;:4,&quot;dwid&quot;:12,&quot;dprot&quot;:0,&quot;be&quot;:32,
+      &quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1
+      }
+  },
+  { 
+    name: &#39;snp_rsp_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:26,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;intf_size&quot;,&quot;mpf1&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;intf_size&quot;:2,&quot;mpf1&quot;:8,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;sys_req_tx_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:20,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;sys_req_op&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;sys_req_op&quot;:4,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1} 
+  },
+  { 
+    name: &#39;sys_rsp_tx_&#39;,
+    params: {&quot;enablePipe&quot;:1,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:16,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;steering&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  } 
+  ],
+  concertoRxInterfaces: [ 
+  { 
+    name: &#39;cmd_rsp_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:16,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;str_req_&#39;,
+    params: {&quot;enablePipe&quot;:1,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:44,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;intf_size&quot;,&quot;mpf2&quot;,&quot;mpf1&quot;,&quot;rb_id&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;intf_size&quot;:2,&quot;mpf2&quot;:11,&quot;mpf1&quot;:8,&quot;rb_id&quot;:7,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;dtr_req_rx_&#39;,
+    params: {&quot;enablePipe&quot;:1,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:1,&quot;wNdpBits&quot;:26,&quot;wDpBits&quot;:256,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;mpf1&quot;,&quot;rl&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;,&quot;data&quot;],
+    dpOrder: [&quot;dbad&quot;,&quot;dwid&quot;,&quot;be&quot;],
+    signals: {
+      &quot;last&quot;:1,&quot;m_prot&quot;:0,&quot;aux&quot;:0,&quot;mpf1&quot;:8,&quot;rl&quot;:2,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;data&quot;:256,&quot;dbad&quot;:4,&quot;dwid&quot;:12,&quot;dprot&quot;:0,&quot;be&quot;:32,&quot;user&quot;:0,
+      &quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1
+    } 
+  },
+  { 
+    name: &#39;dtr_rsp_rx_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:16,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;dtw_rsp_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:18,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;rl&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;rl&quot;:2,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;dtw_dbg_rsp_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:18,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;rl&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;rl&quot;:2,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;snp_req_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:112,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;rb_id&quot;,&quot;qos&quot;,&quot;tof&quot;,&quot;d_id&quot;,&quot;intf_size&quot;,&quot;mpf3&quot;,&quot;mpf2&quot;,&quot;mpf1&quot;,&quot;rl&quot;,&quot;up&quot;,&quot;pr&quot;,&quot;ns&quot;,&quot;ac&quot;,&quot;ca&quot;,&quot;vz&quot;,&quot;addr&quot;,&quot;cm_status&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {
+      &quot;m_prot&quot;:0,&quot;aux&quot;:0,&quot;rb_id&quot;:7,&quot;qos&quot;:4,&quot;tof&quot;:3,&quot;d_id&quot;:5,&quot;intf_size&quot;:2,&quot;mpf3&quot;:10,&quot;mpf2&quot;:11,&quot;mpf1&quot;:8,&quot;rl&quot;:2,&quot;up&quot;:2,&quot;pr&quot;:1,&quot;ns&quot;:1,&quot;ac&quot;:1,&quot;ca&quot;:1,&quot;vz&quot;:1,
+      &quot;addr&quot;:44,&quot;cm_status&quot;:8,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1
+    }
+  },
+  { 
+    name: &#39;cmp_rsp_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:16,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;sys_rsp_rx_&#39;,
+    params: {&quot;enablePipe&quot;:1,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:16,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  },
+  { 
+    name: &#39;sys_req_rx_&#39;,
+    params: {&quot;enablePipe&quot;:0,&quot;pipeDepth&quot;:2,&quot;dpPresent&quot;:0,&quot;wNdpBits&quot;:20,&quot;wDpBits&quot;:0,&quot;protection&quot;:&quot;none&quot;,&quot;dpProtection&quot;:&quot;none&quot;},
+    order: [&quot;sys_req_op&quot;,&quot;cm_status&quot;,&quot;r_message_id&quot;,&quot;tm&quot;],
+    dpOrder: [],
+    signals: {&quot;m_prot&quot;:0,&quot;sys_req_op&quot;:4,&quot;cm_status&quot;:8,&quot;r_message_id&quot;:7,&quot;tm&quot;:1,&quot;target_id&quot;:6,&quot;initiator_id&quot;:6,&quot;cm_type&quot;:8,&quot;message_id&quot;:7,&quot;h_prot&quot;:0,&quot;t_tier&quot;:0,&quot;priority&quot;:3,&quot;ql&quot;:0,&quot;valid&quot;:1,&quot;ready&quot;:-1}
+  } 
+  ],
+  smiHeaderSignalsToProtect: [&#39;ndp_targ_id&#39;,&#39;ndp_src_id&#39;,&#39;ndp_msg_type&#39;,&#39;ndp_msg_id&#39;],
+  concHeaderSignals: [&#39;m_prot&#39;,&#39;target_id&#39;,&#39;initiator_id&#39;,&#39;cm_type&#39;,&#39;message_id&#39;,&#39;h_prot&#39;,&#39;t_tier&#39;,&#39;steering&#39;,&#39;priority&#39;,&#39;ql&#39;],
+  concDataSignals: [&#39;data&#39;,&#39;dprot&#39;,&#39;dbad&#39;,&#39;dwid&#39;,&#39;be&#39;,&#39;user&#39;,&#39;last&#39;] 
+}</pre>
+</div></div><p><br/></p><p>NOTES:</p><p>The order array specifies the bit field order in the Verilog output for the bit field concatenation, with the first array element being MSB, last array element being LSB.</p><p><br/></p><p><strong>Input/Output Ports</strong></p><p>u.port('input', 'clk', 1);<br/>u.port('input', 'reset_n', 1);<br/>u.port('output', 'busy', 1);</p><p>for (let i=0; i&lt;SMI_TX_INTF.length; i++) {<br/>m.defineMasterPortsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].signals, u.port);<br/>    if(SMI_TX_INTF[i].params.dpPresent) {<br/>m.defineMasterPortsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].dpSignals, u.port);<br/>    }<br/>}<br/>for (let i=0; i&lt;SMI_RX_INTF.length; i++) {<br/>m.defineSlavePortsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].signals, u.port);<br/>    if(SMI_RX_INTF[i].params.dpPresent) {<br/>m.defineSlavePortsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].dpSignals, u.port);<br/>    }<br/>}<br/>for (let i=0; i&lt;CONC_TX_INTF.length; i++) {<br/>m.defineSlavePortsFromInterface(CONC_TX_INTF[i].name, CONC_TX_INTF[i].signals, u.port);<br/>}<br/>for (let i=0; i&lt;CONC_RX_INTF.length; i++) {<br/>m.defineMasterPortsFromInterface(CONC_RX_INTF[i].name, CONC_RX_INTF[i].signals, u.port);<br/>}</p><p>// Detect whether each Concerto Message will have header / message protection</p><p>var conc_intf_iterated = [];</p><p>for(let i=0; i&lt;SMI_RX_INTF.length; i++) { <br/>    for (let j=0; j&lt;SMI_RX_INTF[i].params.fnMsgClass.length; j++) {<br/>let name = SMI_RX_INTF[i].params.fnMsgClass[j];<br/>let index = CONC_RX_INTF.findIndex(function(element) {return <a class="external-link" href="http://element.name" rel="nofollow">element.name</a> === name; });<br/><br/>var hasMessageProt = (CONC_RX_INTF[index].params.protection != null &amp; CONC_RX_INTF[index].params.protection != &quot;none&quot;);<br/>var hasDataProt = (CONC_RX_INTF[index].params.dpProtection != null &amp; CONC_RX_INTF[index].params.dpProtection != &quot;none&quot; &amp; CONC_RX_INTF[index].params.dpPresent);<br/>var hasHeaderProt = (SMI_RX_INTF[i].params.protection != null &amp; SMI_RX_INTF[i].params.protection != &quot;none&quot;);<br/>var isDuplicate = conc_intf_iterated.includes(name);<br/><br/>        if( (hasMessageProt | hasDataProt | hasHeaderProt) &amp; ~isDuplicate ) {<br/>u.port('output', CONC_RX_INTF[index].name + 'CE', 1);<br/>        }</p><p>        if ( hasHeaderProt &amp; ~isDuplicate ) {<br/>u.port('output', CONC_RX_INTF[index].name + 'header_UCE', 1);<br/>        }</p><p>        if ( hasMessageProt &amp; ~isDuplicate ) {<br/>u.port('output', CONC_RX_INTF[index].name + 'message_UCE', 1);<br/>        }</p><p>        if ( hasDataProt &amp; ~isDuplicate ) {<br/>u.port('output', CONC_RX_INTF[index].name + 'data_UCE', 1);<br/>        }</p><p>conc_intf_iterated.push(name);</p><p>    }<br/>}</p><p><br/></p><p><strong>Microarchitecture</strong></p><p><br/></p><p class="auto-cursor-target">Top-level:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Top-level
+=========
+                                   +-----------------------------+
+Concerto TX Message &lt;Xi&gt; ---------&gt;|                             |
+...                                | Concerto to SMI Transmitter |--------&gt; SMI TX Port &lt;X&gt;
+Concerto TX Message &lt;Xk&gt; ---------&gt;|                             |
+                                   +-----------------------------+
+.                                                .                          .
+.                                                .                          .
+                                   +-----------------------------+
+Concerto TX Message &lt;Yi&gt; ---------&gt;|                             |
+...                                | Concerto to SMI Transmitter |--------&gt; SMI TX Port &lt;Y&gt;
+Concerto TX Message &lt;Yk&gt; ---------&gt;|                             |
+                                   +-----------------------------+
+
+
+                                   +-----------------------------+
+Concerto RX Message &lt;Ai&gt; &lt;---------|                             |
+...                                | SMI to Concerto Receiver    |&lt;--------- SMI RX Port &lt;A&gt;
+Concerto RX Message &lt;Ak&gt; &lt;---------|                             |
+                                   +-----------------------------+
+.                                                .                          .
+.                                                .                          .
+                                   +-----------------------------+
+Concerto RX Message &lt;Bi&gt; &lt;---------|                             |
+...                                | SMI to Concerto Receiver    |&lt;--------- SMI RX Port &lt;B&gt;
+Concerto RX Message &lt;Bk&gt; &lt;---------|                             |
+                                   +-----------------------------+
+
+</pre>
+</div></div><p class="auto-cursor-target">Concerto to SMI Transmitter:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Concerto to SMI Transmitter
+===========================
+Concerto TX Message &lt;Xi&gt; -&gt; Optional FIFO -&gt; Concerto to SMI Formatter -&gt; Round
+...                                                                       Robin   -&gt; Optional FIFO -&gt; SMI TX Port &lt;X&gt;
+Concerto TX Message &lt;Xk&gt; -&gt; Optional FIFO -&gt; Concerto to SMI Formatter -&gt; Arbiter
+
+</pre>
+</div></div><p><br/></p><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" height="250" src="https://arterisip.atlassian.net/wiki/download/attachments/16166810/concerto-mux-tx.png?api=v2"></span></p><p><br/></p><p><br/></p><p>SMI to Concerto Receiver:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">SMI to Concerto Receiver
+========================
+                                                      -&gt; SMI to Concerto Formatter -&gt; Optional FIFO -&gt; Concerto RX Message &lt;Xi&gt;
+SMI RX Port &lt;X&gt; -&gt; Optional FIFO -&gt; Decoder and DEMUX -&gt; ...                                                                              
+                                                      -&gt; SMI to Concerto Formatter -&gt; Optional FIFO -&gt; Concerto RX Message &lt;Xk&gt;</pre>
+</div></div><p><br/></p><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" height="250" src="https://arterisip.atlassian.net/wiki/download/attachments/16166810/concerto-mux-rx.png?api=v2"></span></p><p><br/></p><p><br/></p><p><strong>Concerto to SMI Bit Field Mapping</strong></p><p>Concerto Message Header bit fields (defined in ConcMsgHdr.packet.cpr as an array) are passed on to the corresponding SMI packet bit fields:</p><p>SMI ndp_targ_id = Concerto target_id</p><p>SMI ndp_src_id = Concerto initiator_id</p><p>SMI ndp_msg_id = Concerto message_id</p><p>SMI ndp_msg_type = Concerto cm_type</p><p>SMI ndp_msg_pri = Concerto priority</p><p><br/></p><p>Concerto Message Body bit fields (defined in ConcMsgBody*.packet.cpr as an array) are packed into SMI ndp_ndp field, with<br/>the first array element at the most significant bit position,<br/>the last array element at the least significant bit position.</p><p><br/></p><p><strong>Questions and Answers</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Question: FPortId and Steering?
+
+
+From: John Coddington &lt;John.Coddington@arteris.com&gt; 
+Sent: Friday, June 17, 2022 9:25 AM
+To: Boon Chuan &lt;Boon.Chuan@arteris.com&gt;
+Cc: Mohammed Khaleeluddin &lt;Mohammed.Khaleeluddin@arteris.com&gt;
+Subject: Re: FPortId and Steering
+
+Boon,
+
+What I remember from discussions with MK and Sanjay, the portID was needed in the case where a block had multiple inputs or outputs into a single network. Using this you could always assign unique portIDs to all RX SMI ports (or TX SMI ports), and then the routing would always work, regardless of how you hooked them up to the networks. You can validate this with MK.
+
+These two IDs get concatenated together and are then passed as a single ID on the SMI interface to be used by the packetizer to generate the route.
+
+If steer exists in the SMI interface, it is concatenated with ID (which itself is a concatenation of FUnitId and FPortId) and used to generate the route. In discussions with Sanjay, he said it could be used in the case where you wanted different message types to follow a different paths through a single network between the same initiator and target. It has never been used, even though there have been times steer was in the SMI signal list. In those cases steer was always set to all 0s. Steer never made it into the packet (but there were discussions that if you had hierarchical routing it would need to be added if used.)
+
+John</pre>
+</div></div><p><br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Question: How Byte Enable is placed in (*_dp_user) signal ?
+
+From: Eric Taylor &lt;Eric.Taylor@arteris.com&gt; 
+Sent: Wednesday, June 15, 2022 12:07 PM
+To: Keshav Chockshi &lt;Keshav.Chockshi@arteris.com&gt;; John Coddington &lt;John.Coddington@arteris.com&gt;
+Cc: Saad Zahid &lt;Saad.Zahid@arteris.com&gt;; Boon Chuan &lt;Boon.Chuan@arteris.com&gt;
+Subject: Re: Config with Data-Byte enable signal.
+
+The user field contains a mini user field for every 64 bits.
+
+So for example lets say we have a 128bit bus the dp_user filed will be packet like so.
+
+dp_user = {
+                          dw1.user,
+                          dw0.user
+                    }
+
+Where dw*.user = {
+                         dbad, (1 bit)
+                         dw_id, (3 bits)
+                         dprot, (8 bits if ECC, 1 if Parity)
+                         be (8bits)
+              }
+
+So overall dp_user = {
+                         dw1_dbad,  
+                         dw1_dw_id, 
+                         dw1_dprot,
+                         dw1_be,
+                         dw0_dbad,  
+                         dw0_dw_id, 
+                         dw0_dprot,
+                         dw0_be 
+                  }
+
+</pre>
+</div></div><p><br/></p><p><br/></p><p><strong>OLD STUFF BELOW - TO BE REMOVED</strong></p><p>================================</p><p>A concerto unit may implement transmit or receive for following class of concerto message. All classes of messages require NDP port. DP port is required only for few types of transactions.</p><p><br/></p><div class="table-wrap"><table class="confluenceTable"><colgroup><col/><col/><col/></colgroup><tbody><tr><th class="confluenceTh">Class Of Message</th><th class="confluenceTh">DP Used</th><th class="confluenceTh">NDP Used</th></tr><tr><td class="confluenceTd">CMDreq</td><td class="confluenceTd">No</td><td class="confluenceTd">Yes</td></tr><tr><td class="confluenceTd">SNPreq</td><td class="confluenceTd">No</td><td class="confluenceTd">Yes</td></tr><tr><td colspan="1" class="confluenceTd">STRreq</td><td colspan="1" class="confluenceTd">No</td><td colspan="1" class="confluenceTd">Yes</td></tr><tr><td colspan="1" class="confluenceTd">DTRreq</td><td colspan="1" class="confluenceTd">Yes</td><td colspan="1" class="confluenceTd">Yes</td></tr><tr><td colspan="1" class="confluenceTd">DTWreq</td><td colspan="1" class="confluenceTd">Yes</td><td colspan="1" class="confluenceTd">Yes</td></tr><tr><td colspan="1" class="confluenceTd">CMDrsp</td><td colspan="1" class="confluenceTd">No </td><td colspan="1" class="confluenceTd"> <span>Yes</span></td></tr><tr><td class="confluenceTd">SNPrsp</td><td class="confluenceTd">No </td><td class="confluenceTd"> <span>Yes</span></td></tr><tr><td class="confluenceTd">STRrsp</td><td class="confluenceTd">No </td><td class="confluenceTd"> <span>Yes</span></td></tr><tr><td class="confluenceTd">DTRrsp</td><td class="confluenceTd">No </td><td class="confluenceTd"> <span>Yes</span></td></tr><tr><td class="confluenceTd">DTWrsp</td><td class="confluenceTd">No </td><td class="confluenceTd"><span>Yes</span></td></tr><tr><td colspan="1" class="confluenceTd">UPDreq</td><td colspan="1" class="confluenceTd">No</td><td colspan="1" class="confluenceTd">Yes</td></tr><tr><td colspan="1" class="confluenceTd">UPDrsp</td><td colspan="1" class="confluenceTd">No</td><td colspan="1" class="confluenceTd">Yes</td></tr></tbody></table></div><p><br/></p><p>A concerto unit will have transmit or receive channels for any of the above message channels. SMI Mux unit will have parameters to enable message class and with transmit or receive port. </p><p><br/></p><p>Each of the above interface should be declared with following object which declared specific massage class , direction , and port mapping.  Concerto messages can be declared as</p><p>MsgClass : [CMDReq , SNPreq, STRreq, DTRreq, DTWreq, CMDrsp,SNPrsp,STRrsp,DTRrsp,DTWrsp ]</p><p>direction  : master/slave</p><p>port_mapping : []</p><p>interfaceObj: [] // optional</p><p><br/></p><p>SMI messages classes can be declared as </p><p>MsgClass: SMI</p><p>direction: master</p><p>dp_present : 0/1</p><p>interfaceObj: [] // optional</p><p><br/></p><p><br/></p><p>Message class declared message class interface to be implemented .</p><p>Direction indicates if it needs to be implemented as master or slave.</p><p>port mapping is valid for msg all the message classes except SMI.  For master Ports it indicates which SMI master port it this message class should connect to. For Slave ports it indicates which SMI slave port should drive this interface.</p><p>do_present for SMI indicates that data port is present.</p><p>interfaceObj is optional as Message class should suffice to declare interface. It is possible to override this with passing interface object with interfaceObj.</p><p><br/></p><p><br/></p><p>AIU ports can be declared as and array of ports </p><p>ConcertoPorts:</p><p>{</p><p>MsgClass : CMDreq,</p><p>direction: master,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : CMDrsp,</p><p>direction: slave,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : DTWreq,</p><p>direction: master,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : DTWrsp,</p><p>direction: slave,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : STRreq,</p><p>direction: slave,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : STRrsp,</p><p>direction: master,</p><p>port_mapping : 0</p><p>}</p><p>{</p><p>MsgClass : SNPreq,</p><p>direction: slave,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : SNPrsp,</p><p>direction: master,</p><p>port_mapping : 0</p><p>}</p><p>{</p><p>MsgClass : DTRreq,</p><p>direction: master ,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : DTRrsp,</p><p>direction: slave,</p><p>port_mapping : 0</p><p>}</p><p>{</p><p>MsgClass : DTRreq,</p><p>direction: slave,</p><p>port_mapping : 0</p><p>},</p><p>{</p><p>MsgClass : DTRrsp,</p><p>direction: master,</p><p>port_mapping : 0</p><p>}</p><p><br/></p><p>SMIPorts:</p><p>{</p><p>MsgClass: SMI</p><p>direction: master</p><p>dp_present : 1</p><p>},</p><p>{</p><p>MsgClass: SMI</p><p>direction: slave</p><p>dp_present : 1</p><p>}</p><p><br/></p><p><br/></p><p><br/></p><p><img class="wysiwyg-unknown-macro" src="https://arterisip.atlassian.net/wiki/plugins/servlet/confluence/placeholder/unknown-macro?name=gliffy&amp;locale=en_US&amp;version=2" /></p><p><br/></p><p>Naming conventions for the ports: TBD</p>

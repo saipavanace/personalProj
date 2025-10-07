@@ -1,0 +1,8 @@
+
+mkdir $WORK_TOP/debug/giu/
+out=$WORK_TOP/debug/giu/out
+config=$WORK_TOP/rtl/giu/json/giu_config0.json
+tachl-dbg.js -t $WORK_TOP/rtl/giu/src/giu.tachl -l $WORK_TOP/rtl/chi_aiu/src,$WORK_TOP/rtl/dii/src,$WORK_TOP/rtl/dce/src,$WORK_TOP/rtl/dmi/src,$WORK_TOP/rtl/dve/src,$WORK_TOP/rtl/ioaiu/src,$WORK_TOP/rtl/grb/src,$WORK_TOP/rtl/lib/src,$WORK_TOP/../hw-sym/rtl/apb_init/src,$WORK_TOP/../hw-sym/rtl/apb_targ/src,$WORK_TOP/../hw-sym/rtl/atui/src,$WORK_TOP/../hw-sym/rtl/atut/src,$WORK_TOP/../hw-sym/rtl/axi_init/src,$WORK_TOP/../hw-sym/rtl/axi_targ/src,$WORK_TOP/../hw-sym/rtl/clk_pwr_adapter/src,$WORK_TOP/../hw-sym/rtl/ctl_init/src,$WORK_TOP/../hw-sym/rtl/ctl_targ/src,$WORK_TOP/../hw-sym/rtl/dw_adapter/src,$WORK_TOP/../hw-sym/rtl/lib/src,$WORK_TOP/../hw-sym/rtl/pmon/src,$WORK_TOP/../hw-sym/rtl/smi_depkt/src,$WORK_TOP/../hw-sym/rtl/smi_pkt/src,$WORK_TOP/../hw-sym/rtl/rob/src,$WORK_TOP/../hw-lib/rtl/lib/src,$WORK_TOP/../hw-ccp/rtl/src -j $WORK_TOP/../hw-sym/js/interfaceMapLibs.js,$WORK_TOP/../hw-sym/js/pkt2Smi.js,$WORK_TOP/../hw-sym/js/sym_lib_utils.js,$WORK_TOP/../hw-lib/js/sym_csr_lib.js,$WORK_TOP/../hw-lib/js/lib_utils.js,$WORK_TOP/../hw-lib/js/lib.js,$WORK_TOP/../hw-lib/js/interfaceGenerators.js,$WORK_TOP/../hw-lib/js/bundleFunctions.js -o $out -p $config -z $WORK_TOP/../hw-sym/cpr/interface,$WORK_TOP/../hw-lib/cpr/interface,$WORK_TOP/cpr/interface,$WORK_TOP/cpr/concMsg,$WORK_TOP/cpr/tachl,$WORK_TOP/../hw-sym/cpr/packet
+echo dffre.v >> $out/flist.f
+cp $WORK_TOP/../hw-lib/verilog/dffre.v $out
+vcs +vcs+lic+wait +lint=all -debug_access+pp+dmptf+thread+all+r -v2k_generate -full64 -V -q -Xnotice=1 -picarchive -sverilog -gen_obj +incdir+$WORK_TOP/debug/giu/out -F $out/flist.f > $out/compile.log

@@ -1,0 +1,403 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// DMI Read Response
+// Author: Steve Kromer
+// 
+// Issue responses for reads.
+// Early response as soon as read leaves the skid buffer.
+// Late response when complete, currently only for MRD_flush and similar op.
+//
+// Note that we assume can always receive late response, so no need to 
+// backpressure, because response buffer is sized to credits.
+// 
+// Features:
+// - buffer to hold info for late response
+// - mux between early and late responses
+//=========================================================================
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+var clkInterface    = u.getParam('clkInterface');
+var respInterface   = u.getParam('respInterface');
+var wRl             = u.getParam('wRl');
+var cmType          = u.getParam('cmType');
+var wCmType         = u.getParam('wCmType');
+var wData           = u.getParam('wData');
+var cmd             = u.getParam('cmd');
+var useQos          = (respInterface.qos != 0);
+var wId             = u.getParam('wTransId');
+var depth           = u.getParam('depth');
+var wMessageId      = u.getParam('wMessageId');
+var useCmc          = u.getParam('useCmc');
+var assertOn = obj.lib.getParam('assertOn');
+//=========================================================================
+// ports
+//=========================================================================
+u.interface('',     'slave',                    clkInterface);
+
+// smi input
+u.port('input',      'msg_valid',               1);
+u.port('output',     'msg_ready',               1);
+u.port('input',      'msg_cm_type',             wCmType);
+u.port('input',      'msg_rl',                  wRl);
+u.port('input',      'msg_data',                wData);
+
+// downstream
+u.port('input',      'req_ready',               1);
+u.port('output',     'req_valid',               1);
+u.port('output',     'req_vz',                  1);
+u.port('output',     'req_late_resp_id',        wId);
+// late resp
+u.interface('resp_', 'slave',                   respInterface);
+
+// resp output
+u.port('output',     'rmsg_valid',              1);
+u.port('input',      'rmsg_ready',              1);
+u.port('output',     'rmsg_data',               wData);
+
+
+// very late resp for stash RL=2'b11
+
+u.port('input',      'dtr_req_valid',           1);
+u.port('input',      'dtr_req_ready',           1);
+u.port('input',      'dtr_req_last',            1);
+u.port('input',      'dtr_req_rd_type',         1);
+u.port('input',      'dtr_req_message_id',      wMessageId);
+u.port('input',      'dtr_req_late',            1);
+u.port('input',      'dtr_req_trans_id',        wId);
+
+u.port('input',      'dtr_resp_valid',          1);
+u.port('output',     'dtr_resp_ready',          1);
+u.port('input',      'dtr_resp_r_message_id',   wMessageId);
+if ( cmd == 0 ) {
+u.port('output',     'pre_dtr_resp_vlate_match',  1);
+u.port('input',      'pre_dtr_resp_r_message_id',wMessageId)
+}
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+localparam RD_PREF  = \=cmType['MrdPref']=\;
+localparam RD_CLEAN = \=cmType['MrdCln']=\;
+localparam RD_INV   = \=cmType['MrdInv']=\;
+localparam RD_FLUSH = \=cmType['MrdFlush']=\;
+localparam HN_READ  = \=cmType['HntRead']=\;
+localparam NC_CMDRD = \=cmType['CmdRdNC']=\;
+localparam NC_CLEAN = \=cmType['CmdClnVld']=\;
+localparam NC_PRSST = \=cmType['CmdClnShPsist']=\;
+localparam NC_FLUSH = \=cmType['CmdClnInv']=\;
+localparam NC_MKINV = \=cmType['CmdMkInv']=\;
+localparam NC_PREF  = \=cmType['CmdPref']=\;
+localparam NULL_ID  = \=wId=\'d0;
+
+  function automatic is_cacheop;
+    input [\=wCmType-1=\:0] cm_type;
+    begin
+\js if ( cmd == 0 ) {
+        is_cacheop = (cm_type == RD_PREF)  | 
+                     (cm_type == RD_FLUSH) |  
+                     (cm_type == RD_CLEAN) |   
+                     (cm_type == RD_INV)   ;
+\js } else {
+        is_cacheop = (cm_type == NC_PREF)  | 
+                     (cm_type == NC_FLUSH) |  
+                     (cm_type == NC_CLEAN) | 
+                     (cm_type == NC_PRSST) | 
+                     (cm_type == NC_MKINV) ;
+\js }
+    end
+  endfunction
+
+\jsbegin
+    //
+    // Wires
+    //
+\jsend
+    \=bundleFunctions.wiresFromInterface('resp_pop_',   respInterface, [], obj.lib.bundle)=\
+    wire [1:0] resp_pop_error;
+    wire late_priority;
+    wire late_valid;
+    wire late_ready;
+    wire [\=wData-1=\:0] late_resp_data;
+    wire [\=wData-1=\:0] vlate_rmsg_info;
+    wire early_en;
+    wire early_valid;
+    wire vlate_req;
+    wire vlate_msg;
+\js if ( cmd == 0 ) {
+    wire vlate_pre_alloc_ready;
+    wire vlate_pre_alloc_valid;
+    wire vlate_alloc_valid;
+    wire vlate_alloc_ready;
+    wire [\=wId-1=\:0] vlate_alloc_id;
+    wire [\=wId-1=\:0] vlate_dealloc_id;
+    wire vlate_dealloc_valid;
+    reg  [\=depth-1=\:0]  pre_vlate_match;
+\js }
+    wire vlate_valid_d;
+    wire vlate_valid;
+    wire vlate_ready;
+    wire vlate_push_valid;
+    wire [\=wId-1=\:0] vlate_resp_id;
+    wire valid_new;
+    wire valid_en;
+    wire [\=depth-1=\:0] valid_set;
+    wire [\=depth-1=\:0] valid_clr;
+    wire [\=depth-1=\:0] valid_d;
+    wire [\=depth-1=\:0] valid;
+    wire [\=wMessageId-1=\:0] index_d;
+    wire [\=wMessageId-1=\:0] index[\=depth-1=\:0];
+    wire [\=wId-1=\:0] vlate_match_id;
+    reg  [\=depth-1=\:0]  vlate_match_vector;
+
+    wire late_valid_d;
+    wire late_push_valid;
+    wire cmo_req;
+
+    assign vlate_msg                = (msg_rl == 2'b11);
+    assign vlate_req                = vlate_msg;
+    assign cmo_req                  = (msg_rl == 2'b10) & is_cacheop(msg_cm_type);
+    assign req_vz                   = cmo_req | vlate_req;
+    assign index_d                  = dtr_req_message_id;
+\js if ( cmd == 0 ) {
+    assign valid_new                = dtr_req_valid & dtr_req_ready & dtr_req_rd_type & dtr_req_late & dtr_req_last;
+    assign req_late_resp_id         = vlate_req ? vlate_alloc_id : NULL_ID;
+    assign vlate_alloc_ready        = req_ready;
+    assign vlate_dealloc_valid      = vlate_valid & vlate_ready;
+    assign vlate_dealloc_id         = vlate_resp_id;
+    assign vlate_pre_alloc_valid    = msg_valid & vlate_msg;
+    assign valid_en                 = (dtr_resp_valid & dtr_resp_ready) | valid_new;
+    assign valid_set                = valid_new ? \=depth=\'b1 << dtr_req_trans_id : \=depth=\'d0;
+    assign valid_clr                = (dtr_resp_valid & dtr_resp_ready) ? vlate_match_vector : \=depth=\'d0;
+    assign valid_d                  = valid_set | (valid & ~valid_clr);
+    assign vlate_valid_d            = vlate_push_valid | (vlate_valid & ~vlate_ready);
+    assign vlate_push_valid         = |vlate_match_vector;
+
+
+\js } else {
+    assign valid_new                = 1'b0;
+    assign req_late_resp_id         = NULL_ID; 
+    assign vlate_push_valid =1'b0 ;
+\js }
+
+
+\js //
+\js // Msg attribute Buffer
+\js //
+
+\js if ( cmd == 0 ) {
+    wire [\=wData-1=\:0] msg_info [\=depth-1=\:0];
+    wire [\=depth-1=\:0] msg_info_en;
+
+    assign msg_info_en = (vlate_alloc_valid & vlate_alloc_ready) ? (\=depth=\'b1 << vlate_alloc_id) : \=depth=\'b0;
+
+\js for (var entry = 0; entry < depth; entry++) {
+    wire [\=wData-1=\:0] msg_info_\=entry=\;
+    assign msg_info[\=entry=\] = msg_info_\=entry=\;
+    \=obj.lib.dffre(wData,      'msg_info_'+entry,   'msg_data',  wData+"'b0", 'msg_info_en['+entry+']', 'clk', 'reset_n')=\
+\js }
+
+
+
+\js // Index Buffer
+\js for (var entry = 0; entry < depth; entry++) {
+    wire [\=wMessageId-1=\:0] index_\=entry=\;
+    assign index[\=entry=\] = index_\=entry=\;
+    \=obj.lib.dffre(wMessageId,      'index_'+entry,   'index_d',   wMessageId+"'b0", 'valid_set['+entry+']', 'clk', 'reset_n')=\
+\js }
+
+\js // Cam resp r_message_id with index to select buffer #
+    integer i;
+    always @(*) begin
+        for (i = 0; i < \=depth=\; i = i + 1) begin
+            vlate_match_vector[i] = (valid[i] & (index[i] == dtr_resp_r_message_id)) & dtr_resp_valid & dtr_resp_ready;
+            pre_vlate_match[i] =  valid[i] & (index[i] == pre_dtr_resp_r_message_id);
+        end
+    end
+    assign pre_dtr_resp_vlate_match =  |pre_vlate_match;
+    assign vlate_match_id = \=wId=\'d0 & {\=wId=\{vlate_match_vector[0]}}
+\js for(var i = 1; i< depth; i++) {
+    | (\=wId=\'d\=i=\ & {\=wId=\{vlate_match_vector[\=i=\]}}) 
+\js }
+    ;
+    \js }
+
+\js if ( cmd == 0 ) {
+    \=obj.lib.dffre(depth,  'valid',            'valid_d',          depth+"'b0",    'valid_en',         'clk', 'reset_n')=\
+    \=obj.lib.dffre(wId,    'vlate_resp_id',    'vlate_match_id',   wId+"'b0",      'vlate_push_valid', 'clk', 'reset_n')=\
+    \=obj.lib.dffre(1,      'vlate_valid',      'vlate_valid_d',    "1'b0",         '1\'b1',            'clk', 'reset_n')=\
+
+\js //
+\js // vlate Response Allocation
+\js //
+    \=u.instance({
+        instanceName: 'vlate_resp_alloc_flm',
+        moduleName: 'dmi_flm',
+        params: { 
+                  clkInterface  : clkInterface,
+                  idNum         : depth,
+                  idWidth       : wId,
+                },
+        interfaces: [{modulePrefix: '', localPrefix: '', interface: clkInterface}],
+        ports: {  
+                  pre_alloc_valid: 'vlate_pre_alloc_valid',
+                  pre_alloc_ready: 'vlate_pre_alloc_ready',
+                  pre_alloc_last:  "1'b1",
+                  alloc_valid:     'vlate_alloc_valid',
+                  alloc_ready:     'vlate_alloc_ready',
+                  alloc_id:        'vlate_alloc_id',
+                  dealloc_valid:   'vlate_dealloc_valid',
+                  dealloc_id:      'vlate_dealloc_id',
+               },
+        portsDelimiter: '\n        '
+    })=\
+
+\js } else {
+    assign valid        = \=depth=\'b0;
+    assign vlate_resp_id= NULL_ID;
+    assign vlate_valid  = 1'b0;
+\js }
+
+
+\js if ( cmd == 0 ) {
+\js // if late response, set vz downstream.  
+\js // So far, this only applies to cacheops for reads
+\js // if early response, send response as soon as req_ready
+
+\js // to remove mrd information (cm_type, rl) from control timing path.
+\js // This may cause temporarily blocking if there's a late response.
+    assign msg_ready       = req_ready & (cmo_req | (early_en & ~msg_rl[1] & rmsg_ready) | (vlate_msg & vlate_pre_alloc_ready));
+    assign req_valid       =  msg_valid & (cmo_req | (early_en & ~msg_rl[1] & rmsg_ready) | (vlate_msg & vlate_alloc_valid));
+  //  assign msg_ready       = req_ready & (cmo_req | (early_en & rmsg_ready) | (vlate_msg & ~flm_full));
+ //   assign req_valid       =  msg_valid & (cmo_req | (early_en & rmsg_ready) | (vlate_msg & ~flm_full));
+
+\js } else {
+\js // skid buffer arbitration now based on ready so need to avoid valid & ready comb loop
+\js // always wait for strReq FIFO be available
+    assign msg_ready       = req_ready & early_en & rmsg_ready;
+    assign req_valid       = msg_valid & early_en & rmsg_ready;
+\js }
+
+    // 
+    // Late Response Buffer
+    //
+
+\js if (useQos) {
+    \=obj.lib.dffre(wData, 'late_resp_data', '{resp_pop_tm, resp_pop_aiu_id, resp_pop_aiu_trans_id, resp_pop_qos, resp_pop_error}',  '{'+wData+"{1'b0}}", 'late_push_valid', 'clk', 'reset_n')=\
+\js } else {
+    \=obj.lib.dffre(wData, 'late_resp_data', '{resp_pop_tm, resp_pop_aiu_id, resp_pop_aiu_trans_id, resp_pop_error}', '{'+wData+"{1'b0}}", 'late_push_valid', 'clk', 'reset_n')=\
+\js }
+
+    \=obj.lib.dffre(1,  'late_valid',       'late_valid_d',     "1'b0",     "1'b1", 'clk', 'reset_n')=\
+    \=obj.lib.dffre(1,  'late_priority',    '~resp_pop_ready',      "1'b0",     "1'b1", 'clk', 'reset_n')=\
+    assign late_valid_d    = late_push_valid | (late_valid & ~late_ready);
+    assign late_push_valid = resp_pop_valid & resp_pop_vz & resp_pop_ready;
+
+\js // Early/Late/vlate Response Mux
+\js // vlate has highest priority
+\js // early gets next prioirty unless
+\js // late gets priority if have a late in buffer and didn't go first cycle
+
+    assign early_en        =~late_priority & ~vlate_valid & rmsg_ready;
+    assign early_valid     = early_en & msg_valid & msg_ready & (~msg_rl[1]);
+    assign rmsg_valid      = early_valid | late_valid | vlate_valid ;
+\js if ( cmd == 0 ) {
+
+wire [\=depth-1=\ : 0] msg_info_sel;
+
+\jsbegin
+    var vlate_rmsg_info_ports = {};
+
+    for (i=0; i<depth ;i++) {
+        vlate_rmsg_info_ports['in'+i] = "msg_info_"+i;
+    \jsend
+        assign msg_info_sel[\=i=\] = (vlate_resp_id == \=wId=\'d\=i=\);
+    \jsbegin
+    }
+    
+    vlate_rmsg_info_ports['sel']   = "msg_info_sel";
+    vlate_rmsg_info_ports['out']   = "vlate_rmsg_info";
+    \jsend  
+      
+
+    
+    \=u.instance({
+            instanceName: 'u_write_oid',
+            moduleName: 'ao_mux',
+            params: {
+                            nInputs          : depth,
+                            wMux             : wData
+            },
+            verilogParams: {},
+            ports: vlate_rmsg_info_ports
+    })=\
+
+\js } else {
+    assign vlate_rmsg_info = \=wData=\'d0;
+\js }
+
+    assign rmsg_data       = vlate_valid ? vlate_rmsg_info : early_valid ? 
+                                                             msg_data    : late_resp_data;
+    assign late_ready      =~vlate_valid & ~early_valid & rmsg_ready;
+    assign vlate_ready     = rmsg_ready;
+    assign resp_pop_ready  =~(late_valid & ~late_ready);
+    assign dtr_resp_ready  =~(vlate_valid & ~vlate_ready);
+
+\jsbegin
+var lateRespFifoParams = {
+    width           : bundleFunctions.getBundleWidth(respInterface, ['valid', 'ready'], obj.lib.bundle),
+    depth           : 1,
+    zerodepth       : useCmc,
+    bypass_mode     : 1
+};
+
+var lateRespFifoInterfaces = [];
+lateRespFifoInterfaces.push({modulePrefix: '',  localPrefix: '',   interface: clkInterface,        exclude: []});
+
+var lateRespFifoPorts = {
+    push_valid      : 'resp_valid',
+    push_ready      : 'resp_ready',
+    push_data       : bundleFunctions.packetizeBundle('resp_', respInterface, ['valid', 'ready'], obj.lib.bundle),
+    pop_valid       : 'resp_pop_valid',
+    pop_ready       : 'resp_pop_ready',
+    pop_data        : bundleFunctions.packetizeBundle('resp_pop_', respInterface, ['valid', 'ready'], obj.lib.bundle)
+};
+
+\jsend
+
+    \=obj.lib.instance({
+        instanceName    : 'late_resp_fifo',
+        moduleName      : 'fifo',
+        params          : lateRespFifoParams,
+        interfaces      : lateRespFifoInterfaces,
+        ports           : lateRespFifoPorts
+    })=\
+
+assign resp_pop_error = {(resp_pop_resp == 2'b11), (resp_pop_resp == 2'b10)};
+
+\js if (assertOn) {
+    `ifdef OVL_ASSERT_ON
+    // coverage off
+    // synthesis off
+    // synopsys translate_off
+
+    // late response should never overflow, forces priority if gets full
+    assert_implication #(0) assert_late_response_overflow(
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(late_valid & late_push_valid),
+        .consequent_expr(late_ready)
+    );
+    // synopsys translate_on
+    // synthesis on
+    // coverage on
+    `endif
+\js }
+
+endmodule
+

@@ -1,0 +1,1 @@
+source ccov_chi_aiu_hw_config_resiliency_placeholder_exclude_coverCheck.do

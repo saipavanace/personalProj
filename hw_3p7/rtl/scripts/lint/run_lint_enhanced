@@ -1,0 +1,204 @@
+#!/bin/bash
+
+
+source /engr/dev/releases/maestro/build/tools/SOURCEME.bash
+use_library=0
+LOCAL=0
+flist="\"top.flist\""
+WORKDIR=`pwd`
+USE_EXISTING_RTL=0
+
+if [ $# == 0 ] 
+then
+ echo "--local  to use current already sourced maestro
+        -t to use existing rtl
+        -u <flist_name.flit> to overwrite the file list. default is top.flis
+        -b <master,Ncore3> to select whch branch to select the build from
+        -v <bleeding_edge,stable,id_number,date> to select which build
+        -c <config_path> absolute if not using -l option otherwise relateive to MAESTRO_EXAMPLES
+        -l toggles between relative  path and absolute path
+        -w directory of existing rtl/where rtl will be generated default is ./
+        -sv to use system verilog option in lint
+        Examples :
+        1 ) \$WORK_TOP/rtl/scripts/lint/run_lint -b master -v bleeding_edge -c /home/bmadon/MobilEyeConfig-6-9/EyeQ7_sysncore.tcl -w \$WORK_TOP
+        2 ) \$WORK_TOP/rtl/scripts/lint/run_lint -b Ncore3 -v stable -c /hw_config_nxpauto/hw_config_nxpauto.tcl -l -w \$WORK_TOP
+        3 ) \$WORK_TOP/dv/scripts/refresh_rtl
+            . \$WORK_TOP/SOURCEME_image
+            runsim -e dmi -c config4 -t random_tchl -i 0 
+            \$WORK_TOP/rtl/scripts/lint/run_lint --local -u \"dmi_a.flist\" -t -l -w \$WORK_TOP/debug/dmi/config4/exe/output/rtl/design -sv
+        4 ) \$WORK_TOP/dv/scripts/refresh_rtl
+            . \$WORK_TOP/SOURCEME_image
+            \$WORK_TOP/rtl/scripts/lint/run_lint --local -c /home/bmadon/MobilEyeConfig-6-9/EyeQ7_sysncore.tcl -w \$WORK_TOP
+        5 ) \$WORK_TOP/dv/scripts/refresh_rtl
+            . \$WORK_TOP/SOURCEME_image
+            \$WORK_TOP/rtl/scripts/lint/run_lint --local -c /hw_config_nxpauto/hw_config_nxpauto.tcl -l -w \$WORK_TOP"
+
+        
+exit
+
+fi
+for (( i=0; i<=$#; i++))
+do
+echo ${!i}
+j=$(($i + 1))
+    case "${!i}" in
+        --local )
+            LOCAL=1
+        ;;
+        -t )
+            USE_EXISTING_RTL=1
+        ;;
+        -u ) 
+            flist=${!j}
+        ;;
+        -b )
+            BRANCH=${!j}
+        ;;
+
+        -v )
+            VERSION=${!j}
+
+        ;;
+        -c )
+            ConfigurationIndex=$j
+        ;;
+        -l)
+            use_library=1
+        ;;
+        -w )
+            WORKDIR=${!j}
+
+        ;;
+        -sv ) 
+            USE_SV=1
+        ;;
+
+    esac
+done
+
+if [ $LOCAL == 0 ]
+then
+setup_maestro -br $BRANCH -bu $VERSION -sa maestro_version.txt -lk
+    if [ $BRANCH == master ]
+    then
+    export MAESTRO_EXAMPLES=$MAESTRO_EXAMPLES/../../ncore_v3.4_configs/base_configs
+    elif [ $BRANCH == Ncore3 ]
+    then
+    export MAESTRO_EXAMPLES=$MAESTRO_EXAMPLES/../../ncore_v3.0_configs/base_configs
+    elif [ $BRANCH == Ncore3.6 ]
+    then
+    export MAESTRO_EXAMPLES=$MAESTRO_EXAMPLES/../../ncore_v3.6_configs/base_configs
+    fi
+fi
+
+cd $WORKDIR
+DATE=`date +"%b-%d-%Y-%H-%M"`
+echo $use_library
+if [ $use_library == 1 ]
+then
+Configuration=$MAESTRO_EXAMPLES/${!ConfigurationIndex}
+else
+Configuration=${!ConfigurationIndex}
+fi
+echo $Configuration
+FILE_NAME=$(basename $Configuration)
+FILE=$(basename -s .tcl $Configuration)
+FOLDER=$(dirname $Configuration)
+echo $FILE
+echo $FILE_NAME
+echo $FOLDER
+export SNPSLMD_LICENSE_FILE=5285@lic-node0.arteris.com:5285@lic-node1.arteris.com
+export SPYGLASS_HOME=/engr/dev/tools/synopsys/SpyGlass_vT-2022.06-SP2-1/SPYGLASS_HOME/
+export SPYGLASS_ENABLE_LICENSE_QUEUE=1
+
+
+echo `which maestro`
+if [ $USE_EXISTING_RTL == 0 ] 
+then
+mkdir -p $WORKDIR/$FILE/SP20-$DATE
+cd $WORKDIR/$FILE/SP20-$DATE
+cp $FOLDER/*.mpf ./
+cp $FOLDER/*.tcl ./
+maestro -c -s $FILE_NAME
+cd output/rtl/design
+cp ../placeholders/*.v .
+cp ../models/memories/*.v .
+else
+cp ../placeholders/*.v .
+cp ../models/memories/*.v .
+fi
+
+
+
+echo "#read_file -type hdl ./*.v
+  set flistName "$flist"
+  set fp [open \$flistName r]
+  set data [read -nonewline \$fp]
+  close \$fp
+  foreach line \$data {
+    if {\$line ne \"\" && ([string first # \$line] != 0)} {
+	set v [file tail \$line]
+	read_file -type hdl \$v
+    }
+  }
+read_file -type waiver waivers.swl
+set_option define ARTERIS_LINT
+set_option projectwdir .
+set_option language_mode mixed
+set_option designread_enable_synthesis no
+set_option designread_disable_flatten no
+set_option active_methodology \$SPYGLASS_HOME/GuideWare/latest/block/initial_rtl
+#set_option enableSV09 yes
+set_option incdir .
+set_option ignoredu { no_project_name__noc* }
+set_option ignoredu { no_project_name }
+set_option ignoredu { root }
+set_option inferblackbox yes
+set_option define_cell_sim_depth 12
+set_option handlememory
+set_option set_option sgsyn_loop_limit 32768
+current_methodology \$SPYGLASS_HOME/GuideWare/latest/block/initial_rtl
+current_goal lint/lint_rtl_enhanced
+set_parameter check_initialization_assignment yes
+set_parameter handle_large_bus yes" >> lint.prj
+
+if [ $USE_SV ]
+then
+echo "set_option enableSV yes" >> run.tcl
+fi
+echo "run_goal -goal lint/lint_rtl_enhanced" >> run.tcl
+
+echo "waive -rule \"ErrorAnalyzeBBox\"
+waive -rule \"SYNTH_5273\"
+waive -rule \"W528\"
+waive -rule \"W287b\"
+waive -rule \"W240\"
+waive -rule \"ReserveName\" 
+waive -rule \"FlopEConst\" " >> waivers.swl
+
+$SPYGLASS_HOME/bin/sg_shell -project lint.prj < run.tcl | tee spyglass.log
+
+if [ $LOCAL == 0 ]
+then
+echo SP20-$DATE >> $WORKDIR/$FILE\_$DATE.txt
+echo "========================Version========================">> $WORKDIR/$FILE\_$DATE.txt
+grep "name\|git_sha\|from\|version\|build_id" $(dirname `which maestro`)/../manifest.json >> $WORKDIR/$FILE\_$DATE.txt
+echo "=======================================================">> $WORKDIR/$FILE\_$DATE.txt
+echo "========================SP_log=========================">> $WORKDIR/$FILE\_$DATE.txt
+grep "   Goal Violation Summary:" spyglass.log >> $WORKDIR/$FILE\_$DATE.txt
+grep "  Waived   Messages:" spyglass.log >> $WORKDIR/$FILE\_$DATE.txt
+grep "   Reported Messages:" spyglass.log >> $WORKDIR/$FILE\_$DATE.txt
+echo "=======================================================">> $WORKDIR/$FILE\_$DATE.txt
+echo "========================Errors=========================">> $WORKDIR/$FILE\_$DATE.txt
+grep "Error" ./lint/consolidated_reports/lint_lint_rtl/moresimple.rpt >> $WORKDIR/$FILE\_$DATE.txt
+echo "=======================================================">> $WORKDIR/$FILE\_$DATE.txt
+echo "========================Warnings=========================">> $WORKDIR/$FILE\_$DATE.txt
+grep "Warning" ./lint/consolidated_reports/lint_lint_rtl/moresimple.rpt >> $WORKDIR/$FILE\_$DATE.txt
+echo "=======================================================">> $WORKDIR/$FILE\_$DATE.txt
+echo "=======================================================">> $WORKDIR/$FILE\_$DATE.txt
+echo "" >> $WORKDIR/$FILE.txt
+cat $WORKDIR/$FILE\_$DATE.txt $WORKDIR/$FILE.txt >tmp_file.txt; mv tmp_file.txt $WORKDIR/$FILE.txt
+else
+echo "used `which mestro` or already built rtl. Reports are in `pwd`/lint"
+fi
+

@@ -1,0 +1,36 @@
+\jsbegin
+var u = obj.lib;
+
+var VW = u.getParam('VW');
+var BW = u.getParam('BW');
+
+\jsend
+
+module \=u.getModuleName()=\ (
+	vec_i,
+	bin_o
+);
+
+input [\=VW-1=\:0]	vec_i;
+output [\=BW-1=\:0]	bin_o;
+
+wire [\=BW-1=\:0]	t_nums[\=VW-1=\:0], t_bin;
+wire [\=VW-1=\:0]	t_encs[\=BW-1=\:0];
+
+\js for (let h=0; h<VW; h=h+1) {
+	assign t_nums[\=h=\] = {\=BW=\{vec_i[\=h=\]}} & \=BW=\'d\=h=\;
+\js }
+
+\js for (let i=0; i<BW; i=i+1) {
+\js 	for (let j=0; j<VW; j=j+1) {
+		assign t_encs[\=i=\][\=j=\] = t_nums[\=j=\][\=i=\];
+\js 	}
+\js }
+
+\js for (let k=0; k<BW; k=k+1) {
+	assign t_bin[\=k=\] = (| t_encs[\=k=\]);
+\js }
+
+assign bin_o = t_bin;
+
+endmodule

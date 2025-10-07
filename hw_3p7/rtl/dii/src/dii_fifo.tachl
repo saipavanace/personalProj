@@ -1,0 +1,357 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// FIFO library module
+//
+// The FIFO is used as an elastic store for data.
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+u.paramDefault('zerodepth', 'int', 0);
+u.paramDefault('bypass_mode', 'int', 0);
+
+var width = u.getParam('width');
+var depth = u.getParam('depth');
+var zerodepth = u.getParam('zerodepth');
+var bypass_mode = u.getParam('bypass_mode');
+
+var logDepth   = log2ceil(depth);
+var logDepthp1 = logDepth + 1;
+var logDepthm1 = logDepth - 1;
+
+var wOccCnt    = log2ceil(depth+1);
+
+var fastread = 0;
+var hoqout = 'pop_data_array';
+var rdptr = 'rd_ptr';
+
+if(depth >=4) {
+    fastread = 1;
+    hoqout = 'mem_out' ;
+    rdptr = 'rd_ptr_nxt';
+}
+
+\jsend
+    
+\jsbegin
+//=============================================================================
+// ports
+//=============================================================================
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+
+u.port('input',  'push_valid', 1);
+u.port('input',  'push_data',  width);
+u.port('output', 'push_ready', 1);
+u.port('output', 'pop_valid',  1);
+u.port('output', 'pop_data',   width);
+u.port('input',  'pop_ready',  1);
+u.port('output', 'empty',  1);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+\=u.getPorts('\n    ')=\
+);
+
+\jsbegin
+//=============================================================================
+// signals
+//=============================================================================
+\jsend
+
+\jsbegin
+// Never have depth of 0
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */  
+if (zerodepth) {
+\jsend
+
+assign pop_valid  = push_valid;
+assign pop_data   = push_data;
+assign push_ready = pop_ready;
+
+\jsbegin
+} else {
+\jsend
+
+wire [\=logDepthp1-1=\:0] rd_ptr;
+reg [\=logDepthp1-1=\:0] rd_ptr_nxt;
+wire [\=logDepthp1-1=\:0] wr_ptr;
+reg [\=logDepthp1-1=\:0] wr_ptr_nxt;
+
+wire full;
+wire do_write;
+wire do_read;
+reg [\=width-1=\:0] pop_data_array;
+
+    \jsbegin
+    for (var i=0; i < depth; i++)  {
+    \jsend
+
+wire [\=width-1=\:0] mem\=i=\;
+
+    \jsbegin
+    }
+    \jsend
+
+    \jsbegin
+    \jsend
+
+wire pop_readyack;
+
+assign pop_readyack = pop_ready;
+
+    \jsbegin
+    if (fastread) {
+    \jsend
+        wire [\=width-1=\:0] mem_out;
+        wire s_empty;
+
+        assign empty = s_empty;
+
+    \jsbegin
+    } else {
+    \jsend
+
+        assign empty = (rd_ptr[\=logDepth=\:0] == wr_ptr);
+
+    \jsbegin
+    } //if (fastread)
+    \jsend
+
+
+    \jsbegin
+    // Depth Always > 1
+    /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */        
+    if (depth > 1) {
+    \jsend
+
+        assign full = (rd_ptr[\=logDepth=\] != wr_ptr[\=logDepth=\]) & (rd_ptr[\=logDepth-1=\:0] == wr_ptr[\=logDepth-1=\:0]);
+
+    \jsbegin
+    } else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+    \jsend
+
+        assign full = (rd_ptr[\=logDepth=\] != wr_ptr[\=logDepth=\]);
+
+    \jsbegin
+    } //if (depth > 1)
+    \jsend
+
+    \jsbegin
+    // Will never be bypassed
+    /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6 */    
+    if (bypass_mode) {
+    \jsend
+
+        assign pop_valid = ~empty | push_valid;
+        assign do_write = push_ready & push_valid & ~(empty & pop_readyack);
+        assign do_read = pop_readyack & ~empty;
+
+    \jsbegin
+    } else {
+    \jsend
+
+        assign pop_valid = ~empty;
+        assign do_write = push_ready & push_valid;
+        assign do_read = pop_ready & pop_valid;
+
+    \jsbegin
+    } //if (bypass_mode)
+    \jsend
+
+
+    assign push_ready = ~full;
+
+    \=u.dffre(  logDepthp1
+             , 'rd_ptr'
+	     , 'rd_ptr_nxt'
+	     , '{'+logDepthp1+'{1\'b0}}'
+	     , 'do_read'
+	     , 'clk'
+	     , 'reset_n')=\
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */            
+    if (depth > 1) {
+    \jsend
+
+    always @ (*)
+        if (rd_ptr[\=logDepthm1=\:0] == \=logDepth=\'d\=depth-1=\)
+            rd_ptr_nxt = { ~rd_ptr[\=logDepth=\], \=logDepth=\'b0 };
+        else
+            rd_ptr_nxt = rd_ptr + \=logDepthp1=\'b1;
+
+    \jsbegin
+    } else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+    \jsend
+
+    always @ (*)
+            rd_ptr_nxt = rd_ptr + \=logDepthp1=\'b1;
+
+    \jsbegin
+    } // if (depth > 1)
+    \jsend
+
+
+    always @ (*) begin
+            \jsbegin
+            /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */        	    
+            if (depth > 1) {
+            \jsend
+
+            if (wr_ptr[\=logDepthm1=\:0] == \=logDepth=\'d\=depth-1=\)
+                wr_ptr_nxt = { ~wr_ptr[\=logDepth=\], \=logDepth=\'b0 };
+            else
+                wr_ptr_nxt = wr_ptr + \=logDepthp1=\'b1;
+            end
+            \jsbegin
+            } else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+            \jsend
+
+                wr_ptr_nxt = wr_ptr + \=logDepthp1=\'b1;
+            end
+            \jsbegin
+            } // if (depth > 1)
+            \jsend
+
+     \=u.dffre(  logDepthp1
+              , 'wr_ptr'
+	      , 'wr_ptr_nxt'
+	      , '{'+logDepthp1+'{1\'b0}}'
+	      , 'do_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+    \jsbegin
+    for (var i=0; i < depth; i++)  {
+    \jsend
+     wire addr_match\=i=\ = do_write & (wr_ptr[\=logDepthm1=\:0] == \=logDepth=\'d\=i=\);
+     
+     \=u.dffre(  width
+              , 'mem'+i
+	      , 'push_data'
+	      , '{'+width+'{1\'b0}}'
+	      , 'addr_match'+i
+	      , 'clk'
+	      , 'reset_n')=\
+    \jsbegin
+    }
+    \jsend
+
+    always @(*)
+        \jsbegin
+        /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */        	
+        if (depth > 1) {
+        \jsend
+            \jsbegin
+            if (fastread) {
+            \jsend
+                case (rd_ptr_nxt[\=logDepthm1=\:0])
+            \jsbegin
+            } else {
+            \jsend
+                case (rd_ptr[\=logDepthm1=\:0])
+            \jsbegin
+            }
+            \jsend
+
+                \jsbegin
+                for(var i=0; i < depth; i++)  {
+                \jsend
+                    \=logDepth=\'d\=i=\ : pop_data_array = mem\=i=\;
+                \jsbegin
+                }
+                \jsend
+                    default pop_data_array = \=width=\'b0;
+                endcase
+        \jsbegin
+        } else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6 */ {
+        \jsend
+                pop_data_array = mem0;
+        \jsbegin
+        } // if (depth > 1)
+        \jsend
+        
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6 */            
+    if (bypass_mode) {
+    \jsend
+                assign pop_data = empty ? push_data : \=hoqout=\;
+    \jsbegin
+    } else {
+    \jsend
+                assign pop_data = \=hoqout=\;
+    \jsbegin
+    } // if (depth > 1)
+    \jsend
+
+
+    \jsbegin
+    if (fastread) {
+    \jsend
+            wire [\=width-1=\:0] hoq_in;
+            wire hoq_en;
+            wire hoq_write_case_0;
+            wire hoq_write_case_1;
+            wire hoq_write_case_2;
+            wire occupancy_cnt_en;
+            wire occupancy_cnt_zero;
+            wire push_data_en;
+            wire [\=wOccCnt-1=\:0] occupancy_cnt_in;
+            wire  [\=wOccCnt-1=\:0] occupancy;
+
+            \=u.dffre(  wOccCnt
+                     , 'occupancy'
+	             , 'occupancy_cnt_in'
+	             , '{'+wOccCnt+'{1\'b0}}'
+	             , 'occupancy_cnt_en'
+	             , 'clk'
+	             , 'reset_n')=\
+
+            assign occupancy_cnt_en = (do_write ^ do_read);
+            assign occupancy_cnt_in = ({\=wOccCnt=\{do_write}} & (occupancy + \=wOccCnt=\'b1))
+                                    | ({\=wOccCnt=\{do_read}}  & (occupancy - \=wOccCnt=\'b1));
+
+            \=u.dffre(  width
+                     , 'mem_out'
+	             , 'hoq_in'
+	             , '{'+width+'{1\'b0}}'
+	             , 'hoq_en'
+	             , 'clk'
+	             , 'reset_n')=\
+
+            assign hoq_write_case_0 = (occupancy == \=wOccCnt=\'d0) & do_write; 
+            assign hoq_write_case_1 = (occupancy == \=wOccCnt=\'d1) & do_write & do_read; 
+            assign hoq_write_case_2 = (occupancy >  \=wOccCnt=\'d1) & do_read; 
+            assign occupancy_cnt_zero = (occupancy_cnt_in == \=wOccCnt=\'d0);
+
+            assign hoq_en = hoq_write_case_0 | hoq_write_case_1 | hoq_write_case_2;
+            assign push_data_en = hoq_write_case_0 | hoq_write_case_1; 
+            assign hoq_in = push_data_en ? push_data : pop_data_array;    
+
+            \=u.dffre(  1
+                     , 's_empty'
+	             , 'occupancy_cnt_zero'
+	             , "1'b1"
+	             , 'occupancy_cnt_en'
+	            , 'clk'
+	            , 'reset_n')=\
+            
+
+    \jsbegin
+    } //if (fastread)
+    \jsend
+
+\jsbegin
+} //if (zerodepth) {
+\jsend
+
+endmodule

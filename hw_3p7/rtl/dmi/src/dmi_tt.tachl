@@ -1,0 +1,958 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DMI Transaction Table
+// Author: Steve Kromer
+//
+//=============================================================================
+
+// Variables
+var u = obj.lib;
+var bundleFunctions     = obj.userLib.bundleFunctions;
+var numEntries          = obj.lib.getParam('numEntries');
+var wId                 = Math.ceil(Math.log2(numEntries));
+var wAddr               = obj.lib.getParam('allocateInterface', 'addr');
+var lookupInterface     = obj.lib.getParam('lookupInterface');
+var lookupWidth         = bundleFunctions.getBundleWidth(lookupInterface, ['dwid', 'fill'], u.bundle);
+var wDwid               = lookupInterface['dwid'];
+var axiArIdWidth        = obj.lib.getParam('axiInterface', 'ar_', 'id');
+var allocateInterface   = obj.lib.getParam('allocateInterface');
+var useCmc              = obj.lib.getParam('useCmc');
+var cmType              = obj.lib.getParam('cmType');
+var ccpParams           = obj.lib.getParam('ccpParams');
+var wAddrCAM            = obj.lib.getParam('wAddrCAM');
+var wNS                 = obj.lib.getParam('allocateInterface', 'ns');   
+var wCacheLineOffset    = obj.lib.getParam('wCacheLineOffset');
+var wMpf2 = obj.lib.getParam('allocateInterface', 'mpf2');
+var wAiuId = obj.lib.getParam('allocateInterface', 'aiu_id');
+var wFPortId            = obj.lib.getParam('wFPortId');
+var wIdplusone = wId + 1;
+var useQos = obj.lib.getParam('useQos');
+var priorityThreshold =obj.lib.getParam('priorityThreshold');
+var assertOn = obj.lib.getParam('assertOn');
+var ASILB = u.getParam("ASILB");
+var useAtomic = obj.lib.getParam("useAtomic");
+
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore if env ncore_3p7 */
+if (ASILB){
+    var rtt_flop_bundle = u.getParam("rtt_flop_bundle");
+    obj.lib.interface('rtt_',          'master', rtt_flop_bundle);
+
+}
+obj.lib.interface('',       'slave', obj.lib.getParam('clkInterface'));
+obj.lib.interface('alloc_', 'slave', allocateInterface);
+obj.lib.interface('cam_',   'slave', obj.lib.getParam('camAddrInterface'));
+obj.lib.port('output', 'cam_match_fill', 1);
+obj.lib.interface('rtt_cam_', 'slave', obj.lib.getParam('camRttVectorInterface'));
+obj.lib.port('input',   'trans_ready',     1);
+obj.lib.port('input',   'resp_valid',      1);
+obj.lib.port('input',   'alloc_fill',      1);
+obj.lib.port('input',   'dtr_sent_valid',  1);
+obj.lib.port('input',   'dtr_sent_idx',   numEntries);
+obj.lib.port('input',   'atomic_drop',     1);
+obj.lib.port('input',   'atomic_drop_id',wId);
+obj.lib.port('input',   'alloc_tracker_vldrdy' ,1);
+obj.lib.port('input',   'resp_id', axiArIdWidth);
+obj.lib.port('input',   'alloc_bus',     1);
+obj.lib.port('output',  'tt_dealloc_vec', numEntries);
+obj.lib.port('output',  'trans_valid', 1);
+obj.lib.port('output',  'trans_id',    wId);
+obj.lib.port('output','read_axi_id',axiArIdWidth);
+obj.lib.port('output',  'trans_id_vec',    numEntries);
+obj.lib.port('output',  'dealloc_valid', 1);
+obj.lib.port('output',  'dealloc_id',  wId);
+obj.lib.port('output',  'return_id', wId);
+obj.lib.port('output',  'trans_active', 1);
+obj.lib.port('output',  'trans_active_4clkGate', 1);
+obj.lib.port('output',  'fill_active', 1);
+obj.lib.port('output', 'pmon_num_active_rtt_entries', wIdplusone);
+obj.lib.port('output', 'read_cam_match_pmon',  1);
+obj.lib.port('output', 'set_tt_valid', numEntries);
+
+obj.lib.interface('lookup_', 'master', lookupInterface);
+
+obj.lib.port('input', 'csr_UEDR_TimeoutErrDetEn', 1);
+obj.lib.port('input', 'csr_UEDR_TimeoutReset', 1);
+
+obj.lib.port('input', 'csr_timeout_threshold', 31);
+
+obj.lib.port('output', 'tt_timeout_ue_valid',   1);
+obj.lib.port('output', 'tt_timeout_ue_addr',    wAddr);
+obj.lib.port('output', 'tt_timeout_ue_ns',      wNS);
+obj.lib.port("output","tt_timeout_ue_id",12);
+
+if( useAtomic){
+    obj.lib.port("output","nb_atomic",3);
+}
+
+if ( useCmc )  {
+obj.lib.port('input', 'fill_done_valid', 1);
+obj.lib.port('input', 'fill_done_id',  wId);
+obj.lib.port('input', 'ccp_p1_valid', 1);
+obj.lib.port('input', 'read_write_addr_s_pop_ready_p1',  1);
+
+}
+else {
+obj.lib.port('input', 'write_req_valid', 1);
+obj.lib.port('input', 'write_req_ready', 1);
+
+}
+
+
+if(useQos & priorityThreshold){
+    obj.lib.port('output', 'TT_threshold_reached' ,1);
+    obj.lib.port('input','ttQoSRsv',8);
+}
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+    localparam RD_HNT = \=cmType['HntRead']=\,
+               RD_PRF = \=cmType['MrdPref']=\,
+               CMD_PRF = \=cmType['CmdPref']=\,
+               ATM_STR = \=cmType['CmdWrAtm']=\;
+ 
+    //
+    // Wires
+    //
+    wire                        alloc_valid_qual;
+    wire [\=numEntries=\-1:0]   alloc_id_vector;
+    wire [\=numEntries=\-1:0]   return_id_vector;
+    wire [\=wId-1=\:0]          alloc_id;
+    wire [\=wDwid-1=\:0]        alloc_dwid;
+    wire                        alloc_vldrdy;
+    wire                        en_tt_valid;
+    wire [\=numEntries-1=\:0]   tt_valid;
+    wire [\=numEntries-1=\:0]   d_tt_valid;
+    wire [\=numEntries-1=\:0]   clr_tt_valid;
+    wire [\=numEntries-1=\:0]   en_tt_addr;
+    wire [\=numEntries-1=\:0]   d_dtr_sent;
+    wire                        dtr_sent_en;
+    wire [\=numEntries-1=\:0]   dtr_sent;
+
+\js if(useCmc) {
+    wire [\=numEntries-1=\:0]   d_fill_done;
+    wire                        fill_done_en;
+    wire [\=numEntries-1=\:0]   fill_done;
+    wire [\=numEntries-1=\:0]   fill_done_id_vector;
+    wire [\=numEntries-1=\:0]   valid_AND_not_fill_done;
+\js }
+    wire [\=numEntries-1=\:0]   atomic_drop_id_vector;
+    wire [\=numEntries-1=\:0]   dealloc_qual_vec;
+    wire [\=numEntries-1=\:0]   lookup_idx;
+    wire [\=axiArIdWidth-1=\:0] alloc_arid;
+
+\js for (var entry = 0; entry < numEntries; entry++) {
+    wire [\=wAddr-1=\:0]        tt_addr\=entry=\;
+    wire [\=wNS-1=\:0]          tt_ns\=entry=\;
+    wire [\=lookupWidth-1=\:0]  tt_lookup\=entry=\;
+    \=bundleFunctions.wiresFromInterface('tt_lookup'+entry+"_",   lookupInterface, ['dwid', 'fill'], u.bundle)=\
+\jsbegin
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore if env ncore_3p7 */
+ if(ASILB){
+ \jsend
+
+    wire [\=lookupWidth-1=\:0] q_tt_req_alloc_bundle\=entry=\;
+
+    \js }
+
+\js }
+
+    wire [\=numEntries-1=\:0]   tt_fill;
+    wire [\=numEntries-1=\:0]   tt_bus;    
+    wire [\=numEntries-1=\:0]   d_tt_fill;
+    wire [\=numEntries-1=\:0]   d_tt_bus;
+    wire [\=numEntries-1=\:0]   cam_match_vector;
+    wire [\=axiArIdWidth-1=\:0] search_id;
+    wire [\=numEntries-1=\:0]   cam_match_vector_AND_tt_fill;
+    reg  [1:0]                pmon_decrement_value;
+    wire [\=wIdplusone-1=\:0] pmon_num_active_rtt_entries_in;
+    wire dtr_sent_clear, d_dtr_sent_clear;
+    wire[\=numEntries-1=\:0]  tt_timeout_sel_one;
+    wire [\=wId-1=\:0]          tt_timeout_ue_id_narrow;
+\=u.instance({
+    portsDelimiter: '\n    ',
+    instanceName: 'u_wtt_valid',
+    moduleName:   'logic_tree',
+    params: {
+      'width' : numEntries,
+      'logic' : '|'},
+    ports: {
+      'din'  : 'tt_valid',
+      'dout' : 'trans_active'}})=\
+    \=obj.lib.dffre(1, 'trans_active_4clkGate', 'trans_active', "1'b0", "1'b1", 'clk', 'reset_n')=\ 
+
+\js if(useCmc) {
+    assign valid_AND_not_fill_done = (tt_valid & ~fill_done);
+\=u.instance({
+    portsDelimiter: '\n    ',
+    instanceName: 'u_tt_valid_AND_not_fill_done',
+    moduleName:   'logic_tree',
+    params: {
+      'width' : numEntries,
+      'logic' : '|'},
+    ports: {
+      'din'  : 'valid_AND_not_fill_done',
+      'dout' : 'fill_active'}})=\
+\js } else {
+    assign fill_active = 1'b0;
+\js }
+
+
+\jsbegin
+// 
+// Valid Bits
+// 
+\jsend
+    \=obj.lib.dffre(numEntries, 'tt_valid', 'd_tt_valid', numEntries+"'b0", 'en_tt_valid', 'clk', 'reset_n')=\ 
+
+    assign d_tt_valid   = set_tt_valid | (tt_valid & ~clr_tt_valid);
+    assign set_tt_valid = (alloc_valid & alloc_ready) ? alloc_id_vector : \=numEntries=\'d0;
+    assign clr_tt_valid = (dealloc_valid) ? tt_dealloc_vec : \=numEntries=\'d0;
+    assign en_tt_valid  = (alloc_valid & alloc_ready) | dealloc_valid;
+    assign en_tt_addr   = set_tt_valid;
+
+
+\jsbegin
+//
+// DTR Sent Bits
+//
+\jsend
+    \=obj.lib.dffre(numEntries, 'dtr_sent', 'd_dtr_sent', numEntries+"'b0", 'dtr_sent_en', 'clk', 'reset_n')=\ 
+
+\js // clear upon allocation, set upton dtr_sent_valid
+    assign dtr_sent_en = dtr_sent_valid | (alloc_valid & alloc_ready);
+    assign d_dtr_sent  = dtr_sent & ~(alloc_id_vector & {\=numEntries=\{alloc_valid & alloc_ready}}) | (alloc_id_vector & {\=numEntries=\{alloc_valid & alloc_ready & no_return(alloc_cm_type)}}) | dtr_sent_idx & {\=numEntries=\{dtr_sent_valid}}; 
+
+\jsbegin
+    //
+    // Fill Done Bits
+    //
+\jsend
+\js if(useCmc) { 
+    \=obj.lib.dffre(numEntries, 'fill_done', 'd_fill_done', numEntries+"'b0", 'fill_done_en', 'clk', 'reset_n')=\ 
+
+    assign fill_done_en = atomic_drop | fill_done_valid | (alloc_valid & alloc_ready);
+    assign d_fill_done  = (fill_done & ~(alloc_id_vector & {\=numEntries=\{alloc_valid & alloc_ready}})) | (alloc_id_vector & {\=numEntries=\{alloc_valid & alloc_ready & ~alloc_fill}}) | (fill_done_id_vector & {\=numEntries=\{fill_done_valid}}) | (atomic_drop_id_vector & {\=numEntries=\{atomic_drop}});
+    assign dealloc_qual_vec = tt_valid & fill_done & dtr_sent; 
+    assign fill_done_id_vector = \=numEntries=\'b1 << fill_done_id;
+\js } else {
+    assign dealloc_qual_vec = tt_valid & dtr_sent; 
+\js }
+
+    assign tt_dealloc_vec = dealloc_qual_vec;
+    assign atomic_drop_id_vector = (\=numEntries=\'d1 << atomic_drop_id);
+\jsbegin
+    // 1. clear upon allocation, set upon fill_done_valid
+    // 2. If no need to fill, set upon allocation. 
+    // 3. set upon atomic drop 
+    // Deallocation index
+\jsend
+\=u.instance({
+    portsDelimiter: '\n    ',
+    instanceName: 'u_dealloc_valid',
+    moduleName:   'logic_tree',
+    params: {
+      'width' : numEntries,
+      'logic' : '|'},
+    ports: {
+      'din'  : 'dealloc_qual_vec',
+      'dout' : 'dealloc_valid'}})=\
+    assign dealloc_id = \=wId=\'d0;
+\jsbegin
+    //
+    // Address Logic
+    //
+\jsend
+    \=obj.lib.dffre(numEntries, 'tt_fill', 'd_tt_fill', numEntries+"'b0", 'alloc_vldrdy', 'clk', 'reset_n')=\ 
+    \=obj.lib.dffre(numEntries, 'tt_bus',  'd_tt_bus',  numEntries+"'b0", 'alloc_vldrdy', 'clk', 'reset_n')=\ 
+    assign d_tt_fill = tt_fill & ~(set_tt_valid & {\=numEntries=\{~alloc_fill}}) | set_tt_valid & {\=numEntries=\{alloc_fill}};
+    assign d_tt_bus  = tt_bus  & ~(set_tt_valid & {\=numEntries=\{~alloc_bus}})  | set_tt_valid & {\=numEntries=\{alloc_bus}}; 
+
+
+\js if(useCmc) {
+
+\jsbegin
+    var PriSubDiagAddrBits = ccpParams.PriSubDiagAddrBits;
+    var SecSubRows = ccpParams.SecSubRows;
+
+    var set_select_params = {  PriSubDiagAddrBits : PriSubDiagAddrBits,
+                               SecSubRows         : SecSubRows,
+                               wAddr              : wAddr
+                            };
+
+\jsend
+
+    wire [\=wAddr-1=\:0]                        gen_index_addr_in_ccp;
+    wire [\=PriSubDiagAddrBits.length-1=\:0]    gen_index_out_ccp;
+
+    assign gen_index_addr_in_ccp = rtt_cam_addr;
+\jsbegin
+    var instance_ports_for_gen_index_ccp = {
+        addr_in                          : 'gen_index_addr_in_ccp',
+        index_out                        : 'gen_index_out_ccp'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'u_gen_index_ccp',
+        moduleName: 'set_select',
+        params: set_select_params,
+        verilogParams: {},
+        ports: instance_ports_for_gen_index_ccp,
+        portsDelimiter: '\n    '
+    })=\
+
+\js for (var entry = 0; entry < numEntries; entry++) {
+    wire [\=wAddr-1=\:0] gen_index_addr_in\=entry=\;
+    wire [\=PriSubDiagAddrBits.length-1=\:0] gen_index_out\=entry=\;
+    assign gen_index_addr_in\=entry=\ = tt_lookup\=entry=\_addr;
+
+    \=obj.lib.instance({
+        instanceName: 'u_gen_index_rtt'+entry,
+        moduleName: 'set_select',
+        params: set_select_params,
+        verilogParams: {},
+        ports: {
+                addr_in: 'gen_index_addr_in'+entry,
+                index_out: 'gen_index_out'+entry
+        },
+        portsDelimiter: '\n    '
+    })=\
+
+    assign rtt_cam_match[\=entry=\] = tt_valid[\=entry=\] & ((gen_index_out\=entry=\ ^ gen_index_out_ccp) == 0);
+    assign rtt_cam_bus[\=entry=\] = tt_valid[\=entry=\] & tt_bus[\=entry=\];
+
+\js }
+\js } else {};
+
+\js for (var entry = 0; entry < numEntries; entry++) {
+    assign cam_match_vector[\=entry=\] = tt_valid[\=entry=\] & ((tt_lookup\=entry=\_addr[\=wAddrCAM-1=\:\=wCacheLineOffset=\] ^ cam_addr[\=wAddrCAM-1=\:\=wCacheLineOffset=\]) == 0 & (tt_lookup\=entry=\_ns ^ cam_ns) == 0);
+\js }
+
+\=u.instance({
+    portsDelimiter: '\n    ',
+    instanceName: 'u_cam_match',
+    moduleName:   'logic_tree',
+    params: {
+      'width' : numEntries,
+      'logic' : '|'},
+    ports: {
+      'din'  : 'cam_match_vector',
+      'dout' : 'cam_match'}})=\
+
+\js if(useCmc) {
+    assign read_cam_match_pmon = cam_match &&  ccp_p1_valid && read_write_addr_s_pop_ready_p1;
+\js } else {
+    wire rtt_evt_set, rtt_evt_clr, rtt_evt_en, rtt_evt_in, rtt_evt_in_out;
+    assign rtt_evt_set = write_req_valid && cam_match;
+    assign rtt_evt_clr = write_req_valid && write_req_ready;
+    assign rtt_evt_en = rtt_evt_set | rtt_evt_clr;
+    assign rtt_evt_in = rtt_evt_set ? 1'b1 : (rtt_evt_clr ? 1'b0 : 1'b0);
+      \=obj.lib.dffre(1, 'rtt_evt_in_out' , 'rtt_evt_in', "1'b0" , 'rtt_evt_en' , 'clk', 'reset_n')=\ 
+
+    assign read_cam_match_pmon = write_req_valid && cam_match && ~rtt_evt_in_out;
+    wire [\=numEntries-1=\:0] cam_match_vector_q1;
+    wire dff_enable = 1'b1;
+    wire read_cam_match_pmon_test;
+
+    \=obj.lib.dffre(numEntries, 'cam_match_vector_q1' , 'cam_match_vector',  '{'+numEntries+"{1'b0}}" , 'dff_enable' , 'clk', 'reset_n')=\ 
+  assign read_cam_match_pmon_test = write_req_valid && ((cam_match_vector_q1 ^ cam_match_vector) != 0) && (cam_match_vector != 0);
+\js }
+
+
+    assign cam_match_vector_AND_tt_fill = (cam_match_vector & tt_fill);
+\=u.instance({
+    portsDelimiter: '\n    ',
+    instanceName: 'u_cam_match_AND_tt_fill',
+    moduleName:   'logic_tree',
+    params: {
+      'width' : numEntries,
+      'logic' : '|'},
+    ports: {
+      'din'  : 'cam_match_vector_AND_tt_fill',
+      'dout' : 'cam_match_fill'}})=\
+
+    //
+    // Allocate
+    //
+    \=obj.lib.instance({
+        instanceName: 'alloc_flm',
+        moduleName: 'dmi_flm',
+        params: { clkInterface: obj.lib.getParam('clkInterface'),
+                  onehot_mode: 1,
+                  idNum: numEntries
+                },
+        verilogParams: {},
+        ports: {  pre_alloc_valid: 'alloc_valid',
+                  pre_alloc_ready: 'alloc_ready',
+                  pre_alloc_last:  '1\'b1',
+                  alloc_valid:     'alloc_valid_qual',
+                  alloc_ready:     'trans_ready',
+                  alloc_id:        'alloc_id_vector',
+                  dealloc_valid:   'dealloc_valid',
+                  dealloc_id:      'dealloc_qual_vec'
+               },
+        interfaces: [{modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface')}],
+        portsDelimiter: '\n        '
+    })=\
+
+    assign trans_valid  = alloc_valid_qual;
+
+    //
+    // Lookup
+    //
+
+    wire [\=lookupWidth-1=\:0] lookup_data_in;
+    wire [\=lookupWidth-1=\:0] lookup_data_out;
+\jsbegin
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore else env ncore_3p7 */
+ if(!ASILB){
+ \jsend
+    assign lookup_data_in   = \=bundleFunctions.packetizeBundle('alloc_', lookupInterface, ['dwid','fill'], obj.lib.bundle)=\;
+
+\js } else {
+    assign rtt_d_tt_req_alloc_bundle_vec = \=bundleFunctions.packetizeBundle('alloc_', lookupInterface, ['dwid','fill'], obj.lib.bundle)=\ ;
+    assign  rtt_en_tt_req_alloc_bundle_vec = en_tt_addr ;
+\js }
+
+\js for (var entry = 0; entry < numEntries; entry++) {
+\jsbegin
+//We do not support ASILB wihtout duplication in 3.7.
+/* istanbul ignore else env ncore_3p7 */
+ if(!ASILB){
+     \jsend
+        \=obj.lib.dffre(lookupWidth, 'tt_lookup'+entry, 'lookup_data_in', lookupWidth+"'b0", 'en_tt_addr['+entry+']', 'clk', 'reset_n')=\ 
+    \js } else {
+        assign tt_lookup\=entry=\ = rtt_q_tt_req_alloc_bundle_vec[\=entry*lookupWidth=\ +: \=lookupWidth=\];
+    \js}
+    assign \=bundleFunctions.packetizeBundle('tt_lookup'+entry+"_", lookupInterface, ['dwid', 'fill'], u.bundle)=\ = tt_lookup\=entry=\;
+    \js // required by DV.
+    assign tt_ns\=entry=\ =tt_lookup\=entry=\_ns;
+    assign tt_addr\=entry=\ =tt_lookup\=entry=\_addr;
+
+
+\js }
+
+\js if (useAtomic){
+            wire [2:0] next_nb_atomic;
+
+            wire en_nb_atomic;
+
+            localparam RD_ATM   = \=cmType['CmdRdAtm']=\;
+            localparam WR_ATM   = \=cmType['CmdWrAtm']=\;
+            localparam CM_ATM   = \=cmType['CmdCompAtm']=\;
+            localparam SW_ATM   = \=cmType['CmdSwapAtm']=\;
+
+            function automatic is_atomic;
+                input [\=allocateInterface.cm_type-1=\:0] cm_type;
+                begin
+                    is_atomic = (cm_type == RD_ATM) | (cm_type == WR_ATM) |
+                                (cm_type == CM_ATM) | (cm_type == SW_ATM);
+                end
+            endfunction
+
+            wire [\=allocateInterface.cm_type-1=\:0] dealloc_cm_type, d_atomic_dealloc_cm_type, d_fill_done_clear_cm_type;
+            assign next_nb_atomic = nb_atomic + (alloc_valid & alloc_ready & is_atomic(alloc_cm_type)) - atomic_drop - (is_atomic(d_fill_done_clear_cm_type) & fill_done_valid);
+            assign en_nb_atomic = alloc_valid & alloc_ready | atomic_drop | fill_done_valid;
+            \=obj.lib.dffre(3, "nb_atomic", 'next_nb_atomic', "3'b000", "en_nb_atomic", 'clk', 'reset_n')=\ 
+
+
+            assign d_fill_done_clear_cm_type = (tt_lookup0_cm_type & {\=allocateInterface.cm_type=\{fill_done_id_vector[0]}})
+            \js for(var i = 1; i < numEntries; i++) {
+                                        |(tt_lookup\=i=\_cm_type & {\=allocateInterface.cm_type=\{fill_done_id_vector[\=i=\]}})
+            \js }
+                ;
+\js }
+
+
+
+    \jsbegin
+	var look_up_data_out_ao_mux_ports = {};
+	for (var i = 0; i < numEntries; i++) {
+		look_up_data_out_ao_mux_ports['in'+i] = "tt_lookup"+i;
+	}
+
+	look_up_data_out_ao_mux_ports['sel'] = "lookup_idx";
+	look_up_data_out_ao_mux_ports['out'] = "lookup_data_out";
+
+    \jsend  
+
+    \=obj.lib.instance({
+        instanceName: 'look_up_data_out_ao_mux',
+        moduleName: 'ao_mux',
+        params: {
+	    nInputs          : numEntries,
+        wMux             : lookupWidth
+
+        },
+        verilogParams: {},
+        ports: look_up_data_out_ao_mux_ports
+    })=\
+
+
+    assign lookup_fill = |(tt_fill & lookup_idx);
+    assign lookup_dwid = lookup_addr[\=wDwid+3-1=\:3];
+
+    assign \=bundleFunctions.packetizeBundle('lookup_', lookupInterface, ['dwid', 'fill'], obj.lib.bundle)=\ = lookup_data_out;
+    assign alloc_vldrdy = alloc_valid & alloc_ready;
+
+    // trans_id is the rtt index information
+    // alloc_arid is the axi tracking id
+    assign trans_id = alloc_id;
+    assign trans_id_vec = alloc_id_vector;
+
+    wire [\=wAiuId-wFPortId+wMpf2-1-1=\:0] alloc_init_id_mpf2 = {alloc_mpf2[\=wMpf2-2=\:0],alloc_aiu_id[\=wAiuId-1=\:\=wFPortId=\]};
+
+    \js if (axiArIdWidth > (wAiuId-wFPortId+wMpf2-1)) {
+    wire [\=axiArIdWidth-1=\:0] axi_alloc_init_id_mpf2 = { {\=axiArIdWidth-(wAiuId-wFPortId+wMpf2-1)=\{1'b0}}, alloc_init_id_mpf2 };
+    \js } else {
+    wire [\=axiArIdWidth-1=\:0] axi_alloc_init_id_mpf2 = alloc_init_id_mpf2[\=axiArIdWidth-1=\:0];
+    \js }
+
+    \jsbegin
+    if (u.getParam("nExclusiveEntries")>0){
+        if(axiArIdWidth <= wId) {
+        \jsend
+            assign alloc_arid =  alloc_id[\=axiArIdWidth-1=\:0];
+        \js } else {
+            assign alloc_arid = {\=axiArIdWidth-wId=\'b0, alloc_id};
+            \jsbegin
+        }
+
+    } else {
+        if(axiArIdWidth <= wId) {
+    \jsend
+            assign alloc_arid = alloc_es ? axi_alloc_init_id_mpf2[\=axiArIdWidth-1=\:0] : alloc_id[\=axiArIdWidth-1=\:0];
+        \js } else {
+            assign alloc_arid = alloc_es ? axi_alloc_init_id_mpf2[\=axiArIdWidth-1=\:0] : {\=axiArIdWidth-wId=\'b0, alloc_id};
+    \jsbegin
+        }
+    }
+    \jsend
+
+    assign read_axi_id  = alloc_arid;
+
+
+    assign search_id  = resp_id;
+    
+    \=obj.lib.instance({
+        instanceName: 'dmi_tt_alloc_id_encoder',
+        moduleName: 'encoder',
+        params: {
+            width: numEntries
+        },
+        verilogParams: {},
+        ports: {
+            invector: 'alloc_id_vector',
+            outdecode: 'alloc_id'
+        },
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: ''
+        }],
+        portsDelimiter: '\n        '
+    })=\
+
+
+    \jsbegin
+	var retun_id_encoder_ports = {};
+	for (var i = 0; i < numEntries; i++) {
+		retun_id_encoder_ports['in'+i] = wId+"'d"+i;
+	}
+
+	retun_id_encoder_ports['sel'] = "return_id_vector";
+	retun_id_encoder_ports['out'] = "return_id";
+
+    \jsend  
+
+    \=obj.lib.instance({
+        instanceName: 'dmi_tt_return_id_encoder',
+        moduleName: 'ao_mux',
+        params: {
+	    nInputs          : numEntries,
+            wMux             : wId
+
+        },
+        verilogParams: {},
+        ports: retun_id_encoder_ports
+    })=\
+
+
+    \=obj.lib.instance({
+        instanceName: 'dmi_tt_id_tracker',
+        moduleName: 'dmi_id_tracker',
+        params: {
+            width: axiArIdWidth,
+            numEntries: numEntries,
+            lookup_bypass_mode: 0,
+            clkInterface: obj.lib.getParam('clkInterface'),
+            assertOn : assertOn
+        },
+        verilogParams: {},
+        ports: {
+            allocEn: 'alloc_tracker_vldrdy',
+            allocIdx: 'alloc_id_vector',
+            allocId: 'alloc_arid',
+            deallocEn: 'resp_valid',
+            searchId: 'search_id',
+            searchIdx: 'lookup_idx',
+        },
+        interfaces: [{
+            modulePrefix: '',
+            localPrefix: '',
+            interface: obj.lib.getParam('clkInterface')
+        }],
+        portsDelimiter: '\n        '
+    })=\
+
+
+    assign return_id_vector = lookup_idx;
+
+
+
+
+//Timeout Logic
+
+\jsbegin
+
+var timeoutParam={
+    "numEntries" : numEntries,
+    clkInterface: obj.lib.getParam('clkInterface')
+};
+
+var timeoutPort = {
+            "valid"                      :      "tt_valid"                 ,  
+            "dealloc_valid"              :       "dealloc_valid"            ,       
+            "dealloc_id"                 :       "dealloc_qual_vec"               ,       
+            "csr_UEDR_TimeoutErrDetEn"   :       "csr_UEDR_TimeoutErrDetEn" ,                               
+            "csr_UEDR_TimeoutReset"      :       "csr_UEDR_TimeoutReset"    ,                       
+            "csr_timeout_threshold"      :       "csr_timeout_threshold"    ,
+            "timeout_ue_valid"           :      "tt_timeout_ue_valid"          ,
+            "timeout_sel_one"            :      "tt_timeout_sel_one"
+
+}   
+\jsend
+
+ \=u.instance({
+                instanceName: 'dmi_rtt_timeout',
+                moduleName: 'dmi_timeout',
+                params: timeoutParam,
+                ports: timeoutPort,
+                interfaces: [{modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface')}],
+                portsDelimiter: '\n        '
+                })=\
+
+assign tt_timeout_ue_addr = tt_lookup0_addr & {\=wAddr=\{tt_timeout_sel_one[0]}}
+\js for ( var i = 1; i < numEntries; i++) {
+                           |tt_lookup\=i=\_addr & {\=wAddr=\{tt_timeout_sel_one[\=i=\]}}
+\js }                    
+                           ;
+
+assign tt_timeout_ue_ns = tt_lookup0_ns & {\=wNS=\{tt_timeout_sel_one[0]}}
+\js for ( var i = 1; i < numEntries; i++) {
+                         |tt_lookup\=i=\_ns & {\=wNS=\{tt_timeout_sel_one[\=i=\]}}
+\js }                    
+                         ;
+
+
+\=obj.lib.instance({
+         instanceName: 'dmi_tt_timeout_id',
+         moduleName: 'encoder',
+         params: {
+             width: numEntries
+         },
+         verilogParams: {},
+         ports: {
+             invector: 'tt_timeout_sel_one',
+             outdecode: 'tt_timeout_ue_id_narrow'
+         },
+         interfaces: [{
+             modulePrefix: '',
+             localPrefix: ''
+         }],
+         portsDelimiter: '\n        '
+     })=\
+
+assign tt_timeout_ue_id = {\=12-wId=\'d0,tt_timeout_ue_id_narrow};
+
+
+ \jsbegin
+if (useCmc){
+    \jsend
+    wire atomic_drop_clear;
+    wire fill_done_clear;
+    wire d_atomic_drop_clear;
+    wire d_fill_done_clear;
+  
+    wire [1:0] Nb_cleared_entry;
+
+    assign d_atomic_drop_clear = (|(atomic_drop_id_vector & dtr_sent)) & atomic_drop;
+    assign d_fill_done_clear =  (|(fill_done_id_vector & dtr_sent)) & fill_done_valid;
+
+    assign d_dtr_sent_clear = (|(d_fill_done & dtr_sent_idx)) & dtr_sent_valid;
+
+    \=u.dffre(1,'atomic_drop_clear','d_atomic_drop_clear',  "1'd0", "1'd1", 'clk', 'reset_n')=\
+    \=u.dffre(1,'fill_done_clear','d_fill_done_clear', "1'd0", "1'd1", 'clk', 'reset_n')=\
+    \=u.dffre(1,'dtr_sent_clear','d_dtr_sent_clear', "1'd0", "1'd1", 'clk', 'reset_n')=\
+
+    assign Nb_cleared_entry = {1'b0,atomic_drop_clear}+{1'b0,fill_done_clear}+{1'b0,dtr_sent_clear};
+    assign pmon_num_active_rtt_entries_in = pmon_num_active_rtt_entries + {\=wId=\'d0,alloc_vldrdy} -{\=wId-1=\'d0, Nb_cleared_entry};
+
+\jsbegin
+} else {
+\jsend
+
+
+assign d_dtr_sent_clear = dtr_sent_valid;
+\=u.dffre(1,'dtr_sent_clear','d_dtr_sent_clear', "1'd0", "1'd1", 'clk', 'reset_n')=\
+
+    assign pmon_num_active_rtt_entries_in = pmon_num_active_rtt_entries + {\=wId=\'d0,alloc_vldrdy} - {\=wId=\'d0, dtr_sent_clear};
+
+\jsbegin
+}
+\jsend
+\=u.dffre(wIdplusone, 'pmon_num_active_rtt_entries', 'pmon_num_active_rtt_entries_in', '{'+wIdplusone+"{1'b0}}", "1'b1", 'clk', 'reset_n')=\
+\jsbegin
+// counts the number of available RTT entries and asserts the threshold signal when the number of entry is less than the set value
+if (useQos & priorityThreshold){
+\jsend
+
+    wire free_entry_less_than_reserved;
+    wire [\=wId=\:0] d_Nb_free_TT_entries, Nb_free_TT_entries;
+    wire d_TT_threshold_reached;
+    wire Nb_free_TT_entries_en;
+    wire [7:0] q_ttQoSRsv;
+
+
+\jsbegin 
+if(useCmc){
+\jsend
+    assign d_Nb_free_TT_entries = Nb_free_TT_entries - {\=wId=\'d0,alloc_vldrdy} + {\=wId-1=\'d0, Nb_cleared_entry};
+\jsbegin 
+} else {
+\jsend 
+    assign d_Nb_free_TT_entries = Nb_free_TT_entries - {\=wId=\'d0,alloc_vldrdy} + {\=wId=\'d0, dtr_sent_clear};
+\jsbegin
+}
+\jsend
+
+    assign Nb_free_TT_entries_en = alloc_vldrdy| dealloc_valid;
+    \=u.dffre(1+wId,'Nb_free_TT_entries','d_Nb_free_TT_entries', (1+wId)+"'d"+numEntries, 'Nb_free_TT_entries_en', 'clk', 'reset_n')=\
+
+    \=u.dffre(1,"TT_threshold_reached","d_TT_threshold_reached","1'b0","1'b1","clk","reset_n")=\
+
+    \=u.dffre(8,"q_ttQoSRsv","ttQoSRsv","8'b0","1'b1","clk","reset_n")=\
+
+    \jsbegin 
+    // Max TT entry num=128 in ncore 3.4, wId max=7
+    /* istanbul ignore if env ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wId > 7){
+
+    let threshold_greater_params = {"width" : 8}
+    let threshold_greater_interface = []
+    let threshold_greater_ports = { "a" : "q_ttQoSRsv" ,
+                                    "b" : "d_Nb_free_TT_entries[8:0]",
+                                    "gt": "free_entry_less_than_reserved"}
+    \jsend
+
+    \=u.instance({
+    instanceName: 'threshold_greater',
+    moduleName: 'greater_than',
+    params: threshold_greater_params,
+    ports: threshold_greater_ports,
+    interfaces: threshold_greater_interface,
+    portsDelimiter: '\n        '
+    })=\
+
+        assign d_TT_threshold_reached =  ~|(d_Nb_free_TT_entries[\=wId=\:8]) & free_entry_less_than_reserved;
+
+
+    \jsbegin 
+        }
+        else if (wId == 7) {
+   // assign TT_threshold_reached = Nb_free_TT_entries < ttQoSRsv;
+
+
+    let threshold_greater_params = {"width" : 8}
+    let threshold_greater_interface = []
+    let threshold_greater_ports = { "a" : "q_ttQoSRsv" ,
+                                    "b" : "d_Nb_free_TT_entries",
+                                    "gt": "free_entry_less_than_reserved"}
+    \jsend
+
+    \=u.instance({
+    instanceName: 'threshold_greater',
+    moduleName: 'greater_than',
+    params: threshold_greater_params,
+    ports: threshold_greater_ports,
+    interfaces: threshold_greater_interface,
+    portsDelimiter: '\n        '
+    })=\
+
+    assign d_TT_threshold_reached =  free_entry_less_than_reserved;
+
+
+    \jsbegin
+        } else {
+
+
+    let threshold_greater_params = {"width" : wId+1}
+    let threshold_greater_interface = []
+    let threshold_greater_ports = { "a" : "q_ttQoSRsv["+wId+":0]" ,
+                                    "b" : "d_Nb_free_TT_entries",
+                                    "gt": "free_entry_less_than_reserved"}
+    \jsend
+
+
+    \=u.instance({
+    instanceName: 'threshold_greater',
+    moduleName: 'greater_than',
+    params: threshold_greater_params,
+    ports: threshold_greater_ports,
+    interfaces: threshold_greater_interface,
+    portsDelimiter: '\n        '
+    })=\
+
+
+
+    assign d_TT_threshold_reached =|(q_ttQoSRsv[7:\=wId+1=\]) | free_entry_less_than_reserved;
+    
+    \jsbegin
+        }
+    }
+    \jsend
+
+
+    function automatic no_return;
+        input [\=obj.lib.getParam('allocateInterface', 'cm_type')-1=\:0] cm_type;
+        begin
+            no_return  = (cm_type == RD_HNT) |
+                         (cm_type == RD_PRF) |
+                         (cm_type == CMD_PRF)|
+                         (cm_type == ATM_STR);
+        end
+    endfunction
+
+
+
+\jsbegin
+//=============================================================================
+// Asserts
+//=============================================================================
+if ( assertOn ) { \jsend
+    `ifdef OVL_ASSERT_ON
+    // coverage off
+    // synthesis off
+    // synopsys translate_off
+    //
+    // Ensure RTT allocation vector is one hot
+    ASSERT_RTT_ALLOC_ONEHOT_CHECK: assert property (@(posedge clk) disable iff (~reset_n) !(alloc_valid && alloc_ready && !$onehot(alloc_id_vector)) )
+        else begin $error("ASSERT_ERROR: alloc_id_vector is not onehot. Allocation is setting multiple entries !"); #100 $finish; end
+
+
+wire [2:0] fire_nb_atomic;
+\js if(useAtomic){ 
+            ovl_range #(.severity_level(0),
+                        .width(\=3=\),
+                        .min(\=3=\'d0),
+                        .max(\=3=\'d4),
+                        .msg("nb_atomic should never be more than 4 and less than 0"),
+                        .coverage_level(15)                                            ) nb_atomic_range_assert( .clock(clk),
+                                                                                                    .reset(reset_n),
+                                                                                                    .enable(1'b1),
+                                                                                                    .test_expr(nb_atomic),
+                                                                                                    .fire(fire_nb_atomic)
+                                                                                                    ) ;
+\js }
+
+
+\jsbegin
+    if (useQos && priorityThreshold){
+\jsend
+
+wire [2:0] fire_rtt_threshold_asserted;
+wire [2:0] fire_RTT_available_entry_range;
+wire [2:0] fire_Threshold_coutner_is_off, fire_Pmon_coutner_is_off;
+wire [2:0] fire_Threshold;
+wire [7:0] q2_ttQoSRsv;
+
+    assert_no_overflow #(0,\=wId+1=\,\=wId+1=\'d0,\=wId+1=\'d\=numEntries=\) rtt_counter_overflow (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(Nb_free_TT_entries)
+    );
+
+    assert_no_underflow #(0,\=wId+1=\,\=wId+1=\'d0,\=wId+1=\'d\=numEntries=\) rtt_counter_underflow (
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(Nb_free_TT_entries)
+    );
+    \=u.dffre(8,"q2_ttQoSRsv","q_ttQoSRsv","8'b0","1'b1","clk","reset_n")=\
+
+    ovl_implication #(.severity_level(0), .msg("rtt threshold has the wrong value"), .coverage_level(15) ) Threshold (   .clock(clk), 
+                                                                                                                        .reset(reset_n), 
+                                                                                                                        .enable(1'b1),
+                                                                                                                        .antecedent_expr($countones(~tt_valid) < q_ttQoSRsv),
+                                                                                                                        .consequent_expr(TT_threshold_reached | q2_ttQoSRsv != ttQoSRsv),
+                                                                                                                        .fire(fire_Threshold));
+
+
+
+    ovl_coverage #(.severity_level(3),.coverage_level(15),.property_type(2)) rtt_threshold_asserted (.clock(clk),
+                                                     .reset(reset_n),
+                                                     .enable(1'b1),
+                                                     .test_expr(TT_threshold_reached),
+                                                     .fire(fire_rtt_threshold_asserted)
+                                                    );
+
+    ovl_range #(.severity_level(0),
+                .width(\=wId+1=\),
+                .min(\=wId+1=\'d0),
+                .max(\=wId+1=\'d\=numEntries=\),
+                .msg("The RTT available entries is outside of expected range"),
+                .coverage_level(15)                                            ) RTT_available_entry_range( .clock(clk),
+                                                                                                        .reset(reset_n),
+                                                                                                        .enable(1'b1),
+                                                                                                        .test_expr(Nb_free_TT_entries),
+                                                                                                        .fire(fire_RTT_available_entry_range)
+                                                                                                        ) ;
+
+    ovl_always #(.severity_level(0),
+                .msg("QOS threshold coutner and valid don't agree" )) Threshold_coutner_is_off (  .clock(clk),
+                                                                                                            .reset(reset_n),
+                                                                                                            .enable(1'b1),
+                                                                                                            .test_expr(Nb_free_TT_entries == {1'b0,$countones(~tt_valid)}),
+                                                                                                            .fire(fire_Threshold_coutner_is_off)
+                                                                                                            );   
+ovl_always #(.severity_level(0),
+            .msg("Pmon coutner and valid don't agree" )) Pmon_coutner_is_off (  .clock(clk),
+                                                                                                            .reset(reset_n),
+                                                                                                            .enable(1'b1),
+                                                                                                            .test_expr(pmon_num_active_rtt_entries == {1'b0,$countones(tt_valid)}),
+                                                                                                            .fire(fire_Pmon_coutner_is_off)
+                                                                                                            ); 
+                                                                                                            
+                                                                                                            
+
+
+\jsbegin
+}
+\jsend
+    // synopsys translate_on
+    // synthesis on
+    // coverage on
+    `endif
+\jsbegin
+ }
+ \jsend
+
+
+
+endmodule
+

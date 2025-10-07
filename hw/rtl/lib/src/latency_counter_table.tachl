@@ -1,0 +1,280 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Latency Counter Table 
+// Author: Ronak Salamat
+// //=============================================================================
+\jsend
+
+\jsbegin
+
+var u						= obj.lib;
+var bundleFunctions				= obj.userLib.bundleFunctions;
+var libUtils					= obj.userLib;
+
+//=============================================================================
+// Parameters
+//=============================================================================
+var latencyInterface				= libUtils.hierGetParam('latencyInterface',u.getParam);
+//var latencyInterface = {name: "latency_", signals:{"alloc": nOtt, "dealloc": nOtt}};
+
+var widthLatencyCntrs				= libUtils.hierGetParam('widthLatencyCntrs',u.getParam);
+
+var widthLatencyScale				= libUtils.hierGetParam('widthLatencyScale',u.getParam);
+
+var clkInterface				= libUtils.hierGetParam('clkInterface',u.getParam); 
+
+var dividedEvntInterface      = {name: "divevt_", signals: clkInterface.signals};
+
+var divisorInterface  	= {name: "div_", signals:{val : 4}};
+
+var nTableEntries 		= latencyInterface.signals.alloc;
+
+var numLatencyEntries 	        = Math.min(nTableEntries, libUtils.hierGetParam('numLatencyEntries',u.getParam));
+
+var nTTEntriesPerCounter = Math.ceil(nTableEntries / numLatencyEntries);
+
+var lctEntryOutInterface = {name: "lctentry_out_", signals: { "count_val": widthLatencyCntrs, "valid": 1, "ready" : -1}};
+
+//=============================================================================
+// Interfaces and port declarations
+//=============================================================================
+u.interface(latencyInterface.name,    'slave' , latencyInterface.signals);
+u.interface(clkInterface.name,    'slave' , clkInterface.signals);
+
+u.port('input', 'latency_scale_csr', widthLatencyScale);
+u.port('input', 'latency_cnt_en', 1);
+
+u.port('output', 'dealloc_valid', 1);
+u.port('output', 'cnt_value', widthLatencyCntrs);
+//=============================================================================
+// Local Functions 
+//=============================================================================
+
+function getModuleLocalPrefixAndInterface (intrface) {
+	var modulePrefix		= intrface.name;
+	var localPrefix		= intrface.name;
+	return { modulePrefix, localPrefix, "interface": intrface.signals };
+}
+
+// This function returns an array of array of strings. Every element of this array is 
+// an array itself which includes all the entries mapped to a specific location. 
+// This function requires the size of the hash table as the first argument and 
+// the size of the input that should be mapped to the hash table as the other argumnet.
+function findHashCollisions (numLatencyEntries, nTableEntries) {
+	var candidate_res = [];
+
+        for (var i = 0; i < nTableEntries; i++ ){
+	    if (i < numLatencyEntries) {
+	      var candidate = [];
+	      candidate.push(i);
+	      candidate_res.push(candidate);
+
+	    }
+	    else {
+	    candidate = candidate_res[i % numLatencyEntries];
+	    candidate.push(i);
+	    }	   	
+   	  }
+
+		return candidate_res;
+}
+
+
+
+function bit( signal, pos ) {
+  return signal+"["+pos+"]";
+}
+
+// This function returns an array of strings each of which is a verilog bit-index expression 
+// with the bit indices chosen from the input 'positions' array.
+function bits( signal, positions ) {
+  var result = [];
+  
+  for(var i=0; i<positions.length; i++) {
+      result.push( bit(signal, positions[i]) );
+    }
+
+  return result;
+}
+
+//=============================================================================
+// Instantiate Interfaces
+//=============================================================================
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+
+//=============================================================================
+// Wire declaration
+//=============================================================================
+
+wire [\=numLatencyEntries-1=\:0] alloc_vec;
+wire [\=numLatencyEntries-1=\:0] cam_valid_sel;
+wire [\=numLatencyEntries-1=\:0] id_match_vec;
+wire [\=numLatencyEntries-1=\:0] alloc_grant;
+wire [\=numLatencyEntries-1=\:0] dealloc_grant;
+
+wire latency_table_full;
+//=============================================================================
+// Divider by latency_pre_scale
+
+\=bundleFunctions.wiresFromInterface(divisorInterface.name, divisorInterface.signals, [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface(dividedEvntInterface.name, dividedEvntInterface.signals, [], obj.lib.bundle)=\
+
+
+assign \=divisorInterface.name=\val =  (latency_scale_csr == \=widthLatencyScale=\'d0 ? 4'd1 : (latency_scale_csr == \=widthLatencyScale=\'d1 ? 4'd3 : (latency_scale_csr == \=widthLatencyScale=\'d2 ? 4'd7 : (latency_scale_csr == \=widthLatencyScale=\'d3 ? 4'd15 : 4'd0)))); 
+
+\=u.instance({
+    instanceName: 'clk_divider' ,
+    moduleName: 'clk_divider',
+    params: {
+	clkInterface :clkInterface,
+	divisorInterface : divisorInterface,	
+	clkOutInterfaces: [dividedEvntInterface]
+    },
+    interfaces :[clkInterface, divisorInterface, dividedEvntInterface].map(getModuleLocalPrefixAndInterface),
+    portsDelimiter: '\n    '
+})=\ \jsbegin
+
+//=============================================================================
+//create a grant vector and candidates from the alloc vector
+//=============================================================================
+var candidates = findHashCollisions(numLatencyEntries, nTableEntries);
+
+var lct_entry_ports = {
+	latency_ref_count	:  dividedEvntInterface.name+"clk",
+	latency_count_en	: 'latency_cnt_en' 
+    } 
+
+for(var i = 0; i < numLatencyEntries; i++) {
+  var allocCandidates  = bits(latencyInterface.name+"alloc", candidates[i]); 
+  var deallocCandidates  = bits(latencyInterface.name+"dealloc", candidates[i]);
+  var localLctEntryOutInterface = { name: lctEntryOutInterface.name+i+"_", signals: lctEntryOutInterface.signals };
+
+  var lctEntryinInterface	= {name: "lctentry_in_", signals : {"alloc": candidates[i].length, "dealloc": deallocCandidates.length}};
+
+  var localLctEntryInInterface = {name: lctEntryinInterface.name+i+"_", signals: lctEntryinInterface.signals};  \jsend
+
+  \=bundleFunctions.wiresFromInterface(localLctEntryInInterface.name, localLctEntryInInterface.signals, [], obj.lib.bundle)=\  
+  \=bundleFunctions.wiresFromInterface(localLctEntryOutInterface.name, lctEntryOutInterface.signals, [], obj.lib.bundle)=\  
+
+  assign \=localLctEntryInInterface.name=\alloc = {\=allocCandidates=\};
+  assign \=localLctEntryInInterface.name=\dealloc =  {\=deallocCandidates=\};
+ 
+  \=obj.lib.instance({
+      instanceName: 'lct_entry'+i,
+      moduleName: 'lct_entry',
+      params: { 
+                clkInterface: clkInterface,
+		lctEntryOutInterface: lctEntryOutInterface,
+		lctEntryinInterface : lctEntryinInterface
+            },
+      interfaces: [
+        { modulePrefix: clkInterface.name, localPrefix: clkInterface.name, interface: clkInterface.signals },
+        { modulePrefix: lctEntryOutInterface.name, localPrefix: localLctEntryOutInterface.name, interface: lctEntryOutInterface.signals },
+	{ modulePrefix: lctEntryinInterface.name, localPrefix: localLctEntryInInterface.name, interface: localLctEntryInInterface.signals }
+      ],
+      ports: lct_entry_ports,
+      portsDelimiter: '\n    '
+    })=\ \jsbegin
+ 
+} \jsend
+
+//=============================================================================
+// RR arbiter and State Machine
+//=============================================================================
+wire [\=numLatencyEntries-1=\:0] rr_req_in;
+wire [\=numLatencyEntries-1=\:0] rr_arb_grant; \jsbegin
+
+for (var i = 0; i < numLatencyEntries; i++) { 
+  var localLctEntryOutInterface = { name: lctEntryOutInterface.name+i+"_", signals: lctEntryOutInterface.signals }; \jsend
+  assign rr_req_in[\=i=\] = \=localLctEntryOutInterface.name=\valid; 
+  assign \=localLctEntryOutInterface.name=\ready = rr_arb_grant[\=i=\]; \jsbegin
+} \jsend
+
+wire [\=numLatencyEntries-1=\:0] park_point;
+wire [\=numLatencyEntries-1=\:0] park_point_therm;
+wire [\=numLatencyEntries-1=\:0] park_point_d;
+wire dff_enable = 1'b1;
+
+
+\=obj.lib.instance({
+    instanceName: 'req_rr_arb_to_qntzr',
+    moduleName: 'arb_comb_therm',
+    params: { 
+                num_inputs : numLatencyEntries 
+            },
+    ports: {
+                req        : 'rr_req_in',
+                park_point : 'park_point',
+                grant      : 'rr_arb_grant'
+           },
+    portsDelimiter: '\n    '
+})=\
+
+\=obj.lib.instance({
+        instanceName: 'rr_park_point_therm',
+        moduleName: 'thermo_fast',
+        params: {
+            width   : numLatencyEntries
+        },
+        verilogParams: {
+        },
+        ports: {
+            invec       : 'park_point_d',
+            outvec      : 'park_point_therm'
+        }
+})=\
+
+\=u.dffre(numLatencyEntries, 'park_point',  'park_point_therm',  numLatencyEntries+"'d1", 'dff_enable',  clkInterface.name+"clk", clkInterface.name+"reset_n")=\
+assign park_point_d = rr_arb_grant;
+
+ 
+wire ao_mux_sel_valid; 
+
+//============================================================================
+//Latency counter ao_mux
+//============================================================================
+
+\jsbegin
+var latency_cnt_mux = {};
+
+
+
+for (let n=0; n<numLatencyEntries; n++){
+latency_cnt_mux['in'+n] = lctEntryOutInterface.name+n+"_count_val";
+}
+
+
+
+latency_cnt_mux['sel'] = "rr_arb_grant";
+latency_cnt_mux['out'] = "cnt_value_q0";
+latency_cnt_mux['sel_valid'] = "ao_mux_sel_valid";
+
+\jsend
+wire [\=widthLatencyCntrs-1=\:0] cnt_value_q0;
+
+ \=obj.lib.instance({
+        instanceName: 'latency_cnt_value_out_mux',
+        moduleName: 'ao_mux',
+        params: {
+	    nInputs          : numLatencyEntries,
+            wMux             : widthLatencyCntrs,
+	    addSelectValid   : true
+
+
+        },
+        verilogParams: {},
+        ports: latency_cnt_mux
+    })=\
+
+
+\=u.dffre(widthLatencyCntrs, 'cnt_value',  'cnt_value_q0',  widthLatencyCntrs+"'d0", 'dff_enable',  clkInterface.name+"clk", clkInterface.name+"reset_n")=\
+\=u.dffre(1, 'dealloc_valid',  'ao_mux_sel_valid', "1'd0", 'dff_enable',  clkInterface.name+"clk", clkInterface.name+"reset_n")=\
+
+
+endmodule

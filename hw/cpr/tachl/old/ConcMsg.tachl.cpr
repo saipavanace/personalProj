@@ -1,0 +1,1249 @@
+{
+  "name": "ConcMsg",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "concParams",
+      "params": [
+        {
+          "parameterName": "hdrParams",
+          "type": "object",
+          "reference": "HdrParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "cmdReqParams",
+          "type": "object",
+          "reference": "CmdReqParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "dtrReqParams",
+          "type": "object",
+          "reference": "DtrReqParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "cmdRspParams",
+          "type": "object",
+          "reference": "CmdRspParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "dtrRspParams",
+          "type": "object",
+          "reference": "DtrRspParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "snpReqParams",
+          "type": "object",
+          "reference": "SnpReqParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "snpRspParams",
+          "type": "object",
+          "reference": "SnpRspParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "cmpRspParams",
+          "type": "object",
+          "reference": "CmpRspParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "strRspParams",
+          "type": "object",
+          "reference": "StrRspParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "dtwReqParams",
+          "type": "object",
+          "reference": "DtwReqParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "ncCmdRspParams",
+          "type": "object",
+          "reference": "NcCmdRspParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "dtwRspParams",
+          "type": "object",
+          "reference": "DtwRspParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        },
+        {
+          "parameterName": "strReqParams",
+          "type": "object",
+          "reference": "StrReqParamsParam",
+          "parameterType": "architecture",
+          "guiVisibility": "yes",
+          "readonly": false
+        }
+      ]
+    },
+    {
+      "name": "CmdReqParamsParam",
+      "params": [
+        {
+          "parameterName": "wNdpAux",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return 0"
+        },
+        {
+          "parameterName": "wQos",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 4,
+          "maximum": 4,
+          "formula": "return 4"
+        },
+        {
+          "parameterName": "wTof",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 3,
+          "maximum": 3,
+          "formula": "return 3"
+        },
+        {
+          "parameterName": "wDId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 5,
+          "maximum": 10,
+          "formula": "return system.wFUnitId"
+        },
+        {
+          "parameterName": "wIntfSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 3,
+          "maximum": 3,
+          "formula": "return 3"
+        },
+        {
+          "parameterName": "wMpf2",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf2"
+        },
+        {
+          "parameterName": "wMpf1",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 12,
+          "formula": "return system.wMpf1"
+        },
+        {
+          "parameterName": "wTM",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wRL",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wLK",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wOR",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wPR",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wNS",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wES",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wEN",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wST",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wCH",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wCA",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wAC",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wVZ",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 48,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 32,
+          "maximum": 52,
+          "formula": "return system.wAddr"
+        },
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMProt",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return 0"
+        }
+      ]
+    },
+    {
+      "name": "HdrParamsParam",
+      "params": [
+        {
+          "parameterName": "wTargetId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wFUnitId + system.wFPortId"
+        },
+        {
+          "parameterName": "wInitiatorId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wFUnitId + system.wFPortId"
+        },
+        {
+          "parameterName": "wCmType",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return 8",
+          "minimum": 8,
+          "maximum": 8
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        },
+        {
+          "parameterName": "wHProt",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 7,
+          "maximum": 8,
+          "formula": "return system.wHProt"
+        },
+        {
+          "parameterName": "wTTier",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 0,
+          "maximum": 3,
+          "formula": "return system.wTTier"
+        },
+        {
+          "parameterName": "wSteering",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 0,
+          "maximum": 4,
+          "formula": "return system.wSteering"
+        },
+        {
+          "parameterName": "wPriority",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 0,
+          "maximum": 3,
+          "formula": "return system.wPriority"
+        },
+        {
+          "parameterName": "wQl",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 0,
+          "maximum": 3,
+          "formula": "return system.wQl"
+        }
+      ]
+    },
+    {
+      "name": "SnpReqParamsParam",
+      "params": [
+        {
+          "parameterName": "wNdpAux",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return 0"
+        },
+        {
+          "parameterName": "wRBID",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 10,
+          "formula": "return system.wRBID"
+        },
+        {
+          "parameterName": "wQos",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 4,
+          "maximum": 4,
+          "formula": "return 4"
+        },
+        {
+          "parameterName": "wTof",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 3,
+          "maximum": 3,
+          "formula": "return 3"
+        },
+        {
+          "parameterName": "wDId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 5,
+          "maximum": 5,
+          "formula": "return 5"
+        },
+        {
+          "parameterName": "wIntfSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 3,
+          "maximum": 3,
+          "formula": "return 3"
+        },
+        {
+          "parameterName": "wMpf3",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf3"
+        },
+        {
+          "parameterName": "wMpf2",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf2"
+        },
+        {
+          "parameterName": "wMpf1",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf1"
+        },
+        {
+          "parameterName": "wTM",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wRL",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wUP",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wPR",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wNS",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wAC",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wCA",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wVZ",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 48,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 32,
+          "maximum": 52,
+          "formula": "return system.wAddr"
+        },
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMProt",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return 0"
+        }
+      ]
+    },
+    {
+      "name": "SnpRspParamsParam",
+      "params": [
+        {
+          "parameterName": "wIntfSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wMpf1",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf1"
+        },
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    },
+    {
+      "name": "CmpRspParamsParam",
+      "params": [
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "validValues": "8",
+          "formula": "return 8",
+          "maximum": 8
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    },
+    {
+      "name": "StrRspParamsParam",
+      "params": [
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    },
+    {
+      "name": "DtrReqParamsParam",
+      "params": [
+        {
+          "parameterName": "wNdpAux",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return 0"
+        },
+        {
+          "parameterName": "wMpf1",
+          "type": "integer", 
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 12,
+          "formula": "return system.wMpf1"
+        },
+      {
+          "parameterName": "wTM",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wRL",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wEO",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        },
+        {
+          "parameterName": "wData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 128,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return system.wData"
+        },
+        {
+          "parameterName": "wBE",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return system.wBE"
+        },
+        {
+          "parameterName": "wDWID",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return system.wBE"
+        },
+        {
+          "parameterName": "wDBad",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return system.wBE"
+        },
+        {
+          "parameterName": "wUser",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return 0"
+        }
+      ]
+    },
+    {
+      "name": "DtwReqParamsParam",
+      "params": [
+        {
+          "parameterName": "wNdpAux",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return 0"
+        },
+        {
+          "parameterName": "wMpf2",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf2"
+        },
+        {
+          "parameterName": "wMpf1",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf1"
+        },
+        {
+          "parameterName": "wPrimary",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wTM",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1"
+        },
+        {
+          "parameterName": "wRL",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wRBID",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 4,
+          "maximum": 10,
+          "formula": "return system.wRBID"
+        },
+        {
+          "parameterName": "wDwId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 3,
+          "maximum": 3,
+          "formula": "return 3 * (unit.wData / 64)"
+        },
+        {
+          "parameterName": "wDBad",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 1,
+          "maximum": 1,
+          "formula": "return 1 * (unit.wData / 64)"
+        },
+        {
+          "parameterName": "wData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 128,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return system.wData"
+        },
+        {
+          "parameterName": "wUser",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "formula": "return 0"
+        }
+      ]
+    },
+    {
+      "name": "CmdRspParamsParam",
+      "params": [
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    },
+    {
+      "name": "NcCmdRspParamsParam",
+      "params": [
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    },
+    {
+      "name": "DtrRspParamsParam",
+      "params": [
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    },
+    {
+      "name": "DtwRspParamsParam",
+      "params": [
+        {
+          "parameterName": "wRL",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    },
+    {
+      "name": "StrReqParamsParam",
+      "params": [
+        {
+          "parameterName": "wIntfSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 2,
+          "maximum": 2,
+          "formula": "return 2"
+        },
+        {
+          "parameterName": "wMpf2",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMpf2"
+        },
+        {
+          "parameterName": "wMpf1",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 12,
+          "formula": "return system.wMpf1"
+        },
+        {
+          "parameterName": "wRBID",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 10,
+          "formula": "return system.wRBID"
+        },
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 8,
+          "maximum": 8,
+          "formula": "return 8"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "guiVisibility": "yes",
+          "readonly": false,
+          "minimum": 6,
+          "maximum": 10,
+          "formula": "return system.wMessageId"
+        }
+      ]
+    }
+  ]
+}

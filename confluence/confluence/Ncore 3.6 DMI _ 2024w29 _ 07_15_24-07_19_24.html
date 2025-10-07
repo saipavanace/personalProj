@@ -1,0 +1,260 @@
+<h2 id="Ncore3.6DMI:2024w29:07/15/24-07/19/24-Highlights:">Highlights:</h2><ul><li><p> Lost a good chunk of 07/19 resolving a blue screen issue.</p></li></ul><h2 id="Ncore3.6DMI:2024w29:07/15/24-07/19/24-Activities:">Activities:</h2><ul><li><p>Exclusive on atomics (Snoop me)</p><ul><li><p>This is popping up at fsys because block level doesn’t have a config with exclusive monitors and atomics enabled, i have an enhancement Jira to enable this config in 3.7 so we can have regular tests and regular atomics running on it as well.</p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15048" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15048?src=confmacro" class="jira-issue-key">CONC-15048</a>
+                            </span>
+ </p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15063" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15063?src=confmacro" class="jira-issue-key">CONC-15063</a>
+                            </span>
+ </p></li></ul></li><li><p>Reviewed arch update, looks good.</p><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14061" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14061?src=confmacro" class="jira-issue-key">CONC-14061</a>
+                            </span>
+ </p></li></ul></li><li><p>Fault checker automation for signal lookup:</p><ul><li><p>Documented my changes with snapshots on how it can be achieved at other units, marked it resolved.</p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14431" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14431?src=confmacro" class="jira-issue-key">CONC-14431</a>
+                            </span>
+ </p></li></ul></li><li><p>DMI Sequence Redesign:</p><ul><li><p>Coded a new cmd_seq_item type extended from SMI with constraints from CCMP spec</p></li><li><p>The config database now holds</p><ul><li><p>Resource manager: </p><ul><li><p>AIU BFM Table to manage AIU message IDs</p></li><li><p>Address manager handling</p></li></ul></li><li><p>Command line argument override and weights from old test-list for some degree of backwards compatibility.</p></li></ul></li><li><p>The virtual sequence runs through with a bring-up test for a CMD_WR packet, although the fields are not accurately populated.</p></li><li><p>Currently working on the resource manager </p><ul><li><p>Fine tuning the AIU table [AIU BFM from DMI point of view]</p></li><li><p>The credit allocation [Mimicking skid buffer]</p></li><li><p>Address allocation and coding in-flight dependencies. [Address manager and address dependencies from DCE point of view]</p></li></ul></li><li><p>Once these three tasks are done, I can work on RBID management next</p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13791" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13791?src=confmacro" class="jira-issue-key">CONC-13791</a>
+                            </span>
+ </p></li></ul></li></ul><h2 id="Ncore3.6DMI:2024w29:07/15/24-07/19/24-Aatman:">Aatman:</h2><ul><li><p>Aatman is facing some difficulties due to slow sim time. </p><ul><li><p>Current pass rate is at 91% with three main buckets to resolve</p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14608" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14608?src=confmacro" class="jira-issue-key">CONC-14608</a>
+                            </span>
+ </p></li></ul></li><li><p>Performance counter for &gt;1 iteration has stop sequence methods that clear up the sequencers before starting the next iteration. This needs to be mimicked in VIP, </p><ul><li><p>Aatman is still working on figuring this out.</p></li><li><p>Update: 183/201 tests passing mainly because they probably run 1 iteration. Debug/root-causing on how to port this to VIP is still WIP.</p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12284" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12284?src=confmacro" class="jira-issue-key">CONC-12284</a>
+                            </span>
+ </p></li></ul></li></ul>

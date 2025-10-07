@@ -1,0 +1,110 @@
+<h1 id="HowtodebugNcore3DCEsimulation-DirectoryManager">Directory Manager</h1><p>Module name: dce_dm</p><p>Instance name (in the dce_unit module): dce_dm</p><p><br/></p><p>Directory Manager signals to probe:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">t_p0_sel
+t_rs_sel
+t_wr_sel
+w_rc_sel
+w_p0_valid, n_p0_ready
+w_p1_valid, n_p1_ready
+w_p2_valid, n_p2_ready
+w_wr_valid
+idle_o
+dm_upd     input  interface signals
+dm_cmd_req input  interface signals
+dm_cmd_rsp output interface signals
+dm_rtr     output interface signals
+dm_recall  output interface signals
+dm_write   input  interface signals
+dm_error   output interface signals</pre>
+</div></div><p><br/></p><p>The input of the pipeline for Directory Manager is controlled by the <strong>t_p0_sel</strong> signal which is the select signal of the req_mux. See code block below.</p><p>When t_p0_sel == 2'b00, the input of the pipeline is gated off, i.e. nothing is allowed to enter the pipeline stage P0.</p><p>When t_p0_sel == 2'b01, the dm_upd_req (from the input interface for directory update request) is selected to enter the pipeline stage P0.</p><p>When t_p0_sel == 2'b10, the dm_cmd_req (from the input interface for command request) is selected to enter the pipeline stage P0.</p><p>NOTE: t_p0_sel is a onehot0 signal.</p><p>When (w_p0_valid &amp; n_p0_ready) is true, then the P0 request is accepted.</p><p><br/></p><p><strong>Directory Manager req_mux</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">wire [1:0]      t_p0_sel;
+
+\=u.instance({
+        moduleName: &#39;ioaiu_mux&#39;,
+        instanceName: &#39;req_mux&#39;,
+        params: {
+                assertOn: assertOn
+        },
+        verilogParams: {
+                DW:             &#39;AW+IW+TW+1&#39;,
+                NUM:            &#39;2&#39;
+        },
+        ports: {
+                clk_i:          &#39;clk_i&#39;,
+                reset_ni:       &#39;reset_ni&#39;,
+                ready_o:        &#39;{dm_cmd_req_ready_o, dm_upd_req_ready_o}&#39;,
+                valid_i:        &#39;{dm_cmd_req_valid_i, dm_upd_req_valid_i}&#39;,
+                data_i:         `{dm_cmd_req_ns_i, dm_cmd_req_addr_i,
+                                  t_cid, dm_cmd_req_type_i, dm_cmd_req_wakeup_i,
+                                  dm_upd_req_ns_i, dm_upd_req_addr_i,
+                                  dm_upd_req_iid_i, UpdInv, 1&#39;b0}`,
+                ready_i:        &#39;n_p0_ready&#39;,
+                valid_o:        &#39;w_p0_valid&#39;,
+                data_o:         &#39;{w_p0_addr, w_p0_iid, w_p0_type, w_p0_wakeup}&#39;,
+                bvsel_i:        &#39;t_p0_sel&#39;
+        }
+})=\
+
+</pre>
+</div></div><p class="auto-cursor-target">The output of the req_mux flows through two pipeline stages P1 and P2. </p><p class="auto-cursor-target">The output of P2 goes to a demux. The select of the demux is controlled by the <strong>t_rs_sel</strong> signal.</p><p class="auto-cursor-target">When t_rs_sel==3'b000, it indicates t_p2_stall is asserted and hence the pipeline is stalled.</p><p class="auto-cursor-target">When t_rs_sel==3'b001, it indicates the output of P2 goes to dm_cmd_rsp interface that delivers the directory lookup response.</p><p class="auto-cursor-target">When t_rs_sel==3'b010, it indicates the output of P2 goes to the Retry pipestage rr that drives the dm_rtr interface for Retry.</p><p class="auto-cursor-target">When t_rs_sel==3'b100, it indicates the output of P2 reaches the completion for update request.</p><p class="auto-cursor-target">NOTE: t_rs_sel is a onehot0 signal.</p><p class="auto-cursor-target"><strong>Directory Manager pipeline diagram</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">
+                      MUX             PipeStage            PipeStage           DEMUX
+                     +---+             +-----+             +-----+             +---+
+                     | r |             |     |             |     |             | r |   
+dm_upd_req_valid_i -&gt;| e | w_p0_valid  |  p  | w_p1_valid  |  p  | w_p2_valid  | r | {n_up_valid, n_rr_valid, dm_cmd_rsp_valid_o}
+dm_upd_req_ready_o &lt;-| q |------------&gt;|  1  |------------&gt;|  2  |------------&gt;|   |---------------------------------------------&gt;
+                     |   |             |     |             |     |             | d |
+dm_cmd_req_valid_i -&gt;| m | n_p0_ready  |     | n_p1_ready  |     | n_p2_ready  | e | {1&#39;b1,       w_rr_ready, dm_cmd_rsp_ready_i}
+dm_cmd_req_ready_o &lt;-| u |&lt;------------|     |&lt;------------|     |&lt;------------| m |&lt;---------------------------------------------
+                     | x |             |     |             |     |             | u |
+                     |   |             |  .  |             |  .  |             | x |
+                     +___+             +-/ \-+             +-/ \-+             +---+
+                       |                                                         |
+                    t_p2_sel                                                   t_rs_sel</pre>
+</div></div><p class="auto-cursor-target"><strong>Directory Manager retry interface diagram</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">              +-----+
+n_rr_valid --&gt;|  r  |--&gt; w_rr_valid --&gt; dm_rtr_valid_o
+              |  r  |
+w_rr_ready &lt;--|     |&lt;-- n_rr_ready &lt;-- dm_rtr_ready_i
+              |  .  |
+              +-/ \-+
+
+</pre>
+</div></div><p class="auto-cursor-target"><strong>Directory Manager recall interface diagram</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">NOTE: n_rc_valids is the recall request valid bit vector, each bit comes from each Snoop Filter in the Directory Manager.
+NOTE: w_rc_readys is the recall request ready bit vector, each bit goes to each Snoop Filter in the Directory Manager.
+
+                                     +---+
+                      n_rc_owners    |   |    dm_recall_owner_num_o
+                      n_rc_sbvs      | m |    dm_recall_sharer_vec_o          
+                      n_rc_addrs     | u |    {dm_recall_ns_o, dm_recall_addr_o}
+                      n_rc_ovals  --&gt;| x |--&gt; dm_recall_onwer_val_o
+                                     |   |
+                      n_rc_valids --&gt;|   |--&gt; dm_recall_valid_o
+                                     |   |
+                      w_rc_readys &lt;--|   |&lt;-- dm_recall_ready_i
+                                     +---+
+                                       |
+                                    w_rc_sel
+
+                     +--------+
+n_rc_valids       --&gt;| rc_arb |---&gt; w_rc_sel
+                     |        |
+                     |   .    |&lt;--- dm_recall_ready_i
+                     +--/ \---+
+
+</pre>
+</div></div><p class="auto-cursor-target">The directory write interface goes through the wr_mux shown as below, before reaching all the snoop filters.</p><p class="auto-cursor-target">The select of the wr_mux is controlled by the <strong>t_wr_sel</strong> signal.</p><p class="auto-cursor-target">When t_wr_sel==2'b00, the output of the mux is inactive, effectively the dm_write interface is blocked.</p><p class="auto-cursor-target">When t_wr_sel==2'b10, the output of the mux is the dm_write request. The output of the mux goes to all the snoop filters.</p><p class="auto-cursor-target"><strong>Directory Maneger write interface diagram</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">The output of the write_mux below goes to all the snoop filters.
+
+                          +---+
+      dm_write_*       --&gt;|   |--&gt; w_wr_*      
+                          |   |
+      dm_write_valid_i --&gt;|   |
+      dm_write_ready_o &lt;--| m |--&gt; w_wr_valid
+                          | u |&lt;-- n_wr_ready &lt;-- 1&#39;b1
+               1&#39;b0    --&gt;| x |
+                       &lt;--|   |
+                          +---+
+                            |
+                          t_wr_sel</pre>
+</div></div>

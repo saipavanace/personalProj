@@ -1,0 +1,601 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+
+\jsbegin
+    var u = obj.lib;
+
+    var addr_width           =  u.getParam('wAddr');
+    var tid_width            =  u.getParam('wMsgId');
+    var init_id_width        =  u.getParam('wInitiatorId'); 
+    var axi_id_width         =  u.getParam('axi_id_width');
+    var rtt_num_entries      =  u.getParam('nRttEntries');
+    var tt_id_width          =  u.getParam('tt_id_width');
+    var wQl                  =  u.getParam('wQl');
+    var wPri                 =  u.getParam('wPri');
+    var wQos                 =  u.getParam('wQos');       
+    var cmd_intfsize_width   =  u.getParam('wIntfSize');
+    var cmd_mpf1_width       =  u.getParam('wMpf1');
+    var cmd_mpf2_width       =  u.getParam('wMpf2');
+    var cmd_tof_width        =  u.getParam('wTOF');
+    var arprot_width         =  u.getParam('arprot_width');
+    var arcache_width        =  u.getParam('arcache_width');
+    var aruser_width         =  u.getParam('aruser_width');
+    var fnNativeInterface    =  u.getParam('fnNativeInterface');;
+    var wFUnitId             =  u.getParam('wFUnitId');
+    var wFPortId             =  u.getParam('wFPortId');
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// ports
+//=============================================================================
+    u.port('input', 'clk'                        , 1);
+    u.port('input', 'reset_n'                    , 1);
+//TT ID
+    u.port('input', 'rtt_allocate_new_entry'     , 1);
+    u.port('input', 'wtt_allocate_new_entry'     , 1);
+    u.port('input', 'addr_in'                    , addr_width);
+    u.port('input', 'size_in'                    , 3);
+    u.port('input', 'tof_in'                     , cmd_tof_width);
+    u.port('input', 'qos_in'                     , wQos);
+    u.port('input', 'ordering_in'                , 2);
+    u.port('input', 'prot_in'                    , 3);
+    if (aruser_width > 0) {
+    u.port('input', 'user_in'                    , aruser_width);
+    }
+    u.port('input', 'lock_in'                    , 1);
+    u.port('input', 'intfsize_in'                , cmd_intfsize_width);
+    u.port('input', 'narrow_in'                  , 1);    
+    u.port('input', 'st_in'                      , 1);
+    u.port('input', 'ca_in'                      , 1);
+    u.port('input', 'ac_in'                      , 1);
+    u.port('input', 'vz_in'                      , 1);
+    u.port('input', 'ch_in'                      , 1);
+    u.port('input', 'tm_in'                      , 1);  
+    u.port('input', 'ex_pass_in'                 , 1);    
+    u.port('input', 'cmo_in'                     , 1);
+    u.port('input', 'ql_in'                      , wQl);
+    u.port('input', 'priority_in'                , wPri);    
+    u.port('input', 'mpf1_in'                    , cmd_mpf1_width);
+    u.port('input', 'mpf2_in'                    , cmd_mpf2_width);
+    u.port('input', 'tid_in'                     , tid_width);
+    u.port('input', 'init_id_in'                 , wFUnitId);
+    u.port('input', 'axi_id_in'                  , axi_id_width);
+    u.port('input', 'wr_enable'                  , 1);
+    u.port('input', 'ro_depnd_set'               , 1);
+    u.port('input', 'eo_depnd_set'               , 1);
+    u.port('input', 'axi_depnd_set'              , 1);
+    u.port('input', 'oldest_entry_set'           , 1);
+    u.port('input', 'sleep_set'                  , 1);
+    u.port('input', 'ro_depnd_clear'             , 1);
+    u.port('input', 'eo_depnd_clear'             , 1);
+    u.port('input', 'axi_depnd_clear'            , 1);
+    u.port('input', 'oldest_entry_clear'         , 1);
+    u.port('input', 'sleep_clear'                , 1);
+    u.port('input', 'valid_clear'                , 1);
+    u.port('input', 'ro_depnd_id_in'             , tt_id_width);
+    u.port('input', 'eo_depnd_id_in'             , tt_id_width);
+    u.port('input', 'axi_depnd_id_in'            , tt_id_width);
+    u.port('input', 'rtt_grant'                  , 1);
+    u.port('input', 'wtt_ro_match_rd'            , 1);
+    u.port('input', 'wtt_eo_match_rd'            , 1);
+    u.port('input', 'new_rtt_ro_depnd'           , 1);
+    u.port('input', 'new_rtt_eo_depnd'           , 1);
+
+    u.port('output', 'rtt_entry_muxarb_valid'    , 1);
+    u.port('output', 'rtt_entry_str_muxarb_valid', 1);
+    u.port('output', 'axi_depnd_in'              , 1);
+    u.port('output', 'rtt_grant_given'           , 1);
+    u.port('output', 'rtt_grant_given_in'        , 1);
+
+    u.port('output', 'valid'                     , 1);
+    u.port('output', 'sleep'                     , 1);
+
+    // Need special case since priority is SV keyword
+    u.port('output', 'priority_out'              , wPri);
+
+    u.port('input',  'axi_depnd_sent'            , 1);
+
+obj.lib.interface('', 'master', obj.lib.getParam('TTentry2'), ['cmo','dtw_tid','dtw_ql','dtw_priority','resp_pending','dbad','clear','ewa','wo_depnd_id', 'wo_depnd', 'youngest_wo', 'wr_enable','ewa_sent','muxarb_valid','valid','sleep']);
+obj.lib.interface('', 'master', obj.lib.getParam('TT1')     , ['priority','dtw_tid','dtw_ql','dtw_priority','resp_pending','dbad','mpf2', 'attr','tof','narrow','prot','lock','ex_pass']);
+
+
+\jsend
+
+
+module \=u.getModuleName()=\ (
+\=u.getPorts('\n    ')=\
+);
+
+wire [1:0] ro_depnd_in;
+wire [1:0] eo_depnd_in;
+wire       response_pending;
+wire       valid_set;
+wire       valid_in;
+wire       wtt_entry_muxarb_valid_set;
+wire       wtt_entry_muxarb_valid_clear;
+wire       wtt_entry_muxarb_valid_in;
+wire       ro_depnd_en;
+wire       eo_depnd_en;
+wire       wo_depnd_en;
+wire       axi_depnd_en;
+wire       oldest_entry_in;
+wire       youngest_axi_entry_set;
+wire       youngest_axi_entry_clear;
+wire       youngest_axi_in;
+wire       youngest_ro_entry_set;
+wire       youngest_ro_entry_clear;
+wire       youngest_ro_in;
+wire       youngest_eo_entry_set;
+wire       youngest_eo_entry_clear;
+wire       youngest_eo_in;
+wire       youngest_wo_entry_set;
+wire       youngest_wo_entry_clear;
+wire       youngest_wo_in;
+wire       response_pending_set;
+wire       response_pending_clear;
+wire       response_pending_in;
+wire       sleep_in;
+wire       data_pending_set;
+wire       data_pending_clear;
+wire       str_sent_set;
+wire       str_sent_clear;
+wire       str_sent_in;
+wire       rtt_entry_str_muxarb_clear;
+wire       rtt_entry_str_muxarb_in;
+wire       allocate_bypassing;
+wire       rtt_entry_muxarb_valid_out;
+wire       rtt_entry_write;
+wire       rtt_entry_muxarb_valid_set;
+wire       rtt_entry_muxarb_valid_clear;
+wire       rtt_entry_muxarb_valid_in;
+
+// 
+wire [\=cmd_mpf2_width=\-1:0] mpf2;
+
+//
+assign allocate_bypassing = 1'b0;
+
+assign rtt_entry_write = rtt_allocate_new_entry & wr_enable;
+
+//RTT valid
+assign valid_set = rtt_entry_write;
+
+assign valid_in =  valid_set | (valid & ~valid_clear);
+
+\=u.dffre(       1
+              , 'valid'
+	      , 'valid_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+
+
+//RTT entry  not having any dependencies valid for arbitration
+// If the native interface is AXI the CMO will not be sent out so it should not be selected. This entry is done when its STRReq is sent after all RO dependancies are resolved.
+assign rtt_entry_muxarb_valid_set =  valid_in & ~(cmo_in & rtt_entry_write) & ~(ro_depnd_in[1] | eo_depnd_in[1] | (axi_depnd_in & ~axi_depnd_sent)) & ~(rtt_grant_given | rtt_grant_given_in);
+
+assign rtt_entry_muxarb_valid_clear = rtt_grant;
+
+assign rtt_entry_muxarb_valid_in =  rtt_entry_muxarb_valid_set | (rtt_entry_muxarb_valid & ~rtt_entry_muxarb_valid_clear);
+
+\=u.dffre(       1
+              , 'rtt_entry_muxarb_valid_out'
+	      , 'rtt_entry_muxarb_valid_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+\jsbegin
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if ( fnNativeInterface == "AXI3" | fnNativeInterface == "AXI4"  | fnNativeInterface == "AXI") {
+\jsend
+assign rtt_entry_str_muxarb_valid = rtt_entry_muxarb_valid_out & cmo;
+assign rtt_entry_muxarb_valid     = rtt_entry_muxarb_valid_out & ~cmo;
+\js } else {
+console.log("Error: "+u.getModuleName()+" - DII only supports AXI Native Interface. (dii_rtt_entry.tachl) ");
+\js }
+
+
+assign rtt_grant_given_in = rtt_grant;
+
+wire rtt_grant_given_d =  valid_set ? 1'b0 : ((rtt_entry_muxarb_valid & rtt_grant) | rtt_grant_given);
+
+\=u.dffre(       1
+              , 'rtt_grant_given'
+	      , 'rtt_grant_given_d'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+ 
+
+\=u.dffre(       addr_width
+              , 'addr'
+	      , 'addr_in'
+	      , '{'+addr_width+'{1\'b0}}'
+	      , 'rtt_entry_write' 
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       3
+              , 'size'
+	      , 'size_in'
+	      , "3'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+
+\=u.dffre(       cmd_tof_width
+              , 'tof'
+	      , 'tof_in'
+	      , '{'+cmd_tof_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       1
+              , 'cmo'
+	      , 'cmo_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       1
+              , 'ex_pass'
+	      , 'ex_pass_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+\jsbegin
+if(wQos != 0){
+\jsend
+\=u.dffre(       wQos
+              , 'qos'
+	      , 'qos_in'
+	      , '{'+wQos+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+\jsbegin
+} 
+\jsend
+
+\=u.dffre(       2
+              , 'ordering'
+	      , 'ordering_in'
+	      , "2'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       3
+              , 'prot'
+	      , 'prot_in'
+	      , '{'+3+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       1
+              , 'lock'
+	      , 'lock_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+
+\=u.dffre(       1
+              , 'ca'
+	      , 'ca_in' 
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       1
+              , 'ac'
+	      , 'ac_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+
+\=u.dffre(       1
+              , 'vz'
+	      , 'vz_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+
+\=u.dffre(       1
+              , 'ch'
+	      , 'ch_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+              , 'reset_n')=\
+
+\=u.dffre(       1
+              , 'tm'
+	      , 'tm_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+              , 'reset_n')=\
+
+\=u.dffre(       1
+              , 'narrow'
+	      , 'narrow_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\js if (aruser_width > 0) {
+\=u.dffre(       aruser_width
+              , 'user'
+	      , 'user_in'
+	      , '{'+aruser_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+\js }
+
+\=u.dffre(       cmd_intfsize_width
+              , 'intfsize'
+	      , 'intfsize_in'
+	      , '{'+cmd_intfsize_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+\js if (wPri != 0) {
+\=u.dffre(       wPri
+              , 'priority_out'
+	      , 'priority_in'
+	      , '{'+wPri+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+\js }
+
+\jsbegin
+// No ql for this release
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (wQl != 0) {
+\jsend
+\=u.dffre(       wQl
+              , 'ql'
+	      , 'ql_in'
+	      , '{'+wQl+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+\js }
+	      
+\=u.dffre(       cmd_mpf1_width
+              , 'mpf1'
+	      , 'mpf1_in'
+	      , '{'+cmd_mpf1_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       1
+              , 'st'
+	      , 'st_in'
+	      , "1'b0"
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       cmd_mpf2_width
+              , 'mpf2'
+	      , 'mpf2_in'
+	      , '{'+cmd_mpf2_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       tid_width
+              , 'tid'
+	      , 'tid_in'
+	      , '{'+tid_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       wFUnitId
+              , 'init_id'
+	      , 'init_id_in'
+	      , '{'+wFUnitId+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       axi_id_width
+              , 'axi_id'
+	      , 'axi_id_in'
+	      , '{'+axi_id_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+
+//RO dependency
+
+assign ro_depnd_in[1] =  (ro_depnd_set & rtt_entry_write)  | ro_depnd[1] & ~ro_depnd_clear;
+
+// Set this bit to 0 if collision with read, set to 1 if collision with write
+assign ro_depnd_in[0] =  (wtt_ro_match_rd & ro_depnd_set & rtt_entry_write) | (ro_depnd[0] & ~ro_depnd_clear) ;
+assign ro_depnd_en = rtt_entry_write | ro_depnd_clear;
+
+\=u.dffre(       2
+              , 'ro_depnd'
+	      , 'ro_depnd_in'
+	      , "2'b0"
+	      , 'ro_depnd_en'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       tt_id_width
+              , 'ro_depnd_id'
+	      , 'ro_depnd_id_in'
+	      , '{'+tt_id_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//EO dependency
+
+assign eo_depnd_in[1] =  (eo_depnd_set & rtt_entry_write)  | eo_depnd[1] & ~eo_depnd_clear;
+
+// Set this bit to 0 if collision with read, set to 1 if collision with write
+assign eo_depnd_in[0] =  (wtt_eo_match_rd & eo_depnd_set & rtt_entry_write) | (eo_depnd[0] & ~eo_depnd_clear) ;
+assign eo_depnd_en = rtt_entry_write | eo_depnd_clear;
+
+\=u.dffre(       2
+              , 'eo_depnd'
+	      , 'eo_depnd_in'
+	      , "2'b0"
+	      , 'eo_depnd_en'
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       tt_id_width
+              , 'eo_depnd_id'
+	      , 'eo_depnd_id_in'
+	      , '{'+tt_id_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//AXI dependency
+//
+
+assign axi_depnd_in =  (axi_depnd_set & rtt_entry_write)  | axi_depnd & ~axi_depnd_clear;
+assign axi_depnd_en = rtt_entry_write | axi_depnd_clear;
+
+\=u.dffre(       1
+              , 'axi_depnd'
+	      , 'axi_depnd_in'
+	      , "1'b0"
+	      , 'axi_depnd_en'
+	      , 'clk'
+	      , 'reset_n')=\
+                
+\=u.dffre(       tt_id_width
+              , 'axi_depnd_id'
+	      , 'axi_depnd_id_in'
+	      , '{'+tt_id_width+'{1\'b0}}'
+	      , 'rtt_entry_write'
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//Oldest entry
+
+assign oldest_entry_in = oldest_entry_set | (oldest & ~oldest_entry_clear);
+
+\=u.dffre(       1
+              , 'oldest'
+	      , 'oldest_entry_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//Youngest AXI entry
+assign youngest_axi_entry_set =  // New Entry is allocated  
+                              (rtt_allocate_new_entry & wr_enable);
+
+assign youngest_axi_entry_clear =  // New Entry is allocated and is dependent on this AXI ID
+                              ((rtt_allocate_new_entry & ~wr_enable) & (axi_id_in == axi_id) | valid_clear);
+
+assign youngest_axi_in = youngest_axi_entry_set | (youngest_axi & ~youngest_axi_entry_clear);
+
+\=u.dffre(       1
+              , 'youngest_axi'
+	      , 'youngest_axi_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+
+//Youngest RO entry
+assign youngest_ro_entry_set =  // New Entry is allocated  
+                              (rtt_allocate_new_entry & wr_enable) & ~(ordering_in == 2'd1);
+
+assign youngest_ro_entry_clear =  // New Entry is allocated and is dependent on this read
+                              ( ((rtt_allocate_new_entry & ~wr_enable) | wtt_allocate_new_entry) & new_rtt_ro_depnd | valid_clear);
+
+assign youngest_ro_in = youngest_ro_entry_set | (youngest_ro & ~youngest_ro_entry_clear);
+
+\=u.dffre(       1
+              , 'youngest_ro'
+	      , 'youngest_ro_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//Youngest EO entry
+assign youngest_eo_entry_set =  // Entry is allocated 
+                              (rtt_allocate_new_entry & wr_enable);
+
+assign youngest_eo_entry_clear =  // Entry is allocated and is dependent on earlier read
+                              ( ((rtt_allocate_new_entry & ~wr_enable) | wtt_allocate_new_entry) & new_rtt_eo_depnd | valid_clear);
+
+assign youngest_eo_in = youngest_eo_entry_set | (youngest_eo & ~youngest_eo_entry_clear);
+
+\=u.dffre(       1
+              , 'youngest_eo'
+	      , 'youngest_eo_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//Response pending
+assign response_pending_set = rtt_grant  &  valid;
+assign response_pending_clear = valid_clear;
+
+assign response_pending_in = response_pending_set | (response_pending & ~response_pending_clear);
+
+\=u.dffre(       1
+              , 'response_pending'
+	      , 'response_pending_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//Sleep
+
+assign sleep_in = (sleep_set & rtt_entry_write) | (sleep & ~sleep_clear);
+
+\=u.dffre(       1
+              , 'sleep'
+	      , 'sleep_in'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+//TT ID
+\js 
+
+
+endmodule
+ 

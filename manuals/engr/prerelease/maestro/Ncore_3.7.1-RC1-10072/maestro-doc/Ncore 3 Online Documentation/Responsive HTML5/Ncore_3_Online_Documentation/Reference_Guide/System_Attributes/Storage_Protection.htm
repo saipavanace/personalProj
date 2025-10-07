@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Storage_Protection</title>
+<meta content="Storage Protection" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Reference_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "4.3.2_2";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Reference_Guide/System_Attributes/Credits_and_Resources.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Reference_Guide/System_Attributes/Power_Management.htm">
+ <meta name="topic-breadcrumbs" content="Reference Guide > System Attributes" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="980942"><a id="1094_Heading1_980942" name="1094_Heading1_980942"></a>3.6  Storage Protection</p><p class="BodyAfterHead" id="980943">Storage structures implemented in SRAM, such as snoop filters, skid buffer, proxy&#47;system cache tag and data arrays, and outstanding transaction table (OTT) data buffers, are configured with the following protection schemes&#x3A;</p><p class="Bullet_1" id="980944"><span class="BulletSymbol">&#x2022; </span>None &#x2D; no protection provided</p><p class="Bullet_1" id="980945"><span class="BulletSymbol">&#x2022; </span>Parity Entry &#x2D; a parity bit per entry; error detection capability for single bit errors, but no error correction capability</p><p class="Bullet_1" id="980946"><span class="BulletSymbol">&#x2022; </span>SECDED Entry &#x2D; single error correction, double&#x2D;bit error detection code per entry; error detection and correction capability</p><p class="BodyAfterHead" id="980947">In this context, an <span style="font-style:Italic;">entry</span> represents a snoop filter entry, a proxy&#47;system cache tag entry, or a single data beat in a data transfer into or out of a proxy&#47;system cache data entry or a transaction table data buffer entry.</p><p class="BodyAfterHead" id="980948">Parity protection enables the hardware to detect single&#x2D;bit errors in an entry, but all errors are uncorrectable errors. SECDED protection enables the hardware to detect double&#x2D;bit errors in an entry and to detect and correct single&#x2D;bit errors in an entry. With SECDED protection, double&#x2D;bit errors are uncorrectable errors, and single&#x2D;bit errors are correctable errors. Each unit implements resources for logging and signaling uncorrectable and correctable errors separately. Each Ncore unit outputs two interrupt signals&#x3A; a combined uncorrectable interrupt signal and a combined correctable interrupt signal.</p><p class="BodyAfterHead" id="980949">The SECDED protection algorithm is implemented with a Hamming code.</p></div>
+</body>
+</html>

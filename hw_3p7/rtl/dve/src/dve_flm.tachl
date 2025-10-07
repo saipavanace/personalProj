@@ -1,0 +1,133 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// DVE Free List Manager.
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+
+var num_entries      = u.getParam('num_entries');
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// ports
+//=============================================================================
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// allocate interface: allocate0 is for regular entries, allocate1 is for reserved entries
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+u.port('input',  'mask0', num_entries);
+u.port('input',  'mask1', num_entries);
+
+u.port('output', 'allocate0', num_entries); //NOTE: onehot0
+u.port('output', 'allocate0_vld', 1);
+u.port('input',  'allocate0_ack', 1);
+
+u.port('output', 'allocate1', num_entries); //NOTE: onehot0
+u.port('output', 'allocate1_vld', 1);
+u.port('input',  'allocate1_ack', 1);
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// deallocate interface
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+u.port('input', 'deallocate', num_entries); //NOTE: multihot0
+u.port('input', 'deallocate_vld', 1);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+\jsbegin
+//=============================================================================
+// signal declarations
+//=============================================================================
+\jsend
+
+wire [\=num_entries-1=\:0] alloc0_mask;
+wire [\=num_entries-1=\:0] alloc1_mask;
+wire [\=num_entries-1=\:0] alloc_mask;
+wire [\=num_entries-1=\:0] dealloc_mask;
+wire [\=num_entries-1=\:0] free_vector;
+wire [\=num_entries-1=\:0] free_vector_n;
+wire [\=num_entries-1=\:0] free_vector_next;
+wire [\=num_entries-1=\:0] free_vector_next_n;
+
+\jsbegin
+//=============================================================================
+// alloc_mask is to clear the next available entries
+// dealloc_mask is to set the next available entries
+//=============================================================================
+\jsend
+
+assign alloc0_mask = allocate0 & {\=num_entries=\{allocate0_ack}};
+assign alloc1_mask = allocate1 & {\=num_entries=\{allocate1_ack}};
+
+assign alloc_mask = alloc0_mask | alloc1_mask;
+
+assign dealloc_mask = deallocate & {\=num_entries=\{deallocate_vld}};
+
+\jsbegin
+//=============================================================================
+// free_vector_next i.e. next available entries
+//=============================================================================
+\jsend
+
+assign free_vector_next = ((free_vector & ~alloc_mask) | dealloc_mask);
+
+\jsbegin
+//=============================================================================
+// allocate0_vld
+// allocate1_vld
+//=============================================================================
+\jsend
+
+assign allocate0_vld = (|{free_vector & mask0});
+assign allocate1_vld = (|{free_vector & mask1});
+
+\jsbegin
+//=============================================================================
+// Find first starting from bit 0 to generate allocate index 
+//=============================================================================
+\jsend
+
+    \=obj.lib.instance({
+        instanceName: 'u_allocate0',
+        moduleName: 'find_first_one',
+        params: { width : num_entries },
+        verilogParams: { WIDTH : num_entries },
+        ports: {
+            invec : 'free_vector & mask0', outvec : 'allocate0'
+        }
+    })=\
+
+    \=obj.lib.instance({
+        instanceName: 'u_allocate1',
+        moduleName: 'find_first_one',
+        params: { width : num_entries },
+        verilogParams: { WIDTH : num_entries },
+        ports: {
+            invec : 'free_vector & mask1', outvec : 'allocate1'
+        }
+    })=\
+
+\jsbegin
+//=============================================================================
+// free_vector flops for available entries
+//=============================================================================
+\jsend
+
+assign free_vector = ~free_vector_n;
+
+assign free_vector_next_n[\=num_entries-1=\:0] = ~free_vector_next;
+
+\=obj.lib.dffre(num_entries, 'free_vector_n', 'free_vector_next_n', num_entries+"'b0", "1'b1", 'clk', 'reset_n')=\
+
+endmodule

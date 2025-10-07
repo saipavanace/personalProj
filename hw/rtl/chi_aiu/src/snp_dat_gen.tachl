@@ -1,0 +1,150 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines single transaction table entry
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+var cm_type  = u.getParam('cm_type');
+var chi_cmd  = u.getParam('chi_cmd');
+var dat_flit_interface = u.getParam('dat_flit_interface');
+
+u.port('input',"snp_req_cm_type",8);
+u.port('input',"snp_req_cm_type_mod",8);
+u.port('input',"snp_req_slv_up",2);
+u.port('input',"stash_target",1);
+u.port('input',"aiu_dtr_provider",1);
+u.port('input',"chi_req",1);
+u.port('input',"ace_req",1);
+
+u.port('output','dtr_data_opcode',8);
+u.port('output','dtw_data_opcode',8);
+
+obj.lib.interface('RXDAT_' , 'slave', dat_flit_interface, ['Poison', 'Data', 'BE', 'TraceTag', 'DataID', 'CCID', 'RespErr', 'Homenode_ID', 'SrcID', 'TgtID', 'QoS', 'TxnID', 'DBID']);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+wire snp_resp_Data_I       = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b000);
+wire snp_resp_Data_UC      = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b010);
+wire snp_resp_Data_UD      = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b010);
+wire snp_resp_Data_SC      = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b001);
+wire snp_resp_Data_SD      = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b011);
+wire snp_resp_Data_I_PD    = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b100);
+wire snp_resp_Data_UC_PD   = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b110);
+wire snp_resp_Data_SC_PD   = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & (RXDAT_Resp ==  3'b101);
+wire snp_resp_DataPtl_I_PD = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespDataPtl=\) & (RXDAT_Resp ==  3'b100);
+wire snp_resp_DataPtl_UD   = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespDataPtl=\) & (RXDAT_Resp ==  3'b010);
+
+wire aiu_unique_presence = (snp_req_slv_up == 2'b01);
+
+
+
+wire snp_makeinvalid = (snp_req_cm_type == \=cm_type.SnpInv=\) | ( (snp_req_cm_type == \=cm_type.SnpInvStsh=\) & ~stash_target);
+wire snp_makeinvalid_stash = (snp_req_cm_type == \=cm_type.SnpInvStsh=\) & stash_target;
+
+wire snp_unique = (snp_req_cm_type == \=cm_type.SnpInvDtr=\);
+wire snp_unique_stash_non_target = (snp_req_cm_type == \=cm_type.SnpUnqStsh=\) & ~stash_target;
+wire snp_unique_stash_target = (snp_req_cm_type == \=cm_type.SnpUnqStsh=\) & stash_target;
+
+wire snp_stash_unique_non_target = (snp_req_cm_type == \=cm_type.SnpStshUnq=\) & ~stash_target;
+wire snp_stash_unique_target = (snp_req_cm_type == \=cm_type.SnpStshUnq=\) & stash_target;
+
+wire snp_shared = (snp_req_cm_type == \=cm_type.SnpVldDtr=\);
+wire snp_stash_shared_non_target = (snp_req_cm_type == \=cm_type.SnpStshShd=\) & ~stash_target;
+wire snp_stash_shared_target = (snp_req_cm_type == \=cm_type.SnpStshShd=\) & stash_target;
+
+
+
+wire drop_chi_data =  (snp_resp_Data_I  & snp_unique_stash_target      & ~aiu_unique_presence) ; 
+
+wire data_CompData_I            =   ( (snp_resp_Data_I  | snp_resp_Data_UC   | snp_resp_Data_UD    |
+                                      ((snp_resp_Data_SC | snp_resp_Data_I_PD | snp_resp_Data_SC_PD | snp_resp_Data_SD) & chi_req)) & 
+                                       (snp_req_cm_type  == \=cm_type.SnpNitc=\) ) |
+                                    ( (snp_resp_Data_I  | snp_resp_Data_I_PD ) &  (snp_req_cm_type  == \=cm_type.SnpNitcCI=\) & chi_req) |
+                                    ( (snp_resp_Data_I  | snp_resp_Data_I_PD ) &  (snp_req_cm_type  == \=cm_type.SnpNitcMI=\) & chi_req);
+
+wire data_CompData_SC           =   ( (snp_resp_Data_SC | snp_resp_Data_SD | snp_resp_Data_I_PD | snp_resp_Data_SC_PD) & ace_req & (snp_req_cm_type  == \=cm_type.SnpNitc=\) ) |
+                                    ( (snp_resp_Data_SC | snp_resp_Data_SD   | ( snp_resp_Data_I_PD & ~aiu_unique_presence) | snp_resp_Data_SC_PD | (snp_resp_Data_I & (snp_req_slv_up != 2'b01)) ) &          
+                                      (snp_req_cm_type  == \=cm_type.SnpClnDtr=\) ) |
+                                    ( (snp_resp_Data_SC | snp_resp_Data_SD | (snp_resp_Data_I & (snp_req_slv_up != 2'b01)))   &         
+                                      (snp_req_cm_type == \=cm_type.SnpVldDtr=\)) |
+                                    ( (snp_resp_Data_SC | snp_resp_Data_SD   | ( snp_resp_Data_I_PD & ~aiu_unique_presence) | snp_resp_Data_SC_PD | (snp_resp_Data_I & (snp_req_slv_up != 2'b01)) ) &                                                                                         (snp_req_cm_type  == \=cm_type.SnpNoSDInt=\ ) ); 
+
+wire data_CompData_UC           =   ( ( (snp_resp_Data_I & (snp_req_slv_up == 2'b01)) | ( snp_resp_Data_I_PD & aiu_unique_presence) ) &
+                                      (snp_req_cm_type  == \=cm_type.SnpClnDtr=\) ) |
+                                      ( (snp_resp_Data_I & (snp_req_slv_up == 2'b01)) & (snp_req_cm_type == \=cm_type.SnpVldDtr=\)) |
+                                      ( (snp_resp_Data_I & (snp_req_slv_up == 2'b01)) & (snp_req_cm_type == \=cm_type.SnpNoSDInt=\)) |
+                                      (snp_resp_Data_I  & (snp_req_cm_type == \=cm_type.SnpInvDtr=\) & (snp_req_slv_up == 2'b01) ); 
+ 
+
+wire data_CompData_SD       =    (snp_resp_Data_SC_PD | (snp_resp_Data_I_PD & ~aiu_unique_presence))  &  (snp_req_cm_type == \=cm_type.SnpVldDtr=\); 
+ 
+wire data_CompData_UD       = ( ( snp_resp_Data_I_PD & aiu_unique_presence)  & (snp_req_cm_type == \=cm_type.SnpVldDtr=\)) |
+                              ( ( snp_resp_Data_I_PD & aiu_unique_presence)  & (snp_req_cm_type  == \=cm_type.SnpNoSDInt=\) ) |
+                              (   snp_resp_Data_I_PD  & (snp_req_cm_type  == \=cm_type.SnpInvDtr=\) & (snp_req_slv_up == 2'b01) ) ;
+
+assign dtr_data_opcode      =   {8{data_CompData_I     & aiu_dtr_provider}}  & \=cm_type.DtrDataInv=\   
+                              | {8{data_CompData_SC    & aiu_dtr_provider}}  & \=cm_type.DtrDataSCln=\ 
+                              | {8{data_CompData_SD    & aiu_dtr_provider}}  & \=cm_type.DtrDataSDty=\ 
+                              | {8{data_CompData_UC    & aiu_dtr_provider}}  & \=cm_type.DtrDataUCln=\ 
+                              | {8{data_CompData_UD    & aiu_dtr_provider}}  & \=cm_type.DtrDataUDty=\;
+//DTW
+
+wire data_dtw_full_dty      =    ( ( (snp_resp_Data_I_PD | snp_resp_Data_SC_PD ) &  ( (snp_req_cm_type == \=cm_type.SnpNitc=\) | (snp_req_cm_type == \=cm_type.SnpClnDtr=\) ) ) |
+                                 ( ((snp_resp_Data_I_PD & ~aiu_unique_presence) | snp_resp_Data_SC_PD ) &    (snp_req_cm_type == \=cm_type.SnpNoSDInt=\) ) ) |
+                                   ( snp_resp_Data_I_PD   &
+                                   ((snp_req_cm_type == \=cm_type.SnpClnDtw=\) | (snp_req_cm_type == \=cm_type.SnpInvDtw=\) | ((snp_req_cm_type == \=cm_type.SnpNitcCI=\)  & chi_req) ))  |
+                                 ( (snp_resp_Data_SC_PD | snp_resp_Data_UC_PD)  &
+                                   (snp_req_cm_type == \=cm_type.SnpClnDtw=\) ) |
+                                 ( (snp_resp_Data_I_PD | snp_resp_Data_SC_PD) & snp_stash_shared_non_target)  |
+                                 (  snp_resp_Data_I_PD   & (snp_req_cm_type == \=cm_type.SnpUnqStsh=\) & chi_req) |
+                                  ( snp_resp_Data_I_PD  & (snp_req_cm_type  == \=cm_type.SnpInvDtr=\) & (snp_req_slv_up == 2'b11) & aiu_dtr_provider ) |
+                                 (  snp_resp_Data_I_PD   &  snp_stash_unique_non_target); 
+
+wire data_dtw_ptl_dty       =    ( snp_resp_DataPtl_I_PD &
+                                     ((snp_req_cm_type == \=cm_type.SnpClnDtw=\) | (snp_req_cm_type == \=cm_type.SnpInvDtw=\)) |
+                                     (snp_resp_DataPtl_I_PD & (snp_req_cm_type == \=cm_type.SnpVldDtr=\)) |
+                                     (snp_resp_DataPtl_I_PD & snp_stash_shared_non_target) |
+                                     (snp_resp_DataPtl_I_PD & (snp_req_cm_type == \=cm_type.SnpUnqStsh=\) & chi_req)|
+                                     (snp_resp_DataPtl_I_PD &  snp_stash_unique_non_target) );
+
+
+wire data_dtw_merge_inv      =     ( (snp_resp_DataPtl_I_PD  | snp_resp_DataPtl_UD)  & 
+                                     (snp_req_cm_type == \=cm_type.SnpNitc=\)  ) |
+                                   ( snp_resp_DataPtl_I_PD    &
+                                   ( ((snp_req_cm_type == \=cm_type.SnpNitcCI=\) | (snp_req_cm_type  == \=cm_type.SnpNitcMI=\)) & chi_req) ); 
+
+wire data_dtw_merge_ucln      =    ( (snp_resp_DataPtl_I_PD)  &   
+                                   ( (snp_req_cm_type == \=cm_type.SnpClnDtr=\)  | 
+                                     (snp_req_cm_type == \=cm_type.SnpNoSDInt=\) | 
+                                     (snp_req_cm_type == \=cm_type.SnpVldDtr=\)) ); 
+
+wire data_dtw_merge_udty      = ( snp_resp_DataPtl_I_PD &     
+                                ( snp_req_cm_type == \=cm_type.SnpInvDtr=\));                
+
+
+wire data_dtw_cln            =  (snp_resp_Data_I   &  snp_unique_stash_target  & aiu_unique_presence  & chi_req) |
+                                (snp_resp_Data_I  & (snp_req_cm_type == \=cm_type.SnpInvDtr=\) & (snp_req_slv_up == 2'b11) & aiu_dtr_provider) |
+                                (snp_resp_Data_I   &  snp_unique_stash_non_target & chi_req) |
+                              ( (snp_resp_Data_I | snp_resp_Data_SC | snp_resp_Data_SD) & snp_stash_shared_non_target) |
+                                (snp_resp_Data_I   &  snp_stash_unique_non_target) ; 
+
+
+assign dtw_data_opcode      =   
+                                {8{data_dtw_merge_inv}}  & \=cm_type.DtwMrgMrdInv=\ 
+                              | {8{data_dtw_merge_ucln}} & \=cm_type.DtwMrgMrdUCln=\ 
+                              | {8{data_dtw_merge_udty}} & \=cm_type.DtwMrgMrdUDty=\ 
+                              | {8{data_dtw_full_dty}}   & \=cm_type.DtwDataFullDty=\ 
+                              | {8{data_dtw_ptl_dty}}    & \=cm_type.DtwDataPtlDty=\ 
+                              | {8{data_dtw_cln}}        & \=cm_type.DtwDataFullCln=\;
+
+
+endmodule

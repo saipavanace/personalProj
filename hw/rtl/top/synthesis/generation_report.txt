@@ -1,0 +1,367 @@
+================================================================================
+                                                                             
+                     Arteris Conductor Generation Report                     
+                                                                             
+ Copyright(C) 2015 Arteris, Inc.                                             
+ All rights reserved.                                                        
+================================================================================
+<%
+
+
+
+
+
+
+var text = "";
+
+function xx (str) {
+    text += str+"\n";
+    return;
+}
+
+function title(str) {
+    xx("");
+    xx("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    xx(str);
+    xx("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+}
+
+function subtitle(str) {
+    xx("");
+    xx("~~~~~~~~~~~~~~~~~~~~");
+    xx(str);
+}
+
+function keyvalue(obj) {
+    for (var key in obj) {
+        var value = obj[key];
+        
+        if (value !== undefined) {
+            var str = "";
+            for (var i = 0; i < (26 - key.length); i++) {
+                str += " ";
+            }
+            str += key+": "+value;
+            xx(str);
+        }
+    }
+}
+
+function pnt (title, value) {
+
+ if (value !== undefined) {
+    var x = "";
+    for (var i = 0; i < (26 - title.length); i++) {
+         x += " ";
+    }
+    x += title+": "+value;
+    return x;
+  } else {
+    return "";
+  }
+}
+
+
+function describeSignal (name, dir, width) {
+   s = "                            ";
+    if (dir==="in ") {
+      s += "in ";
+    } else {
+          s += "out  ";
+    }
+   s += name;
+    for (var i = 0; i<(12-name.length); i++){
+        s += " ";
+}
+   s += width;
+    return s+"\n";
+}
+
+
+function describeMemory (name, o) {
+    var s = "";
+    if (o.enabled) {
+        s += "\n";
+        s+= pnt("Name", name)+"\n";
+        s+= pnt("RTL Signal prefix", o.rtlPrefixName)+"\n";
+        s+= pnt("Width", o.width)+"\n";
+        s+= pnt("Depth", o.depth)+"\n";
+        s+= pnt("Signals", "dir  name        width")+"\n";
+        s+= pnt("-------", "---- ----------- -----")+"\n";
+        
+        var wData = o.width;
+        var wAddr = Math.ceil(Math.log2(o.depth));
+        
+        s+= describeSignal("CLK", "in", 1);
+        s+= describeSignal("D", "in", wData);
+        s+= describeSignal("ADR", "in", wAddr);
+        s+= describeSignal("WE", "in", 1);
+        s+= describeSignal("ME", "in", 1);
+        s+= describeSignal("WEM", "in", wData);
+        s+= describeSignal("Q", "out", wData);
+        
+        for (var signum = 0; signum < o.signals.length; signum++) {
+            s+= describeSignal(o.signals[signum].signalName, o.signals[signum].direction, o.signals[signum].width);
+        }
+    }
+    return s;
+}
+
+
+function describeMemories (o) {
+
+    var s = "";
+
+
+    for (var key in o) {
+        var oo = o[key];
+        if (oo.signals !== undefined) {
+            s += describeMemory(key, oo);
+        }
+    }
+    return s;
+
+}
+
+
+//////////////////////////////////////////////////
+// Report
+//////////////////////////////////////////////////
+
+title("Project Info");
+
+var d = new Date();
+
+keyvalue({ "Project Name": obj.strProjectName,
+           "Conductor Version": "1.0",
+           "Generation Date": d.toString(),
+           "Cache Window Size": obj.fullProject.concerto.user.memoryRegions.cacheWindow  });
+
+title("Clocks & Power Management");
+
+subtitle("Voltage Regions");
+
+for (var i = 0; i < obj.fullProject.clocks.energyManagement.voltageRegions.length; i++) {
+    var o = obj.fullProject.clocks.energyManagement.voltageRegions[i]; 
+
+    xx("");
+    keyvalue({"Name": o.name,
+              "Voltage": o.voltage });
+
+}
+
+subtitle("Energy Management Regions");
+
+
+for (var i = 0; i < obj.fullProject.clocks.energyManagement.energyManagementRegions.length; i++) {
+   var o = obj.fullProject.clocks.energyManagement.energyManagementRegions[i]; 
+
+    xx("");
+    keyvalue({"Name": o.name,
+              "Type": o.typeTitle });
+
+}
+
+subtitle("Root Clocks");
+
+for (var i = 0; i < obj.fullProject.clocks.rootClocks.clocksArray.length; i++) {
+    var o = obj.fullProject.clocks.rootClocks.clocksArray[i]; 
+
+    xx("");
+    keyvalue({"Name": o.name,
+              "Type": o.typeLabel,
+              "RTL signal Name": o.rtlName,
+              "Frequency": o.frequency + "MHz"});
+
+}
+
+subtitle("Utility Bundles");
+
+for (var i = 0; i < obj.fullProject.clocks.utilityBundles.bundlesArray.length; i++) {
+    var o = obj.fullProject.clocks.utilityBundles.bundlesArray[i]; 
+
+    xx("");
+    keyvalue({"Name": o.name,
+              "Type": o.typeLabel,
+              "Used by Coherent subsystem": o.coherentSubsystem,
+              "Test mode": o.testMode.enableTestMode,
+              "Test mode RTL signal": o.testMode.rtlSignalName,
+              "Reset RTL signal": o.reset.rtlSignalName});
+
+}
+
+title("Memory Regions");
+
+for (var i = 0; i < obj.fullProject.concerto.user.memoryRegions.memoryRegionArray.length; i++) {
+   var o = obj.fullProject.concerto.user.memoryRegions.memoryRegionArray[i]; 
+
+    xx("");
+    keyvalue({"Name": o.name,
+              "Num Ports": o.nMemoryRegionInterfaces,
+              "Region Size": o.regionSize+" address bits",
+              "Region Base Address": o.regionBaseAddress,
+              "Utility Bundle": o.bundleName,
+              "RTL Prefix Name": o.rtlPrefixName,
+              "Data Width": o.signals.wXData});
+
+}
+
+title("Agents");
+
+for (var i = 0; i < obj.fullProject.concerto.user.agentInterfaces.AIUArray.length; i++) {
+   var o = obj.fullProject.concerto.user.agentInterfaces.AIUArray[i]; 
+
+    xx("");
+    keyvalue({"Name": o.name,
+              "Type": o.typeLabel,
+              "RTL Prefix Name": o.rtlPrefixName,
+              "Region Size": o.regionSize,
+              "Num Ports": o.nAius,
+              "Utility Bundle": o.bundleName,
+              "Data Width": o.signals.wXData,
+              "Unit ID": o.unitId});
+}
+
+title("Bridges");
+
+for (var i = 0; i < obj.fullProject.concerto.user.bridgeInterfaces.bridgeArray.length; i++) {
+    var o = obj.fullProject.concerto.user.bridgeInterfaces.bridgeArray[i]; 
+
+    xx("");
+    keyvalue({"Name": o.name,
+              "Type": o.typeLabel,
+              "RTL Prefix Name": o.rtlPrefixName,
+              "Region Size": o.regionSize,
+              "Num Ports": o.nAius,
+              "Utility Bundle": o.bundleName,
+              "RTL Prefix Name": o.rtlPrefixName,
+              "Data Width": o.signals.wXData,
+              "Unit ID": o.unitId});
+}
+
+title("Directory");
+
+xx("");
+keyvalue({
+    "Cacheline Size": obj.fullProject.concerto.user.systemDirectory.cacheLineSize,
+    "nPorts": obj.fullProject.concerto.user.systemDirectory.nSnoopFilterInterfaces,
+    "Utility Bundle": obj.fullProject.concerto.user.systemDirectory.bundleName,
+    "Unit ID": o.unitId});
+
+
+title("Snoop Filters");
+
+for (var i = 0; i < obj.fullProject.concerto.user.systemDirectory.SnoopFilters.length; i++) {
+    var o = obj.fullProject.concerto.user.systemDirectory.SnoopFilters[i]; 
+    xx("");
+    keyvalue({"Name": o.name,
+              "Type": o.typeLabel,
+              "Tag Filter Type": o.snoopTagFilterType});
+}
+
+title("Embedded Memories");
+
+xx('This timing diagram shows the expected timing of the embedded memories used by ');
+xx('the Conductor tool.                                                            ');
+xx('                                                                               ');
+xx('For a write operation, Conductor will assert provide valid write data, will    ');
+xx('assert ME (memory Enable), WE (write Enable), and provide the address before   ');
+xx('the rising edge.                                                               ');
+xx('                                                                               ');
+xx('For a read operation, Conductor will assert ME, and provie a valid address     ');
+xx('before the rising edge of a clock.  It will expect to sapmle the output data Q ');
+xx('on the next rising clock edge.                                                 ');
+xx('                                                                               ');
+xx('            ___     ___     ___     ___     ___     ___                        ');
+xx('   CLK  ___|   |___|   |___|   |___|   |___|   |___|   |___                    ');
+xx('                _____              :       :                                   ');
+xx('   D    _______/   : \\_____________________________________                    ');
+xx('                _____             ___      :                                   ');
+xx('   ADR  ~~~~~~~X_____X~~~~~~~~~~~X___X~~~~~~~~~~~~~~~~~~~~~                    ');
+xx('                _____             ___      :                                   ');
+xx('   ME   _______/   : \\___________/ : \\_____________________                    ');
+xx('                _____              :       :                                   ');
+xx('   WE   _______/   : \\_____________________________________                    ');
+xx('                _____              :       :                                   ');
+xx('   WEM  _______X_____X_____________________________________                    ');
+xx('                   :               :    _____                                  ');
+xx('   Q    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-X_____X~~~~~~~~~~~~~                    ');
+xx('                   :               :       :                                   ');
+xx('                   :               :       :                                   ');
+xx('                   :               `-------`---------Read Operation            ');
+xx('                   :                                                           ');
+xx('                   `-------------------------------- Write Operation           ');
+xx('                                                                               ');
+
+
+for (var x = 0; x < obj.fullProject.exports.externalMemory.memoryRegions.length; x++) {
+    var o = obj.fullProject.exports.externalMemory.memoryRegions[x]; 
+
+    subtitle("Memory Interface: "+o.name);
+    xx(describeMemories(o));
+
+} 
+
+
+for (var x = 0; x < obj.fullProject.exports.externalMemory.agentInterfaces.length; x++) {
+    var o = obj.fullProject.exports.externalMemory.agentInterfaces[x];
+
+    subtitle("Agent Interface: "+o.name);
+    xx(describeMemories(o));
+}
+
+for (var x = 0; x < obj.fullProject.exports.externalMemory.bridgeInterfaces.length; x++) {
+    var o = obj.fullProject.exports.externalMemory.bridgeInterfaces[x];
+
+    subtitle("Bridge Interface: "+o.name);
+    xx(describeMemories(o));
+}
+
+
+
+
+
+title("Unit IDs");
+
+var array = {};
+var unitId = 0;
+
+function printPorts(name, nPorts) {
+    if (nPorts > 1) {
+        for (var p = 0; p < nPorts; p++) {
+            
+            array[unitId] = name+" ("+p+")";
+            unitId;;
+        }
+    } else {
+        array[unitId] = name;
+        unitId++;
+    }
+}
+
+for (var i = 0; i < obj.fullProject.concerto.user.agentInterfaces.AIUArray.length; i++) {
+    var o = obj.fullProject.concerto.user.agentInterfaces.AIUArray[i]; 
+    printPorts(o.name, o.nAius);
+}
+
+for (var i = 0; i < obj.fullProject.concerto.user.bridgeInterfaces.bridgeArray.length; i++) {
+    var o = obj.fullProject.concerto.user.bridgeInterfaces.bridgeArray[i]; 
+    printPorts(o.name, o.nAius);
+}
+
+printPorts("Directory", obj.fullProject.concerto.user.systemDirectory.nSnoopFilterInterfaces);
+
+
+for (var i = 0; i < obj.fullProject.concerto.user.memoryRegions.memoryRegionArray.length; i++) {
+   var o = obj.fullProject.concerto.user.memoryRegions.memoryRegionArray[i]; 
+    printPorts(o.name, o.nMemoryRegionInterfaces);
+}
+
+xx("");
+keyvalue(array);
+xx("");
+
+%>
+<%= text %>
+================================================================================
+<eof>

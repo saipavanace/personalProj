@@ -1,0 +1,193 @@
+\jsbegin
+//============================================================================
+// Copyright (C) 2019 Arteris, Inc.
+// All rights reserved.
+//============================================================================
+// A generic age queueing structure
+// Author: Boon Chuan
+//============================================================================
+\jsend
+
+\jsbegin
+//============================================================================     
+// Variables
+//============================================================================
+   
+let u = obj.lib;
+let m = obj.userLib;
+let bundleFunctions = m.bundleFunctions;
+
+let assertOn = u.getParam('assertOn');
+let nEntries = u.getParam('nEntries');
+let wData    = u.getParam('wData');
+let wTag     = u.getParam('wTag');
+
+//============================================================================
+// Ports
+//============================================================================
+u.port('input',  'clk',           1);
+u.port('input',  'reset_n',       1);
+
+u.port('input',  'push_en',       1);
+u.port('input',  'push_tag',      wTag);
+u.port('input',  'push_data',     wData);
+
+u.port('input',  'pop_en',        1);
+u.port('output', 'pop_tag',       wTag);
+u.port('output', 'pop_data',      wData);
+
+u.port('input',  'lookup_en',     1);
+u.port('input',  'lookup_tag',    wTag);
+
+u.port('output', 'full',          1);
+u.port('output', 'empty',         1);
+u.port('output', 'valid_vec',     nEntries);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+\js //============================================================================
+\js // Wires
+\js //============================================================================
+
+wire [\=nEntries-1=\:0] valid_en;
+wire [\=nEntries-1=\:0] valid_set;
+wire [\=nEntries-1=\:0] valid_clr;
+wire [\=nEntries-1=\:0] valid_d;
+wire [\=nEntries-1=\:0] valid;
+    \js for (let i = 0; i < nEntries; i++) {
+wire                    valid\=i=\;
+wire [\=wData-1=\:0]    data_in\=i=\;
+wire [\=wData-1=\:0]    data\=i=\;
+    \js }
+
+wire [\=nEntries-1=\:0] pop_vec;
+wire [\=nEntries-1=\:0] pop_qual_vec;
+wire [\=nEntries-1=\:0] lookup_match_vec;
+
+\js //============================================================================
+\js // pop_vec
+\js //============================================================================
+
+assign pop_qual_vec = lookup_en & {|{lookup_match_vec}} ? lookup_match_vec : valid_vec;
+
+
+\js for (let i = 0; i < (nEntries-1); i++) {
+assign pop_vec[\=i=\] = pop_qual_vec[\=i=\] & ~{|{pop_qual_vec[\=nEntries-1=\:\=i+1=\]}};
+\js }
+assign pop_vec[\=nEntries-1=\] = pop_qual_vec[\=nEntries-1=\];
+
+\js //============================================================================
+\js // valid_vec
+\js //============================================================================
+
+\js for (let i = 0; i < nEntries; i++) {
+\=u.dffre(1, 'valid'+i, 'valid_d['+i+']', "1'b0", 'valid_en['+i+']', 'clk', 'reset_n')=\
+\js }
+
+\js for (let i = 0; i < nEntries; i++) {
+assign valid[\=i=\] = valid\=i=\;
+\js }
+
+assign valid_set[0] = push_en;
+\js for (let i = 1; i < nEntries; i++) {
+assign valid_set[\=i=\] = push_en & {&{valid[\=i-1=\:0]}} & (~pop_en | ~{|{pop_vec[\=i-1=\:0]}});
+\js }
+
+assign valid_en = valid_set | valid_clr;
+assign valid_clr = pop_vec & {\=nEntries=\{pop_en}};
+assign valid_d = valid_set | ~valid_clr; 
+
+assign valid_vec = valid;
+
+assign full  =  {&{valid_vec}};
+assign empty = ~{|{valid_vec}};
+
+\js //============================================================================
+\js // data array
+\js //============================================================================
+
+\js for (let i = 0; i < nEntries; i++) {
+\=u.dffre(wData, 'data'+i, 'data_in'+i, wData+"'d0", 'valid_set['+i+']', 'clk', 'reset_n')=\
+\js }
+
+assign data_in0 = push_data;
+\js for (let i = 1; i < nEntries; i++) {
+assign data_in\=i=\ = data\=i-1=\;
+\js }
+
+\js //============================================================================
+\js // tag array
+\js //============================================================================
+
+\js for (let i = 0; i < nEntries; i++) {
+wire [\=wTag-1=\:0] tag\=i=\, tag_in\=i=\;
+\=u.dffre(wTag, 'tag'+i, 'tag_in'+i, wTag+"'d0", 'valid_set['+i+']', 'clk', 'reset_n')=\
+\js }
+
+assign tag_in0 = push_tag;
+\js for (let i = 1; i < nEntries; i++) {
+assign tag_in\=i=\ = tag\=i-1=\;
+\js }
+
+\js //============================================================================
+\js // pop_data
+\js // pop_tag
+\js //============================================================================
+
+assign pop_data = (data0 & {\=wData=\{pop_vec[0]}})
+\js for (let i = 1; i < nEntries; i++) {
+                | (data\=i=\ & {\=wData=\{pop_vec[\=i=\]}})
+\js }
+                ;
+
+assign pop_tag = (tag0 & {\=wTag=\{pop_vec[0]}})
+\js for (let i = 1; i < nEntries; i++) {
+               | (tag\=i=\ & {\=wTag=\{pop_vec[\=i=\]}})
+\js }
+               ;
+
+\js //============================================================================
+\js // lookup_match_vec
+\js //============================================================================
+
+\js for (let i = 0; i < nEntries; i++) {
+assign lookup_match_vec[\=i=\] = valid[\=i=\] & (lookup_tag == tag\=i=\);
+\js }
+
+\js //============================================================================
+\js // Assertions
+\js //============================================================================
+
+\js if (assertOn) {
+`ifdef OVL_ASSERT_ON
+
+    property p_pop_vec;
+        @(posedge clk) disable iff (~reset_n)
+        ($onehot0(pop_vec));
+    endproperty
+
+    assert_pop_vec: assert property (p_pop_vec)
+        else begin $error("pop_vec must be onehot0 !"); #100 $finish; end
+
+    property p_push_not_full;
+        @(posedge clk) disable iff (~reset_n)
+        (push_en & ~pop_en) |-> (~full);
+    endproperty
+
+    assert_push_not_full: assert property (p_push_not_full)
+        else begin $error("push must not occur when full !"); #100 $finish; end
+
+    property p_pop_not_empty;
+        @(posedge clk) disable iff (~reset_n)
+        (pop_en) |-> (~empty);
+    endproperty
+
+    assert_pop_not_empty: assert property (p_pop_not_empty)
+        else begin $error("pop must not occur when empty !"); #100 $finish; end
+
+`endif
+\js }
+
+endmodule

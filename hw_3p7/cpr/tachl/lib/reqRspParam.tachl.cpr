@@ -1,0 +1,114 @@
+{
+  "tachl": [
+    {
+      "name": "RspParam",
+      "params": [
+        {
+          "parameterName": "enablePipe",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 1
+        },
+        {
+          "parameterName": "pipeDepth",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "2",
+          "default": 2
+        },
+        {
+          "parameterName": "dpPresent",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0",
+          "default": 0
+        },
+        {
+          "parameterName": "wNdpBits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 116
+        },
+        {
+          "parameterName": "wDpBits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0",
+          "default": 0
+        },
+        {
+          "parameterName": "protection",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "parity, ecc, none",
+          "default": "none",
+          "formula": "if (system.ResilienceEnable) {\n  if (system.TIResiliencyProtectionType === 'SECDED') {\n    return 'ecc';\n  }\n  if (system.TIResiliencyProtectionType === 'PARITY') {\n    return 'parity';\n  }\n}\nreturn 'none';"
+        },
+        {
+          "parameterName": "dpProtection",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "parity, ecc, none",
+          "default": "none",
+          "formula": "if (system.ResilienceEnable) {\n  if (system.TIResiliencyProtectionType === 'SECDED') {\n    return 'ecc';\n  }\n  if (system.TIResiliencyProtectionType === 'PARITY') {\n    return 'parity';\n  }\n}\nreturn 'none';"
+        }
+      ]
+    },
+    {
+      "name": "ReqParam",
+      "params": [
+        {
+          "parameterName": "enablePipe",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 1
+        },
+        {
+          "parameterName": "pipeDepth",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "2",
+          "default": 2
+        },
+        {
+          "parameterName": "dpPresent",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0",
+          "default": 0
+        },
+        {
+          "parameterName": "wNdpBits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 116
+        },
+        {
+          "parameterName": "wDpBits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0",
+          "default": 0
+        },
+        {
+          "parameterName": "protection",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "parity, ecc, none",
+          "default": "none",
+          "formula": "if (system.ResilienceEnable) {\n  if (system.TIResiliencyProtectionType === 'SECDED') {\n    return 'ecc';\n  }\n  if (system.TIResiliencyProtectionType === 'PARITY') {\n    return 'parity';\n  }\n}\nreturn 'none';"
+        },
+        {
+          "parameterName": "dpProtection",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "parity, ecc, none",
+          "default": "none",
+          "formula": "if (system.ResilienceEnable) {\n  if (system.TIResiliencyProtectionType === 'SECDED') {\n    return 'ecc';\n  }\n  if (system.TIResiliencyProtectionType === 'PARITY') {\n    return 'parity';\n  }\n}\nreturn 'none';"
+        }
+      ]
+    }
+  ]
+}

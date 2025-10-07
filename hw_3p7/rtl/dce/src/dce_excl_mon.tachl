@@ -1,0 +1,501 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2019 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE Exclusive Monitor (modified from Ncore 2 DCE Exclusive Monitor)
+// Author: Boon Chuan
+//
+// Description:
+// ============
+// An exclusive monitor tracks an exclusive access sequence from a given processor.
+// In short, a processor performs an exclusive access sequence to access a memory location atomically.
+// An exclusive access sequence typically consists of a read-modify-write sequence that either passes, if
+// the memory location is updated atomically, or fails, if the memory location is not updated atomically,
+// e.g. if another agent writes to the memory location in the middle of the agent's read-modify-write
+// sequence.
+// The exclusive monitor helps to detect whether the read-modify-write sequence has been interrupted.
+// 
+// The DCE implements a configurable number of (minimum one) tagged monitors. The tag monitor consists
+// of a valid bit for each AIUID and AIUProcID pair, i.e. one bit for each processor in the system,
+// and an associated cacheline address field.
+// The valid bit for each monitor indicates whether a given processor is in the midst of performing an
+// exclusive access sequence, while the cacheline address field captures, or tags, the cacheline address
+// for a given sequence.
+// A tagged monitor is in-use if one or more processors are performing an exclusive access on the tagged
+// address, i.e. any valid bit is set in the tagged monitor, and available if no processor is performing
+// an exclusive access on the tagged address, i.e. no valid bits are set.
+// At reset, the valid bits in the tagged monitors are set to the invalid state.
+// 
+// When a given processor initiates an exclusive access sequence, the associated caching agent may
+// issue an exclusive CmdRdCln message, i.e. a CmdRdCln message with the Lock bit set, or an
+// exclusive CmdRdVld message, i.e. a CmdRdVld message with the Lock bit set, which typically
+// corresponds to the execution of a load exclusive instruction on the processor. The Home DCE
+// receives the exclusive CmdRdCln or CmdRdVld message, and if the unit has been configured with
+// one or more tagged monitors, the cacheline address from the message is compared against each
+// tagged address. Depending on the state of the monitors, one of the following occurs:
+// *  If the message address matches a tagged address, the valid bit for the processor is set in the
+// matching tagged monitor. In addition, the valid bits for the processor are cleared in the other
+// tagged monitors.
+// * If the message address does not match a tagged address and at least one tagged monitor is
+// available, a tagged monitor is selected, the valid bit for the processor is set in the new tagged
+// monitor, and the message address is tagged in that monitor. In addition, the valid bits for the
+// processor are cleared in the other tagged monitors.
+// * If the message address does not match a tagged address and no tagged monitors are available,
+// the valid bits for the processor are cleared in the tagged monitors.
+//
+// When a given processor completes an exclusive access sequence, the associated caching agent
+// may issue an exclusive CmdClnUnq message, i.e. a CmdClnUnq message with the Lock bit set, which
+// which typically corresponds to the execution of a store exclusive instruction on the processor.
+// The Home DCE receives the exclusive CmdClnUnq messages, and if the unit has been configured
+// with one or more tagged monitors, the cacheline address from the message is compared against
+// each tagged address. Depending on the state of the monitors, one of the following occurs:
+// * If the message address matches a tagged address and the valid bit for that processor in the
+// tagged monitor is set, the valid bit for the processor is cleared in the matching tagged monitor. 
+// In this case, the exclusive CmdClnUnq message passes the monitor check.
+// * If the message address matches a tagged address and the valid bit for that processor in the
+// tagged monitor is not set, the valid bit for the processor is set in the matching tagged monitor. In
+// addition, the valid bits for the processor are cleared in the other tagged monitors.
+// In this case, the exclusive CmdClnUnq message fails the monitor check.
+// * If the message address does not match a tagged address and at least one tagged monitor is available,
+// a tagged monitor is selected, the valid bit for the processor is set in the new tagged monitor,
+// and the message address is tagged in that monitor. In addition, the valid bits for the processor are cleared
+// in the other tagged monitors. In this case, the exclusive CmdClnUnq message fails the monitor check.
+// * If the message address does not match a tagged address and no tagged monitors are available,
+// the valid bits for the processor are cleared in the tagged monitors.
+// In this case, the exclusive CmdClnUnq message fails the monitor check.
+// 
+// Note: The valid bit for a given processor may be set in at most one monitor. In addition, a given
+// address may be tagged in at most one tagged monitor.
+//                                                        For the same
+//                                                         Processor
+//                                                           |
+//   Exclusive  Match   Match          New      | Match    Other          New TM
+//   Load/Store TM Addr TM Valid       TM Avail | TM Valid TM Valid       Valid/Addr Result
+//   ========== ======= ========       ======== + ======== ========       ========== ======
+// 0 Load       No      X              No       | N/A      Clear          N/A        ---
+// 1 Load       No      X              Yes      | N/A      Clear          Set/Tag    ---
+// 2 Load       Yes     X              X        | Set      Clear          N/A        ---
+// 3 Store      No      X              No       | N/A      Clear          N/A        Fail
+// 4 Store      No      X              Yes      | N/A      Clear          Set/Tag    Fail
+// 5                                            |
+// 6 Store      Yes     No             X        | Set      Clear          N/A        Fail
+// 7 Store      Yes     Yes            X        | Clear    N/A            N/A        Pass
+//=============================================================================
+
+// Variables
+
+var u = obj.lib;
+var utilFunctions = obj.userLib;
+
+//=============================================================================
+// Top Level Parameters
+//=============================================================================
+
+var assertOn         = u.getParam('assertOn');
+var wAddr            = u.getParam('wAddr');
+var wSecurity        = u.getParam('wSecurity');
+var wCacheLineOffset = u.getParam('wCacheLineOffset');
+var nTaggedMonitors  = u.getParam('nTaggedMonitors');
+var nProcs           = u.getParam('nProcs');     // = total number of Processors
+
+//=============================================================================
+// Parameters
+//=============================================================================
+
+var wSecAddrCl = wSecurity + wAddr - wCacheLineOffset;
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'clk',         1);
+u.port('input',  'reset_n',     1);
+
+u.port('input',  'valid',             1);
+u.port('input',  'lock_op',           1);
+u.port('input',  'msg_type_load',     1);
+u.port('input',  'msg_type_store',    1);
+u.port('input',  'cmd_init_valid',    1);
+u.port('input',  'address',           wAddr);
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wSecurity > 0) {
+u.port('input',  'security',          wSecurity);
+    }
+u.port('input',  'proc_id_onehot',    nProcs);
+    
+u.port('output', 'mon_status',  1);
+u.port('output', 'mon_valid',   1);
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+wire [\=nProcs-1=\:0] basic_mon_bitvec;
+wire [\=nProcs-1=\:0] proc_id_onehot_int = proc_id_onehot;
+
+
+wire new_tm_avail;
+wire match_tm_valid; 
+wire match_tm_addr; 
+wire bm_valid;
+
+
+
+wire valid_lock_op;
+
+\js if (nTaggedMonitors > 0) {
+wire [\=nTaggedMonitors-1=\:0] tm_mon_valid;
+wire [\=nTaggedMonitors-1=\:0] tm_mon_valid_sel;
+wire [\=nTaggedMonitors-1=\:0] tm_mon_stat;
+\js }
+
+wire exmon_status;
+wire exmon_pass;
+wire [7:0] exmon_cond_sel;
+
+wire [\=wSecAddrCl-1=\:0] addr;
+
+wire dff_enable = 1'b1;
+
+\jsbegin
+//=============================================================================
+// Inputs
+//=============================================================================
+\jsend
+
+assign addr = {
+\jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wSecurity > 0) {
+\jsend
+                  security,
+    \js }
+                  address[\=wAddr-1=\:\=wCacheLineOffset=\]
+              };
+
+assign valid_lock_op = valid & lock_op;
+
+\jsbegin
+//=============================================================================
+// Tagged Monitors CAM stores the cacheline address.
+//=============================================================================
+\jsend
+
+\js if (nTaggedMonitors > 0) {
+
+wire [\=nTaggedMonitors-1=\:0] cam_match;
+
+wire addr_cam__search_en;
+wire addr_cam__cam_wr;
+wire [\=nTaggedMonitors-1=\:0] addr_cam__cam_match;
+wire [\=nTaggedMonitors-1=\:0] addr_cam__cam_wrsel;
+wire [\=wSecAddrCl-1=\:0] addr_cam__cam_wrdata;
+wire [\=wSecAddrCl-1=\:0] addr_cam__cam_searchdata;
+wire [\=wSecAddrCl-1=\:0] addr_cam__cam_mask;
+
+\jsbegin
+    var p_cam = {
+                num_entry : nTaggedMonitors,
+                width     : wSecAddrCl
+                };
+\jsend
+
+    \=obj.lib.instance({
+        instanceName: 'addr_cam',
+        moduleName: 'dce_excl_mon_cam',
+        params: p_cam,
+        ports: {
+            clk            : 'clk',
+            reset_n        : 'reset_n',
+            search_en      : 'addr_cam__search_en',
+            cam_wr         : 'addr_cam__cam_wr',
+            cam_wrdata     : 'addr_cam__cam_wrdata',
+            cam_wrsel      : 'addr_cam__cam_wrsel',
+            cam_mask       : 'addr_cam__cam_mask',
+            cam_searchdata : 'addr_cam__cam_searchdata',
+            cam_match      : 'addr_cam__cam_match'
+        }
+    })=\
+
+
+assign addr_cam__cam_wr     = ( exmon_cond_sel[1] | exmon_cond_sel[4] ) & addr_cam__search_en;
+
+assign addr_cam__cam_wrdata = addr_cam__cam_searchdata;
+
+assign addr_cam__cam_wrsel  = tm_mon_valid_sel[\=nTaggedMonitors - 1=\:0];
+
+
+
+assign addr_cam__cam_mask   = {\=wSecAddrCl=\{1'b1}};
+
+assign addr_cam__cam_searchdata = addr;
+
+assign addr_cam__search_en  = valid_lock_op;
+
+
+
+assign cam_match = addr_cam__cam_match[\=nTaggedMonitors-1=\:0] & tm_mon_valid;
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Tagged Monitors valid bits.
+// Each Tag Monitor has a set of valid bits, one bit per processor.
+//
+// For both exclusive load and exclusive store:
+// when the processor's cacheline address doesn't match any tag monitor, and
+// a tag monitor is available free, then:
+// - the free tag monitor is selected for allocation, and
+// - the cacheline address is written to the CAM entry that belongs to the tag monitor, and
+// - the valid bit for the processor in the selected tag monitor is set, and
+// - the valid bits for the processor in the other tag monitors are cleared.
+// - the monitor check for the exclusive store is FAIL.
+//
+// For exclusive load:
+// When the processor's cacheline address matches a tag monitor, then:
+// - the valid bit for the processor in the matching tag monitor is set, and
+// - the valid bits for the processor in the other tag monitors are cleared.
+//
+// For exclusive store:
+// When the processor's cacheline address matches a tag monitor, but
+// the valid bit for the processor is not set in the tag monitor, then:
+// - the valid bit for the processor in the matching tag monitor is set, and
+// - the valid bits for the processor in the other tag monitors are cleared.
+// - the monitor check for the exclusive store is FAIL.
+//
+// For both exclusive load and exclusive store:
+// when the processor's cacheline address doesn't match any tag monitor, and
+// tag monitor is not available, then:
+// - the valid bit for the processor in every tag monitor is cleared.
+// - the monitor check for the exclusive store is FAIL.
+//
+// For exclusive store:
+// When the processor's cacheline address matches a tag monitor, and
+// the valid bit for the processor is set in the tag monitor, then:
+// - the valid bit for the processor in the matching tag monitor is cleared.
+// - the monitor check for the exclusive store is PASS.
+//=============================================================================
+\jsend
+
+\js if (nTaggedMonitors > 0) {
+
+wire [\=nTaggedMonitors-1=\:0] match_tm_valid_vec;
+wire [\=nTaggedMonitors-1=\:0] match_tm_addr_vec;
+
+    \js for (var i=0; i < nTaggedMonitors; i++) {
+
+wire [\=nProcs-1=\:0] mon\=i=\_bitvec;
+
+        \js for (var j=0; j < nProcs; j++) {
+
+wire mon\=i=\_bit\=j=\;
+wire mon\=i=\_datain\=j=\;
+wire mon\=i=\_set\=j=\;
+wire mon\=i=\_clr\=j=\;
+wire mon\=i=\_wren\=j=\;
+
+assign mon\=i=\_set\=j=\ = ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[1] &  tm_mon_valid_sel[\=i=\])  |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[4] &  tm_mon_valid_sel[\=i=\])  |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[2] & match_tm_addr_vec[\=i=\] ) |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[6] & match_tm_addr_vec[\=i=\] ) ;
+    
+assign mon\=i=\_clr\=j=\ = ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[1] &  ~tm_mon_valid_sel[\=i=\]) |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[4] &  ~tm_mon_valid_sel[\=i=\]) |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[2] & ~match_tm_addr_vec[\=i=\]) |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[6] & ~match_tm_addr_vec[\=i=\]) |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[0]                            ) |
+                           ( proc_id_onehot_int[\=j=\] & exmon_cond_sel[3]                            ) |
+                           (                         exmon_cond_sel[7] & match_tm_valid_vec[\=i=\]) ;
+
+assign mon\=i=\_datain\=j=\ = mon\=i=\_clr\=j=\ ? 1'b0 : 1'b1;
+ 
+assign mon\=i=\_wren\=j=\ = ( mon\=i=\_clr\=j=\ | mon\=i=\_set\=j=\ ) & valid_lock_op;
+
+\=u.dffre(1, "mon"+i+"_bit"+j,  "mon"+i+"_datain"+j, "1'b0", "mon"+i+"_wren"+j, 'clk', 'reset_n')=\
+    
+assign mon\=i=\_bitvec[\=j=\] = mon\=i=\_bit\=j=\;
+
+        \js }
+
+    \js }
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Tagged Monitor bit vector outputs
+//=============================================================================
+\jsend
+
+\js if (nTaggedMonitors > 0) {
+
+    \js for (var k=0; k < nTaggedMonitors; k++) {
+
+assign tm_mon_valid[\=k=\] = {|{ mon\=k=\_bitvec }};
+\jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (nProcs == 1) {
+\jsend
+assign tm_mon_stat[\=k=\] = mon\=k=\_bitvec;
+        \js } else {
+assign tm_mon_stat[\=k=\] = {|{ mon\=k=\_bitvec & proc_id_onehot_int }};
+        \js }
+
+    \js }
+
+
+    \js // Free Tag Monitor Allocator
+    \js // Find First '0' using Find First '1' by inverting input
+
+    \=obj.lib.instance({
+        instanceName: 'u_tm_mon_valid_sel',
+        moduleName: 'find_first_one',
+        params: { width : nTaggedMonitors },
+        verilogParams: { WIDTH : nTaggedMonitors },
+        ports: {
+            invec : '~tm_mon_valid', outvec : 'tm_mon_valid_sel'
+        }
+    })=\
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Basic Monitor
+//=============================================================================
+\jsend
+
+    \js for(var j=0; j < nProcs; j++) {
+
+wire basic_mon_datain\=j=\;
+wire basic_mon_set\=j=\;
+wire basic_mon_clear\=j=\;
+wire basic_mon_wren\=j=\;
+wire basic_mon_bit\=j=\;
+
+assign basic_mon_set\=j=\   = ( proc_id_onehot_int[\=j=\] & ( exmon_cond_sel[0] | exmon_cond_sel[3] | exmon_cond_sel[5] | exmon_cond_sel[7] ));
+
+assign basic_mon_clear\=j=\ = ( proc_id_onehot_int[\=j=\] & ( exmon_cond_sel[1] | exmon_cond_sel[2] | exmon_cond_sel[4] | exmon_cond_sel[6] )) |
+                              (~proc_id_onehot_int[\=j=\] & ( exmon_cond_sel[5] ));
+
+assign basic_mon_datain\=j=\ = basic_mon_clear\=j=\ ? 1'b0 : 1'b1;
+
+assign basic_mon_wren\=j=\ = ( basic_mon_clear\=j=\ | basic_mon_set\=j=\ ) & valid_lock_op;
+
+\=u.dffre(1, "basic_mon_bit"+j,  "basic_mon_datain"+j, "1'b0", "basic_mon_wren"+j, 'clk', 'reset_n')=\
+
+assign basic_mon_bitvec[\=j=\] = basic_mon_bit\=j=\;
+
+    \js }
+
+\jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (nProcs == 1) {
+\jsend
+assign bm_valid       = basic_mon_bitvec;
+
+\js } else {
+
+assign bm_valid       = {|{ basic_mon_bitvec & proc_id_onehot_int }};
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Tagged Monitor & CAM bit vector outputs decode
+//=============================================================================
+\jsend
+
+\js if (nTaggedMonitors > 0) {
+
+assign match_tm_valid_vec = cam_match & tm_mon_valid & tm_mon_stat;
+assign match_tm_addr_vec  = cam_match & tm_mon_valid; 
+
+assign match_tm_addr      = {|{ match_tm_addr_vec }};
+assign match_tm_valid     = {|{ match_tm_valid_vec }};
+
+assign new_tm_avail       = ~({&{ tm_mon_valid }}); 
+
+\js }
+
+\js if (nTaggedMonitors == 0) {
+
+assign match_tm_addr  = 1'b0;
+assign match_tm_valid = 1'b0;
+assign new_tm_avail   = 1'b0;
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Exclusive Monitor Transitions and Results
+// Please refer to the table in Concerto DCE architecture specification, Rev B.
+// Note: Ncore 3 doesn't support Basic Monitor.
+//=============================================================================
+\jsend
+
+assign exmon_cond_sel[0] =  msg_type_load  & ~match_tm_addr &   1'b1           & 1'b1       & ~new_tm_avail;
+assign exmon_cond_sel[1] =  msg_type_load  & ~match_tm_addr &   1'b1           & 1'b1       &  new_tm_avail;
+assign exmon_cond_sel[2] =  msg_type_load  &  match_tm_addr &   1'b1           & 1'b1       &  1'b1;
+assign exmon_cond_sel[3] = (msg_type_store & ~match_tm_addr &   1'b1           & ~bm_valid  & ~new_tm_avail)
+                         | (msg_type_store & ~match_tm_addr &   1'b1           & 1'b1       & ~new_tm_avail & ~cmd_init_valid);
+assign exmon_cond_sel[4] = (msg_type_store & ~match_tm_addr &   1'b1           & ~bm_valid  &  new_tm_avail)
+                         | (msg_type_store & ~match_tm_addr &   1'b1           & 1'b1       &  new_tm_avail & ~cmd_init_valid);
+assign exmon_cond_sel[5] =  msg_type_store & ~match_tm_addr &   1'b1           &  bm_valid  &  1'b1         &  cmd_init_valid;
+assign exmon_cond_sel[6] = (msg_type_store &  match_tm_addr &  ~match_tm_valid & 1'b1       &  1'b1)
+                         | (msg_type_store &  match_tm_addr &   1'b1           & 1'b1       &  1'b1         & ~cmd_init_valid);
+assign exmon_cond_sel[7] =  msg_type_store &  match_tm_addr &   match_tm_valid & 1'b1       &  1'b1         &  cmd_init_valid;
+
+assign exmon_status      = valid_lock_op & ( exmon_cond_sel[0] | exmon_cond_sel[1] | exmon_cond_sel[2] | exmon_cond_sel[5] | exmon_cond_sel[7] );
+assign exmon_pass        = valid_lock_op &                                                             ( exmon_cond_sel[5] | exmon_cond_sel[7] );
+
+
+assign mon_status = exmon_status;
+assign mon_valid  = valid_lock_op;
+
+\jsbegin
+//=============================================================================
+// Assertions:
+// - The valid bit for a given processor may be set in at most one monitor.
+// - A given address may be tagged in at most one tagged monitor.
+//=============================================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) { \jsend
+`ifndef ARTERIS_LINT
+
+  \js if (nTaggedMonitors > 0) {
+
+    \js for (var j=0; j < nProcs; j++) {
+
+wire [\=nTaggedMonitors-1=\:0] proc\=j=\_bitvec;
+
+        \js for (var i=0; i < nTaggedMonitors; i++) {
+assign proc\=j=\_bitvec[\=i=\] = mon\=i=\_bitvec[\=j=\];
+        \js }
+
+assert_proc\=j=\_bitvec_onehot0: assert property (@(posedge clk) disable iff (~reset_n) ($onehot0(proc\=j=\_bitvec)))
+    else begin $error("The valid bit for a given processor may be set in at most one monitor: proc\=j=\_bitvec must be onehot0 !!"); #100 $finish; end
+
+    \js }
+
+assert_addr_cam_match_onehot0: assert property (@(posedge clk) disable iff (~reset_n) (addr_cam__search_en |-> $onehot0(cam_match)))
+    else begin $error("A given address may be tagged in at most one tagged monitor: addr_cam__cam_match must be onehot0 !!"); #100 $finish; end
+
+  \js }
+
+`endif
+\js }
+
+endmodule

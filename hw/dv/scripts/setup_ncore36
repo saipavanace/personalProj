@@ -1,0 +1,9 @@
+#! /bin/echo The SOURCEME file is meant to be sourced, not executed
+
+script=${BASH_SOURCE[0]}
+script_fullpath=$(realpath ${script})
+work_top_resolved=$(realpath $(dirname "${script_fullpath}")/../../../hw-ncr)
+export WORK_TOP=${work_top_resolved}
+#export WORK_TOP=$(dirname "${script_fullpath}")/../../../hw-ncr
+
+module load dev/concerto/by_path_ncore3_6

@@ -1,0 +1,184 @@
+\jsbegin
+//////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 4.0
+// Author : Kjeld Svendsen
+// Date   : May 2021
+//
+// Description : DII skid-buffer with triple-linked-list.
+//
+// The buffer is built as a linked-list of entries, where each entry can be a read or a write. 
+// Each entry points to the next entry to be scheduled in FIFO-order, and the previous entry, for a regular 2-linked list.
+// A 3rd pointer keeps track of writes only. This pointer points to the next write, if any.
+// A set of list-pointers track: the listhead, the listtail, the writehead, the writetail and the readtail. The latter is used for a special cornercase only.
+// Buffer entry allocation is done by a regular freelist.
+// When the buffer is not stalled by the rtt_full (read transaction table full) signal, entries are scheduled in FIFO-order.
+// But if the rtt_full is asserted, writes can bypass out of the buffer. This is done in FIFO-order for the writes.
+// When a write is bypassed out, it is extracted from the linked-list by moving the scheduled write's previous entry's next-pointer to the scheduled write's next-pointer,
+// and the scheduled write's next entry's previous-pointer to the scheduled write's previous-pointer. 
+// The next write to schedule is determined from the scheduled writes next write pointer.
+// This allows writes to be freed up so incoming requests can keep flowing.
+// To keep things neat the validbit of scheduled entries are cleared on issue.
+//
+//         Tail                                    Head
+//          |                                       |
+//          \/                                      \/
+//      next ENTRY(C)     scheduled WRITE(A)     previous ENTRY(B)                         
+//     previous ptr A ->   previous ptr B  ->   previous ptr  -> NULL
+//     next ptr       <-   next ptr C       <-  next ptr A
+//     nextwrite ptr       nextwrite ptr        nextwrite ptr
+//
+//                        \Write Bypass/ (entry A freed op)
+//
+//         Tail                                    Head
+//          |                                       |
+//          \/                                      \/
+//      next ENTRY(C)                             previous ENTRY(B)                         
+//     previous ptr B  --------------------->    previous ptr  -> NULL
+//     next ptr        <---------------------    next ptr C
+//     nextwrite ptr                             nextwrite ptr
+//
+// CMOs are treated like reads, however, when a CMO enters the buffer, no new incoming writes can be marked for bypassing.
+// This assures that CMOs are never bypassed.
+// Writes with OR=11 are treated like reads, in that they cannot bypass, but they can be bypassed.
+//////////////////////////////////////////////////////////////////////////
+// Reads are: CmdRdNC
+// Writes are: CmdWrNCPtl, CmdWrNCFull
+//////////////////////////////////////////////////////////////////////////
+
+   var u = obj.lib;
+   u.paramDefault('assertOn','int',0);
+   var assertOn                     = obj.lib.getParam('assertOn');
+
+   var size                         = u.getParam('size'); 
+   
+   var log2ceil                     = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+   var INT_ENTS1                    = Math.pow(2,log2ceil(size)); 
+
+   var name = u.getModuleName();
+   var suffex = name.slice(-1);
+   
+//=============================================================================
+// ports
+//=============================================================================
+
+    u.port('input',  'clk'             , 1);
+    u.port('input',  'reset_n'         , 1);
+    u.port('input',  'allocate'        , 1);
+    u.port('output', 'freeid'          , log2ceil(size));
+    u.port('input',  'freeup'          , 1);
+    u.port('input',  'freeupid'        , log2ceil(size));
+    u.port('output', 'empty'           , 1);
+    u.port('output', 'full'            , 1);
+\jsend
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+///////////////////////////////////////////////////////////////////////////////
+// Declarations 
+///////////////////////////////////////////////////////////////////////////////
+
+   parameter SIZE = \=size=\;
+   localparam INT_ENTS1 = 2**\=log2ceil(size)=\;
+
+   \jsbegin
+   for ( let i = 1; i < log2ceil(size); i++ ) { \jsend
+   localparam INT_ENTS\=i+1=\ = INT_ENTS\=i=\+(INT_ENTS1>>\=i=\);
+   \jsbegin } \jsend
+
+   wire [INT_ENTS1-1:0] 	       freelist;// Das freilist. 1 means not in use == free, 0 means not free.
+   wire [\=log2ceil(INT_ENTS1)-1=\:0] flids [INT_ENTS1-1:0];
+   wire [\=log2ceil(INT_ENTS1)-1=\:0] ids [INT_ENTS1*2-2:INT_ENTS1];
+   wire [INT_ENTS1*2-2:INT_ENTS1] ss;
+
+   wire [\=log2ceil(size)=\:0]       freecnt;
+   
+   wire 		       freeup_regd;
+   wire [\=log2ceil(size)-1=\:0]     freeupid_regd;   
+   
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (assertOn) { \jsend
+///////////////////////////////////////////////////////////////////////////////
+// Assertions
+///////////////////////////////////////////////////////////////////////////////
+`ifdef OVL_ASSERT_ON
+// synopsys translate_off   
+ovl_never_unknown #(.width(1)) allocate_never_x(.enable(1'b1), .qualifier(1'b1), .test_expr(allocate), .clock(clk), .reset(~reset_n),.fire());
+ovl_never_unknown #(.width(1)) freeup_never_x(.enable(1'b1), .qualifier(1'b1), .test_expr(freeup), .clock(clk), .reset(~reset_n),.fire());
+ovl_never_unknown #(.width(\=log2ceil(size)=\)) freeupid_never_x(.enable(freeup), .qualifier(1'b1), .test_expr(freeupid), .clock(clk), .reset(~reset_n),.fire());
+ovl_never_unknown #(.width(1)) empty_never_x(.enable(1'b1), .qualifier(1'b1), .test_expr(empty), .clock(clk), .reset(~reset_n),.fire());
+ovl_never allocate_never_when_empty(.enable(1'b1), .test_expr(empty && allocate), .clock(clk), .reset(~reset_n),.fire());
+ovl_never_unknown #(.width(INT_ENTS1)) freelist_never_x(.enable(1'b1), .qualifier(1'b1), .test_expr(freelist), .clock(clk), .reset(~reset_n),.fire());
+ovl_never never_allocate_inuse_element(.enable(1'b1), .test_expr(allocate && ~freelist[freeid]), .clock(clk), .reset(~reset_n),.fire());
+ovl_always full_and_freelist_allset_x(.enable(full), .test_expr(&freelist[SIZE-1:0]), .clock(clk), .reset(~reset_n),.fire());
+\js for (let i=0; i<size; i=i+1) {
+    ovl_never never_free_free_entry\=i=\(.enable(1'b1), .test_expr(freeup && (freeupid==\=log2ceil(size)=\'d\=i=\) && freelist[\=i=\]), .clock(clk), .reset(~reset_n),.fire());
+\js }
+// synopsys translate_on
+`endif //  `ifdef OVL_ASSERT_ON
+\js }
+///////////////////////////////////////////////////////////////////////////////   
+// Code
+///////////////////////////////////////////////////////////////////////////////
+// pipe the free-up
+\=u.dffre( 1, 'freeup_regd' , 'freeup' , "1'b0" , "1'b1" , 'clk' , 'reset_n')=\
+\=u.dffre( log2ceil(size), 'freeupid_regd' , 'freeupid' , log2ceil(size)+"'b0" , "1'b1" , 'clk' , 'reset_n')=\
+
+// pipe the freeid and empty
+   wire [\=log2ceil(size)-1=\:0] int_freeid;
+   wire 		   int_empty;
+   wire 		   int_allocate;
+   
+   assign int_allocate = allocate || empty;
+\=u.dffre( log2ceil(size), 'freeid' , 'int_freeid' , log2ceil(size)+"'d1" , "int_allocate" , 'clk' , 'reset_n')=\
+\=u.dffre( 1, 'empty' , 'int_empty' , "1'b1" , "int_allocate" , 'clk' , 'reset_n')=\
+   
+// freelist flops
+\js var INT_ENTS1 = Math.pow(2,log2ceil(size));
+\js for (let i=0; i<INT_ENTS1; i=i+1) {
+\js   if (i<size) {
+wire freelist\=i=\;
+assign freelist[\=i=\] = freelist\=i=\;
+wire freelist\=i=\_in = int_allocate && (int_freeid==\=log2ceil(size)=\'d\=i=\) ? 1'b0 : 1'b1;
+\=u.dffre( 1, 'freelist'+i , 'freelist'+i+'_in' , "1'b1" , "int_allocate && (int_freeid=="+log2ceil(size)+"'d"+i+") || freeup_regd && (freeupid_regd=="+log2ceil(size)+"'d"+i+")" , 'clk' , 'reset_n')=\
+\js   } else {
+        assign freelist[\=i=\] = 1'b0;
+\js   }
+
+\js if (i<size) {
+    assign flids[\=i=\] = \=log2ceil(INT_ENTS1)=\'d\=i=\;
+\js } else {
+    assign flids[\=i=\] = {\=log2ceil(INT_ENTS1)=\{1'b0}};
+\js }
+\js }
+
+// tree-stages
+\js for (let i=0; i<log2ceil(INT_ENTS1); i=i+1) {
+\js for (let s=0; s<INT_ENTS1/(2**(i+1)); s=s+1) { // Only good for 256 entries. For a better design use System Verilog automatic functions... available on request.
+\js   if (i==0) {
+          assign ss[\=INT_ENTS1+s=\] = freelist[\=s*2=\] | freelist[\=s*2+1=\];
+          assign ids[\=INT_ENTS1+s=\] = freelist[\=s*2=\] ? flids[\=s*2=\] : flids[\=s*2+1=\];
+\js   }
+\js   for ( let j = 1; j < log2ceil(size); j++ ) {
+\js     if (i==j) {
+            assign ss[INT_ENTS\=j+1=\+\=s=\] = ss[INT_ENTS\=j=\+\=s*2=\] | ss[INT_ENTS\=j=\+\=s*2+1=\];
+            assign ids[INT_ENTS\=j+1=\+\=s=\] = ss[INT_ENTS\=j=\+\=s*2=\] ? ids[INT_ENTS\=j=\+\=s*2=\] : ids[INT_ENTS\=j=\+\=s*2+1=\];
+\js     }
+\js   }
+\js }
+\js }
+
+   assign int_freeid = ids[INT_ENTS1*2-2];
+
+   wire [\=log2ceil(size)=\:0] nxt_freecnt;
+   assign nxt_freecnt = allocate ? freecnt-\=log2ceil(size)=\'d1 : freecnt+\=log2ceil(size)=\'d1; // synth fix
+\=u.dffre( log2ceil(size)+1, 'freecnt' , 'nxt_freecnt' , (log2ceil(size)+1)+"'d"+size , "(allocate && ~empty)^freeup" , 'clk' , 'reset_n')=\
+   assign full = (freecnt == SIZE[\=log2ceil(size)=\:0]);
+   assign int_empty = ~|freelist;
+endmodule // Freelist

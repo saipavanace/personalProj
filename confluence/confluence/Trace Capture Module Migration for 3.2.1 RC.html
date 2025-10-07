@@ -1,0 +1,337 @@
+<p>Outstanding questions:</p><ol><li>Do we only want to move the Trace Capture Module out of the ncore unit level? Do we want to move the Trace Trigger Module as well? (Only move Trace Capture block for 3.2.x)</li><li>Does disabling/removing the Trace Capture module also mean disabling/removing the Trace Trigger module? (No disable of Trace Capture will only remove the Trace Capture module)</li><li>Will maestro be smart enough to check all Unit's &quot;Trace Capture&quot; enable and make a decision to not instantiate the Trace Accumulator module within the DVE?  (TBD)</li></ol><p><br/></p><p>The request change is to move the Trace Capture Unit's instantiation from within the Ncore unit up one level to the DUT top-level. Same level as any sram memory modules would live. This removes the duplication of this module to save area.</p><p>A second request change to add a parameter 'traceDebugEnable' to each top-level Ncore unit to allow maestro to completely remove the trace_capture instantiation from the design. </p><p>The following page helps understand the changes made on the DMI unit, to aid in making the same changes within the IOAIU, CHIAIU &amp; DII Ncore units. </p><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" height="400" src="https://arterisip.atlassian.net/wiki/download/attachments/16167703/dmi_top_orig.png?api=v2"></span><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" height="400" src="https://arterisip.atlassian.net/wiki/download/attachments/16167703/dmi_top_new.png?api=v2"></span></p><p><br/></p><ol><li><p class="auto-cursor-target">Add 'traceDebugEnable' param to top-level tachl file and include default to 'true'. This will allow the complete removal of the trace_capture module and add tie-offs for any outputs. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">obj.lib.paramDefault(&#39;traceDebugEnable&#39;,            &#39;boolean&#39;,  true);
+var traceDebugEnable   = obj.lib.getParam(&#39;traceDebugEnable&#39;);</pre>
+</div></div></li><li>. Add the instantiation of trace_capture one level up in the corresponding TACHL file. Copy with some modifications from dmi_unit.tachl to dmi.tachl for DMI case. Use 'traceDebugEnable' parameter to either instantiate the trace_capture module or drive the following outputs. <ol><li>dmi_unit.tachl → dmi.tachl</li><li>dii_unit.tachl → dii_top.tachl</li><li>ioaiu_core.tachl → ioaiu_top.tachl</li><li><p class="auto-cursor-target">aiu_unit.tachl → aiu_top.tachl</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">if (traceDebugEnable) { //TraceDebug Enabled: trace_capture instantiated
+\jsend
+    \=obj.lib.instance({
+        instanceName: &#39;trace_capture&#39;,
+        moduleName: &#39;trace_capture&#39;,
+        params: {
+            assertOn: assertOn,
+            smiRxPortInterfaces : SMI_RX_INTF,
+            smiTxPortInterfaces: SMI_TX_INTF,
+            nNDN: nNonDataNetworks,
+            nDN: nDataNetworks,
+            nUnitTraceBufSize: nUnitTraceBufSize,
+            wForceAccumTimeout: 10,
+            DTWReqInterface: CONC_INTF[&#39;DTWDBGReqInterface&#39;],
+            DTWRespInterface: CONC_INTF[&#39;DTWDBGRespInterface&#39;],
+	        traceRegInterface: {&quot;name&quot;: &#39;csr_trace_&#39;, &quot;signals&quot;:traceCsrIfGenerator.signalBundle(&quot;slave&quot;)},
+            wFUnitId: wFUnitId,
+            wFPortId: wFPortId,
+            cmType: cmType,
+            interfaces: trace_capture_intf_param
+        },
+        verilogParams: {},
+        ports: {
+            MyId:               unitIdInterfaceName+&#39;my_f_unit_id&#39;,
+            TargId:             uDveIdInterfaceName+&#39;f_unit_id&#39;,
+            pm_trace_messages_captured: &#39;pm_trace_messages_captured&#39;,
+            pm_trace_messages_dropped: &#39;pm_trace_messages_dropped&#39;,
+            trace_capture_busy: &#39;trace_capture_busy&#39;
+               },
+        interfaces: TRACE_CAPTURE_INTF,
+        portsDelimiter: &#39;\n        &#39;
+    })=\
+\jsbegin
+} else { 
+//Set DTW DBG Req keys to only those not excluded &amp; non-zero widths
+const dtw_excludes			= [&#39;ready&#39;];
+const dtw_req_keys		= Object.keys(CONC_INTF[&#39;DTWDBGReqInterface&#39;]).filter(signal =&gt; !dtw_excludes.includes(signal) &amp;&amp; CONC_INTF[&#39;DTWDBGReqInterface&#39;][signal]);
+const csr_keys		= Object.keys(traceCsrIfGenerator.signalBundle(&quot;master&quot;)).filter(signal =&gt; traceCsrIfGenerator.signalBundle(&quot;master&quot;)[signal]&gt;0);
+for (let key = 0; key &lt; dtw_req_keys.length; key++) { \jsend
+    //TraceDebug Disabled: tie-offs
+    assign dtw_dbg_req_\=dtw_req_keys[key]=\ = \=CONC_INTF[&#39;DTWDBGReqInterface&#39;][dtw_req_keys[key]]=\&#39;h0;
+\jsbegin
+} 
+for (let key = 0; key &lt; csr_keys.length; key++) { \jsend
+    assign csr_trace_\=csr_keys[key]=\ = \=traceCsrIfGenerator.signalBundle(&quot;master&quot;)[csr_keys[key]]=\&#39;h0;
+\jsbegin
+} 
+\jsend
+    assign dtw_dbg_rsp_ready = 1&#39;b1; 
+    assign pm_trace_messages_captured = \=wTotalSmiPortsNum=\&#39;h0; 
+    assign pm_trace_messages_dropped = \=wTotalSmiPortsNum=\&#39;h0; 
+    assign trace_capture_busy = 1&#39;b0; 
+\jsbegin
+} 
+\jsend</pre>
+</div></div></li></ol></li><li><p class="auto-cursor-target">Need to pass in the appropriate unit ID signals into trace_capture instantiation.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">            MyId:               unitIdInterfaceName+&#39;my_f_unit_id&#39;,
+            TargId:             uDveIdInterfaceName+&#39;f_unit_id&#39;,</pre>
+</div></div></li><li><p class="auto-cursor-target">Add trace_capture wires that will be used to connect trace_capture ports to dmi_unit module. Add the duplicate versions within a resiliency or duplication parameter. Build width parameter from SMI_TX_INTF object which includes each of the SMI interfaces, then multiplies by 2 for RX. This is already done within the dmi_unit.tachl file, just copying into dmi.tachl.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">var log2ceil                    = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+var nNonDataNetworks = 0; 
+var nDataNetworks = 0; 
+  for (var i=0; i&lt;SMI_TX_INTF.length; i++)
+    {
+     if(SMI_TX_INTF[i].params.dpPresent) {
+     nNonDataNetworks++;
+     } else {
+     nDataNetworks++;
+     }
+    };
+//width needed for total number of smi ports*2 (each rx/tx direction)+1.
+const wTotalSmiPortsNum = log2ceil(((nNonDataNetworks+nDataNetworks)*2)+1);
+
+wire trace_capture_busy;
+wire [\=wTotalSmiPortsNum-1=\:0] pm_trace_messages_dropped;
+wire [\=wTotalSmiPortsNum-1=\:0] pm_trace_messages_captured;
+
+\js if (useResiliency &amp;&amp; enableUnitDuplication) {
+wire dup_unit__trace_capture_busy;
+wire [\=wTotalSmiPortsNum-1=\:0] dup_unit__pm_trace_messages_dropped;
+wire [\=wTotalSmiPortsNum-1=\:0] dup_unit__pm_trace_messages_captured;
+...
+
+**Pass in new parameter into dmi_unit.tachl
+            wTotalSmiPortsNum           : wTotalSmiPortsNum,
+...</pre>
+</div></div></li><li><p class="auto-cursor-target">Build Trace Capture CSR interface and wires. Add the duplicate versions within a resiliency or duplication parameter. This was already done within the dmi_unit.tachl file, just copying into dmi.tachl. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">//=============================================================================
+// Trace CSR Interface
+//=============================================================================
+const CSRS                      = obj.lib.getParam(&#39;csr&#39;);
+const traceRegisters		    = obj.userLib.genTraceCaptureRegisters(CSRS.spaceBlock[0].registers, &quot;DMI&quot;);
+const traceCsrIfGenerator   	= obj.userLib.createCSRInterfaceGenerator( traceRegisters );
+
+// Trace Capture Registers
+\=obj.userLib.bundleFunctions.wiresFromInterface(&#39;csr_trace_&#39;,traceCsrIfGenerator.signalBundle(&#39;master&#39;), [], obj.lib.bundle)=\
+
+\js if (useResiliency &amp;&amp; enableUnitDuplication) {
+\=obj.userLib.bundleFunctions.wiresFromInterface(&#39;dup_unit__csr_trace_&#39;,traceCsrIfGenerator.signalBundle(&#39;master&#39;), [], obj.lib.bundle)=\
+...</pre>
+</div></div></li><li><p class="auto-cursor-target">Build DTW DBG interfaces and wires. Add the duplicate versions within a resiliency or duplication parameter. This was already done within the dmi_unit.tachl file, just copying into dmi.tachl. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">**Already built within dmi.tachl, just needed to pass in interface to wire bundles &amp; instantiation. 
+
+CONC_INTF[&#39;DTWDBGReqInterface&#39;]  = DTWDBG_REQ.signals;
+CONC_INTF[&#39;DTWDBGRespInterface&#39;]   = DTWDBG_RSP.signals;
+
+// Trace Capture DTW DBG
+\=obj.userLib.bundleFunctions.wiresFromInterface(&#39;dtw_dbg_req_&#39;,CONC_INTF[&#39;DTWDBGReqInterface&#39;], [], obj.lib.bundle)=\
+\=obj.userLib.bundleFunctions.wiresFromInterface(&#39;dtw_dbg_rsp_&#39;,CONC_INTF[&#39;DTWDBGRespInterface&#39;], [], obj.lib.bundle)=\
+
+\js if (useResiliency &amp;&amp; enableUnitDuplication) {
+\=obj.userLib.bundleFunctions.wiresFromInterface(&#39;dup_unit__dtw_dbg_req_&#39;,CONC_INTF[&#39;DTWDBGReqInterface&#39;], [], obj.lib.bundle)=\
+\=obj.userLib.bundleFunctions.wiresFromInterface(&#39;dup_unit__dtw_dbg_rsp_&#39;,CONC_INTF[&#39;DTWDBGRespInterface&#39;], [], obj.lib.bundle)=\
+...
+
+(trace_capture instantiation)...
+            DTWReqInterface: CONC_INTF[&#39;DTWDBGReqInterface&#39;],
+            DTWRespInterface: CONC_INTF[&#39;DTWDBGRespInterface&#39;],</pre>
+</div></div></li><li><p class="auto-cursor-target">Build Trace Capture Interface object. This was already done within the dmi_unit.tachl file, just copying into dmi.tachl. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">    var TRACE_CAPTURE_INTF = [];
+  for (var i=0; i&lt;SMI_TX_INTF.length; i++)
+    {
+     TRACE_CAPTURE_INTF.push({
+                                modulePrefix: SMI_TX_INTF[i].name, 
+                                localPrefix: SMI_TX_INTF[i].name, 
+                                interface: SMI_TX_INTF[i].signals
+     });
+     if(SMI_TX_INTF[i].params.dpPresent) {
+     TRACE_CAPTURE_INTF.push({
+                             modulePrefix: SMI_TX_INTF[i].name, 
+                             localPrefix: SMI_TX_INTF[i].name, 
+                             interface: SMI_TX_INTF[i].dpSignals,
+                             exclude: [&#39;dp_ready&#39;]
+     });
+...
+   for (var i=0; i&lt;SMI_RX_INTF.length; i++)
+     {
+      TRACE_CAPTURE_INTF.push({
+                                  modulePrefix: SMI_RX_INTF[i].name, 
+                                  localPrefix: SMI_RX_INTF[i].name, 
+                                  interface: SMI_RX_INTF[i].signals
+      });
+     if(SMI_RX_INTF[i].params.dpPresent) {
+     TRACE_CAPTURE_INTF.push({
+                                 modulePrefix: SMI_RX_INTF[i].name, 
+                                 localPrefix: SMI_RX_INTF[i].name, 
+                                 interface: SMI_RX_INTF[i].dpSignals,
+                                 exclude: [&#39;dp_ready&#39;]
+     });
+...
+    //Trace Capture interfaces
+    TRACE_CAPTURE_INTF.push({
+        modulePrefix: &#39;&#39;,
+        localPrefix: clkInterfaceName,
+        interface: clkInterface,
+        exclude: [&#39;test_en&#39;]
+    });
+    TRACE_CAPTURE_INTF.push({
+        modulePrefix: &#39;dtw_req_&#39;,
+        localPrefix: &#39;dtw_dbg_req_&#39;,
+        interface: CONC_INTF[&#39;DTWDBGReqInterface&#39;]
+    });
+    TRACE_CAPTURE_INTF.push({
+        modulePrefix: &#39;dtw_resp_&#39;,
+        localPrefix: &#39;dtw_dbg_rsp_&#39;,
+        interface: CONC_INTF[&#39;DTWDBGRespInterface&#39;]
+    });
+    TRACE_CAPTURE_INTF.push({
+        modulePrefix: &#39;csr_trace_&#39;,
+        localPrefix: &#39;csr_trace_&#39;,
+        interface: traceCsrIfGenerator.signalBundle(&quot;slave&quot;)
+    });
+...</pre>
+</div></div></li><li><p class="auto-cursor-target">DMI UNIT (dmi_unit.tachl) must now have new ports that did NOT exist before to send to the trace_capture module. Add ports to interface. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">**DMI_UNIT_INTF already exists. 
+
+    DMI_UNIT_INTF.push({
+        modulePrefix: &#39;csr_trace_&#39;,
+        localPrefix: &#39;csr_trace_&#39;,
+        interface: traceCsrIfGenerator.signalBundle(&#39;slave&#39;),
+        direction: &#39;master&#39;
+    });
+
+    DMI_UNIT_INTF.push({
+        modulePrefix: &#39;dtw_dbg_req_&#39;,
+        localPrefix: &#39;dtw_dbg_req_&#39;,
+        interface: CONC_INTF[&#39;DTWDBGReqInterface&#39;],
+        direction: &#39;slave&#39;
+    });
+
+    DMI_UNIT_INTF.push({
+        modulePrefix: &#39;dtw_dbg_rsp_&#39;,
+        localPrefix: &#39;dtw_dbg_rsp_&#39;,
+        interface: CONC_INTF[&#39;DTWDBGRespInterface&#39;],
+        direction: &#39;master&#39;
+    });
+...
+**DMI_UNIT_PORTS already exists. 
+
+    var DMI_UNIT_PORTS = {};
+        DMI_UNIT_PORTS[&#39;trace_capture_busy&#39;] = &#39;trace_capture_busy&#39;;
+        DMI_UNIT_PORTS[&#39;pm_trace_messages_captured&#39;] = &#39;pm_trace_messages_captured&#39;;
+        DMI_UNIT_PORTS[&#39;pm_trace_messages_dropped&#39;] = &#39;pm_trace_messages_dropped&#39;;
+...</pre>
+</div></div></li><li><p class="auto-cursor-target">Any new inputs of the dmi_unit.tachl block must now be fed into the delay_unit for resiliency checking. Any new output of the dmi_unit block must not be fed into the fault_checker for resiliency checking. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">**DMI_DUP_UNIT_INTF already exists and is a duplicate of DMI_UNIT_INTF (delay ports will be automatically connected by this)
+
+if(enableUnitDuplication &amp; useResiliency) {
+    var DMI_DUP_UNIT_INTF = [];
+    for(var i = 0; i &lt; DMI_UNIT_INTF.length; i++){
+        DMI_DUP_UNIT_INTF.push({
+            modulePrefix: DMI_UNIT_INTF[i].modulePrefix,
+            localPrefix: &#39;dup_unit__&#39; + DMI_UNIT_INTF[i].localPrefix,
+            interface: DMI_UNIT_INTF[i].interface,
+            excludeFromFC: DMI_UNIT_INTF[i].excludeFromFC,
+            exclude: DMI_UNIT_INTF[i].exclude
+        });
+    }
+...
+
+DMI_DUP_UNIT_PORTS[&#39;trace_capture_busy&#39;] = &#39;dup_unit__trace_capture_busy&#39;;
+DMI_DUP_UNIT_PORTS[&#39;pm_trace_messages_captured&#39;] = &#39;dup_unit__pm_trace_messages_captured&#39;;
+DMI_DUP_UNIT_PORTS[&#39;pm_trace_messages_dropped&#39;] = &#39;dup_unit__pm_trace_messages_dropped&#39;;
+...
+
+**Need to add manual ports to delay interfaces. Bundle &#39;delayInterfaceBundle&#39; already exists. 
+
+    delayInterfaceBundle[&#39;trace_capture_busy&#39;] = 1;
+    delayInterfaceBundle[&#39;pm_trace_messages_dropped&#39;] = wTotalSmiPortsNum;
+    delayInterfaceBundle[&#39;pm_trace_messages_captured&#39;] = wTotalSmiPortsNum;
+...</pre>
+</div></div></li><li><p class="auto-cursor-target">Need to update dmi_unit.tachl file with new parameter and ports. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">var wTotalSmiPortsNum       = obj.lib.getParam(&#39;wTotalSmiPortsNum&#39;);
+...
+// Trace Capture Ports
+obj.lib.interface(&#39;csr_trace_&#39;,&#39;master&#39;,traceCsrIfGenerator.signalBundle(&#39;slave&#39;)); 
+obj.lib.interface(&#39;dtw_dbg_req_&#39;,&#39;slave&#39;,DTWDBGReqInterface); 
+obj.lib.interface(&#39;dtw_dbg_rsp_&#39;,&#39;master&#39;,DTWDBGRespInterface); 
+u.port(&#39;input&#39;, &#39;trace_capture_busy&#39;, 1);
+u.port(&#39;input&#39;, &#39;pm_trace_messages_dropped&#39;, wTotalSmiPortsNum);
+u.port(&#39;input&#39;, &#39;pm_trace_messages_captured&#39;, wTotalSmiPortsNum);
+...</pre>
+</div></div></li><li><p class="auto-cursor-target">Remove instantiation of trace_capture module, along with interfaces and wires that are not needed. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">...
+\=obj.userLib.bundleFunctions.wiresFromInterface(&#39;DMI&#39;,traceCsrIfGenerator.signalBundle(&#39;slave&#39;), [], u.bundle)=\
+...
+wire trace_capture_busy;
+...
+    var TRACE_CAPTURE_INTF = [];
+    var nNonDataNetworks = 0; 
+    var nDataNetworks = 0; 
+...
+    //width needed for total number of smi ports*2 (each rx/tx direction)+1.
+    const wTotalSmiPortsNum = log2ceil(((nNonDataNetworks+nDataNetworks)*2)+1);
+...
+    wire [\=wTotalSmiPortsNum-1=\:0] pm_trace_messages_dropped;
+    wire [\=wTotalSmiPortsNum-1=\:0] pm_trace_messages_captured;
+...
+// ===================================================================
+// Trace Capture Instance
+// ===================================================================
+\jsbegin
+var trace_capture_intf_param = {};
+trace_capture_intf_param[&#39;clkInt&#39;] = {
+                               name: &#39;&#39;,
+                               params: {},
+                               direction: &#39;slave&#39;,
+                               interface: &#39;InterfaceCLK&#39;
+                           };
+\jsend
+    \=obj.lib.instance({
+        instanceName: &#39;trace_capture&#39;,
+        moduleName: &#39;trace_capture&#39;,
+...</pre>
+</div></div></li><li><p class="auto-cursor-target">Currently in DMI the DTW DBG Response interface is an output of the Concerto Mux and then feeds into the 'dmi_protocol_control' to test do a check on the targetID &amp; either drop or forward the received transaction. So a few changes are required in interface prefix names to send the proper signals out of the dmi_unit block to the trace_capture block. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">**Change the prefix to align to the output port name. 
+
+CSR_INTF.push({
+    modulePrefix: &#39;DMI&#39;, 
+    localPrefix: &#39;csr_trace_&#39;, 
+    interface: traceCsrIfGenerator.signalBundle(&quot;slave&quot;)
+});
+...
+
+**Since DTW DBG are now ports to the dmi_unit, remove wire declarations. 
+
+\js for (var i=0; i&lt;CONC_TX_INTF.length; i++) {
+    \js if (CONC_TX_INTF[i].name!=&#39;dtw_dbg_req_&#39;) {
+\=m.bundleFunctions.wiresFromInterface(CONC_TX_INTF[i].name, CONC_TX_INTF[i].signals, [], u.bundle)=\
+    \js }
+\js }
+
+\js for (var i=0; i&lt;CONC_RX_INTF.length; i++) {
+    \js if (CONC_RX_INTF[i].name!=&#39;dtw_dbg_rsp_&#39;) {
+\=m.bundleFunctions.wiresFromInterface(CONC_RX_INTF[i].name, CONC_RX_INTF[i].signals, [], u.bundle)=\    
+    \js }
+\js}
+...
+
+**This name is for the output of the concerto mux, changeing name from &#39;dtw_dbg_rsp_out_&#39; to &#39;dtw_dbg_rsp_prot_&#39;
+\=bundleFunctions.wiresFromInterface(&#39;dtw_dbg_rsp_prot_&#39;, DTWDBGRespInterface, [], obj.lib.bundle)=\
+...
+
+**Added check here to rename output of concerto mux with &#39;prot_&#39; name.
+        if(CONC_RX_INTF[i].name==&#39;dtw_dbg_rsp_&#39;) {
+        CONCERTO_MUX_INTF.push({
+                                    modulePrefix: CONC_RX_INTF[i].name, 
+                                    localPrefix: CONC_RX_INTF[i].name+&#39;prot_&#39;, 
+                                    interface: CONC_RX_INTF[i].signals
+        });
+        } else {
+        CONCERTO_MUX_INTF.push({
+                                    modulePrefix: CONC_RX_INTF[i].name, 
+                                    localPrefix: CONC_RX_INTF[i].name, 
+                                    interface: CONC_RX_INTF[i].signals
+        });
+        }
+...
+
+**Change input of &#39;dmi_protocol_control&#39; to align with &#39;prot_&#39; name. 
+PROT_CTRL_INTF.push({modulePrefix: &#39;dtw_dbg_rsp_&#39;, localPrefix: &#39;dtw_dbg_rsp_prot_&#39;, interface: DTWDBGRespInterface})
+...
+
+**Change output of &#39;dmi_protocol_control&#39; to be final output of dmi_unit module.
+PROT_CTRL_INTF.push({modulePrefix: &#39;dtw_dbg_rsp_out_&#39;,         localPrefix: &#39;dtw_dbg_rsp_&#39;,        interface: DTWDBGRespInterface});</pre>
+</div></div></li><li>Update any DMI TB files that may be referencing any signal within the trace_capture block. You will need to update the path of any signal to remove the &quot;dmi_unit&quot; instance name, since it was moved. ***DV should also add conditional logic that if 'traceDebugEnable' is false, then these signals will not exist. <ol><li><p class="auto-cursor-target">dv/dmi/tb/<a class="external-link" href="http://dmi_tb_top.sv" rel="nofollow">dmi_tb_top.sv</a> </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ex.
+      assign  u_dmi0_rtl_if.tsClock        = tb_top.dut.trace_capture.capture_frc;
+      assign  u_dmi0_rtl_if.captured_count = tb_top.dut.trace_capture.cover_captured_count; 
+      assign  u_dmi0_rtl_if.dtwdbg_count   = tb_top.dut.trace_capture.cover_dtwdbg_count; 
+      assign  u_dmi0_rtl_if.dropped_count  = tb_top.dut.trace_capture.cover_dropped_count; 
+...</pre>
+</div></div></li></ol></li></ol>

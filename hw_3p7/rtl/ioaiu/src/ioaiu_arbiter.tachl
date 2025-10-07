@@ -1,0 +1,311 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU arbiter.
+//
+//////////////////////////////////////////////////////////////////////////
+var u = obj.lib;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+u.paramDefault('VAL', 'int', 0);
+u.paramDefault('BE', 'int', 0);
+u.paramDefault('JUMP', 'int', 0);
+u.paramDefault('NO_WINNER_OUT', 'int', 0);
+u.paramDefault('NO_WBV_OUT', 'int', 0);
+
+var assertOn = u.getParam('assertOn');
+var NO_WINNER_OUT = u.getParam('NO_WINNER_OUT');
+var NO_WBV_OUT = u.getParam('NO_WBV_OUT');
+
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (assertOn) {
+var clkAssertInterface = { name : '', signals : {'clk_i' : 1,'reset_ni' : 1}};
+} else {
+var clkAssertInterface = { };
+}
+
+var DW = u.getParam('DW');
+var ATOMIC = u.getParam('ATOMIC');
+var HP = u.getParam('HP');
+var VAL = u.getParam('VAL');
+var BE = u.getParam('BE');
+var DRST = u.getParam('DRST');
+var JUMP = u.getParam('JUMP');
+
+var WW = (DW==1) ? /* istanbul ignore next env ncore_3p7 */1 : log2ceil(DW);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+	clk_i,
+	reset_ni,
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+    if (!NO_WBV_OUT) { \jsend
+        wbv_o,
+\js }
+\js if (!NO_WINNER_OUT) {
+        winner_o,
+\js }
+	ready_i,
+	bv_i,
+	lv_i
+);
+
+input		clk_i;
+input		reset_ni;
+input		ready_i;
+input [\=DW-1=\:0]	bv_i, lv_i;
+\js if (!NO_WINNER_OUT) {
+output [\=WW-1=\:0]	winner_o;
+\js }
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+    if (!NO_WBV_OUT) { \jsend
+output [\=DW-1=\:0]	wbv_o;
+\js }
+
+\js if (NO_WINNER_OUT) {
+wire [\=WW-1=\:0]     winner_o;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+    if (NO_WBV_OUT) { \jsend
+wire   [\=DW-1=\:0]	wbv_o;
+\js }
+
+wire		t_atomic, n_atomic;
+wire [\=WW-1=\:0]	t_hid;
+wire [\=DW-1=\:0]	t_n0_bv,	t_n1_bv,	t_bv, t_hbv;
+wire		w_n0_valid,	w_n1_valid,			t_ot_valid;
+wire [\=WW-1=\:0]	w_n0_winner,	w_n1_winner,	t_winner,	t_ot_winner;
+wire [\=DW-1=\:0]	w_n0_wbv,	w_n1_wbv,	t_wbv,		t_ot_wbv;
+wire [\=WW-1=\:0]	q_round;
+wire [\=DW-1=\:0]	q_round_vec;
+
+assign winner_o = t_atomic ? t_hid : t_winner;
+assign wbv_o = t_atomic ? 
+\js if (VAL) {
+                          bv_i &
+\js } else {
+			  {\=DW=\{1'b1}} &
+\js }
+			  ({{\=DW-1=\{1'b0}}, 1'b1} << t_hid) : 
+			  t_wbv;
+
+assign t_hbv = bv_i & \=HP=\;
+assign t_bv = (| t_hbv) ? t_hbv : bv_i;
+
+\js if (ATOMIC) {
+    wire		t_start, t_end;
+    wire		q_atomic;
+    wire [\=WW-1=\:0]	q_hid;
+
+\js if ((DW & (DW-1)) == 0) {
+   wire mux_lv_i_t_winner = lv_i[t_winner];
+   wire mux_lv_i_q_hid    = lv_i[q_hid];
+   wire mux_bv_i_t_winner = bv_i[t_winner];
+   wire mux_bv_i_q_hid    = bv_i[q_hid];
+   wire mux_t_bv_t_winner = t_bv[t_winner];
+\js } else {
+   wire mux_lv_i_t_winner =
+\js for (let i=0;i<DW;i++) {
+      ((t_winner==\=WW=\'d\=i=\) ? lv_i[\=i=\] : 1'b0)\=((i==(DW-1)))?";":"|"=\
+\js }
+   wire mux_lv_i_q_hid =
+\js for (let i=0;i<DW;i++) {
+      ((q_hid==\=WW=\'d\=i=\) ? lv_i[\=i=\] : 1'b0)\=((i==(DW-1)))?";":"|"=\
+\js }
+   wire mux_bv_i_t_winner =
+\js for (let i=0;i<DW;i++) {
+      ((t_winner==\=WW=\'d\=i=\) ? bv_i[\=i=\] : 1'b0)\=((i==(DW-1)))?";":"|"=\
+\js }
+   wire mux_bv_i_q_hid =
+\js for (let i=0;i<DW;i++) {
+      ((q_hid==\=WW=\'d\=i=\) ? bv_i[\=i=\] : 1'b0)\=((i==(DW-1)))?";":"|"=\
+\js }
+   wire mux_t_bv_t_winner =
+\js for (let i=0;i<DW;i++) {
+      ((t_winner==\=WW=\'d\=i=\) ? t_bv[\=i=\] : 1'b0)\=((i==(DW-1)))?";":"|"=\
+\js }
+\js }
+
+    assign t_start = mux_t_bv_t_winner & (~mux_lv_i_t_winner | ~ready_i);
+    assign t_end = mux_bv_i_q_hid & mux_lv_i_q_hid & ready_i;
+
+    \=u.dffre(1, `q_atomic`, `n_atomic`, `1'b0`, `1'b1`, `clk_i`, `reset_ni`)=\
+    wire [\=WW=\-1:0] q_hid_ns = (~q_atomic & t_start) ? t_winner : q_hid;
+    \=u.dffre(WW, `q_hid`, `q_hid_ns`, `{`+WW+`{1'b0}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+
+    assign n_atomic = q_atomic ? ~t_end : t_start & ~mux_lv_i_t_winner;
+    assign t_atomic = q_atomic;
+    assign t_hid = q_hid;
+\js } else {
+    assign n_atomic = 1'b0;
+    assign t_atomic = 1'b0;
+    assign t_hid = {\=WW=\{1'b0}};
+\js }
+
+assign t_n0_bv = t_bv & q_round_vec; //({\=DW=\{1'b1}} << q_round);
+assign t_n1_bv = t_bv;
+
+\jsbegin
+// For 3.7 nothing instantates this block with DW==1
+/* istanbul ignore else env ncore_3p7 */
+    if (DW>1) { \jsend
+    assign t_winner = w_n0_valid ? w_n0_winner : w_n1_valid ? w_n1_winner : {\=WW=\{1'b0}};
+    assign t_wbv = w_n0_valid ? w_n0_wbv : w_n1_valid ? w_n1_wbv : {\=DW=\{1'b0}};
+
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'n0',
+	params: {
+		DW:		DW,
+		BE:		BE,
+                clkAssertInterface: clkAssertInterface,
+                assertOn : assertOn},
+	ports: {
+		bv_i:		't_n0_bv',
+		valid_o:	'w_n0_valid',
+		index_o:	'w_n0_winner',
+		bv_o:		'w_n0_wbv'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'n1',
+	params: {
+		DW:		DW,
+		BE:		BE,
+                clkAssertInterface: clkAssertInterface,
+                assertOn : assertOn
+        },
+	ports: {
+		bv_i:		't_n1_bv',
+		valid_o:	'w_n1_valid',
+		index_o:	'w_n1_winner',
+		bv_o:		'w_n1_wbv'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+\jsbegin
+// JUMP is unused in 3.7
+/* istanbul ignore if env ncore_3p7 */
+        if (JUMP) { \jsend
+      wire [\=DW-1=\:0]	t_n2_bv,	t_n3_bv;
+      wire		w_n2_valid,	w_n3_valid;
+      wire [\=WW-1=\:0]	w_n2_winner,	w_n3_winner;
+      wire [\=DW-1=\:0]	w_n2_wbv,	w_n3_wbv;
+
+      assign t_n2_bv = t_n0_bv & t_wbv;
+      assign t_n3_bv = t_n1_bv & t_wbv;
+
+      assign t_ot_valid = w_n3_valid;
+      assign t_ot_winner = w_n0_valid ? w_n2_winner : w_n1_valid ? w_n3_winner : {\=WW=\{1'b0}};
+      assign t_ot_wbv = w_n0_valid ? w_n2_wbv : w_n1_valid ? w_n3_wbv : {\=DW=\{1'b0}};
+
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'n2',
+	params: {
+		DW:		DW,
+		BE:		BE,
+                clkAssertInterface: clkAssertInterface,
+                assertOn : assertOn
+        },
+	ports: {
+		bv_i:		't_n2_bv',
+		valid_o:	'w_n2_valid',
+		index_o:	'w_n2_winner',
+		bv_o:		'w_n2_wbv'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'n3',
+	params: {
+		DW:		DW,
+		BE:		BE,
+                clkAssertInterface: clkAssertInterface,
+                assertOn : assertOn
+        },
+	ports: {
+		bv_i:		't_n3_bv',
+		valid_o:	'w_n3_valid',
+		index_o:	'w_n3_winner',
+		bv_o:		'w_n3_wbv'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+\js   } else {
+      assign t_ot_valid = 1'b0;
+      assign t_ot_winner = {\=WW=\{1'b0}};
+      assign t_ot_wbv = {\=DW=\{1'b0}};
+\js   }
+\js } else {
+    assign t_ot_valid = 1'b0;
+    assign t_ot_winner = {\=WW=\{1'b0}};
+    assign t_ot_wbv = {\=DW=\{1'b0}};
+    assign t_winner = {\=WW=\{1'b0}};
+    assign t_wbv = bv_i[0];
+\js }
+
+wire [\=DW-1=\:0] next_q_round_vec = ~(ready_i & (| t_bv) & ~n_atomic) ? q_round_vec :
+			           t_ot_valid                      ? t_ot_wbv    :
+			          ({{32-\=WW=\{1'b0}},q_round} == \=(DW-1)=\)              ? {\=DW=\{1'b1}}  : (q_round_vec << 1);
+
+wire [\=WW-1=\:0] next_q_round = ~(ready_i & (| t_bv) & ~n_atomic) ? q_round :
+			   t_ot_valid                          ? t_ot_winner :
+			   ({{32-\=WW=\{1'b0}},q_round} == \=(DW-1)=\)                 ? {\=WW=\{1'b0}} : q_round + 1'b1;
+
+\=u.dffre(WW, `q_round`, `next_q_round`, `{`+WW+`{1'b0}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+\=u.dffre(DW, `q_round_vec`, `next_q_round_vec`, `{`+DW+`{1'b1}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+
+///////////////////////////////////////////////////////////////////////////////////
+\jsbegin
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// synthesis_off
+// pragma synthesis_off
+// coverage off
+
+assert_never #(0) assert_wbv(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((t_ot_valid & (t_ot_winner == t_winner)) |
+			 ((t_atomic ? bv_i[t_hid] : (| bv_i)) & 
+			  (| (wbv_o ^ ({{\=DW=\{1'b0}},1'b1}<<winner_o)))))
+);
+
+assert_never_unknown #(0, \=DW=\) assert_state(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(ready_i),
+	.test_expr	(bv_i)
+);
+
+// coverage on
+// pragma synthesis_on
+// synthesis_on
+`endif
+\js }
+
+endmodule

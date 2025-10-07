@@ -1,0 +1,1024 @@
+{
+  "name": "ioaiu",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "",
+      "params": [
+        {
+          "parameterName": "multicycleODSRAM",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return unit.ImplementationParameters.multicycleODSRAM",
+          "description": "Presence of 2 cycle sram access for timing"
+        },
+        {
+         "parameterName": "syncDepth",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 2,
+         "minimum": 2,
+         "maximum": 8,
+         "formula": "return system.syncDepth"
+        },
+        {
+         "parameterName": "nPerfCounters",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 4,
+         "minimum": 1,
+         "maximum": 16,
+         "formula": "return system.nPerfCounters"
+        },
+        {
+          "parameterName": "IOAIUpDataWidth",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 256,
+          "validValues": "256,512",
+          "formula": "return unit.IOAIUpDataWidth;"
+        },
+        {
+          "parameterName": "fnCsrAccess",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "validValues": "0,1",
+          "formula": "return unit.fnCsrAccess ? 1 : 0;"
+        },
+        {
+         "parameterName": "nTraceRegisters",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 1,
+         "minimum": 1,
+         "maximum": 4,
+         "formula": "return system.nTraceRegisters"
+        },
+        {
+         "parameterName": "nUnitTraceBufSize",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 8,
+         "minimum": 8,
+         "maximum": 16,
+         "validValues": "8,16",
+         "formula": "return unit.nUnitTraceBufSize"
+        },
+        {
+         "parameterName": "fnDisableRdInterleave",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 0,
+         "validValues": "0,1",
+         "formula": "return unit.fnDisableRdInterleave"
+        },
+        {
+          "parameterName": "nPerfCounters",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "formula": "return unit.nPerfCounters"
+        },
+        {
+          "parameterName": "enSRAMPipe",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "validValues": "0,1",
+          "formula": "return unit.enSRAMPipe ? 1 :0"
+        },
+        {
+          "parameterName": "assertOn",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "validValues": "0,1",
+          "formula": "return system.AssertionEnable ? 1 : 0;"
+        },
+        {
+          "parameterName": "nProcs",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.nProcs;"
+        },
+        {
+          "parameterName": "orderedWriteObservation",
+          "type": "boolean",
+          "default": false,
+          "parameterType": "architecture",
+          "formula": "return unit.ImplementationParameters.orderedWriteObservation"
+        },
+        {
+          "parameterName": "nAiuConnectedDces",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.nAiuConnectedDces"
+        },
+        {
+          "parameterName": "fnNativeInterface",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "",
+          "formula": "return unit.fnNativeInterface",
+          "validValues": "AXI4, ACE-LITE, ACELITE-E, ACE",
+          "description": "Not used"
+        },
+        {
+          "parameterName": "AxIdProcSelectBits",
+          "type": "array",
+          "parameterType": "micro-architecture",
+          "arrayType": "integer",
+          "default": [],
+          "formula": "return unit.AxIdProcSelectBits;",
+          "description": ""
+        },
+        {
+          "parameterName": "eSkid",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return unit.eSkid ? 1 : 0",
+          "validValues": "0,1",
+          "description": "Enable Skid FIFO. Requests are allowed to wait for resources in the OTT without blocking younger requests that might be ready."
+        },
+        {
+          "parameterName": "eAge",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return unit.eAge ? 1 : 0",
+          "validValues": "0,1",
+          "description": "Enable Age ordering. Multiple requests whose resources become available at the same time will be serviced in oldest age order."
+        },
+        {
+          "parameterName": "eStarve",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return unit.eStarve ? 1 : 0",
+          "validValues": "0,1",
+          "description": "Enable starvation detection. Requests that haven't been serviced in a programmable number of cycles/events will be detected and then given preferntial treatment during arbitration."
+        },
+        {
+          "parameterName": "Credits",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/credits.tachl.cpr",
+          "description": "The number of per-target credits available for request handling."
+        },
+        {
+          "parameterName": "nDveCredits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "formula": "return system.nDvmCmdCredits"
+        },
+        {
+          "parameterName": "InterleaveInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/interleaveInfo.tachl.cpr",
+          "description": "Used by address map. Refer to system architecture document."
+        },
+        {
+          "parameterName": "useUnique",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return 0",
+          "validValues": "0,1",
+          "description": "Not used."
+        },
+        {
+          "parameterName": "useCache",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return unit.useCache ? 1 : 0",
+          "validValues": "0,1",
+          "description": "Enables existence of proxy cache."
+        },
+        {
+          "parameterName": "engVerId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return system.engVerId",
+          "description": "Not used"
+        },
+        {
+          "parameterName": "implVerId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return system.implVerId",
+          "description": "Not used"
+        },
+        {
+          "parameterName": "nDce",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "formula": "return system.nDces",
+          "description": "Number of DCEs in the system"
+        },
+	{
+          "parameterName": "nDve",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return system.nDves"
+        },
+ 	{
+          "parameterName": "nDmi",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return system.nDmis",
+          "description": "Number of DMIs in the system"
+        },
+        {
+          "parameterName": "nDii",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return system.nDiis",
+          "description": "Number of DIIs in the system"
+        },
+        {
+          "parameterName": "nDiis",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return system.nDiis",
+          "description": "Number of DIIs in the system. This parameter name is used by nrs_region.csr.cpr"
+        },
+        {
+          "parameterName": "wFUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 7,
+          "formula": "return system.wFUnitId",
+          "description": "Width of FUnitId"
+        },
+        {
+          "parameterName": "wFPortId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return system.wFPortId",
+          "description": "Width of FPortId."
+        },
+        {
+          "parameterName": "FPortId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "description": "Not used"
+        },
+        {
+          "parameterName": "nRegion",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "description": "Not used"
+        },
+        {
+          "parameterName": "BootInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/bootAndCsrInfo.tachl.cpr#BootInfo"
+        },
+        {
+          "parameterName": "CsrInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/bootAndCsrInfo.tachl.cpr#CsrInfo"
+        },
+        {
+          "parameterName": "wNUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return system.wNUnitId",
+          "description": "Width of NUnitId"
+        },
+        {
+          "parameterName": "wRpn",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "formula": "return system.wRPN",
+          "description": "Width of Rpn"
+        },
+        {
+          "parameterName": "wNrri",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "formula": "return system.wNRRI",
+          "description": "Width of Nrri"
+        },
+        {
+          "parameterName": "VictimBuffer",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "Number of evicted cache lines in transition. Default value of 1 should be sufficient but may need 2 depending on traffic and system configruation."
+        },
+        {
+          "parameterName": "eP0",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "formula": "return unit.eP0 ? 2 : 2;",
+          "description": "Enable P0 stage: 0x0: bus request deliverd to the cache combinationally. n: FIFO depth."
+        },
+        {
+          "parameterName": "AsyncReset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return 1",
+          "validValues": "0,1",
+          "description": "Reset type to be used: 0x0: synchronous reset. 0x1: asynchronous reset."
+        },
+        {
+          "parameterName": "DataReset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return 1",
+          "validValues": "0,1",
+          "description": "Force all flops to be reset: 0x0: only control flops are reset. 0x1: all flops including data flops are reset."
+        },
+        {
+          "parameterName": "wAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 48,
+          "formula": "return system.concertocparams.wAddr",
+          "description": "Not used"
+        },
+        {
+          "parameterName": "wData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 128,
+          "formula": "return unit.Interfaces.external.params.wData",
+          "description": "Not used"
+        },
+        {
+          "parameterName": "PriSubDiagAddrBits",
+          "type": "array",
+          "parameterType": "architecture",
+          "default": [],
+          "todo:formula": "return system.DcePriSubDiagAddrBits",
+          "description": "Primary address bits used for DCE selection."
+        },
+        {
+          "parameterName": "SecSubRows",
+          "type": "array",
+          "parameterType": "architecture",
+          "default": [],
+          "todo:formula": "return system.DceSecSubRows",
+          "description": "Secondary address bits used for DCE selection."
+        },
+        {
+          "parameterName": "useResiliency",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "validValues": "0,1",
+          "formula": "return system.ResilienceEnable ? 1 : 0;",
+          "description": "Not used"
+        },
+        {
+          "parameterName": "usePma",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 0,
+          "formula": "return unit.usePma ? 1 : 0",
+          "description": "Enable Q-channel interface"
+        },
+        {
+          "parameterName": "NcMode",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 0,
+          "description": "NcMode"
+        },
+        {
+          "parameterName": "ccpParams",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/ccp.tachl.cpr",
+          "formula": "_self.wStateBits = 3;_self.evictPortDoutBufferDepth = unit.nEvictions;\nreturn _self",
+          "parameterType": "architecture",
+          "description": "Proxy cache parameters."
+        },
+        {
+          "parameterName": "ResilienceInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/resilienceInfo.tachl.cpr",
+          "parameterType": "architecture",
+          "description": "Enables resiliency feature."
+        },
+        {
+          "parameterName": "PmaInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/pmaInfo.tachl.cpr",
+          "description": "PMA parameters."
+        },
+        {
+          "parameterName": "cmType",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/concMsgCmType.tachl.cpr",
+          "parameterType": "architecture",
+          "description": "Concerto message type encodings"
+        },
+        {
+          "parameterName": "concParams",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/concMsg.tachl.cpr",
+          "parameterType": "architecture",
+          "description": "Concerto MUX parameters"
+        },
+        {
+          "parameterName": "concMuxMsgParams",
+          "type": "object",
+          "reference": "ConcMuxMsgParamsParam",
+          "parameterType": "architecture",
+          "formula": "",
+          "description": "Concerto MUX parameters"
+        },
+        {
+          "parameterName": "cmpInfo",
+          "type": "object",
+          "reference": "CmpInfoParam",
+          "parameterType": "architecture",
+          "description": "ioaiu parameters"
+        },
+        {
+          "parameterName": "smiPortParams",
+          "type": "object",
+          "reference": "SmiPortParamsParam",
+          "parameterType": "architecture",
+          "description": "SMI parameters"
+        },
+        {
+          "parameterName": "MemoryGeneration",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "MemoryGenerationParam",
+          "description": "Memory parameters"
+        },
+        {
+          "parameterName": "interfaces",
+          "type": "object",
+          "reference": "InterfacesParam",
+          "parameterType": "architecture",
+          "description": "Interface parameters"
+        },
+        {
+          "parameterName": "nGPRA",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return system.nGPWindows",
+          "description": "Used by address map."
+        },
+        {
+          "parameterName": "QosInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/QosInfo.tachl.cpr"
+        },
+        {
+          "parameterName": "fnEnableQos",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 0,
+          "formula": "return system.qosparams.fnEnableQos ? 1 : 0",
+          "description": "Enable QoS."
+        },
+        {
+          "parameterName": "fnEnableTimeOutRef",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "formula": "return system.fnEnableTimeOutRef ? 1 : 0",
+          "default": 0,
+          "description": "Used to add extra timeout reference signal input port. This will be one port per Ncore unit AIUs, DCEs and DMIs. (At top level for Ncore this may be tied to single port out of Ncore)"
+        },
+        {
+          "parameterName": "timeOutThreshold",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.timeOutThreshold",
+          "default": 0,
+          "description": "Timeout threshold value; counts in increments of 4K cycles."
+        },
+        {
+          "parameterName": "aNcaiuIntvFunc",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.aNcaiuIntvFunc",
+          "description": ""
+        },
+        {
+          "parameterName": "nNativeInterfacePorts",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.nativeInterf.length || 1",
+          "default": 0,
+          "description": "Timeout threshold value; counts in increments of 4K cycles."
+        }
+      ]
+    },
+    {
+      "name": "ConcMuxMsgParamsParam",
+      "params": [
+        {
+          "parameterName": "tx",
+          "type": "object",
+          "reference": "TxParam",
+          "parameterType": "architecture",
+          "description": "TX parameters"
+        },
+        {
+          "parameterName": "rx",
+          "type": "object",
+          "reference": "RxParam",
+          "parameterType": "architecture",
+          "description": "RX parameters"
+        }
+      ]
+    },
+    {
+      "name": "TxParam",
+      "params": [
+	{
+          "parameterName": "dtwDbgReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 1;\n if (system.ResilienceEnable) {\n  if (system.TIResiliencyProtectionType === 'SECDED') {\n    _self.dpProtection = 'ecc';\n  }\n  if (system.TIResiliencyProtectionType === 'PARITY') {\n    _self.dpProtection = 'parity';\n  }\n};\n_self.wNdpBits = system.concertocrequestmessagefields.wDTWDBGNdp;\n_self.wDpBits = unit.Interfaces.external.params.wData;\nreturn _self"
+        },      
+        {
+          "parameterName": "cmdReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wCMDNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+	{
+          "parameterName": "sysReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSYSNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "sysRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSYSrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "updReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wUPDNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "dtrRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wDTRrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "strRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSTRrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "snpRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSNPrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "dtrReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 1;\n_self.wNdpBits = system.concertocrequestmessagefields.wDTRNdp;\n_self.wDpBits = unit.Interfaces.external.params.wData;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "dtwReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 1;\n if (system.ResilienceEnable) {\n  if (system.TIResiliencyProtectionType === 'SECDED') {\n    _self.dpProtection = 'ecc';\n  }\n  if (system.TIResiliencyProtectionType === 'PARITY') {\n    _self.dpProtection = 'parity';\n  }\n};\n_self.wNdpBits = system.concertocrequestmessagefields.wDTWNdp;\n_self.wDpBits = unit.Interfaces.external.params.wData;\nreturn _self",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "RxParam",
+      "params": [
+	{
+          "parameterName": "dtwDbgRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wDTWDBGrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "strReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSTRNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "snpReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSNPNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "cmdRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wNCCMDrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+	{
+          "parameterName": "sysRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSYSrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "sysReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSYSNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "dtrRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wDTRrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "dtwRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wDTWrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "updRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wUPDrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "cmpRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wCMPrspNdp;\n_self.wDpBits = 0;\nreturn _self",
+          "description": ""
+        },
+        {
+          "parameterName": "dtrReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 1;\n if (system.ResilienceEnable) {\n  if (system.TIResiliencyProtectionType === 'SECDED') {\n    _self.dpProtection = 'ecc';\n  }\n  if (system.TIResiliencyProtectionType === 'PARITY') {\n    _self.dpProtection = 'parity';\n  }\n};\n_self.wNdpBits = system.concertocrequestmessagefields.wDTRNdp;\n_self.wDpBits = unit.Interfaces.external.params.wData;\nreturn _self",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "CmpInfoParam",
+      "params": [
+        {
+          "parameterName": "nDvmSnpInFlight",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 16,
+          "formula": "return unit.Interfaces.external.params.eAc ? system.nDvmSnpCredits : 0",
+          "description": "Number of DVM SNP In flight for IOAIU"
+        },
+        {
+          "parameterName": "nDvmMsgInFlight",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 16,
+          "formula": "return system.nDvmCmdCredits",
+          "description": "Number of DVM MSG In flight for IOAIU"
+        },
+        {
+          "parameterName": "nOttCtrlEntries",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 16,
+          "formula": "return unit.ImplementationParameters.nOttCtrlEntries",
+          "description": "Number of OTT entries used for agent requests"
+        },
+        {
+          "parameterName": "nSttCtrlEntries",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "formula": "const aiuSnpCredits = Object.keys(root.units).reduce((r, v) => { r += (root.units[v].module === 'dce' ? root.units[v].params.ImplementationParameters.nAiuSnpCredits : 0); return r;}, 0); const dvmSnpCredits = unit.Interfaces.external.params.eAc ? system.nDvmSnpCredits : 0; return (unit.useCache || unit.fnNativeInterface === 'ACE' || unit.fnNativeInterface === 'ACE5' || unit.ImplementationParameters.orderedWriteObservation) ? aiuSnpCredits + dvmSnpCredits: dvmSnpCredits",
+          "description": "Number of STT entries used for snoop requests"
+        },
+        {
+          "parameterName": "nOttDataBanks",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return 4",
+          "description": "Number of OTT data banks. Default value of 1 should be sufficient. Might need 2 depending on traffic and system configuration."
+        },
+        {
+          "parameterName": "OttErrorType",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "NONE",
+          "formula": "return unit.OttErrInfo",
+          "description": "Type of protection used for OTT data: NONE, PARITY, SECDED"
+        },
+        {
+          "parameterName": "OttMemoryType",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "NONE",
+          "todo:formula": "return TODO",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "SmiPortParamsParam",
+      "params": [
+        {
+          "parameterName": "tx",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "rm:reference": "$TACHL_CPR_DIR/lib/smiPortTx.tachl.cpr",
+          "formula": "function updatePipeInfo(portArray, portName, info) {\n  var idx = 0;\n  for(let i = 0; i < portArray.length; ++i) {\n  \tif (portArray[i] && portArray[i].name === portName) {\n      idx = i;\n      break;\n    }\n  }\n  \n  portArray[idx]['params']['enablePipe'] = info.enablePipe;\n  portArray[idx]['params']['pipeDepth'] = info.pipeDepth;\n  \n  return portArray;\n}\nvar smiPortMsgMap = updatePipeInfo(unit.SmiPortMsgMap.tx, 'smi_tx0_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_tx1_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_tx2_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_tx3_', {enablePipe:0, pipeDepth:2});\nreturn smiPortMsgMap;",
+          "description": ""
+        },
+        {
+          "parameterName": "rx",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "rm:reference": "$TACHL_CPR_DIR/lib/smiPortRx.tachl.cpr",
+          "formula": "function updatePipeInfo(portArray, portName, info) {\n  var idx = 0;\n  for(let i = 0; i < portArray.length; ++i) {\n  \tif (portArray[i] && portArray[i].name === portName) {\n      idx = i;\n      break;\n    }\n  }\n  \n  portArray[idx]['params']['enablePipe'] = info.enablePipe;\n  portArray[idx]['params']['pipeDepth'] = info.pipeDepth;\n  \n  return portArray;\n}\nvar smiPortMsgMap = updatePipeInfo(unit.SmiPortMsgMap.rx, 'smi_rx0_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_rx1_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_rx2_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_rx3_', {enablePipe:0, pipeDepth:2});\nreturn smiPortMsgMap;",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "name": "MemoryGenerationParam",
+      "params": [
+        {
+          "parameterName": "tagMem",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr",
+          "formula": "return unit.MemoryInterfaces.TagMem.map(e => { e.Signals = []; e.MemType = e.fnMemType === 'Flop' ? 'NONE' : 'SYNOPSYS' ; return e});",
+          "description": "Proxy cache tag memory"
+        },
+        {
+          "parameterName": "rpMem",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr",
+          "formula": "return unit.MemoryInterfaces.RpMem.map(e => { e.Signals = []; e.MemType = e.fnMemType === 'Flop' ? 'NONE' : 'SYNOPSYS' ; return e});",
+          "description": "Proxy cache replacement memory"
+        },
+        {
+          "parameterName": "dataMem",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr",
+          "formula": "return unit.MemoryInterfaces.DataMem.map(e => { e.Signals = []; e.MemType = e.fnMemType === 'Flop' ? 'NONE' : 'SYNOPSYS' ; return e});",
+          "description": "Proxy cache Data memory"
+        },
+        {
+          "parameterName": "ottMem",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr",
+          "formula": "return unit.MemoryInterfaces.OttMem.map(e => { e.Signals = []; e.MemType = e.fnMemType === 'Flop' ? 'NONE' : 'SYNOPSYS' ; return e});",
+          "description": "OTT data memory"
+        }
+      ]
+    },
+    {
+      "name": "InterfacesParam",
+      "params": [
+        {
+          "parameterName": "axiInt",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return (unit.Interfaces.nativeInterf && Array.isArray(unit.Interfaces.nativeInterf) && unit.Interfaces.nativeInterf.length > 1) ? unit.Interfaces.nativeInterf : unit.Interfaces.external",
+          "description": ""
+        },
+        {
+          "parameterName": "clkInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.clkInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+	{
+          "parameterName": "masterTriggerInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.masterTriggerInt",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "checkClkInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.checkClkInt",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "irqInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.irqInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+	{
+          "parameterName": "uEvtOutInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uEvtOutInt",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "uIdInt",
+          "type": "object",
+          "formula": "const intf = unit.Interfaces.internal.uIdInt; return (Array.isArray(intf) && intf.length === 1 ? intf[0] : intf)",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "uSysDceIdInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uSysDceIdInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "uSysDveIdInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uSysDveIdInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "uSysDmiIdInt",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.internal.uSysDmiIdInt",
+          "description": ""
+        },
+        {
+          "parameterName": "uSysDiiIdInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uSysDiiIdInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "uSysConnectedDceIdInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uSysConnectedDceIdInt",
+          "parameterType": "architecture"
+        },
+	{
+          "parameterName": "eventRequestInInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.eventRequestInInt",
+          "parameterType": "architecture"
+        },
+	{
+          "parameterName": "eventRequestOutInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.eventRequestOutInt",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "apbInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.apbInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "bistInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.bistInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "faultInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.faultInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "bistDebugDisableInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.bistDebugDisableInt",
+          "covReference": "$HW_LIB_DESIGN/InterfacePin.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "userPlaceInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.placeholders",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "qInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.qInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "memoryInt",
+          "type": "array",
+          "arrayType": "object",
+          "covReference": "$HW_LIB_DESIGN/InterfaceGeneric.design.cpr",
+          "formula": "return unit.Interfaces.internal.memoryInt",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxInt",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return unit.Interfaces.internal.smiTxInt",
+          "description": ""
+        },
+        {
+          "parameterName": "smiRxInt",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return unit.Interfaces.internal.smiRxInt",
+          "description": ""
+        }
+      ]
+    }
+  ]
+}

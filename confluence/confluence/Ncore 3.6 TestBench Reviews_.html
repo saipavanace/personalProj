@@ -1,0 +1,112 @@
+<p>Type = Bug, Hole, Improvement</p><p>Priority = Low, Medium, High, Critical</p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="bd51b111-552a-4cdc-adc5-1fb4bc974c6c" class="confluenceTable"><colgroup><col/><col style="width: 383.0px;"/><col style="width: 120.0px;"/><col style="width: 114.0px;"/><col style="width: 82.0px;"/><col style="width: 119.0px;"/><col style="width: 125.0px;"/><col style="width: 815.0px;"/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item</strong></p></th><th class="confluenceTh"><p><strong>Testbench</strong></p></th><th class="confluenceTh"><p><strong>Type </strong></p></th><th class="confluenceTh"><p><strong>Priority</strong></p></th><th class="confluenceTh"><p><strong>Duration (in engineer-days)</strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p><strong>Integrate Synopsys VIP (slave)</strong></p></td><td class="confluenceTd"><p>DMI, DVE</p></td><td class="confluenceTd"><p>Improvement</p></td><td class="confluenceTd"><p>Medium</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p><strong>DMI TB REVIEW Jira Tracker</strong></p></td><td class="confluenceTd"><p>DMI</p></td><td class="confluenceTd"><p>Improvement</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13789" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13789?src=confmacro" class="jira-issue-key">CONC-13789</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p class="media-group"><a href="/wiki/spaces/ENGR/pages/464912412/Ncore+3.6+TestBench+Reviews?preview=%2F464912412%2F653983778%2FDMI+DV+2024.pptx"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-presentation.png'); width: 333px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">DMI DV 2024.pptx</span></a></p><p /></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p><strong>Re-design main sequence</strong></p></td><td class="confluenceTd"><p><span class="inline-comment-marker" data-ref="106f6384-e0b9-4a42-ac6e-6bfc4053d58e">DMI</span></p></td><td class="confluenceTd"><p>Improvement</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13790?atlOrigin=eyJpIjoiNGQ3ZDU1MmEzODI0NDc3MGIyYmViMjM5NGVlZmE3NDYiLCJwIjoiaiJ9" rel="nofollow">Event based arbitration</a> </p><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13791?atlOrigin=eyJpIjoiNTk4MjdhY2E2ODMxNDNkZDg0YTkyNWEwZGJlM2I1ODAiLCJwIjoiaiJ9" rel="nofollow">Virtual Sequence</a> </p><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-12957?atlOrigin=eyJpIjoiMjM1MWFhNWM2Yzk3NGU3NWJhZmM4N2I3MDJhNGQxMDUiLCJwIjoiaiJ9" rel="nofollow">Modify credit mechanism</a> </p></td><td class="confluenceTd"><p>Use virtual sequence for arbitration, separate based on function. Ensure resource allocate without blocking the I/F<br/>Resources = Credits, RBID, Addresses [Function: Allocation and Release]<br/>Production = Traffic pattern, randomization per sequence item, build layered sequence items and separate item construction per command type<br/>Observe = For responses back from SMI I/F to conclude and release resources<br/>P.S:<br/>1. This should get rid of event based arbitration due to use of virtual sequences </p><p>2. Resource allocation re-design should inherently remove all the wait-on mechanisms that add bubbles to the SMI I/F and generate better traffic.</p></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p><strong>Use config objects and randomizer</strong></p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><p>Improvement</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Hold rand variables and common functions to access across sequences and environment in a configuration object. <br/>To enable override from cmdline for reproducibility, use the get_plusargs function and mux between random and overridden values.</p><p>Helps step away from $plusargs methodology and initialization scattered across the env. One object, one get/set and one randomization call to alert the sub-block env about all control variables.<br/></p></td></tr><tr><td class="numberingColumn confluenceTd">5</td><td class="confluenceTd"><p><strong>Move from common_class_knob use to constraints in uvm_object</strong></p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><p>Improvement</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-12867?atlOrigin=eyJpIjoiMTllMzk0MjYyODYxNGI4NTk4Y2YxMTJmNzZmOTdmOGEiLCJwIjoiaiJ9" rel="nofollow">Use config_db</a> </p><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13719?atlOrigin=eyJpIjoiOTM0OWNiYTgzMTE0NDFlOTkyNGJhYWQ4ODc4NDZmNDkiLCJwIjoiaiJ9" rel="nofollow">Control randomization per CmdType</a></p><p> </p></td><td class="confluenceTd"><p>Currently randomizing is quite rudimentary, random values cannot have co-dependencies or distributed effectively. This leads to adding “n” number of tests of a single type with simple distribution across command types causing redundancy and a massive testlist to handle. <br/>Use a constraint solver and specify layered constraints to better distribute command types, cover-points to cover the various bins</p></td></tr><tr><td class="numberingColumn confluenceTd">6</td><td class="confluenceTd"><p><strong>Multiple DMIs being instantiated and compiled in DV in block-level although only one is used</strong></p></td><td class="confluenceTd"><p>DMI</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Figure out why scripts are spitting out dmi[0:n] although only dmi0 is used.<br/>Alternately also find a way to randomize the instance being used instead of being only dmi0 and testlist.json controlled.</p></td></tr><tr><td class="numberingColumn confluenceTd">7</td><td class="confluenceTd"><p><strong>DVE TB Review AI Jira Tracker</strong></p></td><td class="confluenceTd"><p>DVE</p></td><td class="confluenceTd"><p>Improvement</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14415" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14415?src=confmacro" class="jira-issue-key">CONC-14415</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p>This Epic tracks all the AI’s obtained from DVE TB review held on 05/01/2024</p></td></tr><tr><td class="numberingColumn confluenceTd">8</td><td class="confluenceTd"><p><strong>DII TB REVIEW Jira Tracker</strong></p></td><td class="confluenceTd"><p>DII</p></td><td class="confluenceTd"><p>Improvement</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14537" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14537?src=confmacro" class="jira-issue-key">CONC-14537</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p>This Jira is used to track different possible enhancements to do for DII TB discussed during DII TB Review : <br/><a class="external-link" href="https://arteris-my.sharepoint.com/personal/bernard_bonardi_arteris_com/_layouts/15/stream.aspx?id=%2Fpersonal%2Fbernard%5Fbonardi%5Farteris%5Fcom%2FDocuments%2FRecordings%2FDII%20testbench%20review%2D20240516%5F083144%2DMeeting%20Recording%2Emp4&amp;referrer=StreamWebApp%2EWeb&amp;referrerScenario=AddressBarCopied%2Eview%2Ea71876ae%2D0166%2D479e%2D8a67%2D0fe31918dd4b&amp;ga=1" rel="nofollow">DII testbench review-20240516_083144-Meeting Recording.mp4 (sharepoint.com)</a></p></td></tr><tr><td class="numberingColumn confluenceTd">9</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">10</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">11</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">12</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">13</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">14</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">15</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">16</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">17</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">18</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">19</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">20</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">21</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><p>DVE TB Review Document 05/01/2024</p><p class="media-group"><a href="/wiki/spaces/ENGR/pages/464912412/Ncore+3.6+TestBench+Reviews?preview=%2F464912412%2F617775123%2FDVE+TestBench+Review+Doc.docx"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-doc.png'); width: 177px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">DVE TestBench Review Doc…</span></a></p><p>DII TB Review Document 05/16/2024</p><p class="media-group"><a href="/wiki/spaces/ENGR/pages/464912412/Ncore+3.6+TestBench+Reviews?preview=%2F464912412%2F648052737%2FDII+testbench+Review+.pdf"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-pdf.png'); width: 333px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">DII testbench Review .pdf</span></a></p><p />

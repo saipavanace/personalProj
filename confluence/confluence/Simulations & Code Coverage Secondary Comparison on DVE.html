@@ -1,0 +1,149 @@
+<p>Code coverage on each ncore unit is currently achieved in multiple steps. </p><ol start="1"><li><p>A known regression is run on multiple iterations. These tests have code coverage enabled on them and each test generates a coverage database that are then all merged together into one database.</p></li><li><p>A ‘formal’ check is run on the design that was compiled, looking for unreachable parts of the code for that configuration. (CoverCheck for Siemens &amp; VCFormal for Synopsys). This will yield a list of exclusions that applied to the database obtained in step #1 above. </p></li><li><p>A designer will examine the database from step #2 and begin to write a list of exclusions &amp; justifications that will help close code coverage for that ncore unit. (Attaining a certain goal in percentage for a unit) This list of exclusions can be a list of modules that can be waived due to coverage on another block, uncovered wrappers like memory cells or special circumstances of untestable logic for a particular configuration. </p></li></ol><h1 id="Simulations&amp;CodeCoverageSecondaryComparisononDVE-NOTES">NOTES</h1><p>+Synopsys code coverage does not have an “Expression” type coverage element that was observed in Siemens. These types are lumped into the Synopsys “Condition” types. </p><p>+Synopsys code coverage includes “Toggle” type coverage element not currently tracked on Siemens which includes interface and internal toggle coverage. </p><p>+Link to notes on running VCS code coverage can be found at: <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/220233882/VCS+Code+Coverage+Collection" data-linked-resource-id="220233882" data-linked-resource-version="3" data-linked-resource-type="page">VCS Code Coverage Collection</a> </p><h1 id="Simulations&amp;CodeCoverageSecondaryComparisononDVE-SYNOPSYS">SYNOPSYS</h1><p /><div class="table-wrap"><table data-table-width="1800" data-layout="full-width" data-local-id="49f186c5-49ed-4b52-bc93-b9bc1573047f" class="confluenceTable"><colgroup><col/><col style="width: 296.0px;"/><col style="width: 107.0px;"/><col style="width: 117.0px;"/><col style="width: 115.0px;"/><col style="width: 123.0px;"/><col style="width: 105.0px;"/><col style="width: 98.0px;"/><col style="width: 119.0px;"/><col style="width: 860.0px;"/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Config Name</strong></p></th><th class="confluenceTh"><p><strong>Pass Rate</strong></p></th><th class="confluenceTh"><p><strong>Line</strong></p><p><strong>(95% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Expression</strong></p><p><strong>(99% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Condition </strong></p><p><strong>(99% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Branch</strong></p></th><th class="confluenceTh"><p><strong>Toggle</strong></p></th><th class="confluenceTh"><p><strong>FSM </strong></p><p><strong>(100% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>hw_cfg_7</p></td><td class="confluenceTd"><p>100%</p></td><td class="confluenceTd"><p>91.33</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>75.88</p></td><td class="confluenceTd"><p>88.00</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>62.99</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>95.70</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>90.18</p></td><td class="confluenceTd"><p>88.00</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>68.76</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>99.63</p></td><td class="confluenceTd"><p>n/a</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>98.08</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>96.53</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>68.61</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal &amp; RTL exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p>hw_cfg_7_all_ecc</p></td><td class="confluenceTd"><p>100%</p></td><td class="confluenceTd"><p>95.22</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>82.26</p></td><td class="confluenceTd"><p>88.21</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>70.92</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">5</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>97.74</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>91.67</p></td><td class="confluenceTd"><p>88.21</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>76.38</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">6</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>99.77</p></td><td class="confluenceTd"><p>n/a</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>97.26</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>96.76</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>77.74</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal &amp; RTL exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">7</td><td class="confluenceTd"><p>hw_config_10</p></td><td class="confluenceTd"><p>100%</p></td><td class="confluenceTd"><p>92.02</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>72.96</p></td><td class="confluenceTd"><p>90.21</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>62.10</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">8</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>95.86</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>85.49</p></td><td class="confluenceTd"><p>90.21</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>67.02</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">9</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>99.75</p></td><td class="confluenceTd"><p>n/a</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>97.01</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>96.78</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>67.23</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal &amp; RTL exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">10</td><td class="confluenceTd"><p>hw_config_resiliency_parity</p></td><td class="confluenceTd"><p>100%</p></td><td class="confluenceTd"><p>89.01</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>74.28</p></td><td class="confluenceTd"><p>84.47</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>72.00</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">11</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>94.79</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>88.03</p></td><td class="confluenceTd"><p>84.47</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>72.22</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">12</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>99.62</p></td><td class="confluenceTd"><p>n/a</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>95.93</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>97.73</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>73.56</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal &amp; RTL exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">13</td><td class="confluenceTd"><p>hw_config_resiliency_duplication_pma</p></td><td class="confluenceTd"><p>100%</p></td><td class="confluenceTd"><p>97.97</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>70.23</p></td><td class="confluenceTd"><p>87.65</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>64.99</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">14</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>99.2</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>82.78</p></td><td class="confluenceTd"><p>87.65</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>70.92</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">15</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>99.66</p></td><td class="confluenceTd"><p>n/a</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>95.58</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>95.37</p></td><td data-highlight-colour="#b3bac5" class="confluenceTd"><p>73.07</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after VCFormal &amp; RTL exclusions applied. </p></td></tr></tbody></table></div><h1 id="Simulations&amp;CodeCoverageSecondaryComparisononDVE-SIEMENS(backup)">SIEMENS (backup)</h1><p>Sim version: questa-2021.2_1</p><p>Covercheck: qformal-2021.2_1</p><p>*RTL exclusion waivers are not generated.</p><div class="table-wrap"><table data-table-width="1800" data-layout="full-width" data-local-id="4af1127b-388d-4b46-8ffc-e68508730b05" class="confluenceTable"><colgroup><col/><col style="width: 296.0px;"/><col style="width: 107.0px;"/><col style="width: 117.0px;"/><col style="width: 115.0px;"/><col style="width: 123.0px;"/><col style="width: 105.0px;"/><col style="width: 125.0px;"/><col style="width: 812.0px;"/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Config Name</strong></p></th><th class="confluenceTh"><p><strong>Pass Rate</strong></p></th><th class="confluenceTh"><p><strong>Statement </strong></p><p><strong>(95% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Expression</strong></p><p><strong>(99% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Condition </strong></p><p><strong>(99% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Branch</strong></p></th><th class="confluenceTh"><p><strong>FSM </strong></p><p><strong>(100% Goal)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>hw_cfg_7</p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7/regression_report.html" rel="nofollow">97%</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7/coverage/html_ORIG/index.html" rel="nofollow">99.17</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7/coverage/html_ORIG/index.html" rel="nofollow">58.0</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7/coverage/html_ORIG/index.html" rel="nofollow">56.1</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7/coverage/html/index.html" rel="nofollow">99.54</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7/coverage/html/index.html" rel="nofollow">89.84</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7/coverage/html/index.html" rel="nofollow">58.1</a></p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after CoverCheck exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13839" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13839?src=confmacro" class="jira-issue-key">CONC-13839</a>
+                            </span>
+  known TB issue.</p><p>recent 3.6.2 changes where we allow &gt; 1 sync in the dve, but the tb thinks it's in 1 sync mode. In progress to be cleaned up for 3.6.2.</p></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p>hw_cfg_7_all_ecc</p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7_all_ecc/regression_report.html" rel="nofollow">98%</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7_all_ecc/coverage/html_ORIG/index.html" rel="nofollow">99.53</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7_all_ecc/coverage/html_ORIG/index.html" rel="nofollow">87.59</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7_all_ecc/coverage/html_ORIG/index.html" rel="nofollow">61.04</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">5</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7_all_ecc/coverage/html/index.html" rel="nofollow">99.84</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7_all_ecc/coverage/html/index.html" rel="nofollow">95.61</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_cfg_7_all_ecc/coverage/html/index.html" rel="nofollow">64.96</a></p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after CoverCheck exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">6</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>recent 3.6.2 changes where we allow &gt; 1 sync in the dve, but the tb thinks it's in 1 sync mode. In progress to be cleaned up for 3.6.2.</p></td></tr><tr><td class="numberingColumn confluenceTd">7</td><td class="confluenceTd"><p>hw_config_10</p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_10/regression_report.html" rel="nofollow">97%</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_10/coverage/html_ORIG/index.html" rel="nofollow">99.23</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_10/coverage/html_ORIG/index.html" rel="nofollow">53.44</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_10/coverage/html_ORIG/index.html" rel="nofollow">52.88</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">8</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_10/coverage/html/index.html" rel="nofollow">99.67</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_10/coverage/html/index.html" rel="nofollow">84.72</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_10/coverage/html/index.html" rel="nofollow">65.8</a></p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after CoverCheck exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">9</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13839" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13839?src=confmacro" class="jira-issue-key">CONC-13839</a>
+                            </span>
+  known TB issue.</p><p>recent 3.6.2 changes where we allow &gt; 1 sync in the dve, but the tb thinks it's in 1 sync mode. In progress to be cleaned up for 3.6.2.</p></td></tr><tr><td class="numberingColumn confluenceTd">10</td><td class="confluenceTd"><p>hw_config_resiliency_parity</p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_parity/regression_report.html" rel="nofollow">97%</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_parity/coverage/html_ORIG/index.html" rel="nofollow">99.24</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_parity/coverage/html_ORIG/index.html" rel="nofollow">56.87</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_parity/coverage/html_ORIG/index.html" rel="nofollow">55.33</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">11</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_parity/coverage/html/index.html" rel="nofollow">99.64</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_parity/coverage/html/index.html" rel="nofollow">78.39</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_parity/coverage/html/index.html" rel="nofollow">61.81</a></p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after CoverCheck exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">12</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13839" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13839?src=confmacro" class="jira-issue-key">CONC-13839</a>
+                            </span>
+  known TB issue.</p><p>recent 3.6.2 changes where we allow &gt; 1 sync in the dve, but the tb thinks it's in 1 sync mode. In progress to be cleaned up for 3.6.2.</p></td></tr><tr><td class="numberingColumn confluenceTd">13</td><td class="confluenceTd"><p>hw_config_resiliency_duplication_pma</p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_duplication_pma/regression_report.html" rel="nofollow">97%</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_duplication_pma/coverage/html_ORIG/index.html" rel="nofollow">99.31</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_duplication_pma/coverage/html_ORIG/index.html" rel="nofollow">51.21</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_duplication_pma/coverage/html_ORIG/index.html" rel="nofollow">55.7</a></p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after regression run.</p></td></tr><tr><td class="numberingColumn confluenceTd">14</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_duplication_pma/coverage/html/index.html" rel="nofollow">99.75</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_duplication_pma/coverage/html/index.html" rel="nofollow">83.89</a></p></td><td class="confluenceTd"><p><a class="external-link" href="https://webfile.arteris.com/~jasonv/ncore3.6/Questa/dveCodeCov/hw_config_resiliency_duplication_pma/coverage/html/index.html" rel="nofollow">67.32</a></p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>Code coverage after CoverCheck exclusions applied. </p></td></tr><tr><td class="numberingColumn confluenceTd">15</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td data-highlight-colour="#ffebe6" class="confluenceTd"><p /></td><td class="confluenceTd"><p>n/a</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13839" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13839?src=confmacro" class="jira-issue-key">CONC-13839</a>
+                            </span>
+  known TB issue.</p><p>recent 3.6.2 changes where we allow &gt; 1 sync in the dve, but the tb thinks it's in 1 sync mode. In progress to be cleaned up for 3.6.2.</p></td></tr></tbody></table></div><p /><p />

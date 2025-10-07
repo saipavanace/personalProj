@@ -1,0 +1,466 @@
+<style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759725868512 {padding: 0px;}
+div.rbtoc1759725868512 ul {list-style: default;margin-left: 0px;}
+div.rbtoc1759725868512 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759725868512'>
+<ul class='toc-indentation'>
+<li><a href='#DMIRe-architectedSequenceMethodology-Goal'>Goal</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-MainTasks'>Main Tasks</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Nicetohaves'>Nice to haves</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Introduction'>Introduction</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Motivation+LegacyAnalysis'>Motivation + Legacy Analysis</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-DevelopmentEpic:'>Development Epic:</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-BlockLevelImplementation'>Block Level Implementation</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Sequences'>Sequences</a>
+<ul class='toc-indentation'>
+<li><a href='#DMIRe-architectedSequenceMethodology-1.VirtualSequence'>1. Virtual Sequence</a>
+<ul class='toc-indentation'>
+<li><a href='#DMIRe-architectedSequenceMethodology-1.1Overview'>1.1 Overview</a></li>
+</ul>
+</li>
+<li><a href='#DMIRe-architectedSequenceMethodology-2.TrafficSequence'>2. Traffic Sequence</a>
+<ul class='toc-indentation'>
+<li><a href='#DMIRe-architectedSequenceMethodology-2.1OnlyMode'>2.1 Only Mode</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-2.2PatternMode'>2.2 Pattern Mode</a></li>
+</ul>
+</li>
+<li><a href='#DMIRe-architectedSequenceMethodology-3.PacketGenerator'>3. Packet Generator</a></li>
+</ul>
+</li>
+<li><a href='#DMIRe-architectedSequenceMethodology-SequenceItems'>Sequence Items</a>
+<ul class='toc-indentation'>
+<li><a href='#DMIRe-architectedSequenceMethodology-1.ClassHierarchy'>1. Class Hierarchy</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-2.dmi_seq_item'>2. dmi_seq_item</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-3.data_seq_item'>3. data_seq_item</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-4.cmd_seq_item'>4. cmd_seq_item</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-5.dtw_seq_item'>5. dtw_seq_item</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-6.rb_seq_item'>6. rb_seq_item</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-7.mrd_seq_item'>7. mrd_seq_item</a></li>
+</ul>
+</li>
+<li><a href='#DMIRe-architectedSequenceMethodology-ResourceManager'>Resource Manager</a>
+<ul class='toc-indentation'>
+<li><a href='#DMIRe-architectedSequenceMethodology-Overview'>Overview</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-aiu_table'>aiu_table</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-dce_table'>dce_table</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-credit_table'>credit_table</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-dmi_table'>dmi_table</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-rbid_table'>rbid_table</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-addr_status_item'>addr_status_item</a></li>
+</ul>
+</li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Randomization'>Randomization</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Knobs&amp;Controls'>Knobs &amp; Controls</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Run'>Run</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-TestList'>Test List</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-Coverage'>Coverage</a></li>
+<li><a href='#DMIRe-architectedSequenceMethodology-TestlistMigration'>Testlist Migration</a></li>
+</ul>
+</div><h3 id="DMIRe-architectedSequenceMethodology-Goal">Goal</h3><ul><li><p>Run new sequence parallel to old one in 3.8 with the intention of making it current 3.8+</p></li><li><p>Keep cmdline controllability, reusability, ease of debug and reproducibility as driving variables throughout the development process. </p></li></ul><h3 id="DMIRe-architectedSequenceMethodology-MainTasks">Main Tasks</h3><p>These tasks aim to bring the usability and dependability of the sequence up</p><div class="table-wrap"><table data-table-width="1800" data-layout="align-start" data-local-id="0ecb21dc-631b-4433-8a08-364431312a10" class="confluenceTable"><colgroup><col style="width: 56.0px;"/><col style="width: 779.0px;"/><col style="width: 97.0px;"/><col style="width: 453.0px;"/><col style="width: 415.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>#</strong></p></th><th class="confluenceTh"><p><strong>Tasks</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th><th class="confluenceTh"><p><strong>Jira</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>Redesign, Coding and Bring-Up</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15583"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15583" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-15583</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p>Bring-up tests work on all config with synopsys VIP and are significantly faster.</p></td></tr><tr><td class="confluenceTd"><p>2</p></td><td class="confluenceTd"><p>Config1 coverage to 90+%</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-16727"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-16727" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-16727</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p>Will involve additional design, constraints, tests and modification to existing methodology to hit corner conditions.</p></td></tr><tr><td class="confluenceTd"><p>3</p></td><td class="confluenceTd"><p>Backpressure on AXI interface using VIP</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-16653"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-16653" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-16653</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p>Resource Busy, not working on this task.</p></td></tr><tr><td class="confluenceTd"><p>4</p></td><td class="confluenceTd"><p>Config4 coverage to 99+%</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-17363"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-17363" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-17363</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>5</p></td><td class="confluenceTd"><p>Config5 coverage to 99+%</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-17447"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-17447" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-17447</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>6</p></td><td class="confluenceTd"><p>Config6 coverage to 99+%</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-17498"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-17498" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-17498</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>7</p></td><td class="confluenceTd"><p>Config7, Config7_snps, Config7_snps0 coverage to 99+%</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-17521"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-17521" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-17521</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>8</p></td><td class="confluenceTd"><p>Resiliency + Unit Duplication</p></td><td data-highlight-colour="#fffae6" class="confluenceTd"><p>WIP</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-17416"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-17416" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-17416</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p>Unit duplication done, resiliency in progress</p></td></tr><tr><td class="confluenceTd"><p>9</p></td><td class="confluenceTd"><p>Performance Monitor </p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Might need to maintain a separate testlist with inhouse AXI + new sequence to accommodate forces/axi adhoc handling for events</p></td></tr><tr><td class="confluenceTd"><p>10</p></td><td class="confluenceTd"><p>SMI Backpressure</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>11</p></td><td class="confluenceTd"><p>CSR Testing</p></td><td data-highlight-colour="#fffae6" class="confluenceTd"><p>WIP</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>12</p></td><td class="confluenceTd"><p>QoS</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Randomized QoS values, coverage hit on all bins</p></td></tr><tr><td class="confluenceTd"><p>13</p></td><td class="confluenceTd"><p>Poison</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Implied randomization is 20% and cmdline control using +<code>k_random_dbad_on_dtw_req</code></p></td></tr><tr><td class="confluenceTd"><p>14</p></td><td class="confluenceTd"><p>Error Testing</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>15</p></td><td class="confluenceTd"><p>Transactv Testing</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>16</p></td><td class="confluenceTd"><p>Q channel</p></td><td data-highlight-colour="#57d9a3" class="confluenceTd"><p>Done</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-17850"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-17850" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-17850</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>17</p></td><td class="confluenceTd"><p>Target Deadlocks</p></td><td data-highlight-colour="#ffffff" class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Identify old logic spaces where deadlock were found and target these scenarios</p></td></tr></tbody></table></div><h3 id="DMIRe-architectedSequenceMethodology-Nicetohaves">Nice to haves </h3><div class="table-wrap"><table data-table-width="1800" data-layout="align-start" data-local-id="457aa0ab-973b-4b2f-8e40-787f128b5851" class="confluenceTable"><colgroup><col style="width: 50.0px;"/><col style="width: 778.0px;"/><col style="width: 101.0px;"/><col style="width: 454.0px;"/><col style="width: 416.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>#</strong></p></th><th class="confluenceTh"><p><strong>Tasks</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th><th class="confluenceTh"><p><strong>Jira</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>Address generation logic to match CONC-16353 testcase</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-16353"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_925433970_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-16353" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-16353</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p></td><td class="confluenceTd"><p>While working on reproducing the Jira 16353, I was able to model address generation logic to hit the failure on bringup test which was difficult to reproduce using the old sequence. <br/>Saved the git repo to work on for later, due to lack of resource/time. <br/>Will need to integrate my findings and check it in.</p></td></tr><tr><td class="confluenceTd"><p>2</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><h3 id="DMIRe-architectedSequenceMethodology-Introduction">Introduction</h3><p>This effort is to overhaul DMI DV infrastructure to adhere to UVM methodology, involves a full randomization update, new sequences, sequence items, resource management and a more modular approach to leverage reusability, quicker turnaround times on additional features and easier debug. </p><p>This page is an effort to document the process from its infancy to help ramp the new methodology up, achieve complete verification, replace existing tests and hit coverage goals.</p><h3 id="DMIRe-architectedSequenceMethodology-Motivation+LegacyAnalysis">Motivation + Legacy Analysis</h3><ul><li><p>Existing sequence was patch-fixed over its lifetime with multiple owners incrementally adding new features to it. This has caused the validation quality to degrade over time and the infrastructure initially built to drive transactions haven’t adapted well to how NCORE has progressed. Added to this, the test-list has gotten quite massive, causing a significant simulation time overload with very little differentiation among the tests.</p></li><li><p>DV analysis of legacy sequences and proposal: <a href="/wiki/spaces/ENGR/pages/925433970/DMI+Re-architected+Sequence+Methodology?preview=%2F925433970%2F926744588%2FDMI+DV+2024.pptx"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-presentation.png'); width: 333px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">DMI DV 2024.pptx</span></a> </p></li></ul><h3 id="DMIRe-architectedSequenceMethodology-DevelopmentEpic:">Development Epic:</h3><p /><a class="external-link" data-card-appearance="block" data-datasource="{&quot;id&quot;:&quot;d8b75300-dfda-4519-b6cd-e49abbd50401&quot;,&quot;parameters&quot;:{&quot;jql&quot;:&quot;text ~ \&quot;CONC-13789*\&quot; or summary ~ \&quot;CONC-13789*\&quot; or key = CONC-13789 ORDER BY created DESC&quot;,&quot;cloudId&quot;:&quot;9dd24424-8834-4688-b5a4-a19c9315e7f0&quot;},&quot;views&quot;:[{&quot;type&quot;:&quot;table&quot;,&quot;properties&quot;:{&quot;columns&quot;:[{&quot;key&quot;:&quot;issuetype&quot;},{&quot;key&quot;:&quot;key&quot;},{&quot;key&quot;:&quot;summary&quot;},{&quot;key&quot;:&quot;issuelinks&quot;},{&quot;key&quot;:&quot;subtasks&quot;}]}}]}" href="https://arterisip.atlassian.net/issues/?jql=text%20~%20%22CONC-13789*%22%20or%20summary%20~%20%22CONC-13789*%22%20or%20key%20%3D%20CONC-13789%20ORDER%20BY%20created%20DESC" rel="nofollow">https://arterisip.atlassian.net/issues/?jql=text%20~%20%22CONC-13789*%22%20or%20summary%20~%20%22CONC-13789*%22%20or%20key%20%3D%20CONC-13789%20ORDER%20BY%20created%20DESC</a><h3 id="DMIRe-architectedSequenceMethodology-BlockLevelImplementation">Block Level Implementation</h3><p /><p /><p /><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="new_dv_block_level (1).jpg" width="841" src="https://arterisip.atlassian.net/wiki/download/attachments/925433970/new_dv_block_level%20(1).jpg?api=v2"></span><p /><h3 id="DMIRe-architectedSequenceMethodology-Sequences">Sequences</h3><h5 id="DMIRe-architectedSequenceMethodology-1.VirtualSequence">1. Virtual Sequence</h5><p style="margin-left: 30.0px;"><em>dv/seq/dmi_base_vseq.sv</em></p><p style="margin-left: 30.0px;"><em>dv/seq/dmi_vseq.sv</em></p><p /><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="vseq (1).jpg" width="502" src="https://arterisip.atlassian.net/wiki/download/attachments/925433970/vseq%20(1).jpg?api=v2"></span><p /><h6 id="DMIRe-architectedSequenceMethodology-1.1Overview">1.1 Overview</h6><ul><li><p>Generate SMI Traffic if/when resources are available, enter timeout if not and wait to recover resource.</p></li><li><p><em>dmi_base_vseq</em> class holds arbitration policies to manage TX/RX on the SMI interface and wrappers to manage resource allocation + timeout.</p><ul><li><p>TX (to DMI): Waits for sequences to populate <em>smi_dispatch_q </em>to dispatch packets to DMI.</p></li><li><p>RX (from DMI): Monitors and responds with appropriate REQ/RSP and updates the lookup table in <em>resource_manager.</em></p><ul><li><p>DtwReq for non-coherent writes on receipt of StrReq.</p></li><li><p>Merging write (MW=1) DtwReq on receipt of primary DtwRsp</p></li></ul></li><li><p>Timeout Manger enters one of these states if resource isn’t available to allocate.</p><ul><li><p>AIU_TABLE_TIMEOUT:  All AIU IDs are in use</p></li><li><p>DCE_TABLE_TIMEOUT: All DCE ID are in use</p></li><li><p>CREDIT_TIMEOUT: All credits are in use</p><ul><li><p>Types: CMD, MRD, RBR, DTW</p></li></ul></li><li><p>ADDRESS_TIMEOUT: No addresses are available</p></li><li><p>RBID_TIMEOUT: All RBIDs are in use</p></li><li><p>Command line control:  +k_seq_delay, +k_seq_timeout_max</p></li></ul></li></ul></li></ul><h5 id="DMIRe-architectedSequenceMethodology-2.TrafficSequence">2. Traffic Sequence</h5><p style="margin-left: 30.0px;"><em>dv/seq/traffic_pattern_seq.sv</em></p><h6 id="DMIRe-architectedSequenceMethodology-2.1OnlyMode">2.1 Only Mode</h6><ul><li><p>Isolated traffic</p></li></ul><div class="table-wrap"><table data-table-width="1800" data-layout="align-start" data-local-id="7d214e4a-b9a2-4ec6-929e-e32247d947ea" class="confluenceTable"><colgroup><col/><col style="width: 715.0px;"/><col style="width: 1085.0px;"/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Only Mode (cannot be overlapped with one another)</strong></p></th><th class="confluenceTh"><p><strong>Function</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>cmo_only</p></td><td class="confluenceTd"><p><code>MRD_FLUSH,MRD_CLN,MRD_INV,MRD_PREF,CMD_CLN_INV,CMD_CLN_SH_PER,CMD_MK_INV,CMD_PREF</code></p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>read_only</p></td><td class="confluenceTd"><p><code>MRD_RD_WITH_SHR_CLN,MRD_RD_WITH_UNQ_CLN,MRD_RD_WITH_UNQ,MRD_RD_WITH_INV,MRD_FLUSH,MRD_CLN,MRD_INV,MRD_PREF,CMD_RD_NC</code></p></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>write_only</p></td><td class="confluenceTd"><p><code>DTW_DATA_CLN,DTW_DATA_PTL,DTW_DATA_DTY,CMD_WR_NC_PTL,CMD_WR_NC_FULL</code></p></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p>read_write_only</p></td><td class="confluenceTd"><p>read_only + write_only </p></td></tr><tr><td class="numberingColumn confluenceTd">5</td><td class="confluenceTd"><p>dtwmrgmrd_only</p></td><td class="confluenceTd"><p><code>DTW_MRG_MRD_UCLN,DTW_MRG_MRD_UDTY,DTW_MRG_MRD_INV</code></p></td></tr><tr><td class="numberingColumn confluenceTd">6</td><td class="confluenceTd"><p>mrd_only</p></td><td class="confluenceTd"><p><code>MRD_RD_WITH_SHR_CLN,MRD_RD_WITH_UNQ_CLN,MRD_RD_WITH_UNQ,MRD_RD_WITH_INV,MRD_FLUSH,MRD_CLN,MRD_INV,MRD_PREF</code></p></td></tr><tr><td class="numberingColumn confluenceTd">7</td><td class="confluenceTd"><p>mrd_dtwmrgmrd_only</p></td><td class="confluenceTd"><p>mrd_only + dtwmrgmrd_only</p></td></tr><tr><td class="numberingColumn confluenceTd">8</td><td class="confluenceTd"><p>coh_write_only</p></td><td class="confluenceTd"><p><code>DTW_NO_DATA,DTW_DATA_CLN,DTW_DATA_PTL,DTW_DATA_DTY</code></p></td></tr><tr><td class="numberingColumn confluenceTd">9</td><td class="confluenceTd"><p>noncoh_read_only</p></td><td class="confluenceTd"><p><code>CMD_RD_NC</code></p></td></tr><tr><td class="numberingColumn confluenceTd">10</td><td class="confluenceTd"><p>noncoh_write_only</p></td><td class="confluenceTd"><p><code>CMD_WR_NC_PTL,CMD_WR_NC_FULL</code></p></td></tr><tr><td class="numberingColumn confluenceTd">11</td><td class="confluenceTd"><p>atomic_only</p></td><td class="confluenceTd"><p><code>CMD_RD_ATM,CMD_WR_ATM,CMD_SW_ATM,CMD_CMP_ATM</code></p></td></tr></tbody></table></div><h6 id="DMIRe-architectedSequenceMethodology-2.2PatternMode">2.2 Pattern Mode</h6><ul><li><p>Super patterns to control sequence of CCMP types</p></li></ul><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="0a4e841c-e418-41df-9cda-0bf94b95aaae" class="confluenceTable"><colgroup><col style="width: 343.0px;"/><col style="width: 1455.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Name</strong></p></th><th class="confluenceTh"><p><strong>Description</strong></p></th></tr><tr><td class="confluenceTd"><p>DMI_RAND_p</p></td><td class="confluenceTd"><p>Distributed random based on <em>wt_&lt;ccmp_type&gt;</em> value</p></td></tr><tr><td class="confluenceTd"><p>DMI_CMP_ATM_MATCH_p</p></td><td class="confluenceTd"><p>Ad-hoc case for a compare atomic hit condition, performs a write atomic followed by a compare atomic to achieve a hit</p></td></tr><tr><td class="confluenceTd"><p>DMI_RAW_p</p></td><td class="confluenceTd"><p>Read after Write traffic, ensure <em>wt_reuse_addr </em> is set to a reasonable value</p></td></tr><tr><td class="confluenceTd"><p>DMI_EXCLUSIVE_p</p></td><td class="confluenceTd"><p>Exclusive traffic</p></td></tr><tr><td class="confluenceTd"><p>DMI_CMO_on_WR_p</p></td><td class="confluenceTd"><p>Send CMOs on Writes</p></td></tr><tr><td class="confluenceTd"><p>DMI_LATE_MRD_P</p></td><td class="confluenceTd"><p>MRD flush, clean, invalids with RL=10</p></td></tr><tr><td class="confluenceTd"><p>DMI_SP_WARMUP_P</p></td><td class="confluenceTd"><p>Warmup Scratchpad with a stream of writes. Used in conjunction with +k_SP_warmup</p></td></tr><tr><td class="confluenceTd"><p>DMI_CACHE_WARMUP_P</p></td><td class="confluenceTd"><p>Warmup SMC with a stream of MRD prefetches. Used in conjunction with +k_CACHE_warmup</p></td></tr><tr><td class="confluenceTd"><p>DMI_USER_p</p></td><td class="confluenceTd"><p>Specify a pattern on command line TBD(Due to limitations on argument parsing using SV command line arguments)</p><p>Currently, can edit <code>DMI_USER_pattern_q</code> in <em>dv/dmi/env/cfg_obj/dmi_cmd_args.sv</em></p></td></tr></tbody></table></div><h5 id="DMIRe-architectedSequenceMethodology-3.PacketGenerator">3. Packet Generator</h5><p style="margin-left: 30.0px;"><em>dv/seq/packet_generator_base_seq.sv</em></p><p style="margin-left: 30.0px;"><em>dv/seq/packet_generator_seq.sv</em></p><ul><li><p>Handles packet generation for chosen CCMP type from <em>dmi_vseq </em>and queues them into <em>smi_dispatch_q</em></p></li><li><p>All function calls, operates in 0 time.</p></li><li><p>Consults and updates the lookup table in resource manager</p></li></ul><h3 id="DMIRe-architectedSequenceMethodology-SequenceItems">Sequence Items</h3><h5 id="DMIRe-architectedSequenceMethodology-1.ClassHierarchy">1. Class Hierarchy</h5><p /><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="seq_item.jpg" width="711" src="https://arterisip.atlassian.net/wiki/download/attachments/925433970/seq_item.jpg?api=v2"></span><p /><h5 id="DMIRe-architectedSequenceMethodology-2.dmi_seq_item">2. dmi_seq_item</h5><p style="margin-left: 30.0px;">Extends <em>smi_seq_item.</em></p><p style="margin-left: 30.0px;">Lowest level class used across DMI </p><h5 id="DMIRe-architectedSequenceMethodology-3.data_seq_item">3. data_seq_item</h5><p style="margin-left: 30.0px;">Extends <em>dmi_seq_item.</em></p><p style="margin-left: 30.0px;">Randomizes and assigns size, data payload fields and aligns address</p><h5 id="DMIRe-architectedSequenceMethodology-4.cmd_seq_item">4. cmd_seq_item</h5><p style="margin-left: 30.0px;">Extends <em>data_seq_item. </em>Randomizes and houses constraints, constructors for CMOs, non-coherent read/writes and atomics:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">CMD_CLN_INV,CMD_CLN_VLD,CMD_CLN_SH_PER,CMD_MK_INV,CMD_PREF,CMD_RD_NC,CMD_WR_NC_FULL,CMD_WR_NC_PTL,CMD_WR_ATM,CMD_RD_ATM,CMD_SW_ATM,CMD_CMP_ATM</pre>
+</div></div><h5 id="DMIRe-architectedSequenceMethodology-5.dtw_seq_item">5. dtw_seq_item</h5><p style="margin-left: 30.0px;">Extends <em>data_seq_item. </em>Randomizes and houses constraints, constructors for all coherent writes.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">DTW_MRG_MRD_UCLN,DTW_MRG_MRD_UDTY,DTW_MRG_MRD_INV,DTW_NO_DATA,DTW_DATA_CLN,DTW_DATA_PTL,DTW_DATA_DTY</pre>
+</div></div><h5 id="DMIRe-architectedSequenceMethodology-6.rb_seq_item">6. rb_seq_item</h5><p style="margin-left: 30.0px;">Extends <em>data_seq_item. </em>Randomizes and houses constraints to construct a RB request to accompany a coherent write. </p><h5 id="DMIRe-architectedSequenceMethodology-7.mrd_seq_item">7. mrd_seq_item</h5><p style="margin-left: 30.0px;">Extends <em>data_seq_item. </em>Randomizes and houses constraints, constructors for all coherent read types </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"> MRD_RD_WITH_SHR_CLN,MRD_RD_WITH_UNQ_CLN,MRD_RD_WITH_UNQ,MRD_RD_WITH_INV,MRD_FLUSH,MRD_CLN,MRD_INV,MRD_PREF</pre>
+</div></div><h3 id="DMIRe-architectedSequenceMethodology-ResourceManager">Resource Manager</h3><p style="margin-left: 30.0px;"><em>dv/cfg_obj/resource_manager.sv</em></p><h5 id="DMIRe-architectedSequenceMethodology-Overview">Overview</h5><p>Any resource from the DMI point of view is maintained in this class. Typical functions include but not limited to : allocate, release, full, empty.</p><h5 id="DMIRe-architectedSequenceMethodology-aiu_table">aiu_table</h5><ul><li><p><code>aiu_table_t aiu_table[NUM_AIUS][2**SMI_MSG_WIDTH];</code></p></li><li><p>Manages available AIU message IDs per AIU.</p></li><li><p>Periodically all available AIU IDs are added to a <em>aiu_msg_id_q </em> to reduce lookup evaluation time to 0 and consumed from the sequence items.</p></li><li><p>Models AIU behavior, maintains occupancy and releases depending on responses received and when the <em>dmi_table </em> is updated.</p></li><li><p>Methods:</p><ul><li><p><code>int aiu_table_size()</code></p></li><li><p><code>bit aiu_table_full()</code></p></li><li><p><code>bit aiu_table_ready()</code></p></li><li><p><code>bit is_aiu_entry_available()</code></p></li><li><p><code>release_aiu_table(aiu_id_t m_item)</code></p></li><li><p><code>prepare_aiu_msg_ids()</code></p></li><li><p><code>aiu_id_t get_aiu_msg_id(string msg_type)</code></p></li></ul></li></ul><h5 id="DMIRe-architectedSequenceMethodology-dce_table">dce_table</h5><ul><li><p><code>dce_table_t dce_table[NUM_DCES][2**SMI_MSG_WIDTH];</code></p></li><li><p>Manages available DCE message IDs per AIU.</p></li><li><p>Periodically all available DCE IDs are added to a <em>dce_msg_id_q </em> to reduce lookup evaluation time to 0 and consumed from the sequence items.</p></li><li><p>Constrain DCE ID allotment depending on the RBID chosen. Ever DCE has a non-overlapping range of RBIDs allotted.</p></li><li><p>Models DCE behavior, maintains occupancy and releases depending on responses received and when the <em>dmi_table </em> is updated.</p></li><li><p>Methods:</p><ul><li><p><code>int dce_table_size()</code></p></li><li><p><code>bit dce_table_full()</code></p></li><li><p><code>bit dce_table_ready(input bit needs_home_dce_id=0, bit check_msg_id_q=0)</code></p></li><li><p><code>bit is_dce_entry_available()</code></p></li><li><p><code>release_dce_table(dce_id_t m_item, input bit is_rb=0)</code></p></li><li><p><code>prepare_dce_msg_ids()</code></p></li><li><p><code>dce_id_t get_dce_msg_id(string msg_type, input bit get_home_dce_id=0, bit is_rb=0, smi_rbid_t m_rbid=0)</code></p></li><li><p><code>int find_dce_table_index(dce_id_t m_item)</code></p></li><li><p><code>int find_dcefunitID_idx(smi_ncore_unit_id_bit_t dce_id)</code></p></li></ul></li></ul><h5 id="DMIRe-architectedSequenceMethodology-credit_table">credit_table</h5><ul><li><p><code>bit credit_table[dmi_credit_table_type_t][];</code></p></li><li><p>Replicates the skid buffers inside DMI, ensuring not to overflow the buffers. </p></li><li><p>A credit is always required for a DMI transaction to be dispatched to the SMI I/F.</p></li><li><p>Alternately, can be configured to overflow and test the skid buffers if needed.</p></li><li><p>Methods:</p><ul><li><p><code>bit reserve_credit(dmi_credit_table_type_t _type)</code></p></li><li><p><code>release_credit(smi_msg_type_bit_t msg_type)</code></p></li><li><p><code>bit credit_table_full(dmi_credit_table_type_t _type)</code></p></li><li><p><code>int credit_table_count_ones(dmi_credit_table_type_t _type)</code></p></li><li><p><code>int get_max_skid_buf_size(dmi_credit_table_type_t _type)</code></p></li></ul></li></ul><div class="table-wrap"><table data-table-width="449" data-layout="align-start" data-local-id="0bb42c72-12ce-46b6-8339-a012d8196d0d" class="confluenceTable"><tbody><tr><th class="confluenceTh"><p><strong>Type</strong></p></th><th class="confluenceTh"><p><strong>Limit</strong></p></th></tr><tr><td class="confluenceTd"><p>CMD_CT</p></td><td class="confluenceTd"><p><code>CMD_SKID_BUF_SIZE</code></p></td></tr><tr><td class="confluenceTd"><p>MRD_CT</p></td><td class="confluenceTd"><p><code>MRD_SKID_BUF_SIZE</code></p></td></tr><tr><td class="confluenceTd"><p>RBR_CT</p></td><td class="confluenceTd"><p><code>CMD_SKID_BUF_SIZE</code></p></td></tr><tr><td class="confluenceTd"><p>DTW_CT</p></td><td class="confluenceTd"><p><code>CMD_SKID_BUF_SIZE</code></p></td></tr></tbody></table></div><h5 id="DMIRe-architectedSequenceMethodology-dmi_table">dmi_table</h5><p style="margin-left: 30.0px;"><em>dv/cfg_obj/dmi_table.sv</em></p><ul><li><p><code>dmi_table m_table[$];  </code></p></li><li><p>Tracks the lifecycle of a CCMP input transaction in the environment.</p></li><li><p>Constructed with relevant markers when a packet is randomized and queued on the SMI I/F</p></li><li><p>Records request and responses that occur on the I/F to help dispatch adequate responses and also efficiently control end of test.</p></li><li><p>Can be traced with a unique id: <strong>DT_UID:#</strong></p></li><li><p>Methods:</p><ul><li><p><code>add_to_LUT(ref smi_seq_item m_item, input int m_id)</code></p></li><li><p><code>update_LUT(ref smi_seq_item m_item, output MW_rbid_t mw_outcome)</code></p></li><li><p><code>delete_LUT(int m_idx)</code></p></li><li><p><code>print_LUT_matches(int idx_q[$])</code></p></li><li><p><code>print_LUT()</code></p></li></ul></li></ul><div class="table-wrap"><table data-table-width="183" data-layout="align-start" data-local-id="c5afe1bf-071d-4976-914c-d9de385a10a1" class="confluenceTable"><tbody><tr><th class="confluenceTh"><p><strong>Type</strong></p></th></tr><tr><td class="confluenceTd"><p>COH_RD_TT</p></td></tr><tr><td class="confluenceTd"><p>COH_WR_TT</p></td></tr><tr><td class="confluenceTd"><p>NON_COH_RD_TT</p></td></tr><tr><td class="confluenceTd"><p>NON_COH_WR_TT</p></td></tr><tr><td class="confluenceTd"><p>ATM_LD_TT</p></td></tr></tbody></table></div><h5 id="DMIRe-architectedSequenceMethodology-rbid_table">rbid_table</h5><ul><li><p><code>rbid_table_t           rbid_table[&lt;%=ch_rbid%&gt;*2];</code></p></li><li><p>RBID management</p></li><li><p>Methods:</p><ul><li><p><code>smi_rbid_t reserve_RBID(input bit drain_mode=0)</code></p></li><li><p><code>release_RBID(smi_rbid_t m_rbid)</code></p></li><li><p><code>bit is_RBID_available()</code></p></li><li><p><code>bit is_release_RBID(smi_rbid_t m_rbid)</code></p></li></ul></li></ul><h5 id="DMIRe-architectedSequenceMethodology-addr_status_item">addr_status_item</h5><p style="margin-left: 30.0px;"><em>dv/cfg_obj/addr_status_item.sv</em></p><ul><li><p>Base class item to maintain an associative array of active cache-line aligned addresses that provide in-flight address dependency flag data for quick access to dmi_table. Avoids searching the LUT for an address match every single attempt.</p></li><li><p>Instantiated as <em>addr_governor[smi_addr_t]</em></p></li><li><p>Variables</p><ul><li><p>coh_write_flg</p></li><li><p>coh_read_flg</p></li><li><p>cmo_flg</p></li><li><p>atomic_flg</p></li><li><p>lut_UID</p></li><li><p>UID_q[$] - For multiple addresses on same CL specific to cache warmup cases</p></li></ul></li><li><p>Methods:</p><ul><li><p><code>bit is_pending(bit is_coh_read = 0)</code></p></li></ul></li></ul><h3 id="DMIRe-architectedSequenceMethodology-Randomization">Randomization</h3><ul><li><p>Expressed in two stages and overridden by <em>dmi_cmd_args </em>for cmdline control</p></li><li><p><em>dmi_env_config: </em> Houses global knobs and directives based on test intent etc</p></li><li><p><em>*_seq_item: </em>Houses CCMP Type specific constraint and data constructor classes. Adheres to providing weights from cmdline or testlist by using <em>wt_* </em>variables that are instances of common_knob_class</p></li></ul><h3 id="DMIRe-architectedSequenceMethodology-Knobs&amp;Controls">Knobs &amp; Controls</h3><div class="table-wrap"><table data-table-width="1800" data-layout="align-start" data-local-id="50ee417d-4e60-4123-b420-483fddbac3b3" class="confluenceTable"><colgroup><col/><col style="width: 296.0px;"/><col style="width: 637.0px;"/><col style="width: 716.0px;"/><col style="width: 150.0px;"/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Name</strong></p></th><th class="confluenceTh"><p><strong>Function</strong></p></th><th class="confluenceTh"><p><strong>Location of usage</strong></p></th><th class="confluenceTh"><p><strong>Rand Override</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>k_seq_delay</p></td><td class="confluenceTd"><p>The time in-between two resource availability checks</p></td><td class="confluenceTd"><p>dmi_base_vseq</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>k_seq_timeout_max</p></td><td class="confluenceTd"><p># of times the resource available check should fail before exit</p></td><td class="confluenceTd"><p>dmi_base_vseq</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>k_stimulus_debug</p><p>k_stimulus_address_debug</p></td><td class="confluenceTd"><p>Sequence/Address verbose debug options. Provides in-detail debug prints for quicker debug.</p></td><td class="confluenceTd"><p>All sequence and class objects</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">5</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">6</td><td class="confluenceTd"><p>k_all_byte_enables_on</p></td><td class="confluenceTd"><p>Set’s all byte enables to 1 for DTWs</p></td><td class="confluenceTd"><p>data_seq_item</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">7</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">8</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">9</td><td class="confluenceTd"><p>FORCE CCMP FIELDS</p></td><td class="confluenceTd"><p>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;</p></td><td class="confluenceTd"><p>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;</p></td><td class="confluenceTd"><p>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</p></td></tr><tr><td class="numberingColumn confluenceTd">10</td><td class="confluenceTd"><p>k_force_mw</p></td><td class="confluenceTd"><p>(0/1) = Force the MW field for DTW_PTL, DTW_MRG_MRD_UDTY. </p><p>(default = -1)</p></td><td class="confluenceTd"><p>traffic_pattern_seq</p></td><td class="confluenceTd"><p>Yes</p></td></tr><tr><td class="numberingColumn confluenceTd">11</td><td class="confluenceTd"><p>k_force_ns</p></td><td class="confluenceTd"><p>(0/1) = Force the NS field</p><p>(default = -1)</p></td><td class="confluenceTd"><p>all sequence items</p></td><td class="confluenceTd"><p>Yes</p></td></tr><tr><td class="numberingColumn confluenceTd">12</td><td class="confluenceTd"><p>k_force_es</p></td><td class="confluenceTd"><p>(0/1) = Force the ES field</p><p>(default = -1)</p></td><td class="confluenceTd"><p>all sequence items</p></td><td class="confluenceTd"><p>Yes</p></td></tr><tr><td class="numberingColumn confluenceTd">13</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">14</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">15</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">16</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">17</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">18</td><td class="confluenceTd"><p>ADDRESS CONTROL</p></td><td class="confluenceTd"><p>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;</p></td><td class="confluenceTd"><p>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;</p></td><td class="confluenceTd"><p>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</p></td></tr><tr><td class="numberingColumn confluenceTd">19</td><td class="confluenceTd"><p>k_reuse_addr</p></td><td class="confluenceTd"><p>Reuse a limited number of addresses</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">20</td><td class="confluenceTd"><p>k_shared_c_nc_addressing</p></td><td class="confluenceTd"><p>Utilizes non-coherent region to send coherent operations and vice-versa</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><h3 id="DMIRe-architectedSequenceMethodology-Run">Run</h3><p> runsim -e dmi_v2 -c &lt;&gt; -t &lt;&gt; …</p><h3 id="DMIRe-architectedSequenceMethodology-TestList">Test List</h3><p><em>tb/runsim_testlist_v2.json</em></p><div class="table-wrap"><table data-table-width="1800" data-layout="align-start" data-local-id="499da801-753e-4883-b583-039b5115b729" class="confluenceTable"><colgroup><col/><col style="width: 235.0px;"/><col style="width: 135.0px;"/><col style="width: 444.0px;"/><col style="width: 114.0px;"/><col style="width: 243.0px;"/><col style="width: 623.0px;"/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Name</strong></p></th><th class="confluenceTh"><p><strong>Config</strong></p></th><th class="confluenceTh"><p><strong>Flavors</strong></p></th><th class="confluenceTh"><p><strong> CCMP Types</strong></p></th><th class="confluenceTh"><p><strong>Intent</strong></p></th><th class="confluenceTh"><p><strong>Keynote/Differentiation</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>random</p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><ol start="1"><li><p><code>trace_capture_cctrlr_modify</code>: Modify trace control reg values</p></li><li><p><code>trace_capture_alter_frc</code>:Alter FRC value for trace capture scoreboard</p></li><li><p><code>axi_zero_delay</code>:AXI I/F with zero delay</p></li><li><p><code>qos</code>: QoS feature ON</p></li><li><p><code>qos_modify</code>:QoS inflight threshold modification</p></li></ol></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><p>Run all CCMP traffic</p></td><td class="confluenceTd"><p>Used to bring up new infrastructure, constraints. Goal is to stream traffic at controllable speeds with efficient resource allocation avoiding long wait times.</p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>scratchpad</p></td><td class="confluenceTd"><p>only SP configs</p></td><td class="confluenceTd"><ol start="1"><li><p><code>all_ways_for_SP</code>: Set all cache ways for SP</p></li><li><p><code>usage</code>: Warmup SP with a stream of data writes then randomize traffic after</p></li></ol></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>address_reuse</p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><ol start="1"><li><p><code>exclusive_access</code>: Set NS and send exclusive traffic to AXI</p></li><li><p><code>CMO_on_WR_fixed_ns</code>: Send CMOs on writes, retain NS</p></li><li><p><code>shared_coh_noncoh_regions</code>:Coh/Non-coh address overlap</p></li></ol></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><p>Toggle NS field on a limited address queue</p></td><td class="confluenceTd"><p>Specifically uses +k_reuse_addr that targets a limited number of addresses while randomizing NS field to hit same address, different CCMP type and NS transitions to exercise utilizing the same space over and over to violate any memory issues.</p></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p>smc</p></td><td class="confluenceTd"><p>Cache Configs</p></td><td class="confluenceTd"><ol start="1"><li><p><code>warmup</code>: Warmup cache, then random traffic</p></li><li><p><code>max_evicts</code>: Maximize same set addressing, to target eviction</p></li><li><p><code>shared_coh_noncoh_regions</code>: Mix coherent traffic to NonCoh address regions and vice-versa</p></li></ol></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><p>Utilize and stress the cache</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">5</td><td class="confluenceTd"><p>CMO_debug_RAW_mntop</p></td><td class="confluenceTd"><p>Cache Configs</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Checks CMO R/W functionality</p></td><td class="confluenceTd"><p>No exclusives, SP addressing or merging writes</p></td></tr><tr><td class="numberingColumn confluenceTd">6</td><td class="confluenceTd"><p>CMO_RAW_mntop_simple</p></td><td class="confluenceTd"><p>Cache Configs</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>RAW on all ways through MntOp</p></td><td class="confluenceTd"><p>No exclusives, SP addressing or merging writes</p></td></tr><tr><td class="numberingColumn confluenceTd">7</td><td class="confluenceTd"><p>MaintOp</p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><ol start="1"><li><p><code>flush_by_addr_range</code></p></li><li><p><code>flush_by_addr</code></p></li><li><p><code>flush_by_index_way_range</code></p></li><li><p><code>flush_by_index_way</code></p></li><li><p><code>flush_all_entries</code></p></li><li><p><code>flush_random_all_type</code></p></li><li><p><code>flush_random_all_type_max_range</code></p></li></ol></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>MntOp Testing</p></td><td class="confluenceTd"><p>No exclusives, SP addressing or merging writes</p></td></tr><tr><td class="numberingColumn confluenceTd">8</td><td class="confluenceTd"><p>address_translation</p></td><td class="confluenceTd"><p>Supported Configs</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Turn on DMI address translation</p></td><td class="confluenceTd"><p>No exclusives, no merging writes</p></td></tr><tr><td class="numberingColumn confluenceTd">9</td><td class="confluenceTd"><p>response_error</p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><p>Inject errors on AXI</p></td><td class="confluenceTd"><p>Test error injection from native I/F</p></td></tr><tr><td class="numberingColumn confluenceTd">10</td><td class="confluenceTd"><p>fill_TT</p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><ol start="1"><li><p><code>write_long_delay</code>: +<code>k_axi_long_delay</code></p></li><li><p><code>read_long_delay</code>: +<code>k_axi_long_delay</code></p></li><li><p><code>write_rsp_chnl</code>: +<code>axi_suspend_W_resp</code></p></li><li><p><code>read_rsp_chnl_nc_reads</code>: +<code>axi_suspend_R_resp</code></p></li></ol></td><td class="confluenceTd"><p>Flavor Specific</p></td><td class="confluenceTd"><p>Stall native I/F aggressively to ensure TT is filled up</p></td><td class="confluenceTd"><p>Traffic per flavor is chosen accordingly to ensure either the RTT/WTT are aptly filled up. There is a level of dependency that is maintained in the AXI VIP response to ensure the stalling logic hits TT full conditions, this test can’t house other random transactions and every flavor tests a specific branch of code is exercised</p></td></tr><tr><td class="numberingColumn confluenceTd">11</td><td class="confluenceTd"><p>axi_backpressure</p></td><td class="confluenceTd"><p>All</p></td><td class="confluenceTd"><ol start="1"><li><p><code>rw_addr_chnl</code></p></li><li><p><code>rd_data_chnl</code></p></li><li><p><code>wr_resp_chnl</code></p></li><li><p><code>rd_resp_chnl</code></p></li><li><p><code>rd_resp_chnl_with_late_MRDs</code>: Forces late MRD response(smi_rl =10)</p></li><li><p><code>wr_data_chnl</code>: Write data channel backpressure</p></li><li><p><code>AXI_OOO</code>: Out of order responses in read and write</p></li></ol></td><td class="confluenceTd"><p>Flavor Specific</p></td><td class="confluenceTd"><p>Apply AXI backpressure on AW/W and AR channels</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">12</td><td class="confluenceTd"><p>q_channel</p></td><td class="confluenceTd"><p>PMA configs</p></td><td class="confluenceTd"><ol start="1"><li><p><code>sanity</code></p></li><li><p><code>reset_test</code></p></li><li><p><code>multiple_requests</code></p></li><li><p><code>request_between_cmd</code></p></li><li><p><code>request_during_cmd</code></p></li></ol></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Exercise PMA logic</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">13</td><td class="confluenceTd"><p>unit_duplication</p></td><td class="confluenceTd"><p>Configs with dup unit</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Test unit duplication using forces in fault_injector module</p></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><h3 id="DMIRe-architectedSequenceMethodology-Coverage">Coverage</h3><ul><li><p><time datetime="2025-08-14" class="date-past">14 Aug 2025</time>  achieved coverage closure on all coverage configs with 99+% goal. All with the top 11 tests from the test-list above with their respective flavors. Next step is to review code coverage on the same coverage database to isolate logic zones not being exercised and target those.</p></li></ul><h3 id="DMIRe-architectedSequenceMethodology-TestlistMigration">Testlist Migration</h3><p>Old tests are being ported over to the new testlist and to ensure nothing is left behind and the robustness of the new testlist, the mapping of tests are tracked using this excel sheet</p><p class="media-group"><a href="/wiki/spaces/ENGR/pages/925433970/DMI+Re-architected+Sequence+Methodology?preview=%2F925433970%2F1582202913%2FOld_testlist_golden.csv"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-file.png'); width: 250px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">Old_testlist_golden.csv</span></a></p><p />

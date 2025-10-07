@@ -1,0 +1,1559 @@
+{
+  "name": "dv_sys",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "",
+      "params": [
+        {
+          "parameterName": "strProjectName",
+          "type": "string",
+          "parameterType": "architecture",
+          "formula": "system.Projectname"
+        },
+        {
+          "parameterName": "assertOn",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+        },
+        {
+          "parameterName": "useResiliency",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.ResilienceEnable"
+        },
+        {
+          "parameterName": "wSecurityAttribute",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "useCsrProgrammedAddrRangeInfo",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.UseFixedAddressMap"
+        },
+        {
+          "parameterName": "wCacheLineOffset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wCGOffset"
+        },
+        {
+          "parameterName": "wSysAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wAddr"
+        },
+        {
+          "parameterName": "Widths",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "WidthsParam"
+        },
+        {
+          "parameterName": "SysAddrRangeInfo",
+          "type": "object",
+          "reference": "SysAddrRangeInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "DceSelectInfo",
+          "type": "object",
+          "reference": "SelectInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "AiuInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "AiuInfoParam"
+        },
+        {
+          "parameterName": "SnoopFilterInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "SnoopFilterInfoParam"
+        },
+        {
+          "parameterName": "DceInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "DceInfoParam"
+        },
+        {
+          "parameterName": "DmiInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "DmiInfoParam"
+        },
+        {
+          "parameterName": "DveInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "DveInfoParam"
+        },
+        {
+          "parameterName": "DiiInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "DiiInfoParam"
+        }
+      ]
+    },
+    {
+      "name": "SelectInfoParam",
+      "params": [
+        {
+          "parameterName": "nAddrBits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return len(system.QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ)"
+        },
+        {
+          "parameterName": "nRsrcIdxBits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return len(system.QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ)"
+        },
+        {
+          "parameterName": "PriSubDiagAddrBits",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "integer",
+          "formula": "return system.QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+        },
+        {
+          "parameterName": "SecSubRows",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "integer",
+          "formula": "return system.QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+        }
+      ]
+    },
+    {
+      "name": "PhysicalParam",
+      "params": [
+        {
+          "parameterName": "wNdpLen",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return Math.log2(Math.max(system.wCMDNdp, system.wSNPNdp, system.wMRDNdp, system.wUPDNdp, system.wHNTNdp, system.wSTRNdp, system.wTUNNdp, system.wRBRNdp, system.wRBUNdp, system.wDTRNdp, system.wDTWNdp))"
+        },
+        {
+          "parameterName": "wNdpBody",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return Math.max(system.wCMDNdp, system.wSNPNdp, system.wMRDNdp, system.wUPDNdp, system.wHNTNdp, system.wSTRNdp, system.wTUNNdp, system.wRBRNdp, system.wRBUNdp, system.wDTRNdp, system.wDTWNdp)"
+        },
+        {
+          "parameterName": "wDpPresent",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        }
+      ]
+    },
+    {
+      "name": "TransportParam",
+      "params": [
+        {
+          "parameterName": "wMsgErr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        }
+      ]
+    },
+    {
+      "name": "HeaderParam",
+      "params": [
+        {
+          "parameterName": "wFUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wFUnitId"
+        },
+        {
+          "parameterName": "wFPortId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.system.wFUnitId"
+        },
+        {
+          "parameterName": "wCmType",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wCmType"
+        },
+        {
+          "parameterName": "wMsgId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wMessageId"
+        },
+        {
+          "parameterName": "wHProt",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wHProt"
+        },
+        {
+          "parameterName": "wTTier",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wTTier"
+        },
+        {
+          "parameterName": "wSteering",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wSteering"
+        },
+        {
+          "parameterName": "wPriority",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wPriority"
+        },
+        {
+          "parameterName": "wQl",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wQL"
+        }
+      ]
+    },
+    {
+      "name": "CmStatusParam",
+      "params": [
+        {
+          "parameterName": "wErr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "Err",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 7,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wST",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wSD",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wSS",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wSO",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "StrReqST",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "StrReqSD",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "StrReqSS",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "StrReqSO",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wSnarf",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wDTDMI",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wDTAIU",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wDC",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wRS",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wRV",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "SnpRspSnarf",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "SnpRspDTDMI",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "SnpRspDTAIU",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "SnpRspDC",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "SnpRspRS",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "SnpRspRV",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 5,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "StrReqSnarf",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wExOK",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "StrReqExOK",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "description": "const Ncore 3.0"
+        }
+      ]
+    },
+    {
+      "name": "Mpf1Param",
+      "params": [
+        {
+          "parameterName": "wStashValid",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wStashNId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wStashNId"
+        },
+        {
+          "parameterName": "wArgV",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wTargetId"
+        },
+        {
+          "parameterName": "wBurstType",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wASize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wALength",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "description": "const Ncore 3.0"
+        }
+      ]
+    },
+    {
+      "name": "Mpf2Param",
+      "params": [
+        {
+          "parameterName": "wStashLPIdValid",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "wStashLPId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return Math.log2(Math.max(NmaxAius, NmaxCAius, NmaxNCAius, NmaxProxyCaches, NmaxDmis, NmaxDiis, NmaxNDiis, NmaxUDiis, NmaxDces, NmaxDves))"
+        },
+        {
+          "parameterName": "wFlowId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 10,
+          "description": "defeature const Ncore 3.0"
+        }
+      ]
+    },
+    {
+      "name": "BodyParam",
+      "params": [
+        {
+          "parameterName": "wCmStatus",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wCmStatus"
+        },
+        {
+          "parameterName": "wAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wAddr"
+        },
+        {
+          "parameterName": "wVZ",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wVZ"
+        },
+        {
+          "parameterName": "wAC",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wAC"
+        },
+        {
+          "parameterName": "wCA",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wCA"
+        },
+        {
+          "parameterName": "wCH",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wCH"
+        },
+        {
+          "parameterName": "wST",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wST"
+        },
+        {
+          "parameterName": "wEN",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wEN"
+        },
+        {
+          "parameterName": "wES",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wES"
+        },
+        {
+          "parameterName": "wNS",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wNS"
+        },
+        {
+          "parameterName": "wPR",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wPR"
+        },
+        {
+          "parameterName": "wMW",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wMW"
+        },
+        {
+          "parameterName": "wUP",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wUP"
+        },
+        {
+          "parameterName": "wOR",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wOR"
+        },
+        {
+          "parameterName": "wLK",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wLK"
+        },
+        {
+          "parameterName": "wRL",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wRL"
+        },
+        {
+          "parameterName": "wTM",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wTM"
+        },
+        {
+          "parameterName": "wPrimary",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wPrimary"
+        },
+        {
+          "parameterName": "wMergeBufferReserved",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wMergeBufferReserved"
+        },
+        {
+          "parameterName": "wMpf1",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wMpf1"
+        },
+        {
+          "parameterName": "wMpf2",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wMpf2"
+        },
+        {
+          "parameterName": "wMpf3",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wMpf3"
+        },
+        {
+          "parameterName": "wSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wSize"
+        },
+        {
+          "parameterName": "wIntfSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wIntfSize"
+        },
+        {
+          "parameterName": "wDId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wDId"
+        },
+        {
+          "parameterName": "wRBId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wRBId"
+        },
+        {
+          "parameterName": "wRType",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wRType"
+        },
+        {
+          "parameterName": "wTof",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wTof"
+        },
+        {
+          "parameterName": "wQos",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wQos"
+        },
+        {
+          "parameterName": "wNdpAux",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wNdpAux"
+        },
+        {
+          "parameterName": "wNdpProt",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wNdpProt"
+        },
+        {
+          "parameterName": "CmStatus",
+          "type": "object",
+          "reference": "CmStatusParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "Mpf1",
+          "type": "object",
+          "reference": "Mpf1Param",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "Mpf2",
+          "type": "object",
+          "reference": "Mpf2Param",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "NdpParam",
+      "params": [
+        {
+          "parameterName": "Header",
+          "type": "object",
+          "reference": "HeaderParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "Body",
+          "type": "object",
+          "reference": "BodyParam",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "DataParam",
+      "params": [
+        {
+          "parameterName": "wDpData",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "BOGUS defined in each unit",
+          "description": "BOGUS defined in each unit"
+        }
+      ]
+    },
+    {
+      "name": "AuxParam",
+      "params": [
+        {
+          "parameterName": "wBePerDW",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wBEPerDW"
+        },
+        {
+          "parameterName": "wProtPerDW",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wProtPerDW"
+        },
+        {
+          "parameterName": "wDWIdPerDW",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return (system.wDWId / (system.wData / 64))"
+        },
+        {
+          "parameterName": "wDBadPerDW",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return (system.wDBad / (system.wData / 64)"
+        },
+        {
+          "parameterName": "wDpUserPerDW",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.wDpUserPerDW"
+        }
+      ]
+    },
+    {
+      "name": "DpParam",
+      "params": [
+        {
+          "parameterName": "Data",
+          "type": "object",
+          "reference": "DataParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "Aux",
+          "type": "object",
+          "reference": "AuxParam",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "ConcertoParam",
+      "params": [
+        {
+          "parameterName": "Ndp",
+          "type": "object",
+          "reference": "NdpParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "Dp",
+          "type": "object",
+          "reference": "DpParam",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "WidthsParam",
+      "params": [
+        {
+          "parameterName": "Physical",
+          "type": "object",
+          "reference": "PhysicalParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "Transport",
+          "type": "object",
+          "reference": "TransportParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "Concerto",
+          "type": "object",
+          "reference": "ConcertoParam",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "SysAddrRangeInfoParam1",
+      "params": [
+        {
+          "parameterName": "nSizeBytes",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.AddressMap.Size"
+        },
+        {
+          "parameterName": "nBaseAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return ((system.AddressMap.BaseAddrHigh << 32) & system.AddressMap.BaseAddrLow)'"
+        }
+      ]
+    },
+    {
+      "name": "SysAddrRangeInfoParam",
+      "params": [
+        {
+          "parameterName": "nSysAddrRanges",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.AddressMap.nGPWindows"
+        },
+        {
+          "parameterName": "SysAddrRangeInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "SysAddrRangeInfoParam1"
+        },
+        {
+          "parameterName": "MInterlvGrpAddrMapInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "array",
+          "formula": "return 'an array of arrays containing which address regions DmiInfo[n] maps to, derived by a function'"
+        },
+        {
+          "parameterName": "DIIAddrMapInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "array",
+          "formula": "return 'an array of arrays containing which address regions DiiInfo[n] maps to, derived by a function'"
+        }
+      ]
+    },
+    {
+      "name": "DvmInfoParam",
+      "params": [
+        {
+          "parameterName": "nDvmMsgInFlight",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "system.nDvmMsgInFlight"
+        },
+        {
+          "parameterName": "nDvmSnpInFlight",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.nDvmSnpInFlight"
+        }
+      ]
+    },
+    {
+      "name": "AxiNativeInfoParam",
+      "params": [
+        {
+          "parameterName": "SignalInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/InterfaceAxi.tachl.cpr",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "ChiNativeInfoParam",
+      "params": [
+        {
+          "parameterName": "useWriteEvict",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "useIoCache",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+        },
+        {
+          "parameterName": "SignalInfo",
+          "type": "object",
+          "reference": "ChiSignalInfoParam",
+          "parameterType": "architecture",
+          "description": "redundant Ncore 3.0, with chiInterfaces"
+        },
+        {
+          "parameterName": "DvmInfo",
+          "type": "object",
+          "reference": "DvmInfoParam",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "ChiSignalInfoParam",
+      "params": [
+        {
+          "parameterName": "wChiAddr",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/InterfaceCHI.tachl.cpr#InterfaceParams.wAddr",
+          "parameterType": "architecture",
+          "description": "redundant Ncore 3.0, with chiInterfaces"
+        },
+        {
+          "parameterName": "wChiData",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/InterfaceCHI.tachl.cpr#InterfaceParams.wData",
+          "parameterType": "architecture",
+          "description": "redundant Ncore 3.0, with chiInterfaces"
+        },
+        {
+          "parameterName": "wChiNodeId",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/InterfaceCHI.tachl.cpr#InterfaceParams.QQQQQQQQQQQQ",
+          "default": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ  which NID?",
+          "parameterType": "architecture",
+          "description": "redundant Ncore 3.0, with chiInterfaces"
+        }
+      ]
+    },
+    {
+      "name": "ChannelParam",
+      "params": [
+        {
+          "parameterName": "FLITPEND",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "FLITV",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "FLIT",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "LCRDV",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": -1,
+          "description": "const Ncore 3.0"
+        }
+      ]
+    },
+    {
+      "name": "ChiInterfacesParam",
+      "params": [
+        {
+          "parameterName": "Widths",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/InterfaceCHI.tachl.cpr#InterfaceParams",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "channel",
+          "type": "object",
+          "reference": "ChannelParam",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "AiuAxiNativeInfoParam",
+      "params": [
+        {
+          "parameterName": "useIoCache",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/ioaiu.cpr.tachl#useCache",
+          "parameterType": "architecture",
+          "description": "legacy Ncore 3.0, used only by aius"
+        },
+        {
+          "parameterName": "SignalInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/InterfaceAxi.tachl.cpr",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "ChiaiuCmpInfoParam",
+      "params": [
+        {
+          "parameterName": "OttDataErrorInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/chi_aiu.tachl.cpr#OttDataErrorInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "nOttCtrlEntries",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/chi_aiu.tachl.cpr#CmpInfoParam.nOttCtrlEntries",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "nCCmdInFlight",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.nCmnCReqInFlightPerDCE",
+          "description": "Ncore 3.0 no traffic shaping"
+        },
+        {
+          "parameterName": "idSnoopFilterSlice",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+        }
+      ]
+    },
+    {
+      "name": "IoaiuCmpInfoParam",
+      "params": [
+        {
+          "parameterName": "OttDataErrorInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/ioaiu.tachl.cpr#OttDataErrorInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "nOttCtrlEntries",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/ioaiu.tachl.cpr#CmpInfoParam.nOttCtrlEntries",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "nCCmdInFlight",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.nCmnCReqInFlightPerDCE",
+          "description": "Ncore 3.0 no traffic shaping"
+        }
+      ]
+    },
+    {
+      "name": "ChiAiuInfoParam",
+      "params": [
+        {
+          "parameterName": "FUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wFUnitId"
+        },
+        {
+          "parameterName": "wDpData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wDpData"
+        },
+        {
+          "parameterName": "strRtlNamePrefix",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "CHIAIU",
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "nAius",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1
+        },
+        {
+          "parameterName": "DVMEnable",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.DVMEnable"
+        },
+        {
+          "parameterName": "AiuSelectInfo",
+          "type": "object",
+          "reference": "SelectInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "fnNativeInterface",
+          "type": "string",
+          "reference": "$TACHL_CPR_DIR/chi_aiu.tachl.cpr#fnNativeInterface",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "isBridgeInterface",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "description": "obsolete Ncore 3.0, set iff ioaiu"
+        },
+        {
+          "parameterName": "NativeInfo",
+          "type": "object",
+          "reference": "AiuChiNativeInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "CmpInfo",
+          "type": "object",
+          "reference": "CmpInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "ResilienceInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/ResilienceInfo.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "chiInterfaces",
+          "type": "object",
+          "reference": "ChiInterfacesParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [    {fnMsgClass: ['CMDREQ','UPDREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['SNPRSP','STRRSP','DTRRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['DTRREQ','DTWREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        },
+        {
+          "parameterName": "smiRxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [   {fnMsgClass: ['STRREQ','SNPREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['CMDRSP','UPDRSP','DTWRSP','DTRRSP','CMPRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['DTRREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        }
+      ]
+    },
+    {
+      "name": "IoAiuInfoParam",
+      "params": [
+        {
+          "parameterName": "FUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wFUnitId"
+        },
+        {
+          "parameterName": "wDpData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wDpData"
+        },
+        {
+          "parameterName": "strRtlNamePrefix",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "IOAIU",
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "nAius",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore 3.0, no aiu interleaving"
+        },
+        {
+          "parameterName": "AiuSelectInfo",
+          "type": "object",
+          "reference": "SelectInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "fnNativeInterface",
+          "type": "string",
+          "reference": "$TACHL_CPR_DIR/ioaiu.tachl.cpr#fnNativeInterface",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "isBridgeInterface",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "obsolete Ncore 3.0, set iff ioaiu"
+        },
+        {
+          "parameterName": "NativeInfo",
+          "type": "object",
+          "reference": "AiuAxiNativeInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "CmpInfo",
+          "type": "object",
+          "reference": "IoaiuCmpInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "ResilienceInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/ResilienceInfo.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [{fnMsgClass: ['CMDREQ','UPDREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['SNPRSP','STRRSP','DTRRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['DTRREQ','DTWREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        },
+        {
+          "parameterName": "smiRxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [{fnMsgClass: ['STRREQ','SNPREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['CMDRSP','UPDRSP','DTWRSP','DTRRSP','CMPRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['DTRREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        }
+      ]
+    },
+    {
+      "name": "SnpfCmpInfoParam",
+      "params": [
+        {
+          "parameterName": "nSnpInFlight",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.nSnpsInFlight"
+        }
+      ]
+    },
+    {
+      "name": "SnoopFilterInfoParam",
+      "params": [
+        {
+          "parameterName": "strRtlNamePrefix",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "TF",
+          "description": "const ?defined Ncore 3.0, snoop filter is part of dce"
+        },
+        {
+          "parameterName": "fnFilterType",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "TAGFILTER",
+          "description": "const Ncore 3.0"
+        },
+        {
+          "parameterName": "CmpInfo",
+          "type": "object",
+          "reference": "SnpfCmpInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "StorageInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/dce.cpr.tachl#SnoopFilterInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "integer",
+          "description": "empty Ncore 3.0 : placeholder for config parse"
+        },
+        {
+          "parameterName": "smiRxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "integer",
+          "description": "empty Ncore 3.0 : placeholder for config parse"
+        }
+      ]
+    },
+    {
+      "name": "DceInfoParam",
+      "params": [
+        {
+          "parameterName": "FUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wFUnitId"
+        },
+        {
+          "parameterName": "wDpData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wDpData"
+        },
+        {
+          "parameterName": "CmpInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/dce.cpr.tachl#CmpInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "ResilienceInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/ResilienceInfo.tachl.cpr",
+          "parameterType": "architecture",
+          "arrayType": "integer"
+        },
+        {
+          "parameterName": "smiTxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [{fnMsgClass: ['SNPREQ','STRREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['CMDRSP','UPDRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['RBURSP','MRDREQ','HNTREQ','RBRREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 1}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        },
+        {
+          "parameterName": "smiRxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [  {fnMsgClass: ['CMDREQ','UPDREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['SNPRSP','STRRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['STRRSP','MRDRSP','HNTRSP','RBRRSP'],fnPortType: 'NDP',FabricId: 0, FPortId: 1}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        }
+      ]
+    },
+    {
+      "name": "RttDataErrorInfoParam",
+      "params": [
+        {
+          "parameterName": "fnErrDetectCorrect",
+          "type": "string",
+          "parameterType": "architecture",
+          "formula": "return unit.RttDataErrDetectCorrect"
+        }
+      ]
+    },
+    {
+      "name": "DmiInfoParam",
+      "params": [
+        {
+          "parameterName": "FUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wFUnitId"
+        },
+        {
+          "parameterName": "wDpData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wDpData"
+        },
+        {
+          "parameterName": "useCmc",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/dmi.tachl.cpr#useCmc",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "fnNativeInterface",
+          "type": "string",
+          "reference": "$TACHL_CPR_DIR/dmi.tachl.cpr#fnNativeInterface",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "DmiSelectInfo",
+          "type": "object",
+          "reference": "SelectInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "CmpInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/dmi.cpr.tachl#CmpInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "NativeInfo",
+          "type": "object",
+          "reference": "AxiNativeInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "ResilienceInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/ResilienceInfo.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [    {fnMsgClass: ['STRREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['DTWRSP','NCCMDRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['RBUREQ','MRDRSP','HNTRSP','RBRRSP'],fnPortType: 'NDP',FabricId: 0, FPortId: 1},{fnMsgClass: ['DTRREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        },
+        {
+          "parameterName": "smiRxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [{fnMsgClass: ['CMDREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['STRRSP','DTRRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['HNTREQ','MRDREQ','RBRREQ','RBURSP'],fnPortType: 'NDP',FabricId: 0, FPortId: 1},{fnMsgClass: ['DTWREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        }
+      ]
+    },
+    {
+      "name": "DveInfoParam",
+      "params": [
+        {
+          "parameterName": "FUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wFUnitId"
+        },
+        {
+          "parameterName": "wDpData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wDpData"
+        },
+        {
+          "parameterName": "DvmInfo",
+          "type": "object",
+          "reference": "DvmInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [  {fnMsgClass: ['SNPREQ','STRREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['NCCMDRSP','DTWRSP','CMPRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        },
+        {
+          "parameterName": "smiRxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [   {fnMsgClass: ['CMDREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['SNPRSP','STRRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['DTWREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        }
+      ]
+    },
+    {
+      "name": "DiiInfoParam",
+      "params": [
+        {
+          "parameterName": "FUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wFUnitId"
+        },
+        {
+          "parameterName": "wDpData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.wDpData"
+        },
+        {
+          "parameterName": "wEndpoint",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/dii.tachl.cpr#wLargestEndpoint",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "nDiis",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "description": "const Ncore v3.0, no dii interleaving"
+        },
+        {
+          "parameterName": "fnNativeInterface",
+          "type": "string",
+          "reference": "$TACHL_CPR_DIR/dii.tachl.cpr#fnNativeInterface",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "useExternalMemoryFifo",
+          "type": "integer",
+          "reference": "$TACHL_CPR_DIR/dii.tachl.cpr#useExternalMemoryFifo",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "fnErrDetectCorrect",
+          "type": "string",
+          "parameterType": "architecture",
+          "formula": "return unit.RttDataErrDetectCorrect"
+        },
+        {
+          "parameterName": "DiiSelectInfo",
+          "type": "object",
+          "reference": "SelectInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "cmpInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/dii.tachl.cpr#CmpInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "NativeInfo",
+          "type": "object",
+          "reference": "AxiNativeInfoParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [ {fnMsgClass: ['STRREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['DTWRSP','CMDRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['DTRREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        },
+        {
+          "parameterName": "smiRxPortParams",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return [{fnMsgClass: ['CMDREQ'],fnPortType: 'NDP',FabricId: 0, FPortId: 0},{fnMsgClass: ['STRRSP','DTRRSP'],fnPortType: 'NDP',FabricId: 1, FPortId: 0},{fnMsgClass: ['DTWREQ'],fnPortType: 'DP',FabricId: 2, FPortId: 0}]",
+          "description": "FIXME must get at least FabricId from nonconst source."
+        }
+      ]
+    }
+  ]
+}

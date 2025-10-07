@@ -1,0 +1,151 @@
+<p> </p><p>The ACHL Parameters are derived from the User Parameters (apf) based on the Concerto System Parameter Specification. All the ACHL parameters are declared in <strong>schema/lib/schemaApi/userToAchl.js</strong>. The parameter calculations are present in <strong>schema/lib/schemaApi/paramCalc.js</strong>.</p><p> </p><p>ACHL Params Diff 1.6 -&gt; 2.0</p><ul><li>verSysParams = 3</li><li>useResiliency (same as UI Parameter -&gt; enable resiliency)</li><li>AgentAiuInfo<ul><li>fnAiuSelect changed from TABLE -&gt; GENERAL </li><li>AiuSelectInfo<ul><li>nSelectBits, SelectBits, HashBits, SelectTable  -&gt; nAddrBits , nRsrcIdxBits, PriSubDiagAddrBits, SecSubRows</li></ul></li><li>New section DvmInfo in AIUs <ul><li>params.AgentAiuInfo.CmpInfo.nDvmCmpInFlight -&gt; params.AgentAiuInfo.NativeInfo.DvmInfo.nDvmCmpInFlight</li><li>params.AgentAiuInfo.CmpInfo.nDvmMsgInFlight -&gt; params.AgentAiuInfo.NativeInfo.DvmInfo.nDvmMsgInFlight</li></ul></li><li>New parameter: params.AgentAiuInfo.CmpInfo.idAgentGroup</li><li>New parameter: params.AgentAiuInfo.Derived.nMasterPendingTrans</li><li>params.AgentAiuInfo.CmpInfo.nUpdInFlight removed</li><li>Resiliency Parameters, AgentAiuInfo.ResilienceInfo is defined when params.useResiliency = 1. The resilience parameters are '0' when params.useResiliency = 0.  For parameter description, click <a class="external-link" href="https://confluence.arteris.com/display/ENGR/Resilience+ACHL+Parameters?focusedCommentId=4194825#comment-4194825" rel="nofollow">here</a>.</li><li>Click <a class="external-link" href="https://stash.arteris.com/projects/CON/repos/schema/commits/c019c0232755157b628b11ffa8df3af9e61e379c" rel="nofollow">here</a> to check Diff between old and new schema.<br/><ul><li><p>ACE</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;ResilienceInfo&quot;: {
+        &quot;enPlaceHolder&quot;: 1,
+        &quot;signalName&quot;: &quot;A72_1&quot;,
+        &quot;nARPlaceHolderBits&quot;: 1,
+        &quot;nRPlaceHolderBits&quot;: 1,
+        &quot;nAWPlaceHolderBits&quot;: 1,
+        &quot;nWPlaceHolderBits&quot;: 1,
+        &quot;nBPlaceHolderBits&quot;: 1,
+        &quot;nACPlaceHolderBits&quot;: 1,
+        &quot;nCDPlaceHolderBits&quot;: 1,
+        &quot;nCRPlaceHolderBits&quot;: 1
+      }</pre>
+</div></div></li><li><p>ACE-Lite</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;ResilienceInfo&quot;: {
+        &quot;enPlaceHolder&quot;: 1,
+        &quot;signalName&quot;: &quot;GPU&quot;,
+        &quot;nARPlaceHolderBits&quot;: 1,
+        &quot;nRPlaceHolderBits&quot;: 1,
+        &quot;nAWPlaceHolderBits&quot;: 11,
+        &quot;nWPlaceHolderBits&quot;: 11,
+        &quot;nBPlaceHolderBits&quot;: 1,
+        &quot;nACPlaceHolderBits&quot;: 1,
+        &quot;nCRPlaceHolderBits&quot;: 1
+      }</pre>
+</div></div></li></ul></li></ul></li></ul><ul><li>BridgeAiuInfo<ul><li>fnAiuSelect changed from TABLE -&gt; GENERAL </li><li>AiuSelectInfo<ul><li>nSelectBits, SelectBits, HashBits, SelectTable  -&gt; nAddrBits , nRsrcIdxBits, PriSubDiagAddrBits, SecSubRows</li></ul></li><li>New section DvmInfo in AIUs <ul><li>params.BridgeAiuInfo.CmpInfo.nDvmCmpInFlight -&gt; params.BridgeAiuInfo.NativeInfo.DvmInfo.nDvmCmpInFlight</li><li>params.BridgeAiuInfo.CmpInfo.nDvmMsgInFlight -&gt; params.BridgeAiuInfo.NativeInfo.DvmInfo.nDvmMsgInFlight</li></ul></li><li>New parameter: params.BridgeAiuInfo.CmpInfo.idAgentGroup</li><li>New parameter: params.BridgeAiuInfo.Derived.nMasterPendingTrans</li><li>params.BridgeAiuInfo.CmpInfo.nUpdInFlight removed</li><li><p>if (userBridge.cache.fnReplPolType === 'NRU') {<br/>params.BridgeAiu.NativeInfo.IoCacheInfo.CacheInfo.nReplPolMemPorts<br/> }</p></li><li>IoCacheInfo new structure :<ul><li>nSets, nWays, fnSetSelect, IoTagErrorInfo, IoDataErrorInfo, SetSelectInfo are inside IoCacheInfo.CacheInfo {}</li><li>SetSelectInfo<ul><li>nSelectBits, SelectBits, HashBits, SelectTable  -&gt; nAddrBits , nRsrcIdxBits, PriSubDiagAddrBits, SecSubRows</li></ul></li><li>New parameters in IoCaheInfo : fnCacheStates, useUpdMemCln</li><li>New parameters in CacheInfo : <pre>TagBankSelBits, DataBankSelBits, fnReplPolType, nReplPolMemPorts (if fnReplPolType = &quot;NRU&quot;, else this value is undefined) useDinBuffer, useDoutBuffer</pre><p> </p></li><li>Click <a class="external-link" href="https://stash.arteris.com/projects/CON/repos/schema/commits/c019c0232755157b628b11ffa8df3af9e61e379c" rel="nofollow">here</a> to check Diff between old and new schema.</li><li><p>Example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;IoCacheInfo&quot;: {
+          &quot;fnCacheStates&quot;: &quot;MSI-IX&quot;,
+          &quot;useUpdMemCln&quot;: 1,
+&quot;CacheInfo&quot;: {
+            &quot;nSets&quot;: 512,
+            &quot;nWays&quot;: 8,
+            &quot;nTagBanks&quot;: 2,
+            &quot;nDataBanks&quot;: 2,
+            &quot;fnSetSelect&quot;: &quot;GENERAL&quot;,
+            &quot;IoTagErrorInfo&quot;: {
+				&quot;fnErrDetectCorrect&quot;: &quot;SECDED&quot;
+            },
+            &quot;IoDataErrorInfo&quot;: {
+              &quot;fnErrDetectCorrect&quot;: &quot;SECDED&quot;
+            },
+            &quot;SetSelectInfo&quot;: {
+              &quot;nAddrBits&quot;: 9,
+              &quot;nRsrcIdxBits&quot;: 9,
+              &quot;SecSubRows&quot;: {
+                &quot;0&quot;: [],
+                &quot;1&quot;: [],
+                &quot;2&quot;: [],
+                &quot;3&quot;: [],
+                &quot;4&quot;: [],
+                &quot;5&quot;: [],
+                &quot;6&quot;: [],
+                &quot;7&quot;: [],
+                &quot;8&quot;: []
+              },
+              &quot;PriSubDiagAddrBits&quot;: [
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16
+              ]
+            },
+            &quot;TagBankSelBits&quot;: [
+              9
+            ],
+            &quot;DataBankSelBits&quot;: [
+              9
+            ],
+            &quot;fnReplPolType&quot;: &quot;RANDOM&quot;,
+            &quot;useDinBuffer&quot;: 0,
+            &quot;useDoutBuffer&quot;: 0
+          }
+}</pre>
+</div></div></li><li><p>Resiliency Parameters</p><ul><li><p>BridgeAiuInfo.ResilienceInfo is defined when params.useResiliency = 1. The resilience parameters are '0' when params.useResiliency = 0. For parameter description, click <a class="external-link" href="https://confluence.arteris.com/display/ENGR/Resilience+ACHL+Parameters?focusedCommentId=4194825#comment-4194825" rel="nofollow">here</a>.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;ResilienceInfo&quot;: {
+        &quot;enPlaceHolder&quot;: 1,
+        &quot;signalName&quot;: &quot;Bridge&quot;,
+        &quot;nARPlaceHolderBits&quot;: 1,
+        &quot;nRPlaceHolderBits&quot;: 1,
+        &quot;nAWPlaceHolderBits&quot;: 1,
+        &quot;nWPlaceHolderBits&quot;: 1,
+        &quot;nBPlaceHolderBits&quot;: 1
+      }</pre>
+</div></div></li></ul></li></ul></li></ul></li><li>DmiInfo <ul><li>fnDmiSelect changed from TABLE -&gt; GENERAL </li><li>DmiSelectInfo <ul><li>nSelectBits, SelectBits, HashBits, SelectTable  -&gt; nAddrBits , nRsrcIdxBits, PriSubDiagAddrBits, SecSubRows</li></ul></li><li>DmiSelectInfo also has Hash Bits which is enabled only when externalTI (user Parameter) is true.</li><li>MemRegionInfo inside DmiInfo. The Parameters inside MemRegionInfo have also changed with new UI and derived parameters<ul><li>The user Parameter regionBaseAddress is renamed as nBaseAddr.</li><li><p>nSizeBytes is a user parameter. The old parameter MemRegionInfo.nRegionPrefix is replace by nSizeBytes. nRegionPrefix needs to be calculated using nSizeBytes and nBaseAddr for calculation of coherence window. The calculation is as follows :-</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">var regionSize = ceil log2 (nSizeBytes);
+var nRegionPrefix = nBaseAddr / Math.pow(2,regionSize);</pre>
+</div></div></li><li><p>MemRegionInfo.wRegionAddr is removed. wRegionAddr = regionSize, from the above calculation.</p></li><li>MemRegionInfo.CmpInfo.nMrdInFlight -&gt; DmiInfo.MemRegionInfo.CmpInfo.nMrdInFlight</li><li>DmiInfo.MemRegionInfo.usePackedAddr is a user parameter. <br/><br/></li><li><p>Example</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;MemRegionInfo&quot;: {
+        &quot;nSizeBytes&quot;: 6442450944,
+        &quot;nBaseAddr&quot;: 0,
+        &quot;usePackedAddr&quot;: 0
+      }</pre>
+</div></div></li><li>DmiInfo.CmpInfo.nHttCtrlEntries and DmiInfo.CmpInfo.HttDataErrorInfo removed from UI and achl parameters.</li><li>DmiInfo.CmpInfo.useSharedHttRtt removed. </li><li>New Parameter -&gt; DmiInfo.CmpInfo.nWttCtrlMemWr. This is also a new UI parameter.</li><li>New Parameter -&gt; DmiInfo.CmpInfo.nPairedDces.</li><li>New Parameter -&gt; DmiInfo.Derived.nMasterPendingTrans (DMI Master nPending Transactions).</li><li>New parameter DmiInfo.useCmc, which when checked, enables CMC.</li><li><p>New section DmiInfo.CmcInfo, which is similar to IoCacheInfo. </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;CmcInfo&quot;: {
+        &quot;useAllocDtwData&quot;: 1,
+        &quot;CacheInfo&quot;: {
+          &quot;nSets&quot;: 1,
+          &quot;fnSetSelect&quot;: &quot;GENERAL&quot;,
+          &quot;nWays&quot;: 8,
+          &quot;CmcTagErrorInfo&quot;: {
+            &quot;fnErrDetectCorrect&quot;: &quot;SECDED64BITS&quot;
+          },
+          &quot;CmcDataErrorInfo&quot;: {
+            &quot;fnErrDetectCorrect&quot;: &quot;SECDED&quot;
+          },
+          &quot;nTagBanks&quot;: 2,
+          &quot;nDataBanks&quot;: 2,
+          &quot;SetSelectInfo&quot;: {
+            &quot;nAddrBits&quot;: 1,
+            &quot;nRsrcIdxBits&quot;: 1,
+            &quot;SecSubRows&quot;: {
+              &quot;0&quot;: []
+            },
+            &quot;PriSubDiagAddrBits&quot;: [
+              7
+            ]
+          },
+          &quot;TagBankSelBits&quot;: [
+            0
+          ],
+          &quot;DataBankSelBits&quot;: [
+            0
+          ],
+          &quot;fnReplPolType&quot;: &quot;NRU&quot;,
+          &quot;nReplPolMemPorts&quot;: 2,
+          &quot;useDinBuffer&quot;: 0,
+          &quot;useDoutBuffer&quot;: 0
+        }
+      }</pre>
+</div></div></li><li><p>Note: DmiInfo.CmcInfo.CacheInfo.nReplPolMemPorts is defined only when DmiInfo.CmcInfo.CacheInfo.fnReplPolType = 'NRU', else the value is undefined.</p></li><li><p>Resiliency Parameters</p><ul><li><p>DmiInfo.ResilienceInfo is defined when params.useResiliency = 1. The resilience parameters are '0' when params.useResiliency = 0.For parameter description, click <a class="external-link" href="https://confluence.arteris.com/display/ENGR/Resilience+ACHL+Parameters?focusedCommentId=4194825#comment-4194825" rel="nofollow">here</a>.</p></li></ul></li><li>Click <a class="external-link" href="https://stash.arteris.com/projects/CON/repos/schema/commits/c019c0232755157b628b11ffa8df3af9e61e379c" rel="nofollow">here</a> to check Diff between old and new schema.<ul><li><p>Example</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;ResilienceInfo&quot;: {
+        &quot;enPlaceHolder&quot;: 1,
+        &quot;signalName&quot;: &quot;DRAM&quot;,
+        &quot;nARPlaceHolderBits&quot;: 1,
+        &quot;nRPlaceHolderBits&quot;: 1,
+        &quot;nAWPlaceHolderBits&quot;: 1,
+        &quot;nWPlaceHolderBits&quot;: 1,
+        &quot;nBPlaceHolderBits&quot;: 1
+      }</pre>
+</div></div></li></ul></li></ul></li><li>SnoopFilterInfo<ul><li>SnoopFilterInfo.CmpInfo.useMemHints removed.</li><li>StorageInfo.SetSelectInfo <ul><li>nSelectBits, SelectBits, HashBits, SelectTable  -&gt; nAddrBits , nRsrcIdxBits, PriSubDiagAddrBits, SecSubRows</li></ul></li><li>fnSetSelect changed from TABLE -&gt; GENERAL</li><li>Click <a class="external-link" href="https://stash.arteris.com/projects/CON/repos/schema/commits/c019c0232755157b628b11ffa8df3af9e61e379c" rel="nofollow">here</a> to check Diff between old and new schema.<br/> </li></ul></li><li>DceInfo<ul><li>fnDceSelect changed from TABLE -&gt; GENERAL </li><li> DceSelectInfo<ul><li>nSelectBits, SelectBits, HashBits, SelectTable  -&gt; nAddrBits , nRsrcIdxBits, PriSubDiagAddrBits, SecSubRows</li></ul></li><li>New Parameter -&gt; DceInfo.Derived.nMasterPendingTrans (DCE Master nPending Transactions).</li><li>Click <a class="external-link" href="https://stash.arteris.com/projects/CON/repos/schema/commits/662c1be8a44aaed0404906dc2e6af1856637bd60" rel="nofollow">here</a> to check Diff between old and new schema.<br/><br/></li></ul></li><li>FscInfo<ul><li>The parameters are as follows: <ul><li><p>Example</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;FscInfo&quot;: {
+    &quot;nUnits&quot;: 13,
+    &quot;wSafetyCntrlCSRAddr&quot;: 6,
+    &quot;wSafetyCntrlCSRData&quot;: 32
+  }</pre>
+</div></div></li><li><p>For description, refer <a class="external-link" href="https://confluence.arteris.com/display/ENGR/Resilience+ACHL+Parameters?focusedCommentId=4194825#comment-4194825" rel="nofollow">here</a>.</p></li><li>Note: The FscInfo is only visible when Resiliency is enabled in UI (i.e. in achl, useResiliency = 1)</li><li>Click <a class="external-link" href="https://stash.arteris.com/projects/CON/repos/schema/commits/662c1be8a44aaed0404906dc2e6af1856637bd60" rel="nofollow">here</a> to check the new schema.</li></ul></li></ul></li></ul></li></ul>

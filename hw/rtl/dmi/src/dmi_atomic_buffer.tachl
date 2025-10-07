@@ -1,0 +1,433 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// DMI Atomic Buffer
+// Aurthor: Tso-Wei Chang
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+// 
+// Variables
+//
+var dw          = obj.lib.getParam('dw');
+var bundleFunctions = obj.userLib.bundleFunctions;
+var numEntries  = obj.lib.getParam('numEntries');
+var rttIdWidth  = obj.lib.getParam('wId'); 
+var maxOpDw     = obj.lib.getParam('maxOpDw');
+var wProcDb     = 2 * maxOpDw;
+var nBeatDb     = wProcDb/dw;
+var wAtomicType = obj.lib.getParam('wAtomicType');
+var wOpType     = obj.lib.getParam('wOpType');
+var reqWidth    = bundleFunctions.getBundleWidth(obj.lib.getParam('atomicAddrInterface'), ['valid', 'ready', 'op', 'id'], obj.lib.bundle);
+var useScratchpad = obj.lib.getParam('useScratchpad');
+//
+// Interfaces
+//
+// clk interface
+obj.lib.interface('',           'slave',  obj.lib.getParam('clkInterface'));
+// Allocation interface
+obj.lib.interface('alloc_',     'slave',  obj.lib.getParam('atomicAddrInterface'));
+// Operation request info
+obj.lib.interface('req_',       'master', obj.lib.getParam('atomicAddrInterface'), ['valid', 'ready']);
+// Processor data interface
+obj.lib.interface('proc_data_', 'slave',  obj.lib.getParam('writeProtDataInterface'));
+//
+// Ports
+//
+obj.lib.port('input',   'deallocVld',   1);
+obj.lib.port('input',   'alloc_hit',    1);
+obj.lib.port('input',   'alloc_sp',     1);
+obj.lib.port('input',   'hit_data',     1);
+obj.lib.port('input',   'sp_data',      1);
+obj.lib.port('output',  'procDataVld',  1);
+obj.lib.port('output',  'procData',     wProcDb);
+obj.lib.port('output',  'procDataPoison',1);
+obj.lib.port('output',  'procDataBE',   (wProcDb/8));
+obj.lib.port('input',   'searchRttId',  rttIdWidth);
+obj.lib.port('output',  'pop_hit_ptr_valid',   1);
+if(useScratchpad) {
+obj.lib.port('output','pop_sp_hit_ptr_valid',1);
+}
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+    localparam  ADD     = 3'b0,
+                CLR     = 3'b001,
+                EOR     = 3'b010,
+                SET     = 3'b011,
+                SMAX    = 3'b100,
+                SMIN    = 3'b101,
+                UMAX    = 3'b110,
+                UMIN    = 3'b111;
+\jsbegin
+    //
+    // Wires
+    //    
+\jsend
+\js for (var entry = 0; entry < numEntries; entry++) {
+    wire [\=rttIdWidth-1=\:0]   rttId\=entry=\;
+    wire [\=reqWidth-1=\:0]     abReq\=entry=\;
+    wire [\=nBeatDb-1=\:0]      procDataEn\=entry=\;
+    wire [\=nBeatDb-1=\:0]      wrBeat\=entry=\;
+    wire [\=nBeatDb-1=\:0]      wrBeatIn\=entry=\;
+    wire [\=wProcDb-1=\:0]      procData\=entry=\;
+    wire                        procDataPoison\=entry=\;
+    wire [\=(wProcDb/8)-1=\:0]  procDataBE\=entry=\;
+    wire [\=obj.lib.getParam('atomicAddrInterface', 'op')-1=\:0] abOp\=entry=\; 
+
+\js     for (var beat = 0; beat < nBeatDb; beat++) {
+        wire [\=dw=\:0]           procData\=entry=\_beat\=beat=\;
+        wire [\=dw/8-1=\:0]       procDataBE\=entry=\_beat\=beat=\;
+\js     }    
+\js }
+    wire [\=wOpType-1=\:0]      abOp;
+    wire [\=rttIdWidth-1=\:0]   abRttId;
+    wire [\=reqWidth-1=\:0]     abReqIn;
+    wire [\=reqWidth-1=\:0]     lookupReq;
+    wire [\=rttIdWidth-1=\:0]   rttIdIn;
+
+    wire [\=numEntries-1=\:0]   allocIdx;
+    wire [\=numEntries-1=\:0]   dataVld;
+    wire [\=numEntries-1=\:0]   dataVldIn;
+    wire                        dataVldEn;
+    wire [\=numEntries-1=\:0]   valid;
+    wire [\=numEntries-1=\:0]   validIn;
+    wire                        validEn;
+    wire [\=numEntries-1=\:0]   proc_data_ptr;
+    wire [\=numEntries-1=\:0]   wrBeatEn;
+    wire [\=numEntries-1=\:0]   reqEn;
+    wire [\=numEntries-1=\:0]   abOpEn;
+    wire [\=numEntries-1=\:0]   rttIdCAM;
+    wire [\=numEntries-1=\:0]   procDataIdx;
+    wire [\=numEntries-1=\:0]   push_hit_ptr_data;
+    wire [\=numEntries-1=\:0]   pop_hit_ptr_data;
+
+    wire                        push_hit_ptr_valid;
+    wire                        push_hit_ptr_ready;
+    //wire                        pop_hit_ptr_valid;
+    wire                        pop_hit_ptr_ready;
+
+\js if(useScratchpad) {
+    wire [\=numEntries-1=\:0]   push_sp_hit_ptr_data;
+    wire [\=numEntries-1=\:0]   pop_sp_hit_ptr_data;
+    wire                        push_sp_hit_ptr_valid;
+    wire                        push_sp_hit_ptr_ready;
+    //wire                        pop_sp_hit_ptr_valid;
+    wire                        pop_sp_hit_ptr_ready;
+\js }
+
+    wire                        proc_data_ptr_valid;
+    wire                        proc_data_ptr_ready;
+    wire                        proc_data_vldrdy;
+    wire                        procDataLast;
+    wire                        deallocEn;
+    wire                        allocEn;
+
+    wire [\=obj.lib.getParam('atomicAddrInterface', 'op')-1=\:0] abOpIn;
+
+\jsbegin
+    //
+    // Allocation
+    //
+\jsend
+    wire [\=numEntries=\-1:0] nValid;
+
+    \=obj.lib.instance({
+      'portsDelimiter': '\n    ',
+      'instanceName': 'ab_find_first',
+      'moduleName':   'arb_spri',
+      'params': {
+           width : numEntries
+         },
+      'verilogParams': {},
+      'ports': {
+          in_req    : 'nValid',
+          out_gnt   : 'allocIdx',
+      }
+    })=\
+    assign rttIdIn = alloc_id;
+    assign abReqIn = \=bundleFunctions.packetizeBundle('alloc_', obj.lib.getParam('atomicAddrInterface'), ['valid', 'ready', 'op', 'id'], obj.lib.bundle)=\;
+    assign \=bundleFunctions.packetizeBundle('req_', obj.lib.getParam('atomicAddrInterface'), ['valid', 'ready', 'op', 'id'], obj.lib.bundle)=\ = lookupReq;
+    assign req_op = abOp;
+    assign req_id = abRttId;
+
+    assign abOpIn = (ADD     & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h0)}})| 
+                    (CLR     & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h1)}})|   
+                    (EOR     & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h2)}})| 
+                    (SET     & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h3)}})| 
+                    (SMAX    & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h4)}})| 
+                    (SMIN    & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h5)}})| 
+                    (UMAX    & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h6)}})| 
+                    (UMIN    & {\=wOpType=\{(proc_data_mpf1[2:0] == \=wOpType=\'h7)}});
+ 
+    assign wrBeatEn = (allocIdx & {\=numEntries=\{allocEn}}) | (proc_data_ptr & {\=numEntries=\{proc_data_vldrdy}});
+
+\js for (var entry = 0; entry < numEntries; entry++) {
+
+    assign wrBeatIn\=entry=\ = allocIdx[\=entry=\]? \=nBeatDb=\'d1 : (wrBeat\=entry=\ << 1);
+    
+\js // op flop
+\js var wOp = obj.lib.getParam('atomicAddrInterface', 'op');
+    \=obj.lib.dffre(wOp,      'abOp'+entry,       'abOpIn',      wOp+"'b0",  'abOpEn['+entry+']', 'clk', 'reset_n')=\
+    
+    assign abOpEn[\=entry=\] = (|procDataEn\=entry=\) & proc_data_last;
+
+\js // rttId flop
+    \=obj.lib.dffre(rttIdWidth,      'rttId'+entry,       'rttIdIn',    rttIdWidth+"'b0",  'reqEn['+entry+']', 'clk', 'reset_n')=\
+
+\js // ab hit flop
+\js //    \=obj.lib.dffre(1,               'isHit'+entry,       'alloc_hit',  "1'b0",  'reqEn['+entry+']', 'clk', 'reset_n')=\
+
+\js // wrBeat flop
+    \=obj.lib.dffre(nBeatDb,         'wrBeat'+entry,      'wrBeatIn'+entry,       nBeatDb+"'b0",  'wrBeatEn['+entry+']', 'clk', 'reset_n')=\
+
+
+\js // request flop
+    \=obj.lib.dffre(reqWidth,         'abReq'+entry,       'abReqIn',      reqWidth+"'b0",  'reqEn['+entry+']', 'clk', 'reset_n')=\
+
+    wire [\=dw/8-1=\:0] ab_proc_data_be_in\=entry=\;
+\js // poison
+    wire [\=dw=\:0] ab_proc_data_data_in\=entry=\;
+
+\js     for (var beat = 0; beat < nBeatDb ; beat++) {
+        // Proc Data buffer
+        //
+        \=obj.lib.dffre(dw+1,  'procData'+entry+'_beat'+beat,       'ab_proc_data_data_in'+entry,      (dw+1)+"'b0",  'procDataEn'+entry+'['+beat+']', 'clk', 'reset_n')=\
+
+        // Proc Data BE buffer
+        //
+        \=obj.lib.dffre(dw/8,  'procDataBE'+entry+'_beat'+beat,       'ab_proc_data_be_in'+entry,      (dw/8)+"'b0",  'procDataEn'+entry+'['+beat+']', 'clk', 'reset_n')=\
+
+\js     }
+
+    assign ab_proc_data_be_in\=entry=\ = procDataIdx[\=entry=\] & deallocEn ? \=dw/8=\'b0 : proc_data_be;
+    assign ab_proc_data_data_in\=entry=\ = procDataIdx[\=entry=\] & deallocEn ? \=dw+1=\'b0 : {proc_data_poison, proc_data_data}; 
+
+\js }
+    assign push_hit_ptr_data = reqEn;
+
+\js if(useScratchpad) {
+    assign procDataIdx = hit_data? (sp_data? pop_sp_hit_ptr_data & {\=numEntries=\{pop_sp_hit_ptr_valid}} : pop_hit_ptr_data & {\=numEntries=\{pop_hit_ptr_valid}}) : rttIdCAM;
+    assign push_sp_hit_ptr_data = reqEn;
+\js } else {
+    assign procDataIdx = hit_data? pop_hit_ptr_data : rttIdCAM;
+\js }
+
+    assign reqEn = allocIdx & {\=numEntries=\{allocEn}};
+
+\js for(var j=0; j < numEntries; j++) {
+    assign rttIdCAM[\=j=\] = (rttId\=j=\ == searchRttId) & valid[\=j=\];
+\js } 
+
+    assign procDataVld = (dataVld[0] & procDataIdx[0])
+\js for(var i = 1; i < numEntries; i++) {
+                        |(dataVld[\=i=\] & procDataIdx[\=i=\])
+\js }
+    ;
+
+    assign lookupReq = (abReq0 & {\=reqWidth=\{procDataIdx[0]}})
+\js for(var i = 1; i < numEntries; i++) {
+                      |(abReq\=i=\ & {\=reqWidth=\{procDataIdx[\=i=\]}})
+\js }
+    ;
+
+    assign abOp = (abOp0 & {\=wOpType=\{procDataIdx[0]}})
+\js for(var i = 1; i < numEntries; i++) {
+                      |(abOp\=i=\ & {\=wOpType=\{procDataIdx[\=i=\]}})
+\js }
+    ;
+
+    assign abRttId = (rttId0 & {\=rttIdWidth=\{procDataIdx[0]}})
+\js for(var i = 1; i < numEntries; i++) {
+                      |(rttId\=i=\ & {\=rttIdWidth=\{procDataIdx[\=i=\]}})
+\js }
+    ;
+
+\js for(var entry=0; entry < numEntries; entry++) {
+
+    assign procData\=entry=\ = {procData\=entry=\_beat\=nBeatDb-1=\[\=dw-1=\:0]
+\js     for(var beat = nBeatDb-2; beat >=0 ; beat--) {
+                               ,procData\=entry=\_beat\=beat=\[\=dw-1=\:0]
+\js     }
+        };
+
+    assign procDataPoison\=entry=\ = |{procData\=entry=\_beat\=nBeatDb-1=\[\=dw=\]
+\js     for(var beat = nBeatDb-2; beat >=0 ; beat--) {
+                               ,procData\=entry=\_beat\=beat=\[\=dw=\]
+\js     }
+        };
+
+    assign procDataBE\=entry=\ = {procDataBE\=entry=\_beat\=nBeatDb-1=\
+\js     for(var beat = nBeatDb-2; beat >=0 ; beat--) {
+                               ,procDataBE\=entry=\_beat\=beat=\
+\js     }
+        };
+\js }     
+
+    assign procData = (procData0 & {\=wProcDb=\{procDataIdx[0]}})
+\js     for(var i = 1; i < numEntries; i++) {
+                     |(procData\=i=\ & {\=wProcDb=\{procDataIdx[\=i=\]}})
+\js     }
+        ;
+    assign procDataPoison = (procDataPoison0 & procDataIdx[0])
+\js     for(var i = 1; i < numEntries; i++) {
+                     |(procDataPoison\=i=\ & procDataIdx[\=i=\])
+\js     }
+        ;
+
+    assign procDataBE = (procDataBE0 & {\=wProcDb/8=\{procDataIdx[0]}})
+\js     for(var i = 1; i < numEntries; i++) {
+                     |(procDataBE\=i=\ & {\=wProcDb/8=\{procDataIdx[\=i=\]}})
+\js     }
+        ;
+
+\js // op can be processed only when all processor data is ready. 
+\js // won't happen in 128b and 256b config because only up to 2 beats
+
+    \=obj.lib.dffre(numEntries,         'dataVld',       'dataVldIn',      numEntries+"'b0",  'dataVldEn', 'clk', 'reset_n')=\
+
+\js // clear upon allocation, set upon last beat of processor data
+    assign dataVldIn = proc_data_ptr & {\=numEntries=\{proc_data_ptr_valid & procDataLast}} | (dataVld & ~(allocIdx & {\=numEntries=\{allocEn}}));
+    assign dataVldEn = procDataLast  | allocEn;
+
+    \=obj.lib.dffre(numEntries,         'valid',       'validIn',      numEntries+"'b0",  'validEn', 'clk', 'reset_n')=\
+
+    assign validIn = (allocIdx & {\=numEntries=\{allocEn}}) | (valid & ~(procDataIdx & {\=numEntries=\{deallocEn}}))  ;
+    assign validEn = allocEn | deallocEn;
+    assign nValid = ~valid;
+
+
+ \js//   assign allMissReq = (valid[0] & ~isHit0)
+\js //for(var i = 1 ; i < numEntries; i++) {
+\js //                     &(valid[\=i=\] & ~isHit\=i=\)
+\js //}
+\js //                       ;
+
+\js // TODO: implement back to back allocation when full if timing allows.
+
+\js // inUse means preallocation. For better timing. An entry is inUse if it is either valid or preallocated.
+\js //    \=obj.lib.instance({
+\js //        instanceName: 'ab_in_use_ff',
+\js //        moduleName: 'dffre',
+\js //        params: {},
+\js //        verilogParams: {WIDTH: numEntries},
+\js //        ports: {d: 'inUseIn', q: 'inUse', en: 'inUseEn'},
+\js //        interfaces: [{modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface')}]
+\js //    })=\
+
+\js //    \=obj.lib.instance({
+\js //        instanceName: 'ab_preallocIdx_ff',
+\js //        moduleName: 'dffre',
+\js //        params: {},
+\js //        verilogParams: {WIDTH: numEntries},
+\js //        ports: {d: 'preallocIdxIn', q: 'preallocIdx', en: 'preallocIdxEn'},
+\js //        interfaces: [{modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface')}]
+\js //    })=\
+
+\js //    assign preallocIdxEn = ~(|inUse) | allocEn | deallocEn & ~(|preallocIdx);
+\js //    assign inUseIn     = (preallocIdxIn &{\=numEntries=\{~deallocEn | deallocEn & (~(|preallocIdx) | (|(preallocIdxIn & procDataIdx)))}}) | (inUse & ~(procDataIdx & {\=numEntries=\{deallocEn}}));
+\js //    assign inUseEn     =~(|inUse) | (allocEn & ~(&inUse)) | deallocEn;
+\js //    assign notInUse    = (~inUse) | procDataIdx & {\=numEntries=\{deallocEn}};
+    assign alloc_ready = |nValid;
+    assign allocEn     = alloc_valid & alloc_ready;
+    assign deallocEn   = deallocVld;
+
+    \=obj.lib.instance({
+        instanceName: 'proc_data_idx_fifo',
+        moduleName: 'fifo',
+        params: {
+            width: numEntries,
+            depth: numEntries,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        verilogParams: {},
+        ports: {
+            clk: 'clk',
+            reset_n: 'reset_n',
+            push_valid: 'allocEn',
+            push_ready: 'proc_data_ptr_ready',
+            push_data:  'allocIdx',
+            pop_valid:  'proc_data_ptr_valid',
+            pop_ready:  'procDataLast',
+            pop_data:   'proc_data_ptr'
+        },
+        portsDelimiter: '\n    '
+    })=\
+
+    assign proc_data_ready  = proc_data_ptr_valid;
+
+\js for(var entry = 0; entry < numEntries; entry++) {
+    assign procDataEn\=entry=\ = (procDataIdx[\=entry=\] & deallocEn)? {\=nBeatDb=\{1'b1}} : (allocIdx[\=entry=\] & proc_data_vldrdy & allocEn)? \=nBeatDb=\'d1 : wrBeat\=entry=\& {\=nBeatDb=\{(proc_data_ptr[\=entry=\] & proc_data_vldrdy)}};
+\js }
+    assign procDataLast =  proc_data_vldrdy & proc_data_last;
+    assign proc_data_vldrdy = proc_data_valid & proc_data_ready;
+
+\js // no order between scratchpad and non-scrachpad
+    \=obj.lib.instance({
+        instanceName: 'hit_ptr_fifo',
+        moduleName: 'fifo',
+        params: {
+            width: numEntries,
+            depth: numEntries,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        interfaces: [{ modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface') }],
+        ports: {
+            push_valid: 'push_hit_ptr_valid',
+            push_ready: 'push_hit_ptr_ready',
+            push_data:  'push_hit_ptr_data',
+            pop_valid:  'pop_hit_ptr_valid',
+            pop_ready:  'pop_hit_ptr_ready',
+            pop_data:   'pop_hit_ptr_data'
+        },
+        portsDelimiter: '\n        '
+    })=\
+
+    assign push_hit_ptr_valid = alloc_valid & alloc_ready & alloc_hit & ~alloc_sp;
+    assign pop_hit_ptr_ready = deallocVld & hit_data & ~sp_data; 
+
+\js if(useScratchpad) {
+    \=obj.lib.instance({
+        instanceName: 'sp_hit_ptr_fifo',
+        moduleName: 'fifo',
+        params: {
+            width: numEntries,
+            depth: numEntries,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        interfaces: [{ modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface') }],
+        ports: {
+            push_valid: 'push_sp_hit_ptr_valid',
+            push_ready: 'push_sp_hit_ptr_ready',
+            push_data:  'push_sp_hit_ptr_data',
+            pop_valid:  'pop_sp_hit_ptr_valid',
+            pop_ready:  'pop_sp_hit_ptr_ready',
+            pop_data:   'pop_sp_hit_ptr_data'
+        },
+        portsDelimiter: '\n        '
+    })=\
+
+    assign push_sp_hit_ptr_valid = alloc_valid & alloc_ready & alloc_hit & alloc_sp;
+    assign pop_sp_hit_ptr_ready = deallocVld & hit_data & sp_data;
+\js }
+
+\jsbegin
+// TODO: 
+// Assertion: 
+// 1. valid rtt id must mux out valid entry
+// 2. preallocIdx
+// 3. data valid must be InUse
+// 4. all size data are valid
+// Corner case: preallocate and deallocation at the same cycle, still set inUse
+\jsend
+endmodule
+

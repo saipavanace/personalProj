@@ -1,0 +1,63 @@
+#!/bin/csh
+
+set TOTAL = `grep -RI "node" $WORK_TOP/dv/dce/tb/testlist | grep -v "\-t" | grep -v "#" | wc -l`
+set UNIT = `grep -RI "node" $WORK_TOP/dv/dce/tb/testlist | grep -v "\-t" | grep -v "#" | awk '{print $4}'`
+set NAME = `grep -RI "node" $WORK_TOP/dv/dce/tb/testlist | grep -v "\-t" | grep -v "#" | awk '{print $10}'`
+set CONFIG = `grep -RI "node" $WORK_TOP/dv/dce/tb/testlist | grep -v "\-t" | grep -v "#" | awk '{print $14}'`
+
+make clean
+
+if ($1 != "run_only") then
+
+rm -rf testlist
+touch testlist
+
+@ i = 1
+while ($i <= $TOTAL)
+
+    echo "node ../../../dv/scripts/rsim.js -m -a -e $UNIT[$i] -c -n $NAME[$i] -d RTL_DUT,INHOUSE_AXI,ASSERT_ON,DUMP_ON,V1 -r -C $CONFIG[$i]" >> testlist
+    @ i++
+
+end
+
+tclsh ../../../dv/scripts/par_run.tcl -m 3 -e . -f testlist
+
+endif
+
+if ($1 != "compile_only") then
+
+@ i = 1
+while ($i <= $TOTAL)
+
+    set APFPATH = `echo $CONFIG[$i] | sed 's#$WORK_TOP#'"$WORK_TOP"'#g'`
+    set JSON = `echo $APFPATH | sed 's/.apf/AchlParams.json/g' | awk -F / '{print $NF}'`
+    make parameter_validation NAME=$NAME[$i] APF=$APFPATH JSON=../../../../debug/$UNIT[$i]/$NAME[$i]/$JSON
+
+    @ i++
+
+end
+
+endif
+
+rm -rf parameter_validation_dce.js
+touch parameter_validation_dce.js
+
+echo "'use strict';" >> parameter_validation_dce.js
+echo "var exec = require('child_process').exec," >> parameter_validation_dce.js
+echo "expect = require('chai').expect;" >> parameter_validation_dce.js
+echo "describe('Subsystem parameter_validation Report', function () {" >> parameter_validation_dce.js
+
+@ i = 1
+while ($i <= $TOTAL)
+
+    echo "it('DCE Parameter Validation $NAME[$i]', function (done) {" >> parameter_validation_dce.js
+    echo "exec('cat rtl/dce/parameter_validation/parameter_validation.$NAME[$i]/difference_count.log', function (e, sto1, ste1) {" >> parameter_validation_dce.js
+    echo "expect(sto1).to.equal('0\\n');" >> parameter_validation_dce.js
+    echo "done();" >> parameter_validation_dce.js
+    echo "});" >> parameter_validation_dce.js
+    echo "});" >> parameter_validation_dce.js
+    @ i++
+
+end
+
+echo "});" >> parameter_validation_dce.js

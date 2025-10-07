@@ -1,0 +1,65 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+//
+// NAME: DCE Addr index gen
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+//
+//=============================================================================
+
+
+//      
+// Variables
+// 
+   
+var u = obj.lib;
+var m = obj.userLib;
+
+//
+// Params
+//
+
+let ASSERT_ON = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+let W_ADDR =  m.ParamDefaultGet(u, 'wAddr', 'int', 32);
+let SF_INFO = m.ParamDefaultGet(u, 'SnoopFilterInfo', 'array', []);
+
+//
+// ports
+//
+
+u.port('input', 'req_addr', W_ADDR);
+for (let i=0; i<SF_INFO.length; i++)
+  {
+   u.port('output', 'sf'+i+'_index', SF_INFO[i].SetSelectInfo.PriSubDiagAddrBits.length);
+   }
+
+//  
+// Module
+//
+
+\jsend
+module \=u.getModuleName()=\
+         (\=u.getPorts('\n    ')=\
+          );  
+   
+localparam
+  W_ADDR = \=W_ADDR=\;
+
+\jsbegin
+for (let i=0; i<SF_INFO.length; i++)
+  {
+   for (let j=0; j<SF_INFO[i].SetSelectInfo.PriSubDiagAddrBits.length; j++)
+   {
+\jsend
+      assign sf\=i=\_index[\=j=\ ] = ^ {req_addr[\=SF_INFO[i].SetSelectInfo.PriSubDiagAddrBits[j] =\ ], req_addr & \=SF_INFO[i].SetSelectInfo.SecSubRows[j]=\ };
+\jsbegin
+   }
+  }
+\jsend
+    
+endmodule //

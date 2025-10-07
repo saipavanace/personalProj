@@ -1,0 +1,70 @@
+{
+  "name": "bootAndCsrInfo",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "BootInfo",
+      "params": [
+        {
+          "parameterName": "regionHui",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "formula": "return system.BootInfo.regionHui",
+          "description": "Region home unit ID"
+        },
+        {
+          "parameterName": "regionHut",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "formula": "return (system.BootInfo.regionHut === 'DMI') ? 0 : 1;",
+          "description": "Region home unit type"
+        },
+        {
+          "parameterName": "regionSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 0,
+          "maximum": 31,
+          "default": 7,
+          "formula": "return Math.log2(system.BootInfo.regionSize) - 12;",
+          "description": "Region size"
+        },
+        {
+          "parameterName": "regionBlr",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "'h0",
+          "formula": "return system.BootInfo.regionBaseLrAddr",
+          "description": "Region base address low "
+        },
+        {
+          "parameterName": "regionBhr",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "'h0",
+          "formula": "return system.BootInfo.regionBaseHrAddr",
+          "description": "Region base address high"
+        }
+      ]
+    },
+    {
+      "name": "CsrInfo",
+      "params": [
+        {
+          "parameterName": "csrBaseAddress",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "'hb9b90",
+          "formula": "return system.csrBaseAddr",
+          "description": "CAR base address"
+        }
+      ]
+    }
+  ]
+}

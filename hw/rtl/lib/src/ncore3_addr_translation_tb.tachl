@@ -1,0 +1,207 @@
+//=============================================================================
+// Copyright (C) 2025 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Filename: ncore3_addr_translation.tachl
+// Author: Boon Chuan
+// Description: Ncore3 Address Translation
+//
+// Minimum block size for translation/compaction is 1MB (2^20 bytes).
+// If an incoming address matches with multiple From Addresses, the result is unpredictable.
+//=========================================================================
+
+var wAddr               = 48; //obj.lib.getParam('wAddr');
+var useAddrTranslation  = 1;  //obj.lib.getParam('useAddrTranslation');
+var nAddrTransRegisters = 2;  //obj.lib.getParam('nAddrTransRegisters');
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+obj.lib.port('output', 'clk',  1, 'reg');
+obj.lib.port('output', 'reset_n',  1, 'reg');
+if (useAddrTranslation) {
+    for (var i=0; i < nAddrTransRegisters; i++) {
+obj.lib.port('output', 'csr_ATER_'+i+'_Valid', 1, 'reg');     //Address Translation Enable Register: Valid
+obj.lib.port('output', 'csr_ATER_'+i+'_Mask', 4, 'reg' );     //Address Translation Enable Register: Mask (binary number 0 to 15)
+obj.lib.port('output', 'csr_RFAR_'+i+'_FromAddr', 32, 'reg'); //Relocate From Address Register: From Address [51:20]
+obj.lib.port('output', 'csr_RTAR_'+i+'_ToAddr', 32, 'reg');   //Relocate To Address Register: To Address [51:20]
+obj.lib.port('output', 'mask'+i, wAddr-20, 'reg');
+obj.lib.port('output', 'to_addr_masked'+i, wAddr-20, 'reg');
+    }
+obj.lib.port('output', 'from_addr_match_vec', nAddrTransRegisters, 'reg');
+}
+obj.lib.port('output', 'addr_in',  wAddr, 'reg');
+obj.lib.port('output', 'addr_out', wAddr);
+obj.lib.port('output', 'golden_addr_out', wAddr, 'reg');
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+
+var instance_ports_for_rd_addr_trans = {};
+
+if (useAddrTranslation) {
+    for (var i=0; i < nAddrTransRegisters; i++) {
+instance_ports_for_rd_addr_trans['csr_ATER_'+i+'_Valid'] = 'csr_ATER_'+i+'_Valid';
+instance_ports_for_rd_addr_trans['csr_ATER_'+i+'_Mask']  = 'csr_ATER_'+i+'_Mask';
+instance_ports_for_rd_addr_trans['csr_RFAR_'+i+'_FromAddr'] = 'csr_RFAR_'+i+'_FromAddr';
+instance_ports_for_rd_addr_trans['csr_RTAR_'+i+'_ToAddr'] = 'csr_RTAR_'+i+'_ToAddr';
+    }
+}
+instance_ports_for_rd_addr_trans['addr_in'] = 'addr_in['+(wAddr-1)+':0]';
+instance_ports_for_rd_addr_trans['addr_out'] = 'addr_out';
+
+\jsend
+
+    \=obj.lib.instance( {
+        instanceName: 'u_rd_addr_trans',
+        moduleName: 'ncore3_addr_translation',
+        params: {
+            wAddr               : wAddr,
+            useAddrTranslation  : useAddrTranslation,
+            nAddrTransRegisters : nAddrTransRegisters
+        },
+        ports: instance_ports_for_rd_addr_trans
+    })=\
+
+initial begin
+  clk = 1'b0;
+  forever begin
+      #5 clk = ~clk;
+  end
+end
+
+initial begin
+   reset_n = 1'b0;
+   #15
+   reset_n = 1'b1;
+end
+
+reg [7:0] counter;
+
+always @ (posedge clk, negedge reset_n)
+if (~reset_n) begin
+    counter <= 16'b0;
+end else begin
+    counter <= counter + 1'b1;
+end
+
+always @ (posedge clk, negedge reset_n)
+if (~reset_n) begin
+    csr_ATER_0_Valid    <= 1'b0;
+    csr_ATER_0_Mask     <= 4'b0;
+    csr_RFAR_0_FromAddr <= 32'h3333_3333;
+    csr_RTAR_0_ToAddr   <= 32'h5555_5555;
+    csr_ATER_1_Valid    <= 1'b0;
+    csr_ATER_1_Mask     <= 4'b0;
+    csr_RFAR_1_FromAddr <= 32'h5555_5555;
+    csr_RTAR_1_ToAddr   <= 32'hAAAA_AAAA;
+    addr_in             <= 48'h3000_0000;
+end else begin
+    addr_in             <= {counter[7:0], counter[7:0], counter[7:0], counter[7:0], counter[7:0], counter[7:0]};
+    csr_ATER_0_Valid    <= 1'b1;
+    csr_ATER_0_Mask     <= (counter == 8'hff) ? 4'b0 : (csr_ATER_0_Mask + 1'b1);
+    csr_ATER_1_Valid    <= 1'b1;
+    csr_ATER_1_Mask     <= (counter == 8'hff) ? 4'b0 : (csr_ATER_0_Mask + 1'b1);
+end
+
+    \js for (var i=0; i < nAddrTransRegisters; i++) {
+
+always @(*) begin
+case (csr_ATER_\=i=\_Mask)
+    4'd0:    mask\=i=\ =  \=(wAddr-20)-0=\'b0;
+    4'd1:    mask\=i=\ = {\=(wAddr-20)-1=\'b0,   1'b1};
+    4'd2:    mask\=i=\ = {\=(wAddr-20)-2=\'b0,   2'b11};
+    4'd3:    mask\=i=\ = {\=(wAddr-20)-3=\'b0,   3'b111};
+    4'd4:    mask\=i=\ = {\=(wAddr-20)-4=\'b0,   4'b1111};
+    4'd5:    mask\=i=\ = {\=(wAddr-20)-5=\'b0,   5'b1_1111};
+    4'd6:    mask\=i=\ = {\=(wAddr-20)-6=\'b0,   6'b11_1111};
+    4'd7:    mask\=i=\ = {\=(wAddr-20)-7=\'b0,   7'b111_1111};
+    4'd8:    mask\=i=\ = {\=(wAddr-20)-8=\'b0,   8'b1111_1111};
+    4'd9:    mask\=i=\ = {\=(wAddr-20)-9=\'b0,   9'b1_1111_1111};
+    4'd10:   mask\=i=\ = {\=(wAddr-20)-10=\'b0, 10'b11_1111_1111};
+    4'd11:   mask\=i=\ = {\=(wAddr-20)-11=\'b0, 11'b111_1111_1111};
+    4'd12:   mask\=i=\ = {\=(wAddr-20)-12=\'b0, 12'b1111_1111_1111};
+    4'd13:   mask\=i=\ = {\=(wAddr-20)-13=\'b0, 13'b1_1111_1111_1111};
+    4'd14:   mask\=i=\ = {\=(wAddr-20)-14=\'b0, 14'b11_1111_1111_1111};
+    4'd15:   mask\=i=\ = {\=(wAddr-20)-15=\'b0, 15'b111_1111_1111_1111};
+    default: mask\=i=\ =  \=(wAddr-20)-0=\'b0;
+endcase
+end
+
+    \js }
+
+    \js for (var i=0; i < nAddrTransRegisters; i++) {
+
+always @(*) begin
+case (csr_ATER_\=i=\_Mask) 
+    4'd0:    to_addr_masked\=i=\ =  csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:0];
+    4'd1:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:1],  addr_in[20:20]}; 
+    4'd2:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:2],  addr_in[21:20]};
+    4'd3:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:3],  addr_in[22:20]};
+    4'd4:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:4],  addr_in[23:20]};
+    4'd5:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:5],  addr_in[24:20]};
+    4'd6:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:6],  addr_in[25:20]};
+    4'd7:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:7],  addr_in[26:20]};
+    4'd8:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:8],  addr_in[27:20]};
+    4'd9:    to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:9],  addr_in[28:20]};
+    4'd10:   to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:10], addr_in[29:20]};
+    4'd11:   to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:11], addr_in[30:20]};
+    4'd12:   to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:12], addr_in[31:20]};
+    4'd13:   to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:13], addr_in[32:20]};
+    4'd14:   to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:14], addr_in[33:20]};
+    4'd15:   to_addr_masked\=i=\ = {csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:15], addr_in[34:20]};
+    default: to_addr_masked\=i=\ =  csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:0];
+endcase
+end
+
+    \js }
+
+    //  mask is for keeping   the  addr_in[\=wAddr-1=\:20] bits for the output address
+    // ~mask is for injecting the csr_RTAR[\=wAddr-1=\:20] bits for the output address
+    // ~mask is for address comparison with the csr_ATER 
+    //
+    // match_vec is to check if addr_in matches csr_ATER<i>
+
+    \js for (var i=0; i < nAddrTransRegisters; i++) {
+
+always @(*) begin
+case (csr_ATER_\=i=\_Mask) 
+    4'd0:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:20] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:0])  & csr_ATER_\=i=\_Valid;
+    4'd1:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:21] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:1])  & csr_ATER_\=i=\_Valid; 
+    4'd2:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:22] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:2])  & csr_ATER_\=i=\_Valid;
+    4'd3:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:23] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:3])  & csr_ATER_\=i=\_Valid;
+    4'd4:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:24] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:4])  & csr_ATER_\=i=\_Valid;
+    4'd5:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:25] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:5])  & csr_ATER_\=i=\_Valid;
+    4'd6:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:26] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:6])  & csr_ATER_\=i=\_Valid;
+    4'd7:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:27] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:7])  & csr_ATER_\=i=\_Valid;
+    4'd8:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:28] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:8])  & csr_ATER_\=i=\_Valid;
+    4'd9:    from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:29] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:9])  & csr_ATER_\=i=\_Valid;
+    4'd10:   from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:30] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:10]) & csr_ATER_\=i=\_Valid;
+    4'd11:   from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:31] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:11]) & csr_ATER_\=i=\_Valid;
+    4'd12:   from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:32] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:12]) & csr_ATER_\=i=\_Valid;
+    4'd13:   from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:33] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:13]) & csr_ATER_\=i=\_Valid;
+    4'd14:   from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:34] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:14]) & csr_ATER_\=i=\_Valid;
+    4'd15:   from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:35] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:15]) & csr_ATER_\=i=\_Valid;
+    default: from_addr_match_vec[\=i=\] = (addr_in[\=wAddr-1=\:20] == csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:0])  & csr_ATER_\=i=\_Valid;
+endcase
+end
+
+    \js }
+
+always @(*) begin
+case (1'b1) 
+    \js for (var i=0; i < nAddrTransRegisters; i++) {
+    from_addr_match_vec[\=i=\] : golden_addr_out = {to_addr_masked\=i=\, addr_in[19:0]};
+    \js }
+    default : golden_addr_out = addr_in;
+endcase
+end
+
+endmodule

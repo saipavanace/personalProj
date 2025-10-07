@@ -1,0 +1,2680 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines single transaction table entry
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+\jsend
+
+\jsbegin
+var useWriteNoSnoopEWA = 1;
+
+var useTracetagTrigger = 1;
+
+var assertOn = u.getParam('assertOn');
+var interfaces         = u.getParam('interfaces');
+var rsp_flit_interface = u.getParam('RspInterface');
+var dat_flit_interface = u.getParam('DatInterface');
+var wAddr =  u.getParam('wAddr');
+var wData =  u.getParam('wData');
+var chi_b =  u.getParam('chi_b');
+var chi_e =  u.getParam('chi_e');
+var wEntries = u.getParam('wEntries');
+var wOttEntries = u.getParam('wOttEntries');
+var wReqTraceTag = u.getParam('ReqInterface').TraceTag;
+var wReqTxnID = u.getParam('ReqInterface').TxnID;
+var wReqSrcID = u.getParam('ReqInterface').SrcID;
+var wReqTgtID = u.getParam('ReqInterface').TgtID;
+var wReqQoS   = u.getParam('ReqInterface').QoS;
+var wOpcode  = u.getParam('ReqInterface').Opcode;
+var wTagOp      = (u.getParam('ReqInterface').TagOp > 0)      ? u.getParam('ReqInterface').TagOp : 0;
+var wTag        = (u.getParam('DatInterface').Tag   > 0)      ? u.getParam('DatInterface').Tag   : 0;
+var wTU         = (u.getParam('DatInterface').TU    > 0)      ? u.getParam('DatInterface').TU    : 0;
+var wDataSource = (u.getParam('DatInterface').DataSource > 0) ? u.getParam('DatInterface').DataSource : 0;
+var wCBusy      = (u.getParam('DatInterface').CBusy > 0)      ? u.getParam('DatInterface').CBusy : 0;
+var wRspOpcode = u.getParam('RspInterface').OpCode;
+var wFwdState =  u.getParam('DatInterface').FwdState;
+var wRSVDC    =  u.getParam('DatInterface').RSVDC;
+var wStashTxnID = u.getParam('CHI_SnpInterface').TxnID;
+var wStashSrcID = u.getParam('CHI_SnpInterface').SrcID;
+var wStashQoS   = u.getParam('CHI_SnpInterface').QoS;
+var wStashLPID  = u.getParam('CHI_SnpInterface').FwdTxnID;
+var initiator_id_width = u.getParam('initiator_id_width');
+var lpid_width   = Math.min(u.getParam('ReqInterface').LPID, 5);
+var snpattr_width =  u.getParam('ReqInterface').SnpAttr;
+var wAux = u.getParam('DTRReqRxInterface').aux;
+var wHProt = u.getParam('DTWReqInterface').h_prot;
+var wMProt_cmd_rsp = u.getParam('CMDRspInterface').m_prot;
+var wMProt_dtr_rsp = u.getParam('DTRRspTxInterface').m_prot;
+var wMProt_str_rsp = u.getParam('STRRspInterface').m_prot;
+var wMProt_dtw_req = u.getParam('DTWReqInterface').m_prot;
+var wDProt_dtw_req = u.getParam('DTWReqInterface').dprot;
+var wTTier = u.getParam('DTWReqInterface').t_tier;
+var wSteering = u.getParam('DTWReqInterface').steering;
+var wPriority = u.getParam('DTWReqInterface').priority;
+var wQl = u.getParam('DTWReqInterface').ql;
+var wUser = u.getParam('DTWReqInterface').user;
+var wTm_str_req = u.getParam('STRReqInterface').tm;
+var wTm_str_rsp = u.getParam('STRRspInterface').tm;
+var wTm_dtr_req = u.getParam('DTRReqRxInterface').tm;
+var wTm_dtr_rsp = u.getParam('DTRRspTxInterface').tm;
+var cm_type  = u.getParam('cm_type');
+var chi_cmd  = u.getParam('chi_cmd');
+
+var qosInfo  = u.getParam('qosInfo');
+var num_pri_buckets =  qosInfo.qosMap.length;
+var intf_size = Math.max(log2ceil(wData/64),1);
+var intf_size_width = u.getParam('intf_size_width');
+var num_dces = u.getParam('nDCEs');
+var num_dmis = u.getParam('nDmis');
+var num_diis = u.getParam('nDiis');
+var num_dies = u.getParam('nDies');
+var cm_status_width = u.getParam('STRReqInterface').cm_status;
+var rb_id_width = u.getParam('STRReqInterface').rb_id;
+var msg_id_width = u.getParam('STRReqInterface').message_id;
+var wMpf1 = u.getParam('STRReqInterface').mpf1;
+var wMpf2 = u.getParam('STRReqInterface').mpf2;
+var init_id_width = u.getParam('STRReqInterface').initiator_id;
+var wRl = u.getParam('DTRReqRxInterface').rl;
+var wRspFlit_FwdState_local = u.getParam('wRspFlit_FwdState_local');
+var wDatFlit_TraceTag_local = u.getParam('wDatFlit_TraceTag_local');
+var wDatFlit_Homenode_ID_local = u.getParam('wDatFlit_Homenode_ID_local');
+var wSnpFlit_FwdNID_local  = u.getParam('wSnpFlit_FwdNID_local');
+var wPriority_modif = (wPriority > 0) ? wPriority : 1;
+var wFlit_Addr    = interfaces.chiInt.params.wAddr;
+var wAddr_diff = wAddr - wFlit_Addr;
+
+var bundleFunctions = obj.userLib.bundleFunctions;
+var dtw_req_width = bundleFunctions.getBundleWidth(u.getParam('DTWReqInterface'),['valid','ready','last','data','be','aux','dwid','dbad'],obj.lib.bundle); 
+var dtw_data_out_width = dtw_req_width + 2; 
+var cmd_data_width = bundleFunctions.getBundleWidth(u.getParam('ReqInterface'),['SrcID','TxnID','LikelyShared','AllowRetry','PCrdType','ExCompAck','TraceTag'],obj.lib.bundle);
+var cmd_data_out_width = cmd_data_width + 1 + 8 + wPriority + 6 + 1 + 1;
+var dat_flit_width = bundleFunctions.getBundleWidth(dat_flit_interface, ['Poison', 'Data','BE','DataID', 'Homenode_ID'],obj.lib.bundle);
+var rddata_bundle_width = dat_flit_width + 3 + 1 + 1;
+
+u.port('input','clk', 1);
+u.port('input','reset_n',1);
+u.port('output','q_cmd_dvm_sync_entry',1);
+u.port('output','q_cmd_owo_entry',1);
+u.port('output','q_nrs_selfidr_hit_entry',1);
+u.port('output','q_illegal_cmd_detected_entry',1);
+u.port('output','q_cmd_req_all_flag_entry',1);
+u.port('input','RXDAT_LAST',1);
+u.port('input','init',1);
+u.port('output','init_d',1);
+u.port('input','init_d_cmds_to_non_coh_space',1);
+u.port('input', 'tracetagTrigger_d',1); //tracetagTrigger_d is timing aligned with init_d
+u.port('input','init_id',initiator_id_width);
+u.port('input','wr_data_sel',1);
+u.port('input','rx_rsp_valid',1);
+u.port('input','aiu_dve_f_unit_id_d', initiator_id_width);
+u.port('input','map_target_f_unit_id_d', initiator_id_width);
+u.port('input','map_dce_f_unit_id_d', initiator_id_width);
+u.port('input','remote_valid_d', 1);
+u.port('input','q_addr_map_error', 1);
+u.port('input','nrs_selfidr_hit', 1);
+u.port('input','selfid_data_sent', 1);
+u.port('input','hit_en', 1);
+u.port('input','concerto_cmd', 8); //NOTE: timing aligned with init_d i.e. req_valid_d
+u.port('input','illegal_txn', 1);  //NOTE: timing aligned with init_d i.e. req_valid_d
+u.port('input','req_pri_mapped', wPriority_modif);
+u.port('input','error_dtr_detected_done', 1);
+u.port('input',  'timeout_overflow_event', 1);
+u.port('input',  'timeout_overflow_event_clr', 1);
+u.port('output','cmd_req_target_f_unit_id', initiator_id_width);
+u.port('output','q_map_target_f_unit_id', initiator_id_width);
+u.port('output', 'q_remote_valid', 1);
+u.port('output', 'timeout_overflow', 1);
+u.port('output', 'nc_cmd', 1);
+u.port('output', 'ott_cmds_to_non_coh_space', 1);
+if(wPriority > 0) {
+u.port('output', 'q_req_pri', wPriority);
+u.port('output', 'entry_req_pri', wPriority);
+u.port('input',  'starv', 1);
+}
+
+u.interface('REQ_', 'slave', u.getParam('ReqInterface'));
+u.interface('RXDAT_', 'slave', u.getParam('DatInterface'),['TgtID','BE','Data', 'Homenode_ID']);
+
+u.port('input','rn_rsp_sel',1);
+
+u.interface('RXRSP_', 'slave', u.getParam('RspInterface'),['QoS','TgtID','PCrdType']);
+
+u.port('input','cmd_rsp_sel',1);
+
+
+u.interface('cmd_rsp_slv_', 'slave', u.getParam('CMDRspInterface'),['valid','ready','last','initiator_id','message_id','r_message_id']);
+
+u.port('input','dtwrsp_sel',1);
+
+u.interface('dtw_rsp_slv_', 'slave', u.getParam('DTWRspInterface'),['valid','ready','last','initiator_id','message_id','r_message_id'] );
+
+u.port('input','cmprsp_sel',1);
+
+u.interface('cmp_rsp_slv_', 'slave', u.getParam('CMPRspInterface'),['valid','ready','last','initiator_id','message_id','r_message_id'] );
+
+u.port('input','str_req_sel',1);
+
+u.interface('str_req_slv_', 'slave', u.getParam('STRReqInterface'),['valid','ready','last'] );
+
+u.port('input','dtr_req_sel',1);
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wAux > 0) {
+u.interface('dtr_req_slv_', 'slave', u.getParam('DTRReqRxInterface'), ['ready','target_id','tr','mpf1','data','be'] );
+} else {
+u.interface('dtr_req_slv_', 'slave', u.getParam('DTRReqRxInterface'), ['ready','target_id','tr','mpf1','data','be', 'aux'] );
+} 
+
+u.port('input','ott_entry_num', wEntries)
+u.port('output','rd_data_out', rddata_bundle_width);
+u.port('output','dtw_data_out',dtw_data_out_width);
+u.port('output','rn_rsp_out_req',1);
+u.port('output','dtr_rsp_out_req',1);
+u.port('output','cmd_out_req',1);
+u.port('output','fake_cmd_out_req',1);
+u.port('output','str_rsp_out_req',1);
+u.port('output','q_cmd_size',3);
+u.port('output','q_cmd_addr',wAddr);
+u.port('output','q_cmd_ns',1);
+u.port('output','q_cmd_lpid',lpid_width);
+
+u.port('output','dtr_rsp_out_data', bundleFunctions.getBundleWidth(u.getParam('DTRRspTxInterface'),['valid','ready','last'],obj.lib.bundle) );
+u.port('output','cmd_out_data', cmd_data_out_width);
+u.port('output','rn_rsp_out_data',bundleFunctions.getBundleWidth(rsp_flit_interface ,['valid','ready'],obj.lib.bundle));
+u.port('output','str_rsp_out_data', bundleFunctions.getBundleWidth(u.getParam('STRRspInterface'),['valid','ready','last'],obj.lib.bundle) );
+
+u.port('input','rn_rsp_out_ack',1);
+u.port('input','dtr_rsp_out_ack',1);
+u.port('input','cmd_out_ack',1);
+u.port('input','str_rsp_out_ack',1);
+
+// Vector indicating which unit credits are available 
+u.port('input','dce_credits_avail', u.getParam('nDCEs'));
+u.port('input','dve_credits_avail', 1);
+u.port('input','dmi_credits_avail', u.getParam('nDmis'));
+u.port('input','dii_credits_avail', u.getParam('nDiis'));
+u.port('input','chiplet_credits_avail', u.getParam('nDies'));
+
+u.port('input','req_in_dce_id_d', u.getParam('nDCEs'));
+u.port('input','req_in_dmi_id_d', u.getParam('nDmis'));
+u.port('input','req_in_dii_id_d', u.getParam('nDiis'));
+u.port('input','req_in_select_chiplet_d', u.getParam('nDies'));
+
+u.port('input','dvm_sync_dependency',1);
+u.port('input','owo_dependency',1);
+u.port('input','q_dce_depnd_valid',1);
+
+u.port('input', 'zero_dce_credit_limit', u.getParam('nDCEs'));
+u.port('input', 'zero_dmi_credit_limit', u.getParam('nDmis'));
+u.port('input', 'zero_dii_credit_limit', u.getParam('nDiis'));
+u.port('output', 'no_credits_access_error', 1);
+
+u.port('output','entry_coherent',1);
+u.port('output','entry_valid',1);
+u.port('output','entry_valid_del',1);
+u.port('output','entry_valid_early',1);
+u.port('output','atomic_coh_in_progress',1);
+u.port('output','combined_wr_in_progress',1);
+u.port('output','mru_excl_in_progress',1);
+u.port('output','mru_excl_in_progress_for_addr_llist',1);
+u.port('output','error_dtr_detected',1);
+
+u.port('output','select_dve0',1);
+for (var i = 0; i < num_dces; i++) {
+u.port('output','select_dce'+i,1);
+}
+for (var i = 0; i < num_dmis; i++) {
+u.port('output','select_dmi'+i,1);
+}
+for (var i = 0; i < num_diis; i++) {
+u.port('output','select_dii'+i,1);
+}
+u.port('output','select_chiplet', num_dies);
+
+u.port('output', 'dealloc', 1);
+
+if (chi_e) {
+u.port('output','dtwzero_out_req',1);
+u.port('input','dtwzero_out_ack',1);
+}
+
+u.port('output', 'reads', 1);
+u.port('output', 'writes', 1);
+u.port('output', 'dataless', 1);
+u.port('output', 'writeevictorevict', 1);
+u.port('output', 'dvm', 1);
+u.port('output', 'txnID', wReqTxnID);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+wire atomic_non_coh_in_progress;
+
+\=bundleFunctions.wiresFromInterface('rn_rsp_', rsp_flit_interface ,['valid','ready', 'TraceTag'],obj.lib.bundle )=\ 
+
+\=bundleFunctions.wiresFromInterface('dtr_rsp_', u.getParam('DTRRspTxInterface') ,['valid','ready','last'],obj.lib.bundle )=\   
+
+\=bundleFunctions.wiresFromInterface('str_rsp_', u.getParam('STRRspInterface') ,['valid','ready','last'],obj.lib.bundle )=\   
+
+\=bundleFunctions.wiresFromInterface('dtw_req_', u.getParam('DTWReqInterface') ,['valid','ready','last','data','be','dwid','dbad'],obj.lib.bundle )=\   
+
+\=bundleFunctions.wiresFromInterface('rddata_', dat_flit_interface ,['Data','BE','DataID', 'FwdState', 'TraceTag'],obj.lib.bundle )=\   
+
+wire dff_enable = 1'b1;
+wire cmos_cmd;
+wire q_Opcode_stashonce;
+wire q_Opcode_atomics;
+wire cmd_req_vz;
+wire cmd_req_ac;
+wire cmd_req_ca;
+wire cmd_req_ch;
+wire q_cmd_req_vz;
+wire q_cmd_req_ac;
+wire q_cmd_req_ca;
+wire q_cmd_req_ch;
+wire dtr_for_illegal_cmd_detected, q_nrs_selfidr_hit;
+wire [\=u.getParam('RspInterface').Resp-1=\:0] rn_Resp_out ;
+wire q_rn_rsp0_flag;
+wire q_rn_rsp1_flag;
+wire [2:0] dtw_req_size;
+wire atomics;
+wire atomic_coh;
+wire atomic_non_coh;
+wire atomic_write;
+wire atomic_swap;
+wire atomic_comp;
+wire atomic_read;
+wire atomic_non_coh_done;
+wire q_illegal_cmd_detected;
+wire q2_illegal_cmd_detected;
+wire q_illegal_txn_detected;
+wire write_full_cpbk;
+wire write_full_non_cpbk;
+wire write_ptl_cpbk;
+wire write_ptl_non_cpbk;
+
+wire writebacks ;
+wire write_evict; 
+wire snoopable_read ;
+wire snapshot_read ;
+wire non_coh_read  ;
+\jsbegin
+/* istanbul ignore else */
+if (useWriteNoSnoopEWA) {
+\jsend
+wire write_no_snp_with_ewa;
+\js }
+wire writestash, unsupported_writestash;
+wire stashonce, unsupported_stashonce; 
+wire unsupported_writeevictorevict;
+wire unsupported_combined_ncb_wr, unsupported_combined_ncb_wr_persist, unsupported_combined_ncb_wr_non_persist;
+wire unsupported_txn, unsupported_txn_detected;
+wire prefetch;
+wire q_cmd_req_flag ;
+wire q_cmd_rsp_flag ;
+wire q_str_req_flag ;
+wire q_str_rsp_flag ;
+wire q_dtr_rsp_flag ;
+wire q_dtr_req_flag ;
+wire q_dtw_rsp_flag ;
+wire q_cmp_rsp_flag ;
+wire q_cmd_req_coh_flag;
+wire q_cmd_rsp_coh_flag;
+wire q_str_req_coh_flag;
+wire q_str_rsp_coh_flag;
+wire q_ExCompAck ;
+wire entry_valid_en;
+wire q_entry_valid;
+wire q_entry_valid_del;
+wire [7:0] q_concerto_cmd; 
+reg  [7:0] q_concerto_cmd_out; 
+wire q_atomic_non_coh_done;
+wire q_atomic_coh_done;
+wire [2:0] rd_data_cmd_size;
+wire q_SnpAttr_0;
+wire REQ_SnpAttr_0;
+wire [\=wOpcode-1=\:0] q_Opcode_modif;
+wire dealloc_me;
+wire excl_req;
+wire q_str_req_error, q_excl_req_error, q_excl_req_error2, q_dtw_rsp_error;
+wire [\=initiator_id_width-1=\:0] q_map_dce_f_unit_id;
+wire [\=initiator_id_width-1=\:0] q_aiu_dve_f_unit_id;
+wire [\=initiator_id_width-1=\:0] q_init_id;
+
+wire str_req_error, dtw_rsp_error;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_str_req > 0) {
+\jsend
+wire [\=wTm_str_req-1=\:0] q_str_req_tm;
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_dtr_req > 0) {
+\jsend
+wire [\=wTm_dtr_req-1=\:0] q_dtr_req_tm;
+\js }
+
+wire q_tracetagTrigger;
+
+\js if (chi_e) {
+wire combined_wr;
+wire mru_excl;
+\js } else {
+wire combined_wr = 1'b0;
+wire mru_excl = 1'b0;
+\js }
+
+\js if (chi_e) {
+
+wire mru_excl_part1_done;
+wire mru_excl_part2_done;
+
+wire q_mru_excl_cmd_req_flag;
+wire q_mru_excl_cmd_rsp_flag;
+wire q_mru_excl_str_req_flag;
+wire q_mru_excl_str_rsp_flag;
+
+wire combined_wr_non_persist;
+wire combined_wr_persist;
+wire combined_ncb_wr_non_persist;
+wire combined_ncb_wr_persist;
+wire combined_cb_wr_non_persist;
+wire combined_cb_wr_persist;
+wire combined_wr_cb, combined_wr_ncb;
+wire comb_wr_in_progress;
+wire comb_wr_done;
+
+
+wire q_cmd_req_combw_flag;
+wire q_cmd_rsp_combw_flag;
+wire q_str_req_combw_flag;
+wire q_str_rsp_combw_flag;
+
+wire q_rn_rsp2_flag;
+
+wire q_cmd_to_dce, q_cmd_to_dmi, q_cmd_to_dii;
+
+\js }
+
+wire write_zero, write_no_snp_zero, write_unique_zero;
+
+//=============================================================================
+// CHI REQ bit fields loaded on init
+//=============================================================================
+
+\jsbegin
+for (var dataField in obj.lib.getParam('ReqInterface')) {
+   var width = obj.lib.getParam('ReqInterface')[dataField];
+   if( dataField == 'ExCompAck') { continue ;}
+   if( dataField == 'LikelyShared') { continue ;}
+   if( dataField == 'AllowRetry') { continue ;}
+   if( dataField == 'Order') { continue ;}
+   if( dataField == 'Size') { continue ;}
+   if( dataField == 'MemAttr') { continue ;}
+   if( dataField == 'SnpAttr') { continue ;}
+   if( dataField == 'Excl') { continue ;}
+   if(width> 0) {
+\jsend
+   wire \jsbegin if (width > 1) { \jsend [\=width - 1=\ :0] \jsbegin } \jsend q_\=dataField=\;
+
+   \=u.dffre(width, 'q_'+dataField, 'REQ_'+dataField, width+"'b0", 'init', 'clk', 'reset_n')=\
+\jsbegin
+    }
+} \jsend
+
+assign txnID   = q_TxnID;
+
+wire       REQ_Opcode_is_prefetch = (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.PrefetchTgt=\);      
+
+wire [1:0] REQ_Order_modif    = REQ_Opcode_is_prefetch ? 2'b00   : REQ_Order;
+wire [2:0] REQ_Size_modif     = REQ_Opcode_is_prefetch ? 3'b110  : REQ_Size;
+wire [3:0] REQ_MemAttr_modif  = REQ_Opcode_is_prefetch ? 4'b1101 : REQ_MemAttr;
+wire       REQ_SnpAttr_modif  = REQ_Opcode_is_prefetch ? 1'b0    : REQ_SnpAttr;
+wire       REQ_Excl_modif     = REQ_Opcode_is_prefetch ? 1'b0    : REQ_Excl;
+
+wire [1:0] q_Order;
+wire [2:0] q_Size;
+wire [3:0] q_MemAttr;
+wire       q_SnpAttr;
+wire       q_Excl;
+
+\=u.dffre(2, 'q_Order',   'REQ_Order_modif',   "2'b0", 'init', 'clk', 'reset_n')=\
+\=u.dffre(3, 'q_Size',    'REQ_Size_modif',    "3'b0", 'init', 'clk', 'reset_n')=\
+\=u.dffre(4, 'q_MemAttr', 'REQ_MemAttr_modif', "4'b0", 'init', 'clk', 'reset_n')=\
+\=u.dffre(1, 'q_SnpAttr', 'REQ_SnpAttr_modif', "1'b0", 'init', 'clk', 'reset_n')=\
+\=u.dffre(1, 'q_Excl',    'REQ_Excl_modif',    "1'b0", 'init', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'q_tracetagTrigger', 'tracetagTrigger_d', "1'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'ott_cmds_to_non_coh_space', 'init_d_cmds_to_non_coh_space', "1'b0", 'init_d', 'clk', 'reset_n')=\
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wAddr_diff > 0) {
+\jsend
+assign q_cmd_addr  = {\=wAddr- wFlit_Addr=\'b0, q_Addr};
+\js } else {
+assign q_cmd_addr = q_Addr;
+\js }
+
+assign q_cmd_ns   = q_NS;
+assign q_cmd_size = q_Size;
+assign q_cmd_lpid = q_LPID[\=lpid_width-1=\:0];
+
+wire [1:0] q_ccid = q_Addr[5:4];
+
+\jsbegin
+/* istanbul ignore if env ncore_3p6, ncore_3p7 */
+if(wOpcode == 5) { \jsend
+assign  q_Opcode_modif = {1'b0,q_Opcode};
+\js } else {
+assign  q_Opcode_modif = q_Opcode;
+\js }
+
+wire [\=num_dces-1=\:0] q_req_in_dce_id ;
+wire [\=num_dmis-1=\:0] q_req_in_dmi_id ;
+wire [\=num_diis-1=\:0] q_req_in_dii_id ;
+
+\jsbegin
+/* istanbul ignore if env ncore_3p6, ncore_3p7 */
+if (snpattr_width > 1) { \jsend
+assign q_SnpAttr_0 = q_SnpAttr[0];
+\js } else {
+assign q_SnpAttr_0 = q_SnpAttr; 
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p6, ncore_3p7 */
+if (snpattr_width > 1) { \jsend
+assign REQ_SnpAttr_0 = REQ_SnpAttr[0];
+\js } else {
+assign REQ_SnpAttr_0 = REQ_SnpAttr;
+\js }
+
+//=============================================================================
+// Address Map results loaded on init_d to ease timing
+//=============================================================================
+
+\=u.dffre(num_dces, 'q_req_in_dce_id', 'req_in_dce_id_d', num_dces+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(num_dmis, 'q_req_in_dmi_id', 'req_in_dmi_id_d', num_dmis+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(num_diis, 'q_req_in_dii_id', 'req_in_dii_id_d', num_diis+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(num_dies, 'select_chiplet', 'req_in_select_chiplet_d', num_dies+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(initiator_id_width, 'q_map_target_f_unit_id', 'map_target_f_unit_id_d', initiator_id_width+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(initiator_id_width, 'q_map_dce_f_unit_id', 'map_dce_f_unit_id_d', initiator_id_width+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(initiator_id_width, 'q_aiu_dve_f_unit_id', 'aiu_dve_f_unit_id_d', initiator_id_width+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(initiator_id_width, 'q_init_id', 'init_id', initiator_id_width+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\=u.dffre(initiator_id_width, 'q_remote_valid', 'remote_valid_d', "1'b0", 'init_d', 'clk', 'reset_n')=\
+//=============================================================================
+// STRreq bit fields loaded on str_req_sel
+//=============================================================================
+
+wire [\=cm_status_width-1=\ :0] q_str_cm_status;
+wire [\=rb_id_width-1=\ :0] q_str_rb_id;
+wire [\=msg_id_width-1=\ :0] q_str_message_id ;
+
+wire [\=msg_id_width-1=\ :0] q_str_coh_message_id;
+
+
+wire [\=init_id_width-1=\ :0] q_str_initiator_id ;
+wire [\=init_id_width-1=\ :0] q_str_coh_initiator_id ;
+
+wire atomic_coh_str = str_req_sel & atomic_coh_in_progress;
+
+\=u.dffre(cm_status_width , 'q_str_cm_status', 'str_req_slv_cm_status', cm_status_width+"'b0", 'str_req_sel', 'clk', 'reset_n')=\
+
+\=u.dffre(rb_id_width, 'q_str_rb_id', 'str_req_slv_rb_id', rb_id_width+"'b0", 'str_req_sel', 'clk', 'reset_n')=\
+
+\=u.dffre(msg_id_width, 'q_str_message_id', 'str_req_slv_message_id', msg_id_width+"'b0", 'str_req_sel', 'clk', 'reset_n')=\
+
+
+
+\=u.dffre(msg_id_width, 'q_str_coh_message_id', 'str_req_slv_message_id', msg_id_width+"'b0", 'atomic_coh_str', 'clk', 'reset_n')=\
+
+
+
+
+
+\=u.dffre(init_id_width, 'q_str_initiator_id', 'str_req_slv_initiator_id', init_id_width+"'b0", 'str_req_sel', 'clk', 'reset_n')=\
+
+\=u.dffre(init_id_width, 'q_str_coh_initiator_id', 'str_req_slv_initiator_id', init_id_width+"'b0", 'atomic_coh_str', 'clk', 'reset_n')=\
+
+//=============================================================================
+// DTRreq bit fields loaded on dtr_req_sel
+//=============================================================================
+wire [\=cm_status_width-1=\ :0] q_dtr_cm_status;
+wire [\=wRl-1=\ :0] q_dtr_rl;
+wire [\=msg_id_width-1=\ :0] q_dtr_r_message_id;
+wire [\=msg_id_width-1=\ :0] q_dtr_message_id;
+wire [\=u.getParam('DTRReqRxInterface').initiator_id-1=\ :0] q_dtr_initiator_id;
+
+\=u.dffre(cm_status_width, 'q_dtr_cm_status', 'dtr_req_slv_cm_status', cm_status_width+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+
+\=u.dffre(wRl, 'q_dtr_rl', 'dtr_req_slv_rl', wRl+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+
+\=u.dffre(msg_id_width, 'q_dtr_r_message_id', 'dtr_req_slv_r_message_id', msg_id_width+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+
+\=u.dffre(msg_id_width, 'q_dtr_message_id', 'dtr_req_slv_message_id', msg_id_width+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+
+\=u.dffre(init_id_width, 'q_dtr_initiator_id', 'dtr_req_slv_initiator_id', init_id_width+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CMDrsp bit fields loaded on cmd_rsp_sel
+//=============================================================================
+wire [\=cm_status_width-1=\ :0] q_cmd_rsp_cm_status;
+
+\=u.dffre(cm_status_width, 'q_cmd_rsp_cm_status', 'cmd_rsp_slv_cm_status', cm_status_width+"'b0", 'cmd_rsp_sel', 'clk', 'reset_n')=\
+
+//=============================================================================
+// DTWrsp bit fields loaded on dtwrsp_sel
+//=============================================================================
+wire [\=cm_status_width-1=\ :0] q_dtw_rsp_cm_status;
+
+\=u.dffre(cm_status_width, 'q_dtw_rsp_cm_status', 'dtw_rsp_slv_cm_status', cm_status_width+"'b0", 'dtwrsp_sel', 'clk', 'reset_n')=\
+
+//=============================================================================
+// cmd_out_data (CMDreq bundle)
+//=============================================================================
+
+assign cmd_out_data = {
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useTracetagTrigger) {
+\jsend
+    q_tracetagTrigger,
+\js } else {
+    \js if (wReqTraceTag) {
+    q_TraceTag,
+    \js } else {
+    1'b0,
+    \js }
+\js }
+    cmos_cmd, q_Opcode_stashonce, q_Opcode_atomics, q_cmd_req_vz, q_cmd_req_ac, q_cmd_req_ca, q_cmd_req_ch,
+\js if(wPriority > 0) {
+    q_req_pri,
+\js }
+    q_concerto_cmd_out, atomic_coh_in_progress,
+    \=bundleFunctions.packetizeBundle('q_', u.getParam('ReqInterface'), ['SrcID','TxnID','LikelyShared','AllowRetry','PCrdType','ExCompAck','TraceTag'], obj.lib.bundle)=\
+};
+
+\=u.dffre(8, 'q_concerto_cmd', 'concerto_cmd', "8'b0", 'init_d', 'clk', 'reset_n')=\
+
+\js if (chi_e) {
+
+always @(*) begin
+    casez (q_concerto_cmd)
+    \=cm_type.CmdMkRdUnq=\             : q_concerto_cmd_out = ~q_Excl ? \=cm_type.CmdRdUnq=\ : (mru_excl_in_progress ? \=cm_type.CmdClnUnq=\ : \=cm_type.CmdRdNshDty=\);
+    \=cm_type.CmdWrNCFullClnVld=\      : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrNCFull=\ : \=cm_type.CmdClnVld=\;
+    \=cm_type.CmdWrNCFullClnInv=\      : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrNCFull=\ : \=cm_type.CmdClnInv=\;
+    \=cm_type.CmdWrNCFullClnShPsist=\  : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrNCFull=\ : \=cm_type.CmdClnShPsist=\;
+    \=cm_type.CmdWrBkFullClnVld=\      : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrBkFull=\ : \=cm_type.CmdClnVld=\;
+    \=cm_type.CmdWrBkFullClnInv=\      : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrBkFull=\ : \=cm_type.CmdClnInv=\;
+    \=cm_type.CmdWrBkFullClnShPsist=\  : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrBkFull=\ : \=cm_type.CmdClnShPsist=\;
+    \=cm_type.CmdWrClnFullClnVld=\     : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrClnFull=\ : \=cm_type.CmdClnVld=\;
+    \=cm_type.CmdWrClnFullClnShPsist=\ : q_concerto_cmd_out = comb_wr_in_progress ? \=cm_type.CmdWrClnFull=\ : \=cm_type.CmdClnShPsist=\;
+    default                            : q_concerto_cmd_out = q_concerto_cmd;
+    endcase
+end
+
+\js } else {
+
+always @(*) begin
+    q_concerto_cmd_out = q_concerto_cmd;
+end
+
+\js }
+
+//=============================================================================
+// CHI rn_rsp bundle
+//=============================================================================
+
+assign rn_rsp_QoS   [\=u.getParam('RspInterface').QoS-1=\:0]   = q_QoS;
+assign rn_rsp_TgtID [\=u.getParam('RspInterface').TgtID-1=\:0] = q_SrcID;
+assign rn_rsp_SrcID [\=u.getParam('RspInterface').SrcID-1=\:0] = q_TgtID;
+assign rn_rsp_TxnID [\=u.getParam('RspInterface').TxnID-1=\:0] = (rn_rsp_OpCode == \=wRspOpcode=\\=chi_cmd.PCrdGrant=\) ? \=u.getParam('RspInterface').TxnID=\'h0 : q_TxnID; 
+
+//=============================================================================
+// illegal_txn_detected, q_illegal_txn_detected
+//=============================================================================
+ 
+wire illegal_txn_detected = illegal_txn & init_d;
+
+wire illegal_txn_detected_in = dealloc_me ? 1'b0 : illegal_txn_detected;
+wire illegal_txn_detected_en = init_d | dealloc_me;
+
+\=u.dffre(1, 'q_illegal_txn_detected', 'illegal_txn_detected_in', "1'b0", 'illegal_txn_detected_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// illegal_cmd_detected, q_illegal_cmd_detected
+//=============================================================================
+
+wire illegal_cmd_detected = ((q_addr_map_error | illegal_txn ) & init_d) | no_credits_access_error;
+
+wire illegal_cmd_detected_in = dealloc_me ?  1'b0 : illegal_cmd_detected;
+wire illegal_cmd_detected_en = init_d | dealloc_me | no_credits_access_error;
+
+\=u.dffre(1, 'q_illegal_cmd_detected', 'illegal_cmd_detected_in', "1'b0", 'illegal_cmd_detected_en', 'clk', 'reset_n')=\
+
+assign q_illegal_cmd_detected_entry = q_illegal_cmd_detected;
+
+\=u.dffre(1, 'q2_illegal_cmd_detected', 'q_illegal_cmd_detected', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// unsupported_txn_detected
+//=============================================================================
+ 
+assign unsupported_txn_detected = unsupported_txn & init_d;
+
+//=============================================================================
+// excl_req, excl_req_error, excl_req_error_dtr
+//=============================================================================
+
+//Field Excl/SnoopMe is dependent on the request type. The field is considered snoopme for atomics and exclusive for all other requests
+
+assign excl_req = q_Excl & ~atomics;
+
+wire excl_req_error = excl_req & ((         str_req_sel & ~str_req_slv_cm_status[0]) |
+                                  (nc_cmd & dtwrsp_sel  & ~dtw_rsp_slv_cm_status[0]) |
+                                  (nc_cmd & dtr_req_sel & ~dtr_req_slv_cm_status[0])
+                                 );
+
+wire excl_req_error_dtr = excl_req & nc_cmd & dtr_req_sel & ~dtr_req_slv_cm_status[0];
+
+//=============================================================================
+// q_excl_req_error
+//=============================================================================
+
+wire excl_req_error_in = dealloc_me ? 1'b0 : excl_req_error;
+wire excl_req_error_en = excl_req_error | dealloc_me;
+
+\=u.dffre(1, 'q_excl_req_error', 'excl_req_error_in', "1'b0", 'excl_req_error_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// Error logging for CHI rn_rsp
+//
+// q_resp_err is for CHI rn_rsp_RespErr
+//=============================================================================
+
+//CMStatus field on any responses that come into CHI AIU and can generate like CMD response, STR request, DTW response, CMP response
+//are checked to see if errors are flagged.
+
+wire resp_cm_status_error = init_d ? 1'b0 : ((cmd_rsp_slv_cm_status[7] & cmd_rsp_sel) |
+                                             (str_req_slv_cm_status[7] & str_req_sel) |
+                                             (dtw_rsp_slv_cm_status[7] & dtwrsp_sel)  |
+                                             (cmp_rsp_slv_cm_status[7] & cmprsp_sel)  |
+                                             (dtr_req_slv_cm_status[7] & dtr_req_sel)
+                                            );
+
+wire resp_data_error =   (((cmd_rsp_slv_cm_status[7:0] == 8'b10100110) | (cmd_rsp_slv_cm_status[7:0] == 8'b10000011) ) & cmd_rsp_sel) |
+                         (((str_req_slv_cm_status[7:0] == 8'b10100110) | (str_req_slv_cm_status[7:0] == 8'b10000011) ) & str_req_sel) |
+                         (((dtw_rsp_slv_cm_status[7:0] == 8'b10100110) | (dtw_rsp_slv_cm_status[7:0] == 8'b10000011) ) & dtwrsp_sel)  |
+                         (((cmp_rsp_slv_cm_status[7:0] == 8'b10100110) | (cmp_rsp_slv_cm_status[7:0] == 8'b10000011) ) & cmprsp_sel)  |
+                         (((dtr_req_slv_cm_status[7:0] == 8'b10100110) | (dtr_req_slv_cm_status[7:0] == 8'b10000011) ) & dtr_req_sel) ;
+
+wire resp_non_data_error = resp_cm_status_error & ~resp_data_error;
+
+//For data error, set the RespErr to 2'b10. For non Data error, set it to 2'b11.
+//For Exclusive requests completing successfully, set it to 2'b01, else set it to 2'b0. (CHI B sepc, section 12.9.38 RespErr) 
+
+wire [1:0] resp_err_in;
+wire [1:0] q_resp_err;
+
+assign resp_err_in = illegal_cmd_detected                                           ? 2'b11 :
+                     resp_data_error                                                ? 2'b10 :
+                     resp_non_data_error                                            ? 2'b11 :
+         (q_Excl & ~mru_excl & ~atomics &  ~resp_cm_status_error & ~excl_req_error) ? 2'b01 : 2'b0;
+
+wire resp_err_log_en = str_req_sel | (~q_resp_err[1] & dtwrsp_sel) | init_d | cmprsp_sel | no_credits_access_error;
+
+\=u.dffre(2, 'q_resp_err', 'resp_err_in', "2'b0", 'resp_err_log_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CHI rn_rsp bundle (NOTE: 2'b01=EXOK is illegal for MakeReadUniqueExcusive)
+//=============================================================================
+
+assign rn_rsp_RespErr [\=u.getParam('RspInterface').RespErr-1=\:0] =
+            (rn_rsp_OpCode == \=wRspOpcode=\\=chi_cmd.ReadReceipt=\) | (rn_rsp_OpCode == \=wRspOpcode=\\=chi_cmd.PCrdGrant=\) | (rn_rsp_OpCode == \=wRspOpcode=\\=chi_cmd.DBIDResp=\) ? \=u.getParam('RspInterface').RespErr=\'h0 : q_resp_err;
+
+assign rn_rsp_Resp [\=u.getParam('RspInterface').Resp-1=\:0] =
+             (rn_rsp_OpCode == \=wRspOpcode=\\=chi_cmd.PCrdGrant=\) ? \=u.getParam('RspInterface').Resp=\'h0 :
+             (mru_excl & ~q_excl_req_error) ? \=chi_cmd.Comp_UC=\ : rn_Resp_out; 
+
+assign rn_rsp_DBID [\=u.getParam('RspInterface').DBID-1=\:0] =
+
+    (rn_rsp_OpCode == \=wRspOpcode=\\=chi_cmd.PCrdGrant=\) ? \=u.getParam('RspInterface').DBID=\'h0 :
+
+        \js if (chi_e) {
+    (rn_rsp_OpCode == \=wRspOpcode=\\=chi_cmd.CompPersist=\) ? {{\=u.getParam('RspInterface').DBID - u.getParam('ReqInterface').LPID=\{1'b0}}, q_LPID} :
+        \js }
+
+            \jsbegin
+            /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+            if (u.getParam('RspInterface').DBID > wEntries) {
+            \jsend
+                                             {{\=u.getParam('RspInterface').DBID - wEntries=\{1'b0}}, ott_entry_num};
+            \js } else {
+                                             ott_entry_num[\=u.getParam('RspInterface').DBID-1=\:0];
+            \js }
+
+assign rn_rsp_PCrdType [\=u.getParam('RspInterface').PCrdType-1=\:0] = \=u.getParam('RspInterface').PCrdType=\'b0;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (wRspFlit_FwdState_local > 0) { \jsend
+assign rn_rsp_FwdState [\=wRspFlit_FwdState_local-1=\:0] = \=wRspFlit_FwdState_local=\'b0;
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if(wDatFlit_TraceTag_local > 0) { \jsend
+wire rn_rsp_TraceTag = q_TraceTag;
+\js } else {
+wire rn_rsp_TraceTag = 1'b0;
+\js }
+
+    \js if (chi_e) {
+        \jsbegin
+        /* istanbul ignore else env ncore_3p6, ncore_3p7 */
+        if (wTagOp) { \jsend
+assign rn_rsp_TagOp = \=wTagOp=\'h0;
+        \js }
+assign rn_rsp_CBusy = \=wCBusy=\'h5;
+    \js }
+
+assign rn_rsp_out_data = \=bundleFunctions.packetizeBundle('rn_rsp_', rsp_flit_interface, ['valid','ready'], obj.lib.bundle )=\;
+
+//=============================================================================
+// DTRrsp bundle
+//=============================================================================
+
+assign  dtr_rsp_initiator_id [\=u.getParam('DTRRspTxInterface').initiator_id-1=\:0]  = q_init_id ;
+
+assign  dtr_rsp_target_id    [\=u.getParam('DTRRspTxInterface').target_id-1=\:0]  = q_dtr_initiator_id; 
+assign  dtr_rsp_message_id   [\=u.getParam('DTRRspTxInterface').message_id-1=\:0]  = \=u.getParam('DTRRspTxInterface').message_id=\'b0 ;
+assign  dtr_rsp_cm_type      [\=u.getParam('DTRRspTxInterface').cm_type-1=\:0]  = 8'b1111_0100;
+
+\js if(wHProt > 0) {
+    \js if(wHProt == 1) {
+assign  dtr_rsp_h_prot        =   1'b0 ;
+    \js } else { 
+assign  dtr_rsp_h_prot       [\=u.getParam('DTRRspTxInterface').h_prot-1=\:0]  =   \=wHProt=\'b0 ;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wTTier > 0) {
+\jsend
+assign  dtr_rsp_t_tier       [\=u.getParam('DTRRspTxInterface').t_tier-1=\:0]  =   \=wTTier=\'b0 ;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wSteering > 0) {
+\jsend
+assign  dtr_rsp_steering     [\=u.getParam('DTRRspTxInterface').steering-1=\:0]  = \=wSteering=\'b0 ;
+\js }
+
+\jsbegin
+if(wPriority > 0) {
+\jsend
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(num_pri_buckets >= wPriority) {
+    \jsend
+assign  dtr_rsp_priority     [\=u.getParam('DTRRspTxInterface').priority-1=\:0]  =  q_req_pri[\=wPriority-1=\:0];
+    \js } else {
+assign  dtr_rsp_priority     [\=u.getParam('DTRRspTxInterface').priority-1=\:0]  = \=wPriority=\'b0 ;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wQl > 0) {
+\jsend
+assign  dtr_rsp_ql           [\=u.getParam('DTRRspTxInterface').ql-1=\:0]  =  \=wQl=\'b0 ;
+\js }
+
+\js if(wMProt_dtr_rsp > 0) {
+    \js if(wMProt_dtr_rsp == 1) {
+assign  dtr_rsp_m_prot        = 1'b0;
+    \js } else {
+assign  dtr_rsp_m_prot       [\=u.getParam('DTRRspTxInterface').m_prot-1=\:0]  =   \=wMProt_dtr_rsp=\'b0 ;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_dtr_rsp > 0) {
+\jsend
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wTm_dtr_req > 0) {
+    \jsend
+assign dtr_rsp_tm = q_dtr_req_tm;
+    \js } else {
+assign dtr_rsp_tm = \=wTm_dtr_req=\'d0;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_dtr_req > 0) {
+\jsend
+\=u.dffre(wTm_dtr_req, 'q_dtr_req_tm', 'dtr_req_slv_tm', wTm_dtr_req+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+\js }
+
+assign  dtr_rsp_cm_status    [\=u.getParam('DTRRspTxInterface').cm_status-1=\:0]  = \=u.getParam('DTRRspTxInterface').cm_status=\'b0 ;
+
+assign  dtr_rsp_r_message_id [\=u.getParam('DTRRspTxInterface').r_message_id-1=\:0]  = q_dtr_message_id ;
+
+
+assign dtr_rsp_out_data =  \=bundleFunctions.packetizeBundle('dtr_rsp_', u.getParam('DTRRspTxInterface') ,['valid','ready','last'],obj.lib.bundle )=\   ;
+
+//=============================================================================
+// STRrsp bundle
+//=============================================================================
+
+assign  str_rsp_initiator_id  [\=u.getParam('STRRspInterface').initiator_id-1=\:0]  = q_init_id ;
+
+assign str_rsp_target_id =  (atomic_coh & q_atomic_non_coh_done) ? q_str_coh_initiator_id : q_str_initiator_id ;
+
+assign  str_rsp_message_id    [\=u.getParam('STRRspInterface').message_id-1=\:0]    =
+            \jsbegin
+            /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+            if (u.getParam('STRRspInterface').message_id > wEntries) {
+            \jsend
+                                             {{\=u.getParam('STRRspInterface').message_id - wEntries=\{1'b0}}, ott_entry_num};
+            \js } else {
+                                             ott_entry_num[\=u.getParam('STRRspInterface').message_id-1=\:0];
+            \js }
+
+
+assign  str_rsp_cm_type       [\=u.getParam('STRRspInterface').cm_type-1=\:0]       = 8'b1111_0111;
+
+\js if(wHProt > 0) {
+    \js if(wHProt == 1) {
+assign  str_rsp_h_prot   = 1'b0;
+    \js } else {
+assign  str_rsp_h_prot        [\=u.getParam('STRRspInterface').h_prot-1=\:0]        = \=wHProt=\'b0;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wTTier > 0) {
+\jsend
+assign  str_rsp_t_tier        [\=u.getParam('STRRspInterface').t_tier-1=\:0]        = \=wTTier=\'b0;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wSteering > 0) {
+\jsend
+assign  str_rsp_steering      [\=u.getParam('STRRspInterface').steering-1=\:0]      = \=wSteering=\'b0 ;
+\js }
+
+\jsbegin
+if(wPriority > 0) {
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(num_pri_buckets >= wPriority) {
+\jsend
+assign  str_rsp_priority     [\=u.getParam('STRRspInterface').priority-1=\:0]  =  q_req_pri[\=wPriority-1=\:0];
+    \js }  else {
+assign  str_rsp_priority     [\=u.getParam('STRRspInterface').priority-1=\:0]  = \=wPriority=\'b0 ;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wQl > 0) {
+\jsend
+assign  str_rsp_ql            [\=u.getParam('STRRspInterface').ql-1=\:0]            = \=wQl=\'b0 ;
+\js }
+
+\js if(wMProt_str_rsp > 0) {
+    \js if(wMProt_str_rsp == 1) {
+assign  str_rsp_m_prot     = 1'b0;
+    \js } else { 
+assign  str_rsp_m_prot        [\=u.getParam('STRRspInterface').m_prot-1=\:0]        = \=wMProt_str_rsp=\'b0;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_str_rsp > 0) {
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wTm_str_req > 0) {
+\jsend
+assign str_rsp_tm = q_str_req_tm;
+    \js } else {
+assign str_rsp_tm = \=wTm_str_req=\'d0;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_str_req > 0) {
+\jsend
+\=u.dffre(wTm_str_req, 'q_str_req_tm', 'str_req_slv_tm', wTm_str_req+"'b0", 'str_req_sel', 'clk', 'reset_n')=\
+\js }
+
+
+assign  str_rsp_cm_status     [\=u.getParam('STRRspInterface').cm_status-1=\:0]     = \=u.getParam('STRRspInterface').cm_status=\'b0 ;
+
+assign  str_rsp_r_message_id  [\=u.getParam('STRRspInterface').r_message_id-1=\:0]  =  (atomic_coh & q_atomic_non_coh_done) ? q_str_coh_message_id : q_str_message_id  ; 
+                             
+assign str_rsp_out_data =  \=bundleFunctions.packetizeBundle('str_rsp_', u.getParam('STRRspInterface') ,['valid','ready','last'],obj.lib.bundle )=\   ;
+
+//=============================================================================
+// DTWreq bundle
+//=============================================================================
+
+assign  dtw_req_initiator_id [\=u.getParam('DTWReqInterface').initiator_id-1=\:0] = q_init_id ;
+
+//Target of DTW should either be DVE or DMI/DII depending on which region the address txnmaps to
+
+assign  dtw_req_target_id  = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.DVMOp=\) ?  q_aiu_dve_f_unit_id : q_map_target_f_unit_id;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (u.getParam('DTWReqInterface').message_id > wEntries) { \jsend
+assign dtw_req_message_id [\=u.getParam('DTWReqInterface').message_id-1=\:0] = {{\=u.getParam('DTWReqInterface').message_id - wEntries=\{1'b0}}, ott_entry_num};
+\js } else {
+assign dtw_req_message_id [\=u.getParam('DTWReqInterface').message_id-1=\:0] = ott_entry_num;
+\js }
+
+wire dtw_req_cm_type_empty = ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.CopyBackWrData=\) & (RXDAT_Resp == 3'b0))
+                           | (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.WriteDataCancel=\);              
+
+wire dtw_req_cm_type_clean = (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.CopyBackWrData=\) & ((RXDAT_Resp == 3'b001) | (RXDAT_Resp == 3'b010));
+
+wire dtw_req_cm_type_full_dirty = ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.CopyBackWrData=\)    & ((RXDAT_Resp == 3'b110) | (RXDAT_Resp == 3'b111)) & (write_full_cpbk     | dvm))
+    \js if (chi_e) {
+                                | ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.NCBWrDataCompAck=\)  & (RXDAT_Resp == 3'b0)                              & (write_full_non_cpbk | dvm))
+    \js }
+                                | ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.NonCopyBackWrData=\) & (RXDAT_Resp == 3'b0)                              & (write_full_non_cpbk | dvm));
+
+wire dtw_req_cm_type_ptl_dirty  = ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.CopyBackWrData=\)    & (RXDAT_Resp == 3'b110) & (write_ptl_cpbk     | atomics))
+    \js if (chi_e) {
+                                | ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.NCBWrDataCompAck=\)  & (RXDAT_Resp == 3'b0)   & (write_ptl_non_cpbk | atomics))
+    \js }
+                                | ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.NonCopyBackWrData=\) & (RXDAT_Resp == 3'b0)   & (write_ptl_non_cpbk | atomics));
+
+assign dtw_req_cm_type [\=u.getParam('DTWReqInterface').cm_type-1=\:0] =
+    \js if (chi_e) {
+            write_zero ? \=cm_type.DtwDataFullDty=\ :
+    \js }
+            dtw_req_cm_type_empty      ? \=cm_type.DtwNullData=\ :
+            dtw_req_cm_type_clean      ? \=cm_type.DtwDataFullCln=\:
+            dtw_req_cm_type_full_dirty ? \=cm_type.DtwDataFullDty=\ :
+            dtw_req_cm_type_ptl_dirty  ? \=cm_type.DtwDataPtlDty=\ :
+                                         \=u.getParam('DTWReqInterface').cm_type=\'b0;
+
+\js if(wHProt > 0) {
+    \js if(wHProt == 1) {
+assign dtw_req_h_prot = 1'b0;
+    \js } else { 
+assign dtw_req_h_prot [\=wHProt-1=\:0] = \=wHProt=\'b0;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+ if(wTTier > 0) {
+\jsend
+assign dtw_req_t_tier [\=wTTier-1=\:0] = \=wTTier=\'b0;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wSteering > 0) {
+\jsend
+assign dtw_req_steering [\=wSteering-1=\:0] = \=wSteering=\'b0;
+\js }
+
+\jsbegin
+if(wPriority > 0) {
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(num_pri_buckets >= wPriority) {
+\jsend
+assign dtw_req_priority [\=wPriority-1=\:0] = q_req_pri[\=wPriority-1=\:0];
+    \js } else {
+assign dtw_req_priority [\=wPriority-1=\:0] = \=wPriority=\'b0 ;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wQl > 0) {
+\jsend
+assign dtw_req_ql [\=wQl-1=\:0] = \=wQl=\'b0;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wUser > 0) {
+\jsend
+assign dtw_req_user [\=wUser-1=\:0] = \=wUser=\'b0;
+\js }
+
+\js if(wMProt_dtw_req > 0) {
+    \js if(wMProt_dtw_req == 1) {
+assign dtw_req_m_prot = 1'b0;
+    \js } else {
+assign dtw_req_m_prot [\=wMProt_dtw_req-1=\:0] = \=wMProt_dtw_req=\'b0;
+    \js }
+\js }
+
+\js if(wDProt_dtw_req > 0) {
+assign dtw_req_dprot [\=wDProt_dtw_req-1=\:0] = \=wDProt_dtw_req=\'b0;
+\js }
+
+assign dtw_req_cm_status [\=u.getParam('DTWReqInterface').cm_status-1=\:0] =
+    \js if (chi_e) {
+            write_zero ? 8'b00000000 :
+    \js }
+            (RXDAT_RespErr == 2'b10) ? 8'b10000011 :
+            (RXDAT_RespErr == 2'b11) ? 8'b10000100 :
+                                       \=u.getParam('DTWReqInterface').cm_status=\'b0;
+
+wire dtw_req_ac = q_MemAttr[3];
+wire dtw_req_ca = q_MemAttr[2];
+wire dtw_req_ns = q_NS;
+
+assign dtw_req_rl [\=u.getParam('DTWReqInterface').rl-1=\:0] = \=u.getParam('DTWReqInterface').rl=\'b10;
+
+\jsbegin
+// tracetag always present
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if(wDatFlit_TraceTag_local > 0) { \jsend
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (useTracetagTrigger) {
+    \jsend
+assign dtw_req_tm = q_tracetagTrigger;
+    \js } else {
+assign dtw_req_tm = q_TraceTag;
+    \js }
+\js } else {
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (useTracetagTrigger) {
+    \jsend
+assign dtw_req_tm = q_tracetagTrigger;
+    \js } else {
+assign dtw_req_tm = 1'b0;
+    \js }
+\js }
+
+assign dtw_req_mpf1 [\=u.getParam('DTWReqInterface').mpf1-1=\:0] = \=u.getParam('DTWReqInterface').mpf1=\'b0; //CHI AIU does not support stash writes, so driving the field to 0   
+assign dtw_req_mpf2 [\=u.getParam('DTWReqInterface').mpf2-1=\:0] = \=u.getParam('DTWReqInterface').mpf2=\'b0; //CHI AIU does not support stash writes, so driving the field to 0 
+
+assign dtw_req_primary = 1'b1 ;
+
+assign dtw_req_rb_id [\=u.getParam('DTWReqInterface').rb_id-1=\:0] = q_str_rb_id;
+
+assign dtw_req_size = q_Size;
+
+assign dtw_req_intf_size = \=intf_size_width=\'d\=intf_size=\;
+
+assign dtw_data_out = {q_str_req_error, q_illegal_cmd_detected, \=bundleFunctions.packetizeBundle('dtw_req_', u.getParam('DTWReqInterface'), ['valid','ready','last','data','be','aux','dwid','dbad'],obj.lib.bundle)=\};
+
+//=============================================================================
+// dtwzero request is to send a DTWreq of 64 bytes of zeros for CHI-E WriteNoSnpZero and WriteUniqueZero.
+//=============================================================================
+
+\js if (chi_e) {
+
+wire dtwzero_out_req_set   = str_req_sel & ~str_req_error & ((q_Opcode == \=wOpcode=\\=chi_cmd.WriteNoSnpZero=\) | (q_Opcode == \=wOpcode=\\=chi_cmd.WriteUniqueZero=\));
+wire dtwzero_out_req_reset = dtwzero_out_ack | dealloc_me;
+wire dtwzero_out_req_en    = dtwzero_out_req_set | dtwzero_out_req_reset;
+wire dtwzero_out_req_in    = dtwzero_out_req_set ? 1'b1 : dtwzero_out_req_reset ? 1'b0 : dtwzero_out_req;
+
+\=u.dffre(1, 'dtwzero_out_req', 'dtwzero_out_req_in', "1'b0", 'dtwzero_out_req_en', 'clk', 'reset_n')=\
+
+\js }
+
+//=============================================================================
+// CHI rddata bundle
+//=============================================================================
+
+assign rddata_QoS   [\=u.getParam('DatInterface').QoS-1=\:0] = q_QoS;
+assign rddata_TgtID [\=u.getParam('DatInterface').TgtID-1=\:0] = q_SrcID;
+assign rddata_SrcID [\=u.getParam('DatInterface').SrcID-1=\:0] = q_TgtID;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if(wDatFlit_Homenode_ID_local > 0) { \jsend
+\js //assign rddata_Homenode_ID   [\=wDatFlit_Homenode_ID_local-1=\:0] = q_TgtID; //i.e. rddata_SrcID
+\js }
+
+assign rddata_TxnID  [\=u.getParam('DatInterface').TxnID-1=\:0] = q_TxnID;
+
+assign rddata_OpCode [\=u.getParam('DatInterface').OpCode-1=\:0] = \=u.getParam('DatInterface').OpCode=\\=chi_cmd.CompData=\ ;
+
+assign rddata_Resp   [\=u.getParam('DatInterface').Resp-1=\:0] =
+            error_dtr_detected ? \=chi_cmd.CompData_I=\ :
+            dtr_req_sel ? (
+                                  ({\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataInv=\ )}} & \=chi_cmd.CompData_I=\)
+                                | ({\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataSCln=\)}} & \=chi_cmd.CompData_SC=\)
+                                | ({\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataSDty=\)}} & \=chi_cmd.CompData_SD_PD=\) 
+                                | ({\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataUCln=\)}} & \=chi_cmd.CompData_UC=\)
+                                | ({\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataUDty=\)}} & \=chi_cmd.CompData_UD_PD=\)
+                                ) : \=u.getParam('DatInterface').Resp=\'h0 ;
+
+//For DTR requests, the CM status & poison bits on thee Data are checked to see if there is data error.
+//CM status is checked to detect non data errors. If any errors are deteted, they are sent on RespErr field of the TXDATFLIT.
+
+wire dtr_req_cm_status_error = dtr_req_slv_cm_status[7];
+
+wire dbad_error = {|{dtr_req_slv_dbad}} & dtr_req_sel;
+
+wire data_error = ((dtr_req_slv_cm_status[7:0] == 8'b10100110) | (dtr_req_slv_cm_status[7:0] == 8'b10000011)) & dtr_req_sel;
+
+wire non_data_error = (dtr_req_cm_status_error & ~data_error) | error_dtr_detected | (dtr_for_illegal_cmd_detected & q_nrs_selfidr_hit);
+
+assign rddata_RespErr = non_data_error                 ? 2'b11 :
+                        data_error | dbad_error        ? 2'b10 :
+    \js if (chi_e) {
+                        excl_req & ~excl_req_error_dtr & (q_Opcode_modif != \=wOpcode=\\=chi_cmd.ReadPreferUnique=\) & (q_Opcode_modif != \=wOpcode=\\=chi_cmd.MakeReadUnique=\) ? 2'b01 : 2'b0;
+    \js } else {
+                        excl_req & ~excl_req_error_dtr ? 2'b01 : 2'b0;
+    \js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (u.getParam('DatInterface').DBID > wEntries) {
+\jsend
+assign rddata_DBID [\=u.getParam('DatInterface').DBID-1=\:0] = {{\=u.getParam('DatInterface').DBID - wEntries=\{1'b0}}, ott_entry_num}; 
+\js } else {
+assign rddata_DBID [\=u.getParam('DatInterface').DBID-1=\:0] = ott_entry_num; 
+\js }
+
+assign rddata_CCID [\=u.getParam('DatInterface').CCID-1=\:0] = q_ccid[1:0] ;
+
+wire rddata_TraceTag =
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if(wDatFlit_TraceTag_local > 0) { \jsend
+                                           q_TraceTag;
+\js } else {
+                                           'h0;
+\js }
+
+\js if (wFwdState > 0) {
+wire [\=wFwdState -1=\:0] rddata_FwdState = \=wFwdState=\'b0;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wRSVDC > 0)  { 
+\jsend
+    \js if (wAux > 0) {
+assign rddata_RSVDC = dtr_req_slv_aux;
+    \js } else  {
+assign rddata_RSVDC = \=wRSVDC=\'b0;
+    \js }
+\js }
+
+    \js if (chi_e) {
+        \jsbegin
+        /* istanbul ignore else env ncore_3p6, ncore_3p7 */
+        if (wTagOp) { \jsend
+assign rddata_TU = \=wTU=\'b0;
+assign rddata_TagOp = \=wTagOp=\'b0;
+assign rddata_Tag = \=wTag=\'b0;
+        \js }
+assign rddata_DataSource = \=wDataSource=\'b0;
+assign rddata_CBusy = \=wCBusy=\'h5;
+    \js }
+
+assign rd_data_cmd_size = q_Size;
+
+wire q_stashing_entry = 1'b0;
+
+assign rd_data_out = {atomic_comp, q_stashing_entry, rd_data_cmd_size, \=bundleFunctions.packetizeBundle('rddata_', dat_flit_interface, ['Poison', 'Data','BE','DataID', 'Homenode_ID'],obj.lib.bundle )=\};
+
+//=============================================================================
+// SelfID Read
+//=============================================================================
+
+wire selfid_data_sent_in = dealloc_me ? 1'b0 : selfid_data_sent;
+wire selfid_data_sent_en = dealloc_me | selfid_data_sent;
+wire q_selfid_data_sent;
+\=u.dffre(1, 'q_selfid_data_sent', 'selfid_data_sent_in', "1'b0", 'selfid_data_sent_en', 'clk', 'reset_n')=\
+
+wire nrs_selfidr_hit_in = dealloc_me ? 1'b0 : nrs_selfidr_hit;
+wire nrs_selfidr_hit_en = dealloc_me ? 1'b1 : (hit_en & init);
+
+\=u.dffre(1, 'q_nrs_selfidr_hit', 'nrs_selfidr_hit_in', "1'b0", 'nrs_selfidr_hit_en', 'clk', 'reset_n')=\
+
+assign q_nrs_selfidr_hit_entry = q_nrs_selfidr_hit & q_entry_valid_del & ~q_rn_rsp0_flag & ~q_selfid_data_sent & non_coh_read;
+
+//=============================================================================
+// Command decodes as per transactipon structure
+//=============================================================================
+
+assign snoopable_read =    (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadClean=\)  
+                       |   (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadUnique=\) 
+                       |   (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadShared=\) 
+                       |   (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadNotSharedDirty=\ )
+    \js if (chi_e) {
+                       |   (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadPreferUnique=\)
+                       |   ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.MakeReadUnique=\) & ~q_Excl) //ReadUnique
+                       |   ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.MakeReadUnique=\) &  q_Excl & ~mru_excl_in_progress) //ReadNotSharedDirty
+    \js }
+                       ;
+
+assign snapshot_read =  ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadOnce=\) 
+                       | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadOnceCleanInvalid=\) 
+                       | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadOnceMakeInvalid=\) ) ; 
+                        
+assign non_coh_read  =    (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadNoSnp=\ );
+assign reads         = snoopable_read | snapshot_read | non_coh_read;
+
+    \js if (chi_e) {
+wire opcode_is_clean_shared_persist_sep = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanSharedPersistSep=\);
+    \js } else {
+wire opcode_is_clean_shared_persist_sep = 1'b0;
+    \js }
+
+assign dataless       =   (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanUnique=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.MakeUnique=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.Evict=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanShared=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanSharedPersist=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanInvalid=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.MakeInvalid=\)
+    \js if (chi_e) {
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanSharedPersistSep=\)
+                        | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.MakeReadUnique=\) & q_Excl & mru_excl_in_progress) //CleanUnique
+    \js }
+                        ;
+
+assign prefetch       = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.PrefetchTgt=\ ) ;
+
+wire write_no_snp =     (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFull=\)
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpPtl=\)
+    \js if (chi_e) {
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpZero=\)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanSh=\)       & comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanInv=\)      & comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\) & comb_wr_in_progress)
+    \js }
+                      ;
+
+\jsbegin
+/* istanbul ignore else */
+if (useWriteNoSnoopEWA) {
+\jsend
+    \js if (chi_e) {
+assign write_no_snp_with_ewa = q_Excl & nc_cmd ? 1'b0 : q_MemAttr[0] & write_no_snp & ~comb_wr_in_progress;
+    \js } else {
+assign write_no_snp_with_ewa = q_Excl & nc_cmd ? 1'b0 : q_MemAttr[0] & write_no_snp;
+    \js }
+\js }
+
+wire write_unq =        (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniquePtl=\)
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueFull=\)
+    \js if (chi_e) {
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueZero=\)
+    \js }
+                      ;
+
+assign writes         =   (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniquePtl=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueFull=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFull=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpPtl=\)
+    \js if (chi_e) {
+                        | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanSh=\)       & comb_wr_in_progress)
+                        | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanInv=\)      & comb_wr_in_progress)
+                        | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\) & comb_wr_in_progress)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueZero=\)
+                        | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpZero=\)
+    \js }
+                        ;
+
+assign writebacks     =  (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackPtl=\) 
+                       | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFull=\) 
+                       | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanFull=\)
+                       | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanPtl=\)
+                       | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteEvictFull=\)
+    \js if (chi_e) {
+                       | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFullCleanSh=\)        & comb_wr_in_progress)
+                       | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFullCleanInv=\)       & comb_wr_in_progress)
+                       | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFullCleanShPerSep=\)  & comb_wr_in_progress)
+                       | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanFullCleanSh=\)       & comb_wr_in_progress)
+                       | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanFullCleanShPerSep=\) & comb_wr_in_progress)
+    \js }
+                       ;
+
+assign write_evict      = (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteEvictFull=\) ;
+
+assign write_full_cpbk  =  (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFull=\)
+                         | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanFull=\)
+    \js if (chi_e) {
+                         | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFullCleanSh=\)        & comb_wr_in_progress)
+                         | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFullCleanInv=\)       & comb_wr_in_progress)
+                         | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackFullCleanShPerSep=\)  & comb_wr_in_progress)
+                         | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanFullCleanSh=\)       & comb_wr_in_progress)
+                         | ((q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanFullCleanShPerSep=\) & comb_wr_in_progress)
+    \js }
+                         ;
+
+assign write_ptl_cpbk   =  (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteBackPtl=\)
+                         | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteCleanPtl=\);
+
+assign write_full_non_cpbk  =  (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteUniqueFull=\)
+                             | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteNoSnpFull=\)
+    \js if (chi_e) {
+                             | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueZero=\)
+                             | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpZero=\)
+                             | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanSh=\)       & comb_wr_in_progress)
+                             | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanInv=\)      & comb_wr_in_progress)
+                             | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\) & comb_wr_in_progress)
+    \js }
+                             ;
+
+assign write_ptl_non_cpbk   =  (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteUniquePtl=\)
+                             | (q_Opcode_modif== \=wOpcode=\\=chi_cmd.WriteNoSnpPtl=\);
+
+
+    \js if (chi_e) {
+assign write_no_snp_zero = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpZero=\);
+assign write_unique_zero = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueZero=\);
+    \js } else {
+assign write_no_snp_zero = 1'b0;
+assign write_unique_zero = 1'b0;
+    \js } 
+
+assign write_zero = write_no_snp_zero | write_unique_zero;
+
+assign atomic_read    = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_ADD=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_CLR=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_EOR=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_SET=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_SMAX=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_SMIN=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_UMAX=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicLoad_UMIN=\); 
+
+assign atomic_write   = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_ADD=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_CLR=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_EOR=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_SET=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_SMAX=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_SMIN=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_UMAX=\) 
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicStore_UMIN=\);
+
+assign atomic_swap    = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicSwap=\);
+
+assign atomic_comp    = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.AtomicCompare=\);
+
+assign atomics = (atomic_read | atomic_write | atomic_swap | atomic_comp) & q_entry_valid;
+
+assign dvm        = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.DVMOp=\);
+
+assign stashonce = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.StashOnceShared=\)
+                 | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.StashOnceUnique=\);
+
+assign unsupported_stashonce = 
+\js if (wOpcode==7) {
+                               (q_Opcode_modif == \=wOpcode=\\=chi_cmd.StashOnceSepShared=\)
+                             | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.StashOnceSepUnique=\);
+\js } else {
+                               1'b0;
+\js }
+
+assign writestash = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueFullStash=\)
+                  | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniquePtlStash=\);
+
+assign unsupported_writestash = writestash;
+
+assign writeevictorevict = 
+\js if (wOpcode==7) {
+                           (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteEvictOrEvict=\);
+\js } else {
+                           1'b0;
+\js }
+
+assign unsupported_writeevictorevict = writeevictorevict;
+
+assign unsupported_combined_ncb_wr_non_persist = 
+\js if (wOpcode==7) {
+                                                 (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueFullCleanSh=\)
+                                               | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniquePtlCleanSh=\)
+                                               | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpPtlCleanSh=\)
+                                               | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpPtlCleanInv=\);
+\js } else {
+                                                 1'b0;
+\js }
+
+assign unsupported_combined_ncb_wr_persist = 
+\js if (wOpcode==7) {
+                                                 (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniqueFullCleanShPerSep=\)
+                                           | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteUniquePtlCleanShPerSep=\)
+                                           | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpPtlCleanShPerSep=\);
+\js } else {
+                                             1'b0;
+\js }
+
+assign unsupported_combined_ncb_wr = unsupported_combined_ncb_wr_non_persist | unsupported_combined_ncb_wr_persist;
+
+assign unsupported_txn = unsupported_writestash
+                       | unsupported_stashonce
+                       | unsupported_combined_ncb_wr
+                       ;
+
+\=u.dffre(1, 'atomic_coh',     'atomics & q_SnpAttr_0', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'atomic_non_coh', 'atomics & ~q_SnpAttr_0', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign nc_cmd = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpPtl=\)
+              | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFull=\)
+              | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.ReadNoSnp=\)
+    \js if (chi_e) {
+              | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpZero=\)
+              | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanSh=\)       & comb_wr_in_progress)
+              | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanInv=\)      & comb_wr_in_progress)
+              | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\) & comb_wr_in_progress)
+    \js }
+              ;
+
+assign cmos_cmd       = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanShared=\)
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanSharedPersist=\)
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanInvalid=\)
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.MakeInvalid=\)
+    \js if (chi_e) {
+                      | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.CleanSharedPersistSep=\)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanSh=\)       & ~comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanInv=\)      & ~comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\) & ~comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanSh=\)        & ~comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanInv=\)       & ~comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanShPerSep=\)  & ~comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteCleanFullCleanSh=\)       & ~comb_wr_in_progress)
+                      | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteCleanFullCleanShPerSep=\) & ~comb_wr_in_progress)
+    \js }
+                      ;
+
+wire cmds_to_non_coh_space = (nc_cmd | cmos_cmd) & ~q_SnpAttr_0; 
+
+//=============================================================================
+// init_d
+//=============================================================================
+
+\=u.dffre(1, 'init_d', 'init', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// q_dtw_data_rcvd_last
+//=============================================================================
+wire dtw_data_rcvd_set = (wr_data_sel & RXDAT_LAST)
+    \js if (chi_e) {
+                       | (dtwzero_out_req & dtwzero_out_ack)
+    \js }
+                       ;
+wire dtw_data_rcvd_clr = entry_valid_en;
+wire dtw_data_rcvd_en  = dtw_data_rcvd_set | dtw_data_rcvd_clr;
+wire dtw_data_rcvd_in  = dtw_data_rcvd_clr ? 1'b0 :  dtw_data_rcvd_set;
+wire q_dtw_data_rcvd_last;
+\=u.dffre(1, 'q_dtw_data_rcvd_last', 'dtw_data_rcvd_in', "1'b0", 'dtw_data_rcvd_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// The coherent part of Atomic is done wth DCE and involves Command and STR.
+//=============================================================================
+ 
+wire atomic_coh_done =  q_entry_valid & (atomic_read | atomic_write | atomic_swap | atomic_comp) &
+             ~q_cmd_req_coh_flag & ~q_cmd_rsp_flag & ~q_str_req_coh_flag & ~q_str_rsp_coh_flag & ~q_ExCompAck;
+
+\=u.dffre(1, 'q_atomic_coh_done', 'atomic_coh_done', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// The non coherent part of Atomic is done wth DMI and involves Command, STR , DTW and DTR(for read, compare & swap).
+// Atomic doesn't have ExCompAck.
+//=============================================================================
+
+assign atomic_non_coh_done = q_entry_valid & ~q_cmd_rsp_flag & ~q_str_req_flag & ~q_str_rsp_flag & ~q_dtw_rsp_flag & (
+          ((atomic_write)                           & (~q_cmd_req_flag | q_str_req_error))
+        | ((atomic_read | atomic_swap | atomic_comp) & ~q_cmd_req_flag & ~q_dtr_req_flag & ~q_dtr_rsp_flag)
+);
+
+\=u.dffre(1, 'q_atomic_non_coh_done', 'atomic_non_coh_done', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// atomic_coh_in_progress
+//=============================================================================
+
+assign atomic_coh_in_progress = atomic_coh & (q_cmd_req_coh_flag | q_cmd_rsp_coh_flag | q_str_req_coh_flag);
+
+//=============================================================================
+// mru_excl_in_progress
+//=============================================================================
+
+\js if (chi_e) {
+
+assign mru_excl = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.MakeReadUnique=\) & q_Excl;
+
+assign mru_excl_in_progress = q_entry_valid & mru_excl & (q_mru_excl_cmd_req_flag | q_mru_excl_cmd_rsp_flag | q_mru_excl_str_req_flag | q_mru_excl_str_rsp_flag);
+
+assign mru_excl_in_progress_for_addr_llist = mru_excl_in_progress & ~(str_req_sel & str_req_slv_cm_status[0]); //mru exclusive check pass should suppress mru_excl_in_progress_for_addr_llist
+
+assign mru_excl_part1_done = q_entry_valid & mru_excl & ~(q_mru_excl_cmd_req_flag | q_mru_excl_cmd_rsp_flag | q_mru_excl_str_req_flag | q_mru_excl_str_rsp_flag);
+
+assign mru_excl_part2_done = q_entry_valid & mru_excl & ~(q_cmd_req_flag | q_cmd_rsp_flag | q_str_req_flag | q_str_rsp_flag); //CONC-12251
+
+//
+// Flags for exclusive CmdClnUnq part of MakeReadUnique.
+// Set for exclusive MakeReadUnique that requires exlcusive CmdClnUnq before the conditional CmdRdNSDty.
+//
+
+wire mru_excl_cmd_req_flag_set = init & (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.MakeReadUnique=\) & REQ_Excl;
+wire mru_excl_cmd_req_flag_reset = cmd_out_ack | dealloc_me;
+wire mru_excl_cmd_req_flag_en = mru_excl_cmd_req_flag_set | mru_excl_cmd_req_flag_reset;
+wire mru_excl_cmd_req_flag_in = mru_excl_cmd_req_flag_set;
+
+\=u.dffre(1, 'q_mru_excl_cmd_req_flag', 'mru_excl_cmd_req_flag_in', "1'b0", 'mru_excl_cmd_req_flag_en', 'clk', 'reset_n')=\
+
+wire mru_excl_cmd_rsp_flag_set = (cmd_out_ack & ~fake_cmd_out_req) & mru_excl & mru_excl_in_progress;
+wire mru_excl_cmd_rsp_flag_reset = cmd_rsp_sel & mru_excl_in_progress;
+wire mru_excl_cmd_rsp_flag_en = mru_excl_cmd_rsp_flag_set |  mru_excl_cmd_rsp_flag_reset;
+wire mru_excl_cmd_rsp_flag_in = mru_excl_cmd_rsp_flag_set & ~mru_excl_cmd_rsp_flag_reset;
+
+\=u.dffre(1, 'q_mru_excl_cmd_rsp_flag', 'mru_excl_cmd_rsp_flag_in', "1'b0", 'mru_excl_cmd_rsp_flag_en', 'clk', 'reset_n')=\
+
+wire mru_excl_str_req_flag_set = init & (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.MakeReadUnique=\) & REQ_Excl;
+wire mru_excl_str_req_flag_reset = str_req_sel & mru_excl_in_progress;
+wire mru_excl_str_req_flag_en = mru_excl_str_req_flag_set | mru_excl_str_req_flag_reset;
+wire mru_excl_str_req_flag_in = mru_excl_str_req_flag_set;
+
+\=u.dffre(1, 'q_mru_excl_str_req_flag', 'mru_excl_str_req_flag_in', "1'b0", 'mru_excl_str_req_flag_en', 'clk', 'reset_n')=\
+
+wire mru_excl_str_rsp_flag_set = str_req_sel     & mru_excl_in_progress;
+wire mru_excl_str_rsp_flag_reset = str_rsp_out_ack & mru_excl_in_progress;
+wire mru_excl_str_rsp_flag_en = mru_excl_str_rsp_flag_set |  mru_excl_str_rsp_flag_reset;
+wire mru_excl_str_rsp_flag_in = mru_excl_str_rsp_flag_set & ~mru_excl_str_rsp_flag_reset;
+
+\=u.dffre(1, 'q_mru_excl_str_rsp_flag', 'mru_excl_str_rsp_flag_in', "1'b0", 'mru_excl_str_rsp_flag_en', 'clk', 'reset_n')=\
+
+\js } else {
+assign mru_excl_in_progress = 1'b0;
+assign mru_excl_in_progress_for_addr_llist = 1'b0;
+\js }
+
+//=============================================================================
+// comb_wr_in_progress
+//=============================================================================
+
+\js if (chi_e) {
+assign combined_wr_in_progress = comb_wr_in_progress;
+\js } else {
+assign combined_wr_in_progress = 1'b0;
+\js }
+
+\js if (chi_e) {
+
+//
+// CopyBack Write Combined with Non-Persist CMO, Responses are CompDBIDResp + CompCMO
+//
+assign combined_cb_wr_non_persist = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanSh=\)
+                                  | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanInv=\)
+                                  | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteCleanFullCleanSh=\)
+                                  ;
+//
+// Non-CopyBack Write Combined with Non-Persist CMO, Responses are DBIDResp + Comp + CompCMO
+//
+assign combined_ncb_wr_non_persist = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanSh=\)
+                                   | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanInv=\)
+                                   ;
+
+//
+//CopyBack Write Combined with Persist CMO, Responses are CompDBIDResp + CompPersit
+//
+assign combined_cb_wr_persist = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanShPerSep=\)
+                              | (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteCleanFullCleanShPerSep=\)
+                              ;
+
+//
+//Non-CopyBack Write Combined with Persit CMO, Responses are DBIDResp + Comp + CompPersist
+//
+assign combined_ncb_wr_persist = (q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\);
+
+assign combined_wr_non_persist = combined_cb_wr_non_persist | combined_ncb_wr_non_persist;
+
+assign combined_wr_persist = combined_cb_wr_persist | combined_ncb_wr_persist;
+
+assign combined_wr = combined_wr_non_persist | combined_wr_persist;
+
+assign combined_wr_cb = combined_cb_wr_persist | combined_cb_wr_non_persist;
+
+assign combined_wr_ncb = combined_ncb_wr_persist | combined_ncb_wr_non_persist;
+
+//
+// Combined Write In Progress
+//
+assign comb_wr_in_progress = q_entry_valid & combined_wr & (q_cmd_req_combw_flag | q_cmd_rsp_combw_flag | q_str_req_combw_flag | q_str_rsp_combw_flag);
+
+assign comb_wr_done = q_entry_valid & combined_wr & ~(q_cmd_req_combw_flag | q_cmd_rsp_combw_flag | q_str_req_combw_flag | q_str_rsp_combw_flag);
+
+
+//
+// Flags for Combined Writes + CMO
+//
+wire combined_wr_in = (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteNoSnpFullCleanSh=\)
+                    | (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteNoSnpFullCleanInv=\)
+                    | (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteNoSnpFullCleanShPerSep=\)
+                    | (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteBackFullCleanSh=\)
+                    | (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteBackFullCleanInv=\)
+                    | (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteBackFullCleanShPerSep=\)
+                    | (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteCleanFullCleanSh=\)
+                    | (REQ_Opcode == \=u.getParam('ReqInterface').Opcode=\\=chi_cmd.WriteCleanFullCleanShPerSep=\)
+                    ;
+
+wire cmd_req_combw_flag_set = init & combined_wr_in;
+wire cmd_req_combw_flag_reset = cmd_out_ack 
+                                | q_illegal_cmd_detected
+                                | q_str_req_error
+\js if (chi_e) {
+                                | (q_dtw_rsp_error & combined_wr)
+\js }
+                                | dealloc_me;
+wire cmd_req_combw_flag_en = cmd_req_combw_flag_set | cmd_req_combw_flag_reset;
+wire cmd_req_combw_flag_in = cmd_req_combw_flag_set;
+
+\=u.dffre(1, 'q_cmd_req_combw_flag', 'cmd_req_combw_flag_in', "1'b0", 'cmd_req_combw_flag_en', 'clk', 'reset_n')=\
+
+wire cmd_rsp_combw_flag_set = cmd_out_ack & comb_wr_in_progress & ~q_str_req_error & ~q_dtw_rsp_error; //CONC-12451 CONC-12521
+wire cmd_rsp_combw_flag_reset = cmd_rsp_sel & comb_wr_in_progress;
+wire cmd_rsp_combw_flag_en = cmd_rsp_combw_flag_set | cmd_rsp_combw_flag_reset;
+wire cmd_rsp_combw_flag_in = cmd_rsp_combw_flag_set & ~cmd_rsp_combw_flag_reset;
+
+\=u.dffre(1, 'q_cmd_rsp_combw_flag', 'cmd_rsp_combw_flag_in', "1'b0", 'cmd_rsp_combw_flag_en', 'clk', 'reset_n')=\
+
+wire str_req_combw_flag_set = init & combined_wr_in;
+wire str_req_combw_flag_reset = str_req_sel & comb_wr_in_progress;
+wire str_req_combw_flag_en = str_req_combw_flag_set | str_req_combw_flag_reset;
+wire str_req_combw_flag_in = str_req_combw_flag_set;
+
+\=u.dffre(1, 'q_str_req_combw_flag', 'str_req_combw_flag_in', "1'b0", 'str_req_combw_flag_en', 'clk', 'reset_n')=\
+
+wire str_rsp_combw_flag_set = str_req_sel & comb_wr_in_progress;
+wire str_rsp_combw_flag_reset = str_rsp_out_ack & comb_wr_in_progress;
+wire str_rsp_combw_flag_en = str_rsp_combw_flag_set | str_rsp_combw_flag_reset;
+wire str_rsp_combw_flag_in = str_rsp_combw_flag_set & ~str_rsp_combw_flag_reset;
+
+\=u.dffre(1, 'q_str_rsp_combw_flag', 'str_rsp_combw_flag_in', "1'b0", 'str_rsp_combw_flag_en', 'clk', 'reset_n')=\
+
+\js }
+
+//=============================================================================
+// entry deallocate
+//
+// For snoopable_read : CompData is driven/implied by DTRreq
+// For snapshot_read  : CompData is driven/implied by DTRreq
+// For non_coh_read   : CompData is driven/implied by DTRreq
+// For dvm            : ~q_rn_rsp0_flag is implied by ~q_dtw_rsp_flag
+// For write_no_snp   : ~q_rn_rsp0_flag is implied by ~q_dtw_rsp_flag
+// For write_unq      : ~q_rn_rsp0_flag is implied by ~q_dtw_rsp_flag
+// For writebacks     : ~q_rn_rsp0_flag is implied by ~q_dtw_rsp_flag
+//=============================================================================
+
+wire   q_cmd_str_req_rsp_flag = q_cmd_req_flag | q_cmd_rsp_flag | q_str_req_flag | q_str_rsp_flag;
+wire       q_dtr_req_rsp_flag = q_dtr_req_flag | q_dtr_rsp_flag;
+
+assign dealloc_me = q_entry_valid & q_entry_valid_del & ~fake_cmd_out_req & (
+
+    ((snoopable_read                                  ) & ~q_cmd_str_req_rsp_flag & ~q_ExCompAck & ~q_dtr_req_rsp_flag & ~q_nrs_selfidr_hit)
+  | (((snapshot_read | non_coh_read)                  ) & ~q_cmd_str_req_rsp_flag & ~q_ExCompAck & ~q_dtr_req_rsp_flag & ~q_nrs_selfidr_hit & (q_Order != 2'b0 ? ~q_rn_rsp0_flag : 1'b1))
+  | ((dvm                            & ~q_rn_rsp1_flag) & ~q_cmd_str_req_rsp_flag                & ~q_dtw_rsp_flag     & ~q_cmp_rsp_flag)
+  | ((write_no_snp & ~combined_wr_in_progress & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag) & ~q_cmd_str_req_rsp_flag & ~q_ExCompAck & ~q_dtw_rsp_flag)
+  | ((write_unq    & ~combined_wr_in_progress & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag) & ~q_cmd_str_req_rsp_flag & ~q_ExCompAck & ~q_dtw_rsp_flag)
+  | ((writebacks   & ~combined_wr_in_progress         ) & ~q_cmd_str_req_rsp_flag                         & ~q_dtw_rsp_flag)
+  | ((stashonce                      & ~q_rn_rsp0_flag) & ~q_cmd_str_req_rsp_flag)
+  | ((dataless                       & ~q_rn_rsp0_flag) & ~q_cmd_str_req_rsp_flag & ~q_ExCompAck)
+  | ((prefetch                                        ) & ~q_cmd_str_req_rsp_flag)
+  | ((atomic_coh                                      ) & q_atomic_coh_done & q_atomic_non_coh_done)
+  | ((atomic_non_coh                                  )                     & q_atomic_non_coh_done)
+  | ((q_nrs_selfidr_hit              & ~q_rn_rsp0_flag) & q_selfid_data_sent & non_coh_read & ~q_ExCompAck)
+  | ((q_illegal_txn_detected         & ~q_rn_rsp0_flag) & ~unsupported_txn)
+
+  | (unsupported_writestash          & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag)
+
+\js if (chi_e) {
+  | (unsupported_stashonce           & ~q_rn_rsp0_flag)
+  | ((writeevictorevict   & ~q_rn_rsp0_flag ) & ~q_cmd_str_req_rsp_flag & ~q_ExCompAck)
+  | (unsupported_combined_ncb_wr     & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag & ~q_ExCompAck)
+  | (write_zero                      & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag & ~q_ExCompAck & ~q_cmd_str_req_rsp_flag & q_illegal_cmd_detected)
+  | ((mru_excl                                        ) & mru_excl_part1_done & ((~q_excl_req_error & ~q_rn_rsp0_flag) | mru_excl_part2_done))
+  | ((combined_cb_wr_non_persist  | combined_cb_wr_persist)  & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag                   & ~q_cmd_str_req_rsp_flag)
+  | ((combined_ncb_wr_non_persist | combined_ncb_wr_persist) & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag & ~q_rn_rsp2_flag & ~q_cmd_str_req_rsp_flag & ~q_ExCompAck)
+\js }
+);
+
+wire entry_dealloc  = entry_valid & dealloc_me ;
+
+//=============================================================================
+// entry valid
+//=============================================================================
+assign entry_valid_early = init ? 1'b1 : entry_dealloc ? 1'b0 : entry_valid;
+assign entry_valid_en = init | entry_dealloc ;
+wire entry_valid_in = entry_dealloc ? 1'b0 : 1'b1 ;
+assign entry_valid = q_entry_valid ;
+assign entry_valid_del = q_entry_valid_del ;
+
+\=u.dffre(1, 'q_entry_valid', 'entry_valid_in', "1'b0", 'entry_valid_en', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'q_entry_valid_del', 'q_entry_valid', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// q_ExCompAck
+//=============================================================================
+
+wire ex_comp_flag_set = init & REQ_ExCompAck;
+wire ex_comp_flag_reset = (rn_rsp_sel & (RXRSP_OpCode == \=u.getParam('RspInterface').OpCode=\\=chi_cmd.CompAck=\))
+    \js if (chi_e) {
+                        | (wr_data_sel & (RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.NCBWrDataCompAck=\))
+    \js }
+                        | dealloc_me; 
+
+wire ex_comp_flag_en = ex_comp_flag_set | ex_comp_flag_reset ; 
+wire ex_comp_flag_in = ex_comp_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_ExCompAck', 'ex_comp_flag_in', "1'b0", 'ex_comp_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CMD req flag -- flag == 1  Cmd to be sent , 0 indicates cmd req sent
+//=============================================================================
+
+wire cmd_req_flag_set = init
+                      | (atomic_coh_in_progress & q_str_rsp_coh_flag & cmd_rsp_sel)
+                      | (atomic_coh_in_progress & ~q_cmd_rsp_coh_flag & str_req_sel)
+                      | (atomic_coh_in_progress & cmd_rsp_sel & str_req_sel)
+\js if (chi_e) {
+                      | (mru_excl_in_progress & ~q_mru_excl_cmd_rsp_flag & str_req_sel & excl_req_error)
+                      | (comb_wr_in_progress  & ~q_cmd_rsp_combw_flag    & str_req_sel)
+\js }
+                      ;
+ 
+wire cmd_req_flag_reset = (atomics & q_SnpAttr_0 & ~q_str_rsp_coh_flag)
+                        | cmd_out_ack
+                        | q_illegal_cmd_detected
+                        | q_str_req_error
+\js if (chi_e) {
+                        | (q_dtw_rsp_error & combined_wr)
+\js }
+                        | dealloc_me
+                        ; 
+
+wire cmd_req_flag_en = cmd_req_flag_set | cmd_req_flag_reset ; 
+wire cmd_req_flag_in = cmd_req_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_cmd_req_flag', 'cmd_req_flag_in', "1'b0", 'cmd_req_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+//CMD req flag for coherent part of atomics - This is set for atomics that require the coherent opeartion in addition to the non coherent part
+//=============================================================================
+
+wire cmd_req_coh_flag_set = init  & REQ_SnpAttr_0;
+wire cmd_req_coh_flag_reset = ~atomics | cmd_out_ack | q2_illegal_cmd_detected | dealloc_me;
+
+wire cmd_req_coh_flag_en = cmd_req_coh_flag_set | cmd_req_coh_flag_reset ;
+wire cmd_req_coh_flag_in = cmd_req_coh_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_cmd_req_coh_flag', 'cmd_req_coh_flag_in', "1'b0", 'cmd_req_coh_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CMD Rsp flag -- flag ==1                     
+//=============================================================================
+
+wire cmd_rsp_flag_set = cmd_out_ack & ~q_str_req_error & ~q_dtw_rsp_error; //CONC-12451 CONC-12521
+wire cmd_rsp_flag_reset = cmd_rsp_sel ; 
+
+wire cmd_rsp_flag_en = cmd_rsp_flag_set | cmd_rsp_flag_reset ; 
+wire cmd_rsp_flag_in = cmd_rsp_flag_set & ~cmd_rsp_flag_reset;
+
+\=u.dffre(1, 'q_cmd_rsp_flag', 'cmd_rsp_flag_in', "1'b0", 'cmd_rsp_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CMD Rsp  coh flag -- flag ==1
+//=============================================================================
+
+wire cmd_rsp_coh_flag_set =  atomic_coh & cmd_out_ack  & atomic_coh_in_progress;
+wire cmd_rsp_coh_flag_reset = cmd_rsp_sel & atomic_coh_in_progress;
+
+wire cmd_rsp_coh_flag_en = cmd_rsp_coh_flag_set | cmd_rsp_coh_flag_reset ;
+wire cmd_rsp_coh_flag_in = cmd_rsp_coh_flag_set & ~cmd_rsp_coh_flag_reset;
+
+\=u.dffre(1, 'q_cmd_rsp_coh_flag', 'cmd_rsp_coh_flag_in', "1'b0", 'cmd_rsp_coh_flag_en', 'clk', 'reset_n')=\
+
+\js // STR Req Flag -- set to 1 when initialised , cleared on receiving STReq
+
+wire str_req_flag_set = init ; 
+
+\js if (chi_e) {
+
+wire str_req_flag_reset = (str_req_sel & ~(atomic_coh & q_str_req_coh_flag)
+                                       & ~(mru_excl & q_mru_excl_str_req_flag)
+                                       & ~(combined_wr & q_str_req_combw_flag))
+                     // | (mru_excl & ~q_str_req_error & str_req_sel) //CONC-12251
+                        | (mru_excl & q_str_req_error)
+                        | (combined_wr & (q_dtw_rsp_error | q_str_req_error)) //CONC-12451
+                        | (atomic_coh & q_str_req_error)
+                        | q2_illegal_cmd_detected | dealloc_me
+                        ;
+
+\js } else {
+
+wire str_req_flag_reset = (str_req_sel & ~(atomic_coh & q_str_req_coh_flag))
+                        | (atomic_coh & q_str_req_error)
+                        | q2_illegal_cmd_detected | dealloc_me
+                        ;
+\js }
+
+wire str_req_flag_en = str_req_flag_set | str_req_flag_reset ; 
+wire str_req_flag_in = str_req_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_str_req_flag', 'str_req_flag_in', "1'b0", 'str_req_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// Coherent Atomic STR Req Flag -- set to 1 when initialised , cleared on receiving STReq
+//=============================================================================
+
+wire str_req_coh_flag_set = init & REQ_SnpAttr_0;
+wire str_req_coh_flag_reset = str_req_sel | q2_illegal_cmd_detected ;
+
+wire str_req_coh_flag_en = str_req_coh_flag_set | str_req_coh_flag_reset ;
+wire str_req_coh_flag_in = str_req_coh_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_str_req_coh_flag', 'str_req_coh_flag_in', "1'b0", 'str_req_coh_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// STR Rsp flag- set on STR Req , cleared on STRrsp accepted
+//=============================================================================
+
+wire str_rsp_flag_set = str_req_sel  & ~(atomic_coh & ~q_str_rsp_coh_flag); 
+wire str_rsp_flag_reset = str_rsp_out_ack ; 
+
+wire str_rsp_flag_en = str_rsp_flag_set | str_rsp_flag_reset ; 
+wire str_rsp_flag_in = str_rsp_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_str_rsp_flag', 'str_rsp_flag_in', "1'b0", 'str_rsp_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// For atomics involving coherent part, two STRs responses need to be sent.
+// First one for the non coherent part to DMI and the second one for the coherent part to DCE which completes the atomic transaction.
+//=============================================================================
+
+assign str_rsp_out_req = q_entry_valid & (
+    (~combined_wr & q_str_rsp_flag & ~q_cmd_rsp_flag & ~q_str_req_flag
+        & ~q_dtr_req_flag & ~q_dtr_rsp_flag & ~q_dtw_rsp_flag & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag & ~q_ExCompAck)
+
+  | (q_str_rsp_coh_flag & atomic_coh & q_atomic_non_coh_done & ~q_str_req_coh_flag)
+
+\js if (chi_e) {
+  | (combined_wr_cb & comb_wr_in_progress & q_str_rsp_combw_flag & ~q_cmd_rsp_flag & ~q_str_req_combw_flag & ~q_dtw_rsp_flag & ~q_rn_rsp0_flag)
+  | (combined_wr_cb & ~comb_wr_in_progress & q_str_rsp_flag & ~q_cmd_rsp_flag & ~q_str_req_flag & ~q_dtw_rsp_flag & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag & ~q_ExCompAck)
+  | (combined_wr_ncb & comb_wr_in_progress & q_str_rsp_combw_flag & ~q_cmd_rsp_flag & ~q_str_req_combw_flag & ~q_dtw_rsp_flag & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag)
+  | (combined_wr_ncb & ~comb_wr_in_progress & q_str_rsp_flag & ~q_cmd_rsp_flag & ~q_str_req_flag & ~q_dtw_rsp_flag & ~q_rn_rsp0_flag & ~q_rn_rsp1_flag & ~q_rn_rsp2_flag & ~q_ExCompAck)
+  | (q_mru_excl_str_rsp_flag & mru_excl_in_progress & ~q_mru_excl_str_req_flag & q_excl_req_error)
+  | (q_mru_excl_str_rsp_flag & mru_excl_in_progress & ~q_mru_excl_str_req_flag & ~q_excl_req_error & ~q_rn_rsp0_flag & ~q_ExCompAck)
+  | (mru_excl & q_excl_req_error & q_str_rsp_flag & ~q_cmd_rsp_flag & ~q_str_req_flag & ~q_dtr_rsp_flag & ~q_ExCompAck & ~q_dtr_req_flag) //CONC-12251, CONC-12327
+\js }
+
+);
+
+//=============================================================================
+// STR Rsp flag for coherent atomic- set on STR Req , cleared on STRrsp accepted
+//=============================================================================
+
+wire str_rsp_flag_coh_set = str_req_sel & atomic_coh ; 
+wire str_rsp_flag_coh_reset = str_rsp_out_ack  & ~q_str_rsp_flag;
+
+wire str_rsp_flag_coh_en = str_rsp_flag_coh_set | str_rsp_flag_coh_reset ;
+wire str_rsp_flag_coh_in = str_rsp_flag_coh_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_str_rsp_coh_flag', 'str_rsp_flag_coh_in', "1'b0", 'str_rsp_flag_coh_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// DTR Req flag
+//=============================================================================
+
+wire dtr_req_flag_set = ( init_d & ( snoopable_read | snapshot_read | non_coh_read  | atomic_read | atomic_comp | atomic_swap ) & ~q_nrs_selfidr_hit )
+  \js if (chi_e) {
+                      | (mru_excl & excl_req_error & mru_excl_in_progress)
+  \js }
+                                 ;
+wire dtr_req_flag_reset = (dtr_req_sel & dtr_req_slv_last) | 
+                         ((q_illegal_cmd_detected | q_str_req_error) & error_dtr_detected_done);
+
+wire dtr_req_flag_en = dtr_req_flag_set | dtr_req_flag_reset ; 
+wire dtr_req_flag_in = dtr_req_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_dtr_req_flag', 'dtr_req_flag_in', "1'b0", 'dtr_req_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// q_str_req_error
+//=============================================================================
+
+assign str_req_error = str_req_slv_cm_status[7] & str_req_sel;
+
+wire str_req_error_in = dealloc_me ? 1'b0 : str_req_error;
+wire str_req_error_en = str_req_sel | dealloc_me;
+
+\=u.dffre(1, 'q_str_req_error', 'str_req_error_in', "1'b0", 'str_req_error_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// q_dtw_rsp_error
+//=============================================================================
+
+assign dtw_rsp_error = dtw_rsp_slv_cm_status[7] & dtwrsp_sel;
+
+wire dtw_rsp_error_in = dealloc_me ? 1'b0 : dtw_rsp_error;
+wire dtw_rsp_error_en = dtwrsp_sel | dealloc_me;
+
+\=u.dffre(1, 'q_dtw_rsp_error', 'dtw_rsp_error_in', "1'b0", 'dtw_rsp_error_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CHI AIU needs to send fake DTRs to the processor if illegal comands are detected or if STR request comes with an error.
+// For STR request errors on Atomic coherent Load/Compare/Swap, AIU needs wait for the DTW data to arrive from CHI processor first before sendig the fabricated DTR error flits to CHI.
+//=============================================================================
+
+assign dtr_for_illegal_cmd_detected = (atomic_read | atomic_swap | atomic_comp) ? (q_illegal_cmd_detected & q_dtw_data_rcvd_last) : q_illegal_cmd_detected;
+wire dtr_for_str_req_error = (atomic_read | atomic_swap | atomic_comp) ? (q_str_req_error & q_dtw_data_rcvd_last) : q_str_req_error;
+wire error_dtr_detected_set = q_dtr_req_flag & (dtr_for_illegal_cmd_detected | dtr_for_str_req_error) ;
+wire error_dtr_detected_reset = error_dtr_detected_done | init;
+wire error_dtr_detected_in = error_dtr_detected_reset ? 1'b0 : error_dtr_detected_set;
+wire error_dtr_detected_en = error_dtr_detected_set | error_dtr_detected_reset;
+
+\=u.dffre(1, 'error_dtr_detected', 'error_dtr_detected_in', "1'b0", 'error_dtr_detected_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// DTR Rsp flag
+//=============================================================================
+
+wire dtr_rsp_flag_set =  dtr_req_sel & dtr_req_slv_last ;
+wire dtr_rsp_flag_reset =  dtr_rsp_out_ack;
+
+wire dtr_rsp_flag_en = dtr_rsp_flag_set | dtr_rsp_flag_reset ; 
+wire dtr_rsp_flag_in = dtr_rsp_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_dtr_rsp_flag', 'dtr_rsp_flag_in', "1'b0", 'dtr_rsp_flag_en', 'clk', 'reset_n')=\
+
+// DTR responses for stashing snoops need to wait for CompAck
+
+assign dtr_rsp_out_req = q_entry_valid & ~q_dtr_req_flag & q_dtr_rsp_flag;
+
+//=============================================================================
+// DTW Rsp flag
+//
+// Reset DTW respose flag for STR req error case when Data arrives from the CHI processor.
+// This DTW will not be sent on SMI but gets dropped in the AIU.
+// So, AIU cannot expect the DTW response as it does with regular requests 
+//=============================================================================
+
+wire dtw_rsp_flag_set  =  init_d & (writes | writebacks | atomic_write | atomic_swap | atomic_comp  | atomic_read | dvm);
+wire dtw_rsp_flag_reset = dtwrsp_sel | ((q_str_req_error | q_illegal_cmd_detected) & q_dtw_data_rcvd_last) | (write_zero & (q_str_req_error | q_illegal_cmd_detected));
+
+wire dtw_rsp_flag_en = dtw_rsp_flag_set | dtw_rsp_flag_reset; 
+wire dtw_rsp_flag_in = dtw_rsp_flag_set ? 1'b1 : 1'b0;
+
+\=u.dffre(1, 'q_dtw_rsp_flag', 'dtw_rsp_flag_in', "1'b0", 'dtw_rsp_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CMP response flags for dvm
+//=============================================================================
+
+wire cmp_rsp_flag_set =  init_d & dvm ; 
+wire cmp_rsp_flag_reset = cmprsp_sel ;
+
+wire cmp_rsp_flag_en = cmp_rsp_flag_set | cmp_rsp_flag_reset ;
+wire cmp_rsp_flag_in = cmp_rsp_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_cmp_rsp_flag', 'cmp_rsp_flag_in', "1'b0", 'cmp_rsp_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CHI rn_rsp0 flag
+//=============================================================================
+
+wire rn_rsp0_flag_set = init_d & (
+        writes | dvm |
+        atomic_swap | atomic_comp | atomic_read |
+        atomic_write |
+        writebacks |
+        stashonce |
+        dataless | illegal_txn_detected |
+        ((snapshot_read | non_coh_read) & (q_Order != 2'b0))
+
+\js if (chi_e) {
+        | mru_excl
+	| writeevictorevict
+\js }
+
+); 
+
+wire rn_rsp0_flag_reset = (rn_rsp_out_req & rn_rsp_out_ack) | dealloc_me;
+
+wire rn_rsp0_flag_en = rn_rsp0_flag_set | rn_rsp0_flag_reset ; 
+wire rn_rsp0_flag_in = rn_rsp0_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_rn_rsp0_flag', 'rn_rsp0_flag_in', "1'b0", 'rn_rsp0_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CHI rn_rsp1 flag
+//=============================================================================
+wire q_rn_rsp_out_ack;
+
+\=u.dffre(1, 'q_rn_rsp_out_ack', 'rn_rsp_out_ack', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\jsbegin
+/* istanbul ignore else */
+if (useWriteNoSnoopEWA) {
+\jsend
+wire rn_rsp1_flag_set   = (((writes & ~write_no_snp_with_ewa) | dvm) & q_rn_rsp0_flag & rn_rsp_out_ack & ~q_rn_rsp_out_ack)
+\js } else {
+wire rn_rsp1_flag_set   = ((writes                            | dvm) & q_rn_rsp0_flag & rn_rsp_out_ack & ~q_rn_rsp_out_ack)
+\js }
+                        | (unsupported_writestash        & q_rn_rsp0_flag & rn_rsp_out_ack & ~q_rn_rsp_out_ack)
+\js if (chi_e) {
+                        | (unsupported_combined_ncb_wr   & q_rn_rsp0_flag & rn_rsp_out_ack & ~q_rn_rsp_out_ack)
+
+                        | ((combined_cb_wr_non_persist | combined_cb_wr_persist) & q_rn_rsp0_flag & rn_rsp_out_ack & ~q_rn_rsp_out_ack)
+\js }
+                        ;
+
+wire rn_rsp1_flag_reset =                              q_rn_rsp1_flag & (rn_rsp_out_req & rn_rsp_out_ack);
+
+wire rn_rsp1_flag_en = rn_rsp1_flag_set | rn_rsp1_flag_reset ;
+wire rn_rsp1_flag_in = rn_rsp1_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_rn_rsp1_flag', 'rn_rsp1_flag_in', "1'b0", 'rn_rsp1_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CHI rn_rsp2 flag - for CMO part of combined write, potential response is CompCMO for non-persist and CompPersist for persist CMO
+//=============================================================================
+
+\js if (chi_e) {
+
+wire rn_rsp2_flag_set = (combined_ncb_wr_non_persist | combined_ncb_wr_persist | unsupported_combined_ncb_wr) & q_rn_rsp1_flag & rn_rsp_out_ack & ~q_rn_rsp_out_ack;
+wire rn_rsp2_flag_reset = q_rn_rsp2_flag & (rn_rsp_out_req & rn_rsp_out_ack);
+wire rn_rsp2_flag_en = rn_rsp2_flag_set | rn_rsp2_flag_reset;
+wire rn_rsp2_flag_in = rn_rsp2_flag_set;
+
+\=u.dffre(1, 'q_rn_rsp2_flag', 'rn_rsp2_flag_in', "1'b0", 'rn_rsp2_flag_en', 'clk', 'reset_n')=\
+
+\js }
+
+//=============================================================================
+// CHI rn_rsp_OpCode
+//=============================================================================
+
+assign rn_rsp_OpCode [\=wRspOpcode-1=\:0] = 
+    ( \jsbegin
+/* istanbul ignore else */
+if (useWriteNoSnoopEWA) {
+\jsend
+          ({\=wRspOpcode=\{((writes & ~write_no_snp_with_ewa) | dvm) & q_rn_rsp0_flag}} & \=wRspOpcode=\\=chi_cmd.DBIDResp=\)     //DBIDResp
+        | ({\=wRspOpcode=\{((writes & ~write_no_snp_with_ewa & ~combined_wr_in_progress) | dvm) & q_rn_rsp1_flag}} & \=wRspOpcode=\\=chi_cmd.Comp=\)         //Comp \jsbegin
+} else { \jsend
+          ({\=wRspOpcode=\{(writes | dvm)                            & q_rn_rsp0_flag}} & \=wRspOpcode=\\=chi_cmd.DBIDResp=\)     //DBIDResp
+        | ({\=wRspOpcode=\{(writes | dvm)                            & q_rn_rsp1_flag}} & \=wRspOpcode=\\=chi_cmd.Comp=\)         //Comp
+\js }
+        | ({\=wRspOpcode=\{(atomic_swap | atomic_comp | atomic_read)                 }} & \=wRspOpcode=\\=chi_cmd.DBIDResp=\)     //DBIDResp
+\jsbegin
+/* istanbul ignore else */
+if (useWriteNoSnoopEWA) {
+\jsend
+        | ({\=wRspOpcode=\{(atomic_write | writebacks | write_no_snp_with_ewa) & q_rn_rsp0_flag}} & \=wRspOpcode=\\=chi_cmd.CompDBIDResp=\) //CompDBIDResp
+\js } else {
+        | ({\=wRspOpcode=\{(atomic_write | writebacks) & q_rn_rsp0_flag                        }} & \=wRspOpcode=\\=chi_cmd.CompDBIDResp=\) //CompDBIDResp
+\js }
+        | ({\=wRspOpcode=\{(stashonce | (dataless & ~opcode_is_clean_shared_persist_sep) | (q_illegal_txn_detected & ~unsupported_txn))}} & \=wRspOpcode=\\=chi_cmd.Comp=\) //Comp
+        | ({\=wRspOpcode=\{((snapshot_read | non_coh_read) & (q_Order != 2'b0))      }} & \=wRspOpcode=\\=chi_cmd.ReadReceipt=\)  //ReadReceipt
+
+        | ({\=wRspOpcode=\{(unsupported_writestash)                  & q_rn_rsp0_flag}} & \=wRspOpcode=\\=chi_cmd.DBIDResp=\)     //DBIDResp
+        | ({\=wRspOpcode=\{(unsupported_writestash)                  & q_rn_rsp1_flag}} & \=wRspOpcode=\\=chi_cmd.Comp=\)         //Comp
+
+\js if (chi_e) {
+
+        | ({\=wRspOpcode=\{dataless & opcode_is_clean_shared_persist_sep             }} & \=wRspOpcode=\\=chi_cmd.CompPersist=\)  //CompPersist
+        | ({\=wRspOpcode=\{mru_excl                                                  }} & \=wRspOpcode=\\=chi_cmd.Comp=\)         //Comp
+        | ({\=wRspOpcode=\{combined_cb_wr_non_persist  & q_rn_rsp1_flag              }} & \=wRspOpcode=\\=chi_cmd.CompCMO=\)      //CompCMO
+        | ({\=wRspOpcode=\{combined_cb_wr_persist      & q_rn_rsp1_flag              }} & \=wRspOpcode=\\=chi_cmd.CompPersist=\)  //CompPersist
+        | ({\=wRspOpcode=\{combined_ncb_wr_non_persist & q_rn_rsp1_flag              }} & \=wRspOpcode=\\=chi_cmd.Comp=\)         //Comp
+        | ({\=wRspOpcode=\{combined_ncb_wr_persist     & q_rn_rsp1_flag              }} & \=wRspOpcode=\\=chi_cmd.Comp=\)         //Comp
+        | ({\=wRspOpcode=\{combined_wr_non_persist     & q_rn_rsp2_flag              }} & \=wRspOpcode=\\=chi_cmd.CompCMO=\)      //CompCMO
+        | ({\=wRspOpcode=\{combined_wr_persist         & q_rn_rsp2_flag              }} & \=wRspOpcode=\\=chi_cmd.CompPersist=\)  //CompPersist
+
+        | ({\=wRspOpcode=\{writeevictorevict           & q_rn_rsp0_flag}} & \=wRspOpcode=\\=chi_cmd.Comp=\)          //Comp
+        | ({\=wRspOpcode=\{unsupported_stashonce                                   }} & \=wRspOpcode=\\=chi_cmd.Comp=\)          //Comp
+
+        | ({\=wRspOpcode=\{unsupported_combined_ncb_wr             & q_rn_rsp0_flag}} & \=wRspOpcode=\\=chi_cmd.DBIDResp=\)      //DBIDResp
+        | ({\=wRspOpcode=\{unsupported_combined_ncb_wr             & q_rn_rsp1_flag}} & \=wRspOpcode=\\=chi_cmd.Comp=\)          //Comp
+        | ({\=wRspOpcode=\{unsupported_combined_ncb_wr_non_persist & q_rn_rsp2_flag}} & \=wRspOpcode=\\=chi_cmd.CompCMO=\)       //CompCMO
+        | ({\=wRspOpcode=\{unsupported_combined_ncb_wr_persist     & q_rn_rsp2_flag}} & \=wRspOpcode=\\=chi_cmd.CompPersist=\)   //CompPersist
+
+\js }
+
+    );
+
+//=============================================================================
+// CHI rn_rsp_out_req
+//=============================================================================
+
+assign rn_rsp_out_req = q_entry_valid & q_entry_valid_del & (
+
+      (~q_cmd_req_flag & q_rn_rsp0_flag & ~q_str_req_flag & ~q_nrs_selfidr_hit &
+        (   write_unq
+          | write_no_snp
+          | dvm
+          | writebacks
+          | dataless
+          | stashonce
+          | atomic_write | atomic_swap | atomic_comp | atomic_read
+          | ((snapshot_read | non_coh_read) & (q_Order != 2'b0))
+        ))
+
+\js if (chi_e) {
+    | (combined_wr & ~q_cmd_req_combw_flag & q_rn_rsp0_flag & ~q_str_req_combw_flag & ~q_nrs_selfidr_hit)
+\js }
+
+    | (                  q_rn_rsp0_flag & (q_nrs_selfidr_hit | q_illegal_txn_detected | unsupported_txn))
+
+    | (~q_cmd_req_flag & q_rn_rsp1_flag & ~q_str_req_flag                   & (write_unq))
+
+    | (~q_cmd_req_flag & q_rn_rsp1_flag & ~q_dtw_rsp_flag                   & (write_no_snp & ~combined_wr_in_progress))
+
+\js if (chi_e) {
+    | (~q_cmd_req_combw_flag & q_rn_rsp1_flag & ~q_dtw_rsp_flag             & (combined_ncb_wr_non_persist | combined_ncb_wr_persist))
+\js }
+
+    | (~q_cmd_req_flag & q_rn_rsp1_flag & ~q_dtw_rsp_flag & ~q_cmp_rsp_flag & (dvm))
+
+\js if (chi_e) {
+    | (~q_cmd_req_flag & q_rn_rsp0_flag & ~q_mru_excl_str_req_flag          & (mru_excl & (~q_excl_req_error | q_excl_req_error2)))
+    | (~q_cmd_req_flag & q_rn_rsp1_flag & ~q_str_req_flag & ~q_cmd_rsp_flag & ~q_dtw_rsp_flag & (combined_cb_wr_non_persist  | combined_cb_wr_persist))
+    | (~q_cmd_req_flag & q_rn_rsp2_flag & ~q_str_req_flag & ~q_cmd_rsp_flag & ~q_dtw_rsp_flag & (combined_ncb_wr_non_persist | combined_ncb_wr_persist))
+\js }
+
+\js if (chi_e){
+    | (~q_cmd_req_flag & q_rn_rsp0_flag & ~q_str_req_flag 			& (writeevictorevict))
+\js }
+
+);
+
+//=============================================================================
+// CHI rn_Resp_out
+//=============================================================================
+
+\=obj.lib.instance({
+    instanceName: 'rn_rsp_gen',
+    moduleName: 'rn_rsp_gen',
+    params: { 
+        wOpcode : wOpcode,
+        cm_type : cm_type,
+        chi_cmd : chi_cmd
+    },
+    verilogParams: {},
+    ports: {
+        Opcode_in : 'q_Opcode_modif',
+        cm_status : 'q_str_cm_status[3:0]',
+        Resp_out  : 'rn_Resp_out'
+    }
+})=\
+
+//=============================================================================
+// q_req_pri
+//=============================================================================
+
+\js if(wPriority > 0) {
+\=u.dffre(wPriority, 'q_req_pri', 'req_pri_mapped', wPriority+"'b0", 'init_d', 'clk', 'reset_n')=\
+
+\js // req_pri is descending priority order, where 0 is the highest priority.
+\js // sleeping request upon wake up issues request with the highest priority.
+
+wire [\=wPriority-1=\:0] entry_req_pri_in;
+wire entry_req_pri_en;
+
+assign entry_req_pri_en = init_d | q_dce_depnd_valid | owo_dependency | dvm_sync_dependency | starv;
+
+assign entry_req_pri_in = init_d ? (dvm ? \=wPriority=\'b0 : req_pri_mapped) : (q_dce_depnd_valid | owo_dependency | dvm_sync_dependency | starv) ? \=wPriority=\'b0 : entry_req_pri;
+
+\=u.dffre(wPriority, 'entry_req_pri', 'entry_req_pri_in', wPriority+"'b0", 'entry_req_pri_en', 'clk', 'reset_n')=\
+
+\js }
+
+//=============================================================================
+// Timeout
+//=============================================================================
+
+wire entry_dealloc_d1, entry_dealloc_d2, entry_dealloc_pulse;
+\=u.dffre(1, 'entry_dealloc_d1', 'entry_dealloc',    "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'entry_dealloc_d2', 'entry_dealloc_d1', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+assign entry_dealloc_pulse = ~entry_dealloc_d2 & entry_dealloc_d1;
+assign dealloc             = entry_dealloc_pulse;
+
+// Timeout Overflow
+
+wire timeout_overflow_en, timeout_overflow_in, q_timeout_overflow, timeout_overflow_en2, timeout_overflow_in2, q_timeout_overflow2;
+assign timeout_overflow_en = timeout_overflow_event_clr | (entry_valid & timeout_overflow_event) | entry_dealloc_pulse;
+assign timeout_overflow_in = ~timeout_overflow_event_clr & ~entry_dealloc_pulse & entry_valid;
+assign timeout_overflow = q_timeout_overflow & q_timeout_overflow2;
+
+\=u.dffre(1,        'q_timeout_overflow', 'timeout_overflow_in',   "1'b0",        'timeout_overflow_en',    'clk',  'reset_n')=\
+\=u.dffre(1,        'q_timeout_overflow2','timeout_overflow_in2',   "1'b0",       'timeout_overflow_en2',    'clk',  'reset_n')=\
+
+assign timeout_overflow_en2 = 1'b1;
+assign timeout_overflow_in2 = (entry_valid & timeout_overflow_event) & q_timeout_overflow;
+
+//=============================================================================
+// Fake Cmd request to age_link_arb to pop it upon ack
+//=============================================================================
+
+wire fake_cmd_req_set = (atomic_coh_in_progress & str_req_error)
+                      | (combined_wr_in_progress & (str_req_error | dtw_rsp_error)) //CONC-12521
+                      | (mru_excl_in_progress & str_req_error)
+                      | (mru_excl_in_progress & str_req_sel & str_req_slv_cm_status[0]); //MakeReadUnique Exclusive check passed
+
+wire fake_cmd_req_reset = cmd_out_ack | dealloc_me;
+
+wire fake_cmd_req_en = fake_cmd_req_set | fake_cmd_req_reset ; 
+wire fake_cmd_req_in = fake_cmd_req_reset ? 1'b0 : 1'b1 ;
+
+\=u.dffre(1, 'fake_cmd_out_req', 'fake_cmd_req_in', "1'b0", 'fake_cmd_req_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// CMDreq state machine
+//=============================================================================
+wire [1:0] ST_IDLE   = 2'b00;
+wire [1:0] ST_CMD0   = 2'b01;
+wire [1:0] ST_WAIT   = 2'b10;
+wire [1:0] ST_CMD1   = 2'b11;
+reg  [1:0] nxt_state;
+wire [1:0] cur_state;
+wire [1:0] nxt_state_mux;
+reg  nxt_cmd_out_req_dmi;
+reg  nxt_cmd_out_req_dii;
+reg  nxt_cmd_out_req_dce;
+reg  nxt_cmd_out_req_dve;
+wire cur_cmd_out_req_dmi;
+wire cur_cmd_out_req_dii;
+wire cur_cmd_out_req_dce;
+wire cur_cmd_out_req_dve;
+
+assign nxt_state_mux = dealloc_me ? ST_IDLE : nxt_state;
+
+\=u.dffre(2, 'cur_state', 'nxt_state_mux', "2'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'cur_cmd_out_req_dii', 'nxt_cmd_out_req_dii', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'cur_cmd_out_req_dmi', 'nxt_cmd_out_req_dmi', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'cur_cmd_out_req_dve', 'nxt_cmd_out_req_dve', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'cur_cmd_out_req_dce', 'nxt_cmd_out_req_dce', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire atomic     = (atomic_read | atomic_write | atomic_swap | atomic_comp);
+wire cmd_to_dmi = {|{req_in_dmi_id_d}} & (cmds_to_non_coh_space | prefetch | (atomic & ~q_SnpAttr_0));
+wire cmd_to_dii = {|{req_in_dii_id_d}} & (cmds_to_non_coh_space);
+wire cmd_to_dce = {|{req_in_dce_id_d}} & ~dvm & ~cmds_to_non_coh_space & ~prefetch & ~(atomic & ~q_SnpAttr_0);
+wire cmd_to_dve = dvm;
+
+wire second_cmd_to_dmi_credits_access_error = nxt_cmd_out_req_dmi & (nxt_state == ST_CMD1) & (cur_state == ST_WAIT) & {|{q_req_in_dmi_id & zero_dmi_credit_limit}};
+
+wire q_second_cmd_to_dmi_credits_access_error;
+
+\=u.dffre(1, 'q_second_cmd_to_dmi_credits_access_error', 'second_cmd_to_dmi_credits_access_error', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire cmd_to_dmi_credits_access_error = init_d & {|{req_in_dmi_id_d & zero_dmi_credit_limit}} & (cmds_to_non_coh_space | prefetch | (atomic & ~q_SnpAttr_0));
+wire cmd_to_dii_credits_access_error = init_d & {|{req_in_dii_id_d & zero_dii_credit_limit}} & (cmds_to_non_coh_space);
+wire cmd_to_dce_credits_access_error = init_d & {|{req_in_dce_id_d & zero_dce_credit_limit}} & ~dvm & ~cmds_to_non_coh_space & ~prefetch & ~(atomic & ~q_SnpAttr_0);
+
+assign no_credits_access_error = cmd_to_dmi_credits_access_error
+                               | cmd_to_dii_credits_access_error
+                               | cmd_to_dce_credits_access_error
+                      | q_second_cmd_to_dmi_credits_access_error
+                               ;
+
+wire str_req_rcvd = str_req_sel | ~q_str_req_coh_flag;
+wire cmd_rsp_rcvd = cmd_rsp_sel | ~q_cmd_rsp_flag;
+
+wire str_req_rcvd_no_error = (~q_str_req_coh_flag & ~q_str_req_error) | (str_req_sel & ~str_req_slv_cm_status[7]);
+
+always @(*)
+case (cur_state)
+    ST_IDLE : begin
+        if (init_d & ~q_addr_map_error & ~no_credits_access_error & ~illegal_txn & ~unsupported_txn & ~q_nrs_selfidr_hit) begin
+            nxt_state = ST_CMD0;
+            nxt_cmd_out_req_dmi = cmd_to_dmi;
+            nxt_cmd_out_req_dii = cmd_to_dii;
+            nxt_cmd_out_req_dce = cmd_to_dce;
+            nxt_cmd_out_req_dve = cmd_to_dve;
+        end else begin
+            nxt_state = ST_IDLE;
+            nxt_cmd_out_req_dmi = 1'b0;
+            nxt_cmd_out_req_dii = 1'b0;
+            nxt_cmd_out_req_dce = 1'b0;
+            nxt_cmd_out_req_dve = 1'b0;
+        end
+    end
+    ST_CMD0 : begin
+        if (cmd_out_ack) begin
+            nxt_state = ST_WAIT;
+            nxt_cmd_out_req_dmi = 1'b0;
+            nxt_cmd_out_req_dii = 1'b0;
+            nxt_cmd_out_req_dce = 1'b0;
+            nxt_cmd_out_req_dve = 1'b0;
+        end else begin
+            nxt_state = ST_CMD0;
+            nxt_cmd_out_req_dmi = cur_cmd_out_req_dmi;
+            nxt_cmd_out_req_dii = cur_cmd_out_req_dii;
+            nxt_cmd_out_req_dce = cur_cmd_out_req_dce;
+            nxt_cmd_out_req_dve = cur_cmd_out_req_dve;
+        end
+    end
+    ST_WAIT : begin
+    \js if (chi_e) {
+
+        if (mru_excl | combined_wr) begin
+
+          if ((mru_excl & mru_excl_part1_done & q_excl_req_error) | //MakeReadUnique Exclusive fails => issue ReadNotSharedDirty
+            (combined_wr & comb_wr_done & ~q_str_req_error & ~q_dtw_rsp_error))    //Combined Write does not have error => issue CMO
+          begin
+            nxt_state = ST_CMD1;
+            nxt_cmd_out_req_dmi = q_cmd_to_dmi;
+            nxt_cmd_out_req_dii = q_cmd_to_dii;
+            nxt_cmd_out_req_dce = q_cmd_to_dce;
+            nxt_cmd_out_req_dve = 1'b0;
+          end else begin
+            nxt_state = ST_WAIT;
+            nxt_cmd_out_req_dmi = cur_cmd_out_req_dmi;
+            nxt_cmd_out_req_dii = cur_cmd_out_req_dii;
+            nxt_cmd_out_req_dce = cur_cmd_out_req_dce;
+            nxt_cmd_out_req_dve = cur_cmd_out_req_dve;
+          end
+
+        end else if (str_req_rcvd & cmd_rsp_rcvd) begin
+            if (atomic_coh & str_req_rcvd_no_error) begin
+                nxt_state = ST_CMD1;
+                nxt_cmd_out_req_dmi = 1'b1;
+                nxt_cmd_out_req_dii = 1'b0;
+                nxt_cmd_out_req_dce = 1'b0;
+                nxt_cmd_out_req_dve = 1'b0;
+            end else begin
+                nxt_state = ST_IDLE;
+                nxt_cmd_out_req_dmi = 1'b0;
+                nxt_cmd_out_req_dii = 1'b0;
+                nxt_cmd_out_req_dce = 1'b0;
+                nxt_cmd_out_req_dve = 1'b0;
+            end
+        end else begin
+            nxt_state = ST_WAIT;
+            nxt_cmd_out_req_dmi = cur_cmd_out_req_dmi;
+            nxt_cmd_out_req_dii = cur_cmd_out_req_dii;
+            nxt_cmd_out_req_dce = cur_cmd_out_req_dce;
+            nxt_cmd_out_req_dve = cur_cmd_out_req_dve;
+        end
+
+    \js } else {
+
+        if (str_req_rcvd & cmd_rsp_rcvd) begin
+            if (atomic_coh & str_req_rcvd_no_error) begin
+                nxt_state = ST_CMD1;
+                nxt_cmd_out_req_dmi = 1'b1;
+                nxt_cmd_out_req_dii = 1'b0;
+                nxt_cmd_out_req_dce = 1'b0;
+                nxt_cmd_out_req_dve = 1'b0;
+            end else begin
+                nxt_state = ST_IDLE;
+                nxt_cmd_out_req_dmi = 1'b0;
+                nxt_cmd_out_req_dii = 1'b0;
+                nxt_cmd_out_req_dce = 1'b0;
+                nxt_cmd_out_req_dve = 1'b0;
+            end
+        end else begin
+            nxt_state = ST_WAIT;
+            nxt_cmd_out_req_dmi = cur_cmd_out_req_dmi;
+            nxt_cmd_out_req_dii = cur_cmd_out_req_dii;
+            nxt_cmd_out_req_dce = cur_cmd_out_req_dce;
+            nxt_cmd_out_req_dve = cur_cmd_out_req_dve;
+        end
+
+    \js }
+
+    end
+    ST_CMD1 : begin
+        if (cmd_out_ack) begin
+            nxt_state = ST_IDLE;
+            nxt_cmd_out_req_dmi = 1'b0;
+            nxt_cmd_out_req_dii = 1'b0;
+            nxt_cmd_out_req_dce = 1'b0;
+            nxt_cmd_out_req_dve = 1'b0;
+        end else begin
+            nxt_state = ST_CMD1;
+            nxt_cmd_out_req_dmi = cur_cmd_out_req_dmi;
+            nxt_cmd_out_req_dii = cur_cmd_out_req_dii;
+            nxt_cmd_out_req_dce = cur_cmd_out_req_dce;
+            nxt_cmd_out_req_dve = cur_cmd_out_req_dve;
+        end
+    end
+    default begin
+        nxt_state = cur_state;
+        nxt_cmd_out_req_dmi = cur_cmd_out_req_dmi;
+        nxt_cmd_out_req_dii = cur_cmd_out_req_dii;
+        nxt_cmd_out_req_dce = cur_cmd_out_req_dce;
+        nxt_cmd_out_req_dve = cur_cmd_out_req_dve;
+    end
+endcase
+
+assign cmd_out_req = (cur_cmd_out_req_dce & {|{dce_credits_avail & q_req_in_dce_id}} & ~(q_dce_depnd_valid | owo_dependency) )
+                   | (cur_cmd_out_req_dmi & {|{dmi_credits_avail & q_req_in_dmi_id}} & ~(q_dce_depnd_valid | owo_dependency) )
+                   | (cur_cmd_out_req_dii & {|{dii_credits_avail & q_req_in_dii_id}} & ~(q_dce_depnd_valid | owo_dependency) )
+                   | (cur_cmd_out_req_dve &    dve_credits_avail                     & ~dvm_sync_dependency);
+
+    \js if (chi_e) {
+
+\=u.dffre(1, 'q_cmd_to_dce', 'cmd_to_dce', "1'b0", 'init_d', 'clk', 'reset_n')=\
+\=u.dffre(1, 'q_cmd_to_dmi', 'cmd_to_dmi', "1'b0", 'init_d', 'clk', 'reset_n')=\
+\=u.dffre(1, 'q_cmd_to_dii', 'cmd_to_dii', "1'b0", 'init_d', 'clk', 'reset_n')=\
+
+    \js }
+
+wire select_dce;
+wire select_dce_en = dealloc_me | nxt_cmd_out_req_dce;
+wire select_dce_in = dealloc_me ? 1'b0 : nxt_cmd_out_req_dce;
+
+\=u.dffre(1, 'select_dce', 'select_dce_in', "1'b0", 'select_dce_en', 'clk', 'reset_n')=\
+
+wire select_dve;
+wire select_dve_en = dealloc_me | nxt_cmd_out_req_dve;
+wire select_dve_in = dealloc_me ? 1'b0 : nxt_cmd_out_req_dve;
+
+\=u.dffre(1, 'select_dve', 'select_dve_in', "1'b0", 'select_dve_en', 'clk', 'reset_n')=\
+
+assign cmd_req_target_f_unit_id =
+  select_dve                                          ? q_aiu_dve_f_unit_id :
+  select_dce & (~atomic_coh | atomic_coh_in_progress) ? q_map_dce_f_unit_id :
+                                                        q_map_target_f_unit_id;
+
+
+
+assign select_dve0 = cur_cmd_out_req_dve;
+
+    \js for (var i = 0; i < num_dces; i++) {
+assign select_dce\=i=\ = cur_cmd_out_req_dce & q_req_in_dce_id[\=i=\];
+    \js }
+
+    \js for (var i = 0; i < num_dmis; i++) {
+assign select_dmi\=i=\ = cur_cmd_out_req_dmi & q_req_in_dmi_id[\=i=\];
+    \js }
+
+    \js for (var i = 0; i < num_diis; i++) {
+assign select_dii\=i=\ = cur_cmd_out_req_dii & q_req_in_dii_id[\=i=\];
+    \js }
+
+
+
+//Setting VZ bit for CMDreq
+//VZ bit set  to 1  for cache maintainence operations.
+//VZ bit set  to 1 for non coherent exclusives  and as per native value for other non coherent commands.
+//VZ bit set to 0 for all other commands
+
+wire cache_maint_ops = cmos_cmd;
+
+wire non_coh_cmd = nc_cmd;
+
+assign cmd_req_vz = cache_maint_ops | (((~q_MemAttr[0] | q_MemAttr[1]) | q_Excl) & non_coh_cmd);
+
+\=u.dffre(1, 'q_cmd_req_vz', 'cmd_req_vz', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//Setting AC bit for CMDreq
+
+assign q_Opcode_atomics = atomic_read | atomic_write | atomic_swap | atomic_comp;
+
+wire q_Opcode_dvm = (q_Opcode == \=wOpcode=\\=chi_cmd.DVMOp=\);
+
+wire force_ac_1 = (q_Opcode == \=wOpcode=\\=chi_cmd.WriteEvictFull=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.PrefetchTgt=\) |
+                  q_Opcode_atomics;
+
+wire force_ac_0 = (q_Opcode == \=wOpcode=\\=chi_cmd.ReadOnceMakeInvalid=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.Evict=\) |
+                   q_Opcode_dvm
+\js if (chi_e) {
+	        | (q_Opcode == \=wOpcode=\\=chi_cmd.WriteEvictOrEvict=\)
+\js }
+		;
+
+assign cmd_req_ac = q_Excl & non_coh_cmd ? 1'b0 : (q_MemAttr[3] & ~force_ac_0) | force_ac_1;
+
+\=u.dffre(1, 'q_cmd_req_ac', 'cmd_req_ac', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//Setting CA bit for CMDreq
+
+assign cmd_req_ca = q_Excl & non_coh_cmd ? 1'b0 : (q_MemAttr[2] & (non_coh_cmd | cache_maint_ops)) | ~(q_Opcode_dvm | non_coh_cmd | cache_maint_ops);
+
+\=u.dffre(1, 'q_cmd_req_ca', 'cmd_req_ca', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//Setting CH bit for CMDreq
+//Force CH to 1 for ops listed as shown.
+//VZ bit set as per native for cache maintence ops and for coherent part of the atomics.
+//VH bit set to 0 for all oher commands
+
+wire force_ch_1 = (q_Opcode == \=wOpcode=\\=chi_cmd.ReadShared=\) | 
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.ReadClean=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.ReadOnce=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.ReadUnique=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.ReadNotSharedDirty=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.ReadOnceCleanInvalid=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.ReadOnceMakeInvalid=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.CleanUnique=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.MakeUnique=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.WriteUniquePtl=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.WriteUniqueFull=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.WriteUniquePtlStash=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.WriteUniqueFullStash=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.StashOnceShared=\) |
+                  (q_Opcode == \=wOpcode=\\=chi_cmd.StashOnceUnique=\) 
+\js if (chi_e) {
+                 | (q_Opcode == \=wOpcode=\\=chi_cmd.MakeReadUnique=\)
+                 | (q_Opcode == \=wOpcode=\\=chi_cmd.ReadPreferUnique=\)
+                 | (q_Opcode == \=wOpcode=\\=chi_cmd.WriteUniqueZero=\)
+              // | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanSh=\)        & comb_wr_in_progress) // CONC-12291
+              // | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanInv=\)       & comb_wr_in_progress) // CONC-12291
+              // | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteBackFullCleanShPerSep=\)  & comb_wr_in_progress) // CONC-12291
+              // | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteCleanFullCleanSh=\)       & comb_wr_in_progress) // CONC-12291
+              // | ((q_Opcode_modif == \=wOpcode=\\=chi_cmd.WriteCleanFullCleanShPerSep=\) & comb_wr_in_progress) // CONC-12291
+\js }
+                 ;
+
+assign atomic_non_coh_in_progress = q_Opcode_atomics & ~atomic_coh_in_progress;
+
+assign cmd_req_ch = force_ch_1 
+                  | (q_SnpAttr_0 & cache_maint_ops)
+                  | (q_SnpAttr_0 & q_Opcode_atomics & ~atomic_non_coh_in_progress);
+
+wire cmd_req_ch_part = force_ch_1
+                     | (q_SnpAttr_0 & cache_maint_ops);
+
+wire q_cmd_req_ch_part;
+\=u.dffre(1, 'q_cmd_req_ch_part', 'cmd_req_ch_part', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign q_cmd_req_ch = q_cmd_req_ch_part
+                    | (q_SnpAttr_0 & q_Opcode_atomics & ~atomic_non_coh_in_progress);
+
+assign q_Opcode_stashonce = stashonce;
+
+assign entry_coherent = select_dce;
+
+//=============================================================================
+// q_cmd_req_all_flag_entry 
+//=============================================================================
+
+assign q_cmd_req_all_flag_entry = ((cur_state == ST_CMD0) | (cur_state == ST_CMD1)) & ~(q_dce_depnd_valid | owo_dependency | dvm_sync_dependency);
+
+//=============================================================================
+// Ordered Write Observation (OWO) command decode
+//=============================================================================
+
+assign q_cmd_owo_entry = (write_unq | write_no_snp) & (q_Order == 2'b10) & q_ExCompAck & q_entry_valid;
+
+//=============================================================================
+// q_excl_req_error2
+//=============================================================================
+
+wire excl_req_error2_set = excl_req_error & ~mru_excl_in_progress;
+wire excl_req_error2_clr = dealloc_me;
+wire excl_req_error2_en = excl_req_error2_set | excl_req_error2_clr;
+wire excl_req_error2_in = excl_req_error2_clr ? 1'b0 : excl_req_error2_set;
+
+\=u.dffre(1, 'q_excl_req_error2', 'excl_req_error2_in', "1'b0", 'excl_req_error2_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// DVM Sync command decode
+//=============================================================================
+
+wire [2:0] DVM_OPCODE_SYNC = 3'b100;
+
+assign q_cmd_dvm_sync_entry = dvm & (q_Addr[13:11] == DVM_OPCODE_SYNC) & q_entry_valid;
+
+//=============================================================================
+// Assertions
+//=============================================================================
+
+\js if (assertOn) {
+`ifdef OVL_ASSERT_ON
+// synthesis_off
+// pragma synthesis_off
+// coverage off
+
+    property p_cmd_out_req_dest_onehot0;
+        @(posedge clk) disable iff (~reset_n)
+            $onehot0({cur_cmd_out_req_dmi, cur_cmd_out_req_dii, cur_cmd_out_req_dce, cur_cmd_out_req_dve});
+    endproperty
+
+    assert_cmd_out_req_dest_onehot0: assert property (p_cmd_out_req_dest_onehot0)
+        else begin $error("{cur_cmd_out_req_dmi, cur_cmd_out_req_dii, cur_cmd_out_req_dce, cur_cmd_out_req_dve} must be onehot0 !"); #100 $finish; end
+
+// coverage on
+// pragma synthesis_on
+// synthesis_on
+`endif
+\js }
+
+endmodule
+

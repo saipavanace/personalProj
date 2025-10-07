@@ -1,0 +1,240 @@
+#
+# DCE arch1
+#
+# CONC-1105
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n dce_arch1 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/dce_arch1.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=1,+force_reset_values=1,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=1,+force_reset_values=1,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=10,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+wt_err_sfi_slv=20,+force_reset_values=1,+wt_err_sfi_dec=0,+wt_err_sfi_av=0,+wt_err_sfi_disc=0,+wt_err_sfi_sec=0,+wt_err_sfi_derr=20,+wt_err_sfi_tmo=0
+
+#
+# DCE config2
+#
+# CONC-975
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n dce_config2 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/dce_config2.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config2 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+force_reset_values=1,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config2 -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+force_reset_values=1,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config2 -p +k_num_addr=32,+k_num_cmd=100000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=15,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=15,+wt_cmd_cln_unq=30,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=15,+force_reset_values=1,+wt_cmd_dvm_msg=15,+k_init_rand_state=0,+k_hnt_rsp_delay=1,+k_snp_rsp_delay=1,+k_str_rsp_delay=1,+ntb_random_seed=45200079,+k_timeout_usec=50000,+UVM_MAX_QUIT_COUNT=1
+
+#
+# DCE config3
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n dce_config3 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/dce_config3.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config3 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+force_reset_values=1,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config3 -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+force_reset_values=1,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# DCE config4
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n dce_config4 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/dce_config4.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config4 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+force_reset_values=1,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config4 -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+force_reset_values=1,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832663,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# DCE config5
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n dce_config5 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/dce_config5.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config5 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+force_reset_values=1,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config5 -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+force_reset_values=1,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# DCE config6
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n dce_config6 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/dce_config6.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config6 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+force_reset_values=1,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_config6 -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+force_reset_values=1,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+
+#
+# PSYS config6 mod2
+#
+# CONC-939
+# CONC-971
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n psys_config6_mod2 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/psys_config6_mod2.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config6_mod2 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+force_reset_values=1,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config6_mod2 -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+force_reset_values=1,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+
+##########################################################
+# Null directory tests
+##########################################################
+
+# dce0_nulldir test
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=41,+k_num_cmd=2500,+wt_cmd_rd_cpy=3,+wt_cmd_rd_vld=3,+wt_cmd_rd_unq=18,+wt_cmd_rd_cln=18,+wt_cmd_cln_unq=18,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=1,+wt_cmd_wr_unq_ptl=2,+wt_cmd_wr_unq_full=3,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=11,+k_init_rand_state=1,+k_reoder_rsp_max=0,+k_reoder_rsp_tmr=0,+force_reset_values=1,+k_req_vld_delay_min=0,+k_req_vld_delay_max=0,+k_req_rdy_delay_min=0,+k_req_rdy_delay_max=0,+k_rsp_vld_delay_min=0,+k_rsp_vld_delay_max=0,+k_rsp_rdy_delay_min=0,+k_rsp_rdy_delay_max=0,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=100,+k_rsp_vld_burst_pct=100,+k_rsp_rdy_burst_pct=100,+k_req_vld_grp_dly_min=0,+k_req_vld_grp_dly_max=26,+k_req_vld_grp_pkt_min=0,+k_req_vld_grp_pkt_max=1,+k_req_inj_pkt_num=334,+k_req_inj_pkt_dly=120,+k_rsp_vld_grp_dly_min=0,+k_rsp_vld_grp_dly_max=22,+k_rsp_vld_grp_pkt_min=0,+k_rsp_vld_grp_pkt_max=4,+k_rsp_inj_pkt_num=179,+k_rsp_inj_pkt_dly=112,+k_hnt_rsp_delay=0,+k_snp_rsp_delay=1,+k_str_rsp_delay=1,+ntb_random_seed=4290868,+k_timeout_usec=5000,+UVM_MAX_QUIT_COUNT=1 
+
+# dce0_nulldir_hntrsp test
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=41,+k_num_cmd=2500,+wt_cmd_rd_cpy=3,+wt_cmd_rd_vld=3,+wt_cmd_rd_unq=18,+wt_cmd_rd_cln=18,+wt_cmd_cln_unq=18,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=1,+wt_cmd_wr_unq_ptl=2,+wt_cmd_wr_unq_full=3,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=11,+k_init_rand_state=1,+k_reoder_rsp_max=0,+k_reoder_rsp_tmr=0,+k_req_vld_delay_min=0,+k_req_vld_delay_max=0,+k_req_rdy_delay_min=0,+k_req_rdy_delay_max=0,+k_rsp_vld_delay_min=0,+k_rsp_vld_delay_max=0,+k_rsp_rdy_delay_min=0,+k_rsp_rdy_delay_max=0,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=100,+k_rsp_vld_burst_pct=100,+k_rsp_rdy_burst_pct=100,+k_req_vld_grp_dly_min=0,+k_req_vld_grp_dly_max=26,+force_reset_values=1,+k_req_vld_grp_pkt_min=0,+k_req_vld_grp_pkt_max=1,+k_req_inj_pkt_num=334,+k_req_inj_pkt_dly=120,+k_rsp_vld_grp_dly_min=0,+k_rsp_vld_grp_dly_max=22,+k_rsp_vld_grp_pkt_min=0,+k_rsp_vld_grp_pkt_max=4,+k_rsp_inj_pkt_num=179,+k_rsp_inj_pkt_dly=112,+k_hnt_rsp_delay=1,+k_snp_rsp_delay=0,+k_str_rsp_delay=0,+ntb_random_seed=4290868,+k_timeout_usec=5000,+UVM_MAX_QUIT_COUNT=1 
+
+
+# dce1_snp_credit test
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=15,+k_num_cmd=10000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=1,+wt_cmd_rd_unq=13,+wt_cmd_rd_cln=21,+wt_cmd_cln_unq=17,+wt_cmd_cln_vld=8,+wt_cmd_cln_inv=3,+wt_cmd_wr_unq_ptl=10,+force_reset_values=1,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=3,+wt_cmd_dvm_msg=17,+k_init_rand_state=1,+k_reoder_rsp_max=0,+k_reoder_rsp_tmr=0,+k_req_vld_delay_min=0,+k_req_vld_delay_max=0,+k_req_rdy_delay_min=0,+k_req_rdy_delay_max=0,+k_rsp_vld_delay_min=0,+k_rsp_vld_delay_max=0,+k_rsp_rdy_delay_min=0,+k_rsp_rdy_delay_max=0,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=100,+k_rsp_vld_burst_pct=100,+k_rsp_rdy_burst_pct=100,+k_req_vld_grp_dly_min=0,+k_req_vld_grp_dly_max=6,+k_req_vld_grp_pkt_min=0,+k_req_vld_grp_pkt_max=2,+k_req_inj_pkt_num=98,+k_req_inj_pkt_dly=123,+k_rsp_vld_grp_dly_min=0,+k_rsp_vld_grp_dly_max=23,+k_rsp_vld_grp_pkt_min=0,+k_rsp_vld_grp_pkt_max=2,+k_rsp_inj_pkt_num=322,+k_rsp_inj_pkt_dly=99,+k_hnt_rsp_delay=0,+k_snp_rsp_delay=1,+k_str_rsp_delay=1,+ntb_random_seed=60146159,+k_timeout_usec=10000,+UVM_MAX_QUIT_COUNT=1 
+
+# Graph test
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_graph_test -r -n dce_arch1 -p +k_num_addr=32,+ntb_random_seed=1234,+force_reset_values=1,+k_timeout_usec=10000,+UVM_MAX_QUIT_COUNT=1
+
+# DVMs only
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+force_reset_values=1,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1
+
+# Reads only
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+force_reset_values=1,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_vld=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1
+
+# Writes only
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+force_reset_values=1,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_vld=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1
+
+# Reads-Writes only
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n dce_arch1 -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=0,+force_reset_values=1,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_vld=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1
+
+##########################################################
+# Tag Filter specific feature tests
+##########################################################
+
+# 
+# tf_null_eos
+#
+# CONC-1036 DCE didn't send HNTreq but expects HNTrsp
+# CONC-1037
+# CONC-1089
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n tf_null_eos -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/tf_null_eos.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n tf_null_eos -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=15,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=15,+wt_cmd_cln_unq=30,+wt_cmd_cln_vld=10,+force_reset_values=1,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=15,+wt_cmd_dvm_msg=8,+k_init_rand_state=0,+k_hnt_rsp_delay=1,+k_snp_rsp_delay=1,+k_str_rsp_delay=1,+ntb_random_seed=37766108,+k_timeout_usec=5000,+UVM_MAX_QUIT_COUNT=1
+
+# 
+# tf_eos_eos_hash_x
+#
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n tf_eos_eos_hash_x -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/tf_eos_eos_hash_x.apf
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n tf_eos_eos_hash_x -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+force_reset_values=1,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=5000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# tf_eos_eos_nsets_1
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n tf_eos_eos_nsets_1 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/tf_eos_eos_nsets_1.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n tf_eos_eos_nsets_1 -p +k_num_addr=8,+k_num_cmd=5000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+force_reset_values=1,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=5000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# tf_eos
+#
+# CONC-1055 SnpRecall address
+#
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n tf_eos -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/tf_eos.apf
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n tf_eos -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+force_reset_values=1,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=22397583,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=5000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+
+#
+# tf_eos_eos
+#
+# CONC-1130 A single recall transaction sends SnpRecall to AIUs in different directory segments
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n tf_eos_eos -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/tf_eos_eos.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n tf_eos_eos -p +k_num_addr=32,+k_num_cmd=20000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+force_reset_values=1,+wt_cmd_dvm_msg=0,+ntb_random_seed=58937803,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=10000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+
+# tf_eos_null
+#
+# CONC-970
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n tf_eos_null -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/tf_eos_null.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n tf_eos_null -p +k_num_addr=32,+k_num_cmd=50000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=15,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=15,+wt_cmd_cln_unq=30,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=15,+wt_cmd_dvm_msg=8,+force_reset_values=1,+k_init_rand_state=0,+k_hnt_rsp_delay=1,+k_snp_rsp_delay=1,+k_str_rsp_delay=1,+ntb_random_seed=31681972,+k_timeout_usec=25000,+UVM_MAX_QUIT_COUNT=1
+
+#
+# psys_config17
+#
+# CONC-1023 Missing snoop to Owner
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n psys_config17 -d HNT_CHECKER_ON,STRICT_ON -C $WORK_TOP/../test_projects/achlProjects/psys_config17.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config17 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+force_reset_values=1,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+
+#
+# CONC-1079 Unexpected Home DMI Unit ID
+#
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -m -r -n psys_config10_noiocache -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON -C $WORK_TOP/../test_projects/achlProjects/psys_config10_noiocache.apf
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config10_noiocache -p +k_num_addr=512,+k_num_cmd=100000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=0,+force_reset_values=1,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=100000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# CONC-1086  SFI protocol violation req_sfiSlvId
+# CONC-1087  SnpRecall address
+#
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n psys_config12_newFull -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/dv/common/config/carbon/psys_config12_newFull.apf
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config12_newFull -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+force_reset_values=1,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=22397583,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=5000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config12_newFull -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+force_reset_values=1,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=22397583,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=5000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# CONC-1121
+#
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n psys_config11_noiocache -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/psys_config11_noiocache.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config11_noiocache -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+force_reset_values=1,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=5000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# CONC-1423  SnpRecall is sent to AIU belonging to different slice
+#
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n sw_config4_new -d STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/dce_config4_cov.apf
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n sw_config4_new -p +k_num_addr=128,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=15,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=15,+wt_cmd_cln_unq=30,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+k_init_rand_state=0,+k_hnt_rsp_delay=1,+k_snp_rsp_delay=1,+k_str_rsp_delay=1,+single_bit_error=50,+ntb_random_seed=46207107,+k_timeout_usec=25000,+UVM_MAX_QUIT_COUNT=1
+
+#
+# CONC-1501
+#
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n psys_config1_1aiusimple -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/psys_config1_1aiusimple.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_test -r -n psys_config1_1aiusimple -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+force_reset_values=1,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+#
+# DCE configuration without DVM but with Snoop Filter disabled
+#
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -a -c -r -m -n dce_benoit -d STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION -C $WORK_TOP/../test_projects/achlProjects/benoit_toshiba_10_v073_075.apf
+
+#node $WORK_TOP/dv/scripts/rsim.js -q -e dce -t dce_power_management_test -r -n dce_benoit -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=ca_snp_en
+

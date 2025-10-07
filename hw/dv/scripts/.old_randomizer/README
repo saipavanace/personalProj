@@ -1,0 +1,29 @@
+Randomizer (WIP):
+
+Usage:
+* node randomizer.js
+
+Inputs:
+* params.json (which constains all legal values)
+* constraints.js (list all constraints between the parameters)
+
+Output:
+* random_config.tcl
+
+Useful Commands:
+* to invoke the above config: maestro -s random_config.tcl
+* to save tcl from Maestro GUI: save_project -file <filename> -tcl
+
+TODO Items for Randomizer:
+
+* DVM versions is hardcoded, this needs to be randomized based on the type of units we have in the sytem
+* Need to create initiatorGroups (genInitiatorGroups function) - get info from TCL library to do this
+* Need to understand what this is: set_attribute -object $memInterleaveFunc -value_list $vals in the config
+* connectivity should be handled for unconnected configs
+* Need to randomize clock domains
+* Number of snoop filters are always '1' -> Need to expand
+* Number of sets in the snoop filter is always 16 * Number of DCEs (this is minimum. need to expand more)
+* After increasing the snoop filters, we need to randomly pick one and assign it to a coherent agent.
+* Number of GPRAs should be atleast nDIIs + 1 (for DMI). This is minimum. Increase it later
+* Open constraints on axId widths on IOAIU (AXI), DMI, DII and find the relationship between them
+* 2 CHIs are made as minimum in the params because we need atleast 2 Coherent agents in the system. Need to fix this to make it dynamic

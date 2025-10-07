@@ -1,0 +1,68 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU
+// Author: Benjamin Madon
+//=============================================================================
+
+
+var utilFunctions   = obj.userLib.lib_utils;
+
+var newToOldStyleInterface	= obj.userLib.newToOldStyleInterface.bind( null, obj.userLib );
+var m = obj.userLib;
+var u=obj.lib;
+
+var p =u.getParam();
+u.nInterfaces(p.interfaces);
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+
+\jsbegin
+for (var gr=0;gr<p.NumberOfGranulePerBeat;gr++){
+\jsend                                                            
+    reg start_ptr_\=gr=\_out_int;
+\jsbegin                                                        
+        }
+\jsend
+
+
+always@(*) begin
+
+    case (\=p.interfaces.current_beat_.name=\in) 
+
+\jsbegin
+for(var beat=0;beat<p.NumberOfBeatPerContainer;beat++){
+\jsend
+
+    \=p.interfaces.current_beat_.params.wIn=\'d\=beat=\ : begin
+
+\jsbegin
+                                                        for (var gr=0;gr<p.NumberOfGranulePerBeat;gr++){
+                                                            \jsend                                                            
+                                                            start_ptr_\=gr=\_out_int = \=p.interfaces.cxs_out_deframer_in_.name=\data[ \=p.StartBits[beat]["GranuleId"][gr]=\ ];
+\jsbegin                                                        
+                                                        }
+\jsend
+                                                        end
+\jsbegin
+}
+\jsend                                                 
+    endcase
+
+end
+
+
+
+\jsbegin
+for (var gr=0;gr<p.NumberOfGranulePerBeat;gr++){
+\jsend                                                            
+    assign start_ptr_\=gr=\_out = start_ptr_\=gr=\_out_int ;
+\jsbegin                                                        
+        }
+\jsend
+endmodule

@@ -1,0 +1,352 @@
+{
+  "name": "InterfaceACE",
+  "version": "0.1.0",
+  "interface": [
+    {
+      "name": "InterfaceACE",
+      "signals": [
+        {
+          "name": "ar_",
+          "type": "interface",
+          "dir": "m_out",
+          "def": "InterfaceACEar",
+          "excludable": false
+        },
+        {
+          "name": "r_",
+          "type": "interface",
+          "dir": "m_in",
+          "def": "InterfaceACEr",
+          "excludable": true
+        },
+        {
+          "name": "aw_",
+          "type": "interface",
+          "dir": "m_out",
+          "def": "InterfaceACEaw",
+          "excludable": false
+        },
+        {
+          "name": "w_",
+          "type": "interface",
+          "dir": "m_out",
+          "def": "InterfaceACEw",
+          "excludable": true
+        },
+        {
+          "name": "b_",
+          "type": "interface",
+          "dir": "m_in",
+          "def": "InterfaceACEb",
+          "excludable": true
+        },
+        {
+          "name": "ac_",
+          "type": "interface",
+          "dir": "m_in",
+          "def": "InterfaceACEac",
+          "excludable": true
+        },
+        {
+          "name": "cr_",
+          "type": "interface",
+          "dir": "m_out",
+          "def": "InterfaceACEcr",
+          "excludable": true
+        },
+        {
+          "name": "cd_",
+          "type": "interface",
+          "dir": "m_out",
+          "def": "InterfaceACEcd",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEar",
+      "signals": [
+        {
+          "name": "domain",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "2",
+          "excludable": false
+        },
+        {
+          "name": "snoop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "4",
+          "excludable": false
+        },
+        {
+          "name": "bar",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "2",
+          "excludable": false
+        },
+        {
+          "name": "loop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wLoop",
+          "excludable": true
+        },
+        {
+          "name": "trace",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eTrace ? 1 : 0",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEr",
+      "signals": [
+        {
+          "name": "ack",
+          "type": "logic",
+          "dir": "m_in",
+          "width": "params.wAddr ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "loop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wLoop",
+          "excludable": true
+        },
+        {
+          "name": "trace",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eTrace ? 1 : 0",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEaw",
+      "signals": [
+        {
+          "name": "atop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eAtomic ? 6 : 0",
+          "excludable": true
+        },
+        {
+          "name": "stashnid",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eStash ? 11 : 0",
+          "excludable": true
+        },
+        {
+          "name": "stashniden",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eStash ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "stashlpid",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eStash ? 5 : 0",
+          "excludable": true
+        },
+        {
+          "name": "stashlpiden",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eStash ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "domain",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "2",
+          "excludable": false
+        },
+        {
+          "name": "snoop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eStash ? 4 : 3",
+          "excludable": false
+        },
+        {
+          "name": "bar",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "2",
+          "excludable": false
+        },
+        {
+          "name": "loop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wLoop",
+          "excludable": true
+        },
+        {
+          "name": "trace",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eTrace ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "unique",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eUnique ? 1 : 0",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEw",
+      "signals": [
+        {
+          "name": "ack",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wAddr ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "trace",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eTrace ? 1 : 0",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEb",
+      "signals": [
+        {
+          "name": "loop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wLoop",
+          "excludable": true
+        },
+        {
+          "name": "trace",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.eTrace ? 1 : 0",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEac",
+      "signals": [
+        {
+          "name": "ready",
+          "type": "logic",
+          "dir": "m_in",
+          "width": "params.wAddr ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "valid",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wAddr ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "addr",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wAddr",
+          "excludable": true
+        },
+        {
+          "name": "snoop",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wAddr ? 4 : 0",
+          "excludable": true
+        },
+        {
+          "name": "prot",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wAddr ? 3 : 0",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEcr",
+      "signals": [
+        {
+          "name": "ready",
+          "type": "logic",
+          "dir": "m_in",
+          "width": "params.wAddr ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "valid",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wAddr ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "resp",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wAddr ? 5 : 0",
+          "excludable": true
+        }
+      ]
+    },
+    {
+      "name": "InterfaceACEcd",
+      "signals": [
+        {
+          "name": "ready",
+          "type": "logic",
+          "dir": "m_in",
+          "width": "params.wData ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "valid",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wData ? 1 : 0",
+          "excludable": true
+        },
+        {
+          "name": "data",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wData",
+          "excludable": true
+        },
+        {
+          "name": "last",
+          "type": "logic",
+          "dir": "m_out",
+          "width": "params.wData ? 1 : 0",
+          "excludable": true
+        }
+      ]
+    }
+  ]
+}

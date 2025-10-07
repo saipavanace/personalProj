@@ -1,0 +1,1125 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Dmi CSR
+// Author: Tso-Wei Chang
+// 
+//=========================================================================
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+var CONC_RX_INTF                = u.getParam('CONC_RX_INTF');
+var apbInterface                = u.getParam('apbInterface');
+var irqInterface                = u.getParam('irqInterface');
+var ccpCsrInterface             = u.getParam('ccpCsrInterface');
+var transCsrInterface           = u.getParam('transCsrInterface');
+var ntvCsrInterface             = u.getParam('ntvCsrInterface');
+var csrFaultInterface           = u.getParam('csrFaultInterface');
+var protCsrInterface            = u.getParam('protCsrInterface');
+var rsrcCsrInterface            = u.getParam('rsrcCsrInterface');
+var unitIdInterface             = u.getParam('unitIdInterface');
+var csrAddrTransInterface       = u.getParam('csrAddrTransInterface');
+var regProtInterface            = u.getParam('regProtInterface');
+var regProtInterfaceName        = u.getParam('regProtInterfaceName');
+var regProtStyle                = u.getParam('regProtStyle');
+var traceRegInterface           = u.getParam('traceRegInterface');
+var CSR                         = u.getParam('csr');
+var useWayPartitioning          = u.getParam('useWayPartitioning');
+var nWayPartitioningRegisters   = u.getParam('nWayPartitioningRegisters');
+var useScratchpad               = u.getParam('useScratchpad');
+var wAxAddr                     = u.getParam('wAxAddr');
+var wCacheLineOffset            = u.getParam('wCacheLineOffset');
+var wAddr                       = u.getParam('wAddr');
+var wCsrAddr                    = u.getParam('wCsrAddr');
+var clkInterface                = u.getParam('clkInterface');
+var width                       = u.getParam('wData');
+var wWpId                       = u.getParam('wWpId');
+var useCmc                      = u.getParam('useCmc');
+var useAtomic                   = u.getParam('useAtomic');
+var nSets                       = useCmc? u.getParam('nSets') : 0;
+var nWays                       = useCmc? u.getParam('nWays') : 0;
+var useAddrTranslation          = u.getParam('useAddrTranslation');
+var nAddrTransRegisters         = u.getParam('nAddrTransRegisters');
+var wInitiatorId                = u.getParam('wInitiatorId');
+var wRpn                        = u.getParam('wRpn');
+var wNrri                       = u.getParam('wNrri');
+var useMemProt                  = u.getParam('useMemProt');
+var useResiliency               = u.getParam('useResiliency');
+var wNS                         = u.getParam('wNS');
+var wCWrDataIndex               = protCsrInterface.c_wr_data_mem_ce_index;
+var enableReadDataInterleaving  = u.getParam("enableReadDataInterleaving");
+var CMDOverflowBufInSRAM        =u.getParam("CMDOverflowBufInSRAM");
+var MRDOverflowBufInSRAM        = u.getParam("MRDOverflowBufInSRAM");
+if(enableReadDataInterleaving){
+var wRdBuffIndex                = transCsrInterface.rd_buffer_mem_ce_index;
+}
+var useQos                      = u.getParam('useQos');
+var pmonCsrInterface       	= u.getParam('pmonCsrInterface');
+var nPerfCounters	   	= u.getParam("nPerfCounters");
+var wEventTimeout    		= u.getParam('wEventTimeout');
+var wProtocolTimeout 		= u.getParam('wProtocolTimeout');
+var wFUnitId			= u.getParam('wFUnitId');
+if(useQos){
+var QOSTHld = u.getParam("QOSTHld");
+}
+//
+// generate csrHwPorts
+//
+var dmiCSR                      = new obj.userLib.CreateCSRObj(CSR);
+var regs                        = dmiCSR.spaceBlock[0].registers;
+var csrHwPorts                  = dmiCSR.getHWPorts();
+var regFldsIn                   = dmiCSR.getRegFldsIn();
+var regFldsOut                  = dmiCSR.getRegFldsOut();
+
+var traceRegisters		        = obj.userLib.genTraceCaptureRegisters(dmiCSR.spaceBlock[0].registers, "DMI");
+var traceCsrIfGenerator   	    = obj.userLib.createCSRInterfaceGenerator( traceRegisters );
+
+var ccpPipeOutput               = {};
+var excludeList                 = [ 'ccp_trans_active','ccp_trans_active_4clkGate','ccp_SMCISR_Tag_Init_Done', 'ccp_SMCISR_Data_Init_Done'];
+Object.keys(ccpCsrInterface).forEach(function (signal) {
+    if ( ccpCsrInterface[signal] > 0 && !excludeList.includes(signal) ) {
+        ccpPipeOutput[signal] = ccpCsrInterface[signal];
+    }
+});
+var transCsrPipeOutput          = {};
+var excludeList                 = ['csr_UEDR_ProtErrDetEn','trans_active','trans_active_4clkGate','rd_buffer_mem_uce','rd_buffer_mem_uce_index','rd_buffer_mem_ce','rd_buffer_mem_ce_index'];
+Object.keys(transCsrInterface).forEach(function (signal) {
+    if ( transCsrInterface[signal] > 0 && !excludeList.includes(signal) ) {
+        transCsrPipeOutput[signal] = transCsrInterface[signal];
+    }
+});
+
+var rsrcCsrPipeOutput          = {};
+var excludeList =  ['EvictionQoS',"useEvictionQoS","DMIAMIGR_Valid","DMIUAMIGR_AMIGS","DMIUMIFSR_A16WIFId","DMIUMIFSR_A8WIFId","DMIUMIFSR_A4WIFId","DMIUMIFSR_A2WIFId"]
+Object.keys(rsrcCsrInterface).forEach(function (signal) {
+    if (!excludeList.includes(signal)){
+        rsrcCsrPipeOutput[signal] = rsrcCsrInterface[signal];
+    }
+});
+
+var rfSwWdata = {};
+regs.forEach( function (r) {
+    r.fields.forEach( function (f) {
+        var rf        = r.name+"_"+f.name+"_"+"sw_wdata";
+        if( rf.includes("Rsvd")) {
+        } else {    rfSwWdata[rf] = f.bitWidth;
+        }
+    });
+});
+
+var rfSwWr = regs.map( r => r.name+"_sw_wr");
+Object.keys(rfSwWdata).forEach(rf => { csrHwPorts[rf] = rf; });
+rfSwWr.forEach(r => { csrHwPorts[r] = r; });
+
+    for(var reg=0; reg < CSR.spaceBlock[0].registers.length; reg++)
+        { var reg_name = CSR.spaceBlock[0].registers[reg].name ;
+          for(var field=0; field < CSR.spaceBlock[0].registers[reg].fields.length ; field++) {
+               var entry =CSR.spaceBlock[0].registers[reg].fields[field]       ;
+                     if(reg_name == "DMIUCECR" && entry.name == "ErrThreshold") {
+                         var wCErrThreshold = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUCESR" && entry.name == "ErrType") {
+                         var wCErrType = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUUESR" && entry.name == "ErrType") {
+                         var wUCErrType = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUCESR" && entry.name == "ErrInfo") {
+                         var wCErrInfo = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUUESR" && entry.name == "ErrInfo") {
+                         var wUCErrInfo = entry.bitWidth;
+                     }
+                     // this entry is removed in Ncore 3.6
+                    /* istanbul ignore if env ncore_3p6,ncore_3p7 */
+                     if(reg_name == "DMIUCELR0" && entry.name == "ErrEntry") {
+                         var wCErrEntry = entry.bitWidth;
+                     }
+                          // this entry is removed in Ncore 3.6
+                         /* istanbul ignore if env ncore_3p6,ncore_3p7 */
+                     if(reg_name == "DMIUUELR0" && entry.name == "ErrEntry") {
+                         var wUCErrEntry = entry.bitWidth;
+                     }
+                        // this entry is removed in Ncore 3.6
+                         /* istanbul ignore if env ncore_3p6,ncore_3p7 */
+                     if(reg_name == "DMIUCELR0" && entry.name == "ErrWay") {
+                         var wCErrWay = entry.bitWidth;
+                     }
+                          // this entry is removed in Ncore 3.6
+                         /* istanbul ignore if env ncore_3p6,ncore_3p7 */
+                     if(reg_name == "DMIUUELR0" && entry.name == "ErrWay") {
+                         var wUCErrWay = entry.bitWidth;
+                     }
+                                          // this entry is removed in Ncore 3.6
+                         /* istanbul ignore if env ncore_3p6,ncore_3p7 */
+                     if(reg_name == "DMIUCELR0" && entry.name == "ErrWord") {
+                         var wCErrWord = entry.bitWidth;
+                     }
+                          // this entry is removed in Ncore 3.6
+                         /* istanbul ignore if env ncore_3p6,ncore_3p7 */
+                     if(reg_name == "DMIUUELR0" && entry.name == "ErrWord") {
+                         var wUCErrWord = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUCELR1" && entry.name == "ErrAddr") {
+                         var wCErrAddr = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUUELR1" && entry.name == "ErrAddr") {
+                         var wUCErrAddr = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUCRTR" && entry.name == "ResThreshold") {
+                         var wResThreshold = entry.bitWidth;
+                     }
+                     if(reg_name == "DMIUINFOR" && entry.name == "ImplVer") {
+                        var wImplVer = entry.bitWidth;
+                    }
+                    if(reg_name == "DMIUINFOR" && entry.name == "UT") {
+                        var wUT = entry.bitWidth;
+                    }
+                    if(reg_name == "DMIUINFOR" && entry.name == "AE") {
+                        var wAE = entry.bitWidth;
+                    }
+                    if(reg_name == "DMIUINFOR" && entry.name == "SMC") {
+                        var wSMC = entry.bitWidth;
+                    }
+                    if(reg_name == "DMIUINFOR" && entry.name == "UST") {
+                        var wUST = entry.bitWidth;
+                    }
+                    if(reg_name == "MRDSBSIR" && entry.name == "SkidBufArb") {
+                        var wSkidBufArb = entry.bitWidth;
+                    }
+                    if(reg_name == "MRDSBSIR" && entry.name == "SkidBufSize") {
+                        var wSkidBufSize = entry.bitWidth;
+                    }
+                    if(reg_name == "DMIUEVIDR" && entry.name == "EngVerId") {
+                        var wEngVerId = entry.bitWidth;
+                    }
+                    if(reg_name == "DMIUCESR" && entry.name == "ErrCount") {
+                        var wErrCount = entry.bitWidth;
+                    }
+
+
+                  }
+        }
+
+
+var wCErrEntry =  20;
+var wCErrWay = 6;
+var wCErrWord =  6;
+//
+var wUCErrEntry = 20;
+var wUCErrWay = 6;
+var wUCErrWord = 6;
+//=========================================================================
+// interfacces
+//=========================================================================
+
+u.interface('',             'slave',    clkInterface);
+u.interface('apb_slv_',     'slave',    apbInterface);
+u.interface('irq_',         'master',   irqInterface);
+u.interface('',             'slave',    ccpCsrInterface,        ['csr_CECR_ErrDetEn', 'csr_UEDR_MemErrDetEn']);
+u.interface('transCtrl_',   'slave',    transCsrInterface,      ['csr_UEDR_ProtErrDetEn', 'csr_UEDR_MemErrDetEn', 'csr_CECR_ErrDetEn']);
+u.interface('protCtrl_',    'slave',    protCsrInterface,       ['csr_UEDR_TransErrDetEn', 'csr_UEDR_MemErrDetEn', 'csr_CECR_ErrDetEn']);
+u.interface('rsrcCtrl_',    'slave',    rsrcCsrInterface);
+u.interface('ntvInt_',      'slave',    ntvCsrInterface);
+u.interface('addrTrans_',   'master',   csrAddrTransInterface);
+u.interface('',             'slave',    unitIdInterface);
+u.interface('',             'master',   csrFaultInterface);
+if(useQos){
+u.interface('QOSTHld',      'master',   QOSTHld)
+}
+// Trace Registers
+obj.lib.interface(traceRegInterface.name, 'master', traceRegInterface.signals);
+//PMON
+obj.lib.interface(pmonCsrInterface.name, 'master', pmonCsrInterface.signals);
+
+
+//=========================================================================
+// ports
+//=========================================================================
+u.port('output', 'dmi_busy', 1);
+u.port('input',  'cmux_active', 1);
+u.port('output', 'csr_UEDR_TimeoutErrDetEn', 1);
+u.port('output', 'csr_UEDR_ProtErrDetEn', 1);
+u.port('output', 'csr_UEDR_TransErrDetEn', 1);
+u.port('output', 'csr_UEDR_MemErrDetEn', 1);
+u.port('output', 'csr_CECR_ErrDetEn', 1);
+u.port('input', 'dmi_en_debug_bist', 1);
+
+//sys_evt ports
+u.port('output', 'csr_protocol_timeout_value', wProtocolTimeout);
+u.port('output', 'csr_sys_evt_sender_enable', 1);
+u.port('input',  'csr_sys_evt_sender_err_vld', 1);
+u.port('input',  'csr_sys_evt_sender_err_f_unit_id', wFUnitId);
+u.port('input',  'csr_sys_evt_sender_err_protocol_sys', 1);
+u.port('input',  'csr_sys_evt_sender_err_protocol_timeout', 1);
+u.port('input',  'csr_sys_evt_sender_err_event_timeout', 1);
+
+if ( useResiliency ) {
+u.port('output', 'res_cerr_thresh', wResThreshold);
+}
+
+u.port('output', 'csr_timeout_threshold', 31);
+u.port('output', 'csr_timeout_reset',     1);
+
+u.port('input', 'tt_timeout_ue_valid', 1);
+u.port('input', 'tt_timeout_ue_addr',  wAddr);
+u.port('input', 'tt_timeout_ue_ns',    wNS); 
+u.port('input', 'tt_timeout_ue_transaction_type',    2); 
+u.port('input', 'tt_timeout_ue_id',    12); 
+
+u.port('output', 'DMIUWRDATACLN_EnClnDataWr', 1);
+
+
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Custom CSR
+//=============================================================================
+\jsend
+
+\js Object.keys(rfSwWdata).forEach(rf => {
+wire [\=rfSwWdata[rf]-1=\:0] \=rf=\;
+\js });
+\js rfSwWr.forEach(r => {
+wire \=r=\;
+\js });
+
+\jsbegin
+const pmonCsrSignalBundle	= {};  // Same as pmonCsrInterface.signals object except names have prefix pmonCsrInterface.name included
+
+for (var key in pmonCsrInterface.signals) {
+	pmonCsrSignalBundle[ pmonCsrInterface.name + key ]	= pmonCsrInterface.signals[key];
+};
+
+for (var rf in regFldsIn) {
+    if (!rf.match('DMICCTR') && !(rf in pmonCsrSignalBundle)) { \jsend
+wire [\=regFldsIn[rf]-1=\:0] \=rf=\; \jsbegin
+    }
+}
+
+for (var rf in regFldsOut) {
+    if (!rf.match('DMICCTR') && !(rf in pmonCsrSignalBundle)) {  \jsend
+wire [\=regFldsOut[rf]-1=\:0] \=rf=\; \jsbegin
+    }
+}
+
+
+//=============================================================================
+// CSR object
+//=============================================================================
+\jsend
+
+\jsbegin
+
+
+\jsend
+\js // TODO; connect this 
+wire                        csr_timeout_ref_en;
+wire                        irq_c_sig;
+wire                        irq_uc_sig;
+wire                        irq_c_q;
+wire                        irq_uc_q;
+wire                        dff_enable = 1'b1;
+wire                        corr_err_exceed_threshold;
+wire                        oneplus_corr_err;
+wire                        corr_err_vld;
+wire                        uncorr_prot_err_int;
+wire                        uncorr_timeout_err_int;
+wire                        uncorr_software_err_int; \jsbegin
+
+if (nPerfCounters) { \jsend
+wire [\=nPerfCounters-1=\:0] corr_pmon_ovf_int; \jsbegin
+}  \jsend
+
+wire [19:0] DMIUUELR0_ErrEntry_in;
+wire [5:0] DMIUUELR0_ErrWay_in;
+wire [5:0] DMIUUELR0_ErrWord_in;
+
+wire [19:0] DMIUCELR0_ErrEntry_in;
+wire [5:0] DMIUCELR0_ErrWay_in;
+wire [5:0] DMIUCELR0_ErrWord_in;
+
+
+
+
+\js if(useMemProt) {
+wire                        uncorr_mem_err_int;
+\js }
+wire                        uncorr_trans_err_int;
+wire [\=wCErrType-1=\:0]    corr_err_type;
+wire [\=wCErrInfo-1=\:0]    corr_err_info;
+wire [\=wCErrWord-1=\:0]    corr_err_word;
+wire [\=wCErrWay-1=\:0]     corr_err_way;
+wire [\=wCErrEntry-1=\:0]   corr_err_entry;
+wire [\=wCErrAddr-1=\:0]    corr_err_erraddr;
+wire                        oneplus_uncorr_err;
+wire                        uncorr_err_vld;
+wire [\=wUCErrType-1=\:0]   uncorr_err_type;
+wire [\=wUCErrInfo-1=\:0]   uncorr_err_info;
+wire [\=wUCErrWord-1=\:0]   uncorr_err_word;
+wire [\=wUCErrWay-1=\:0]    uncorr_err_way;
+wire [\=wUCErrEntry-1=\:0]  uncorr_err_entry;
+wire [\=wUCErrAddr-1=\:0]   uncorr_err_erraddr;
+\jsbegin
+if (useCmc & useAtomic){
+\jsend
+    wire                        pipe_rsrcCtrl_atm_error_qual;
+\jsbegin
+} else {
+\jsend
+    wire                        protCtrl_atomic_programming_error_qual;
+\jsbegin
+}
+\jsend
+
+wire                        protCtrl_target_id_error_qual;
+wire                        protCtrl_c_wr_data_mem_uce_qual;
+wire                        protCtrl_c_wr_data_mem_ce_qual;
+\js if (enableReadDataInterleaving){
+wire                        transCtrl_rd_buffer_mem_uce_qual;
+wire                        transCtrl_rd_buffer_mem_ce_qual;
+\js }
+
+
+\js if (CMDOverflowBufInSRAM) {
+    wire protCtrl_CmdReq_sb_mem_out_uerr_qual ;
+    wire protCtrl_CmdReq_sb_mem_out_cerr_qual ;
+\js }
+    
+\js if (MRDOverflowBufInSRAM) {
+    wire protCtrl_MrdReq_sb_mem_out_uerr_qual ;
+    wire protCtrl_MrdReq_sb_mem_out_cerr_qual ;
+\js }
+
+wire                        pipe_transCtrl_downstream_rresp_err_qual;
+wire                        pipe_transCtrl_downstream_bresp_err_qual;
+wire                        dmi_busy_4clkGate; 
+
+\jsbegin
+if(useCmc) { \jsend
+wire                        pipe_ccp__uncorrectible_error_valid_qual;
+wire                        pipe_ccp__correctible_error_valid_qual;
+\jsbegin
+} \jsend
+\=bundleFunctions.wiresFromInterface('prequal_', traceCsrIfGenerator.signalBundle('slave'), ['CCTRLR_inc_wr','CCTRLR_inc_in','CCTRLR_inc_out','CCTRLR_gain_out'], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('pipe_', ccpPipeOutput, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('pipe_transCtrl_', transCsrInterface, ['csr_UEDR_ProtErrDetEn','trans_active','trans_active_4clkGate','rd_buffer_mem_uce','rd_buffer_mem_uce_index','rd_buffer_mem_ce','rd_buffer_mem_ce_index'], obj.lib.bundle)=\
+
+\=u.instance({
+              instanceName : 'trans_ctrl_pipe_stage',
+              moduleName : 'simple_pipe_stage',
+              params : {
+                        pipeSignals: transCsrPipeOutput
+                        },
+              ports : {
+                       clk : 'clk',
+                       reset_n : 'reset_n',
+                       en : "1'b1",
+                       },
+              interfaces : [
+                            {modulePrefix: 'in_',   localPrefix: 'transCtrl_',      interface: transCsrPipeOutput},
+                            {modulePrefix: 'out_',  localPrefix: 'pipe_transCtrl_', interface: transCsrPipeOutput}
+                            ]
+              })=\
+
+\js if(useAddrTranslation) {
+    \js for(var i = 0; i < nAddrTransRegisters; i++) {
+assign addrTrans_csr_ATER_\=i=\_Valid   = DMIUATER\=i=\_Valid_out;
+assign addrTrans_csr_ATER_\=i=\_Mask    = DMIUATER\=i=\_Mask_out;
+assign addrTrans_csr_RFAR_\=i=\_FromAddr= DMIURFAR\=i=\_FromAddr_out;
+assign addrTrans_csr_RTAR_\=i=\_ToAddr  = DMIURTAR\=i=\_ToAddr_out;
+    \js }
+\js }
+
+assign corr_err_exceed_threshold = (DMIUCESR_ErrCount_out == DMIUCECR_ErrThreshold_out);
+assign DMIUCESR_ErrCount_wr = DMIUCESAR_sw_wr | (DMIUCESR_sw_wr & DMIUCESR_ErrVld_sw_wdata & DMIUCESR_ErrVld_out) | (corr_err_vld & ~corr_err_exceed_threshold & DMIUCECR_ErrDetEn_out);
+assign DMIUCESR_ErrCount_in = DMIUCESAR_sw_wr ? DMIUCESAR_ErrCount_sw_wdata : (DMIUCESR_sw_wr & DMIUCESR_ErrVld_sw_wdata) ? \=wErrCount=\'d0 : (DMIUCESR_ErrCount_out + 1'b1);
+assign DMIUCESR_ErrCountOverflow_in = DMIUCESAR_sw_wr ? DMIUCESAR_ErrCountOverflow_sw_wdata : (DMIUCESR_sw_wr & DMIUCESR_ErrVld_sw_wdata) ? 1'b0 : 1'b1;
+assign DMIUCESR_ErrCountOverflow_wr = DMIUCESAR_sw_wr | (((DMIUCESR_sw_wr & DMIUCESR_ErrVld_sw_wdata) | (corr_err_vld & ~DMIUCESR_ErrCountOverflow_out & DMIUCECR_ErrDetEn_out)) & DMIUCESR_ErrVld_out);
+
+\=bundleFunctions.wiresFromInterface('pipe_rsrcCtrl_', rsrcCsrInterface, ['EvictionQoS','useEvictionQoS',"DMIAMIGR_Valid","DMIUAMIGR_AMIGS","DMIUMIFSR_A16WIFId","DMIUMIFSR_A8WIFId","DMIUMIFSR_A4WIFId","DMIUMIFSR_A2WIFId"], obj.lib.bundle)=\
+
+
+\=u.instance({
+              instanceName : 'resource_ctrl_pipe_stage',
+              moduleName : 'simple_pipe_stage',
+              params : {
+                        pipeSignals: rsrcCsrPipeOutput
+                        },
+              ports : {
+                       clk : 'clk',
+                       reset_n : 'reset_n',
+                       en : "1'b1",
+                       },
+              interfaces : [
+                            {modulePrefix: 'in_',   localPrefix: 'rsrcCtrl_',      interface: rsrcCsrPipeOutput},
+                            {modulePrefix: 'out_',  localPrefix: 'pipe_rsrcCtrl_', interface: rsrcCsrPipeOutput}
+                            ]
+              })=\
+
+\jsbegin
+// ESR ErrVld should be updated following the priority below:
+// 1. SW writing to alias register
+// 2. SW W1C to ESR
+// 3. HW loggin error
+\jsend
+
+\js if ( useCmc ) {
+\=u.instance({
+              instanceName : 'ccp_output_pipe_stage',
+              moduleName : 'simple_pipe_stage',
+              params : {
+                        pipeSignals: ccpPipeOutput
+                        },
+              ports : {
+                       clk : 'clk',
+                       reset_n : 'reset_n',
+                       en : "1'b1",
+                       },
+              interfaces : [
+                            {modulePrefix: 'in_',   localPrefix: '',        interface: ccpPipeOutput},
+                            {modulePrefix: 'out_',  localPrefix: 'pipe_',   interface: ccpPipeOutput}
+                            ]
+              })=\
+\js } 
+
+assign DMIUCESR_ErrVld_wr   = DMIUCESAR_sw_wr | (DMIUCESR_sw_wr) | (corr_err_vld & corr_err_exceed_threshold & DMIUCECR_ErrDetEn_out);
+assign DMIUCESR_ErrType_wr  = DMIUCESAR_sw_wr | (corr_err_vld & DMIUCECR_ErrDetEn_out & ~DMIUCESR_ErrVld_out); 
+assign DMIUCESR_ErrInfo_wr  = DMIUCESAR_sw_wr | (corr_err_vld & DMIUCECR_ErrDetEn_out & ~DMIUCESR_ErrVld_out);
+
+assign DMIUUESR_ErrVld_wr   = DMIUUESAR_sw_wr | (DMIUUESR_sw_wr) | uncorr_err_vld;
+assign DMIUUESR_ErrType_wr  = DMIUUESAR_sw_wr | (uncorr_err_vld & ~DMIUUESR_ErrVld_out); 
+assign DMIUUESR_ErrInfo_wr  = DMIUUESAR_sw_wr | (uncorr_err_vld & ~DMIUUESR_ErrVld_out);
+
+assign DMIUCESR_ErrVld_in   = DMIUCESAR_sw_wr                                                   ?  DMIUCESAR_ErrVld_sw_wdata                         :
+                             (DMIUCESR_sw_wr & DMIUCESR_ErrVld_out)                             ?(~DMIUCESR_ErrVld_sw_wdata & DMIUCESR_ErrVld_out)   :
+                             (corr_err_vld & corr_err_exceed_threshold & DMIUCECR_ErrDetEn_out) ?  1'b1                                              : 
+                              DMIUCESR_ErrVld_out;
+
+assign DMIUCESR_ErrType_in  = DMIUCESAR_sw_wr                                                   ? DMIUCESAR_ErrType_sw_wdata    :
+                             (corr_err_vld & DMIUCECR_ErrDetEn_out & ~DMIUCESR_ErrVld_out)      ? corr_err_type                 : 
+                              DMIUCESR_ErrType_out;
+
+assign DMIUCESR_ErrInfo_in  = DMIUCESAR_sw_wr                                                   ? DMIUCESAR_ErrInfo_sw_wdata    :
+                             (corr_err_vld & DMIUCECR_ErrDetEn_out & ~DMIUCESR_ErrVld_out)      ? corr_err_info                 : 
+                              DMIUCESR_ErrInfo_out;
+
+assign DMIUUESR_ErrVld_in   = DMIUUESAR_sw_wr                               ?  DMIUUESAR_ErrVld_sw_wdata                        :
+                             (DMIUUESR_sw_wr & DMIUUESR_ErrVld_out)         ?(~DMIUUESR_ErrVld_sw_wdata & DMIUUESR_ErrVld_out)  :
+                              uncorr_err_vld                                ? 1'b1                                              : 
+                              DMIUUESR_ErrVld_out;
+
+assign DMIUUESR_ErrType_in  = DMIUUESAR_sw_wr                        ? DMIUUESAR_ErrType_sw_wdata    :
+                             (uncorr_err_vld & ~DMIUUESR_ErrVld_out) ? uncorr_err_type               : 
+                              DMIUUESR_ErrType_out;
+
+assign DMIUUESR_ErrInfo_in  = DMIUUESAR_sw_wr                        ? DMIUUESAR_ErrInfo_sw_wdata    :
+                             (uncorr_err_vld & ~DMIUUESR_ErrVld_out) ? uncorr_err_info               : 
+                              DMIUUESR_ErrInfo_out;
+\jsbegin
+/* istanbul ignore else env ncore_3p0, ncore_3p2,ncore_3p6,ncore_3p7*/
+    if( useCmc ) {
+\jsend
+\js // will also increment one if multiple CE happend in the same cycle
+assign corr_err_vld       = pipe_ccp__correctible_error_valid_qual | 
+                            protCtrl_c_wr_data_mem_ce_qual \= enableReadDataInterleaving ? "| transCtrl_rd_buffer_mem_ce_qual" : ""=\                              
+                            \=CMDOverflowBufInSRAM ? "| protCtrl_CmdReq_sb_mem_out_cerr_qual       ":""=\
+                            \=MRDOverflowBufInSRAM ? "| protCtrl_MrdReq_sb_mem_out_cerr_qual       ":""=\;
+assign oneplus_corr_err   = pipe_ccp__correctible_error_double_error;
+assign corr_err_type      = pipe_ccp__correctible_error_valid_qual ? \=wCErrType=\'d1 : \=wCErrType=\'d0 ;
+assign corr_err_info      = pipe_ccp__correctible_error_valid_qual ? {\=wCErrInfo-8=\'b0, pipe_ccp__correctible_error_info} : 
+                            protCtrl_c_wr_data_mem_ce_qual ? {\=wCErrInfo-2=\'b0, 2'b10} :
+                             \= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_ce_qual ? {"+(wCErrInfo-3)+"'b0, 3'b001} : ": ""=\  
+                             \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_cerr_qual ? {"+(wCErrInfo-3)+"'b0, 3'b101} : ":""=\   
+                             \=MRDOverflowBufInSRAM  ? "protCtrl_MrdReq_sb_mem_out_cerr_qual ? {"+(wCErrInfo-3)+"'b0, 3'b110} : ":""=\  
+                            \=wCErrInfo=\'d0; 
+assign corr_err_entry     = pipe_ccp__correctible_error_valid_qual ? pipe_ccp__correctible_error_entry : 
+                            protCtrl_c_wr_data_mem_ce_qual ? {\=wCErrEntry-wCWrDataIndex=\'d0, protCtrl_c_wr_data_mem_ce_index} :
+                            \= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_ce_qual ?{"+(wCErrEntry-wRdBuffIndex)+"'d0, transCtrl_rd_buffer_mem_ce_index} :" :""=\
+                            \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_cerr_qual ?"+((wCErrEntry -protCsrInterface["CmdReq_sb_mem_out_err_index"]) > 0 ?  "{"+(wCErrEntry  - protCsrInterface["CmdReq_sb_mem_out_err_index"])+"'d0,protCtrl_CmdReq_sb_mem_out_err_index }:" :   "protCtrl_CmdReq_sb_mem_out_err_index["+(wCErrEntry-1)+":0] :")  :  ""=\
+                            \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_cerr_qual ?"+ ((wCErrEntry -protCsrInterface["MrdReq_sb_mem_out_err_index"]) > 0 ? "{"+(wCErrEntry - protCsrInterface["MrdReq_sb_mem_out_err_index"])+"'d0,protCtrl_MrdReq_sb_mem_out_err_index }:" :   "protCtrl_MrdReq_sb_mem_out_err_index["+(wCErrEntry-1)+":0] :")  :  ""=\                             
+                            \=wCErrEntry+"'d0"=\;
+assign corr_err_way       = pipe_ccp__correctible_error_valid_qual ? pipe_ccp__correctible_error_way : \=wCErrWay=\'d0;
+assign corr_err_word      = pipe_ccp__correctible_error_valid_qual ? pipe_ccp__correctible_error_word : \=wCErrWord=\'d0;
+assign corr_err_erraddr   = pipe_ccp__correctible_error_valid_qual ? {\=wCErrAddr-12=\'b0 , pipe_ccp__correctible_error_addr_hi} : \=wCErrAddr=\'d0;
+
+\jsbegin
+} else { \jsend
+
+assign corr_err_vld       = protCtrl_c_wr_data_mem_ce_qual 
+                            \=enableReadDataInterleaving? "| transCtrl_rd_buffer_mem_ce_qual" : ""=\                            
+                            \=CMDOverflowBufInSRAM  ? "| protCtrl_CmdReq_sb_mem_out_cerr_qual       ":""=\
+                            \=MRDOverflowBufInSRAM ? "| protCtrl_MrdReq_sb_mem_out_cerr_qual       ":""=\;
+assign oneplus_corr_err   = 1'b0;
+assign corr_err_type      = \=wCErrType=\'d0 ;
+assign corr_err_info      = protCtrl_c_wr_data_mem_ce_qual ? {\=wCErrInfo-2=\'b0, 2'b10} : 
+                            \= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_ce_qual ? {"+(wCErrInfo-3)+"'b0, 3'b001} : ": ""=\  
+                            \= CMDOverflowBufInSRAM? "protCtrl_CmdReq_sb_mem_out_cerr_qual ? {"+(wCErrInfo-3)+"'b0, 3'b101} : ":""=\   
+                            \= MRDOverflowBufInSRAM? "protCtrl_MrdReq_sb_mem_out_cerr_qual ? {"+(wCErrInfo-3)+"'b0, 3'b110} :":""=\  
+                            \=wCErrInfo=\'d0;
+assign corr_err_entry     = protCtrl_c_wr_data_mem_ce_qual ? {\=wCErrEntry-wCWrDataIndex=\'d0, protCtrl_c_wr_data_mem_ce_index} : 
+                            \=enableReadDataInterleaving? "transCtrl_rd_buffer_mem_ce_qual ?{"+(wCErrEntry-wRdBuffIndex) +"'d0, transCtrl_rd_buffer_mem_ce_index} : " : ""=\ 
+                            \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_cerr_qual ? "+((wCErrEntry -protCsrInterface["CmdReq_sb_mem_out_err_index"]) > 0 ? "{"+(wCErrEntry - protCsrInterface["CmdReq_sb_mem_out_err_index"])+"'d0,protCtrl_CmdReq_sb_mem_out_err_index }:" :   "protCtrl_CmdReq_sb_mem_out_err_index["+(wCErrEntry-1)+":0] :")  :  ""=\
+                            \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_cerr_qual ? "+ ((wCErrEntry -protCsrInterface["MrdReq_sb_mem_out_err_index"])> 0 ? "{"+(wCErrEntry - protCsrInterface["MrdReq_sb_mem_out_err_index"])+"'d0,protCtrl_MrdReq_sb_mem_out_err_index }:" :   "protCtrl_MrdReq_sb_mem_out_err_index["+(wCErrEntry-1)+":0] :")  :  ""=\                                           
+                            \=wCErrEntry+"'d0"=\;
+
+assign corr_err_way       = \=wCErrWay=\'d0;
+assign corr_err_word      = \=wCErrWord=\'d0;
+assign corr_err_erraddr   = \=wCErrAddr=\'d0;
+\jsbegin
+} \jsend
+
+\jsbegin
+//Error detect register tied off at DMI module levels and left to gate off within CSR 
+// block. Send unqualified version of error valid to fault checker.
+
+if (useCmc & useAtomic){
+\jsend
+assign pipe_rsrcCtrl_atm_error_qual = pipe_rsrcCtrl_atm_error_valid && DMIUUEDR_SoftwareProgConfigErrDetEn_out; 
+\jsbegin
+} else {
+\jsend
+assign protCtrl_atomic_programming_error_qual = protCtrl_atomic_programming_error && DMIUUEDR_SoftwareProgConfigErrDetEn_out;
+\jsbegin  
+} 
+\jsend
+assign protCtrl_target_id_error_qual = protCtrl_target_id_error && csr_UEDR_TransErrDetEn; 
+assign protCtrl_c_wr_data_mem_uce_qual = protCtrl_c_wr_data_mem_uce && csr_UEDR_MemErrDetEn; 
+assign protCtrl_c_wr_data_mem_ce_qual = protCtrl_c_wr_data_mem_ce && csr_CECR_ErrDetEn;
+\js if(enableReadDataInterleaving){
+assign transCtrl_rd_buffer_mem_uce_qual = transCtrl_rd_buffer_mem_uce && csr_UEDR_MemErrDetEn; 
+assign transCtrl_rd_buffer_mem_ce_qual = transCtrl_rd_buffer_mem_ce && csr_CECR_ErrDetEn;
+\js }
+\js if (CMDOverflowBufInSRAM) {
+assign protCtrl_CmdReq_sb_mem_out_uerr_qual = protCtrl_CmdReq_sb_mem_out_uerr && csr_UEDR_MemErrDetEn;
+assign protCtrl_CmdReq_sb_mem_out_cerr_qual = protCtrl_CmdReq_sb_mem_out_cerr && csr_CECR_ErrDetEn;
+\js }
+
+\js if (MRDOverflowBufInSRAM) {
+    assign protCtrl_MrdReq_sb_mem_out_uerr_qual = protCtrl_MrdReq_sb_mem_out_uerr && csr_UEDR_MemErrDetEn;
+    assign protCtrl_MrdReq_sb_mem_out_cerr_qual = protCtrl_MrdReq_sb_mem_out_cerr && csr_CECR_ErrDetEn;
+\js }
+
+assign pipe_transCtrl_downstream_rresp_err_qual = pipe_transCtrl_downstream_rresp_err && csr_UEDR_ProtErrDetEn;
+assign pipe_transCtrl_downstream_bresp_err_qual = pipe_transCtrl_downstream_bresp_err && csr_UEDR_ProtErrDetEn;
+\jsbegin
+if(useCmc) { \jsend
+assign pipe_ccp__uncorrectible_error_valid_qual = pipe_ccp__uncorrectible_error_valid && csr_UEDR_MemErrDetEn; 
+assign pipe_ccp__correctible_error_valid_qual = pipe_ccp__correctible_error_valid && csr_CECR_ErrDetEn; 
+\jsbegin
+} \jsend
+assign target_id_UCE        = protCtrl_target_id_error;
+
+assign native_rd_resp_UCE   = pipe_transCtrl_downstream_rresp_err;
+assign native_wr_resp_UCE   = pipe_transCtrl_downstream_bresp_err;
+
+assign c_wr_buff_UCE        = protCtrl_c_wr_data_mem_uce;
+assign c_wr_buff_CE         = protCtrl_c_wr_data_mem_ce;
+\js if (enableReadDataInterleaving){
+assign rd_buffer_UCE        = transCtrl_rd_buffer_mem_uce;
+assign rd_buffer_CE         = transCtrl_rd_buffer_mem_ce;
+\js } else {
+assign rd_buffer_UCE        = 1'b0;
+assign rd_buffer_CE         = 1'b0; 
+\js }
+\js if(useCmc) {
+assign smc_tag_UCE          = pipe_ccp__uncorrectible_error_valid & (pipe_ccp__uncorrectible_error_info == \=ccpCsrInterface.ccp__uncorrectible_error_info=\'d0);
+assign smc_tag_CE           = pipe_ccp__correctible_error_valid   & (pipe_ccp__correctible_error_info == \=ccpCsrInterface.ccp__uncorrectible_error_info=\'d0);
+assign smc_data_UCE         = pipe_ccp__uncorrectible_error_valid & (pipe_ccp__uncorrectible_error_info == \=ccpCsrInterface.ccp__uncorrectible_error_info=\'d1);
+assign smc_data_CE          = pipe_ccp__correctible_error_valid   & (pipe_ccp__correctible_error_info == \=ccpCsrInterface.ccp__uncorrectible_error_info=\'d1);
+assign uncorr_err_vld       = pipe_ccp__uncorrectible_error_valid_qual   |
+                              pipe_transCtrl_downstream_bresp_err_qual   |
+                              pipe_transCtrl_downstream_rresp_err_qual   |
+                              protCtrl_c_wr_data_mem_uce_qual       |
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual       |":""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual      |":""=\
+                              \= enableReadDataInterleaving? "transCtrl_rd_buffer_mem_uce_qual      |" : ""=\
+                              protCtrl_target_id_error_qual         |
+                              tt_timeout_ue_valid		    | 
+                              \=(!useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\  & DMIUUEDR_SoftwareProgConfigErrDetEn_out |
+			                (csr_sys_evt_sender_err_vld & (csr_sys_evt_sender_err_protocol_timeout | csr_sys_evt_sender_err_event_timeout) & DMIUUEDR_TimeoutErrDetEn_out);
+
+assign oneplus_uncorr_err   = pipe_ccp__uncorrectible_error_double_error;
+assign uncorr_err_type      = pipe_ccp__uncorrectible_error_valid_qual   ? \=wUCErrType=\'d1 :
+                              protCtrl_c_wr_data_mem_uce_qual       ? \=wUCErrType=\'d0 :
+                              \=enableReadDataInterleaving? "transCtrl_rd_buffer_mem_uce_qual      ? " +wUCErrType+"'d0 :" :""=\
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ?" +wUCErrType+"'d0 :" :""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual?" +wUCErrType+"'d0 :" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? \=wUCErrType=\'d2 :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? \=wUCErrType=\'d3 : 
+                              protCtrl_target_id_error_qual         ? \=wUCErrType=\'d8      : 
+                              \=(!useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\   ? \=wUCErrType=\'hc       : 
+                              tt_timeout_ue_valid                  ? \=wUCErrType=\'d9      : 
+			                  csr_sys_evt_sender_err_vld ? \=wUCErrType=\'ha                 :
+                              \=wUCErrType=\'d0;
+assign uncorr_err_info      = pipe_ccp__uncorrectible_error_valid_qual   ? {\=wUCErrInfo-ccpCsrInterface.ccp__uncorrectible_error_info=\'d0, pipe_ccp__uncorrectible_error_info} :
+                              protCtrl_c_wr_data_mem_uce_qual       ? {\=wUCErrInfo-2=\'b0, 2'b10} :
+                              \= enableReadDataInterleaving? "transCtrl_rd_buffer_mem_uce_qual      ? {" +(wUCErrInfo-2)+"'b0, 2'b01} : " : ""=\
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ? {" +(wUCErrInfo-3)+"'d0, 3'b101}:" :""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual? {" +(wUCErrInfo-3)+"'d0, 3'b110}:" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? {pipe_transCtrl_downstream_waxid ,4'd0,pipe_transCtrl_downstream_evict, pipe_transCtrl_downstream_bns, pipe_transCtrl_downstream_bresp} :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? {pipe_transCtrl_downstream_raxid ,4'd0,pipe_transCtrl_downstream_fill,  pipe_transCtrl_downstream_rns, pipe_transCtrl_downstream_rresp} :
+                              protCtrl_target_id_error_qual         ? {\=wUCErrInfo-protCsrInterface.target_id_error_source_id-6=\'d0, protCtrl_target_id_error_source_id, 5'b0, 1'b0} : 
+                              \=(!useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\   ? \= wUCErrInfo=\'d0 :
+                              tt_timeout_ue_valid                  ? {tt_timeout_ue_id, \=wUCErrInfo-wNS-12-2=\'b0, tt_timeout_ue_ns, tt_timeout_ue_transaction_type} : 				
+                              csr_sys_evt_sender_err_vld & csr_sys_evt_sender_err_event_timeout ?  {\=wUCErrInfo-1=\'b0, 1'b1} :
+                            \=wUCErrInfo=\'b0  ;
+
+
+assign uncorr_err_entry     = pipe_ccp__uncorrectible_error_valid_qual   ? pipe_ccp__uncorrectible_error_entry :
+                              protCtrl_c_wr_data_mem_uce_qual       ? {\=wUCErrEntry-wCWrDataIndex=\'d0, protCtrl_c_wr_data_mem_uce_index} :
+                              \= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual      ? {"+(wUCErrEntry-wRdBuffIndex)+"'d0, transCtrl_rd_buffer_mem_uce_index} :" : ""=\
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ?"+((wUCErrEntry -protCsrInterface["CmdReq_sb_mem_out_err_index"]) > 0 ? "{"+(wUCErrEntry-protCsrInterface["CmdReq_sb_mem_out_err_index"])+"'d0,protCtrl_CmdReq_sb_mem_out_err_index }:" :   "protCtrl_CmdReq_sb_mem_out_err_index["+(wUCErrEntry-1)+":0]:")  :  ""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual?"+ ((wUCErrEntry -protCsrInterface["MrdReq_sb_mem_out_err_index"]) > 0 ? "{"+(wUCErrEntry-protCsrInterface["MrdReq_sb_mem_out_err_index"])+"'d0,protCtrl_MrdReq_sb_mem_out_err_index }:" :   "protCtrl_MrdReq_sb_mem_out_err_index["+(wUCErrEntry-1)+":0]:")  :  ""=\                             
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wUCErrEntry-1=\:0]    :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wUCErrEntry-1=\:0]    :
+                              \=(!useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\    ? \=( !useAtomic) ? "protCtrl_atomic_programming_addr["+(wUCErrEntry-1)+":0]":"pipe_rsrcCtrl_atm_error_addr["+(wUCErrEntry-1)+":0]"=\  :
+
+                              tt_timeout_ue_valid                  ? tt_timeout_ue_addr[\=wUCErrEntry-1=\:0]           : \=wUCErrEntry=\'b0;
+assign uncorr_err_way       = pipe_ccp__uncorrectible_error_valid_qual   ? pipe_ccp__uncorrectible_error_way :
+                              protCtrl_c_wr_data_mem_uce_qual       ? \=wUCErrWay=\'d0 :
+                            \=enableReadDataInterleaving ?" transCtrl_rd_buffer_mem_uce_qual      ? "+wUCErrWay+"'d0 :" :""=\
+                            \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ? "+wUCErrWay+"'d0 :" :""=\
+                            \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual? "+wUCErrWay+"'d0 :" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wUCErrEntry + wUCErrWay-1=\:\=wUCErrEntry=\]    :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wUCErrEntry + wUCErrWay-1=\:\=wUCErrEntry=\]    : 
+                              \=( !useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\    ? \=( !useAtomic) ? "protCtrl_atomic_programming_addr["+(wUCErrEntry + wUCErrWay-1)+":"+(wUCErrEntry)+"]":"pipe_rsrcCtrl_atm_error_addr["+(wUCErrEntry + wUCErrWay-1)+":"+(wUCErrEntry)+"]"=\  :
+
+                              tt_timeout_ue_valid                  ? tt_timeout_ue_addr[\=wUCErrEntry + wUCErrWay-1=\:\=wUCErrEntry=\]           : \=wUCErrWay=\'b0; 
+assign uncorr_err_word      = pipe_ccp__uncorrectible_error_valid_qual   ? pipe_ccp__uncorrectible_error_word :
+                              protCtrl_c_wr_data_mem_uce_qual       ? \=wUCErrWord=\'d0 :
+\=enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual      ? " +wUCErrWord+ "'d0 :" : ""=\
+                            \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ? "+wUCErrWord+"'d0 :" :""=\
+                            \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual? "+wUCErrWord+"'d0 :" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wUCErrEntry + wUCErrWay + wUCErrWord-1=\:\=wUCErrEntry + wUCErrWay=\] :   
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wUCErrEntry + wUCErrWay + wUCErrWord-1=\:\=wUCErrEntry + wUCErrWay=\] :
+                              \=(!useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\    ? \=( !useAtomic) ? "protCtrl_atomic_programming_addr["+(wUCErrEntry + wUCErrWay + wUCErrWord-1)+":"+(wUCErrEntry + wUCErrWay)+"]":"pipe_rsrcCtrl_atm_error_addr["+(wUCErrEntry + wUCErrWay + wUCErrWord-1)+":"+(wUCErrEntry + wUCErrWay)+"]"=\  :
+                              tt_timeout_ue_valid                  ? tt_timeout_ue_addr[\=wUCErrEntry + wUCErrWay + wUCErrWord-1=\:\=wUCErrEntry + wUCErrWay=\]        : \=wUCErrWord=\'d0;
+\jsbegin 
+    // wAddr can be 32,40,44,48. width=32(APB data width) & wUCErrAddr=20. So wAddr of 52 not possible on ncore3.2
+    /* istanbul ignore if env ncore_3p2,ncore_3p4 ,ncore_3p6,ncore_3p7*/
+    if ( wAddr == (wUCErrAddr + width) ) {
+\jsend
+assign uncorr_err_erraddr   = pipe_ccp__uncorrectible_error_valid_qual   ? {\=wUCErrAddr-12=\'b0, pipe_ccp__uncorrectible_error_addr_hi} :
+                              protCtrl_c_wr_data_mem_uce_qual       ? \=wUCErrAddr=\'d0 :
+\=enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual      ? "+wUCErrAddr+"'d0 :" : ""=\
+                                \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ? "+wUCErrAddr+"'d0 :" :""=\
+                                \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual? "+wUCErrAddr+"'d0 :" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wAddr-1=\:\=width=\] :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wAddr-1=\:\=width=\] :
+                              \=( !useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\    ? \=( !useAtomic) ? "protCtrl_atomic_programming_addr["+(wAddr-1)+":"+width+"]":"pipe_rsrcCtrl_atm_error_addr["+(wAddr-1)+":"+width+"]"=\  :
+                              tt_timeout_ue_valid                  ? tt_timeout_ue_addr[\=wAddr-1=\:\=width=\]        : \=wUCErrAddr=\'b0;
+\jsbegin     }
+else {
+    if ( wAddr > width ) {
+\jsend
+assign uncorr_err_erraddr   = pipe_ccp__uncorrectible_error_valid_qual   ? {\=wUCErrAddr-12=\'b0, pipe_ccp__uncorrectible_error_addr_hi} :
+                              protCtrl_c_wr_data_mem_uce_qual       ? \=wUCErrAddr=\'d0 :
+\=enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual      ? " + wUCErrAddr+ "'d0 :" : ""=\
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ? "+wUCErrAddr+"'d0 :" :""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual? "+wUCErrAddr+"'d0 :" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? {\=wUCErrAddr-wAddr+width=\'b0, pipe_transCtrl_downstream_baddr[\=wAddr-1=\:\=width=\]} :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? {\=wUCErrAddr-wAddr+width=\'b0, pipe_transCtrl_downstream_raddr[\=wAddr-1=\:\=width=\]} :
+                              \=(!useAtomic) ? "protCtrl_atomic_programming_error_qual":"pipe_rsrcCtrl_atm_error_qual "=\    ? \=(!useAtomic) ? "{"+(wUCErrAddr-wAddr+width)+"'b0, protCtrl_atomic_programming_addr["+(wAddr-1)+":"+width+"]}":"{"+(wUCErrAddr-wAddr+width)+"'b0, pipe_rsrcCtrl_atm_error_addr["+(wAddr-1)+":"+width+"]} "=\  :
+                              tt_timeout_ue_valid                  ? {\=wUCErrAddr-wAddr+width=\'b0, tt_timeout_ue_addr[\=wAddr-1=\:\=width=\]}        : \=wUCErrAddr=\'b0;
+\jsbegin
+    } else  { \jsend
+assign uncorr_err_erraddr = \=wUCErrAddr=\'d0;
+\jsbegin
+    }
+   } 
+\jsend
+
+\js } else { //if(useCmc)
+
+assign smc_tag_UCE          = 1'b0;
+assign smc_tag_CE           = 1'b0;
+assign smc_data_UCE         = 1'b0;
+assign smc_data_CE          = 1'b0;
+
+assign uncorr_err_vld       = pipe_transCtrl_downstream_bresp_err_qual  |
+                              pipe_transCtrl_downstream_rresp_err_qual  |
+                              protCtrl_c_wr_data_mem_uce_qual |
+                              \= enableReadDataInterleaving? "transCtrl_rd_buffer_mem_uce_qual |" : ""=\
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual | " :""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual|" : ""=\
+                              protCtrl_target_id_error_qual   |
+                              protCtrl_atomic_programming_error_qual |
+                              (csr_sys_evt_sender_err_vld & (csr_sys_evt_sender_err_protocol_timeout | csr_sys_evt_sender_err_event_timeout) & DMIUUEDR_TimeoutErrDetEn_out) |
+                              tt_timeout_ue_valid;
+
+assign oneplus_uncorr_err   = 1'b0;
+assign uncorr_err_type      = protCtrl_c_wr_data_mem_uce_qual  ? \=wUCErrType=\'d0 :
+                              \= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual ? "+wUCErrType+"'d0 :" :""=\
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ?" +wUCErrType+"'d0 :" :""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual?" +wUCErrType+"'d0 :" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? \=wUCErrType=\'d2 :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? \=wUCErrType=\'d3 : 
+                              protCtrl_target_id_error_qual    ? \=wUCErrType=\'d8 : 
+                              protCtrl_atomic_programming_error_qual ? \=wUCErrType=\'hc       : 
+                              tt_timeout_ue_valid             ? \=wUCErrType=\'d9 :
+                              csr_sys_evt_sender_err_vld ? \=wUCErrType=\'ha                 :
+                              \=wUCErrType=\'d0;
+
+
+assign uncorr_err_info      = protCtrl_c_wr_data_mem_uce_qual  ? {\=wUCErrInfo-2=\'b0, 2'b10} :
+                              \= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual ? {" +(wUCErrInfo-2) +"'b0, 2'b01} :" :""=\ 
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ? {" +(wUCErrInfo-3)+"'d0, 3'b101}:" :""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual? {" +(wUCErrInfo-3)+"'d0, 3'b110}:" :""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? {pipe_transCtrl_downstream_waxid,4'd0,pipe_transCtrl_downstream_evict, pipe_transCtrl_downstream_bns, pipe_transCtrl_downstream_bresp} :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? {pipe_transCtrl_downstream_raxid ,4'd0,pipe_transCtrl_downstream_fill,  pipe_transCtrl_downstream_rns, pipe_transCtrl_downstream_rresp} :
+                              protCtrl_target_id_error_qual    ? {\=wUCErrInfo-protCsrInterface.target_id_error_source_id-6=\'d0, protCtrl_target_id_error_source_id, 5'b0, 1'b0} : 
+                              protCtrl_atomic_programming_error_qual          ?   \=wUCErrInfo=\'d0 : 
+                              tt_timeout_ue_valid                  ? {tt_timeout_ue_id, \=wUCErrInfo-wNS-12-2=\'b0, tt_timeout_ue_ns, tt_timeout_ue_transaction_type} : 
+                              csr_sys_evt_sender_err_vld & csr_sys_evt_sender_err_event_timeout ?  {\=wUCErrInfo-1=\'b0, 1'b1} :
+                              \=wUCErrInfo=\'b0  ;
+
+assign uncorr_err_entry     = protCtrl_c_wr_data_mem_uce_qual  ? {\=wUCErrEntry-wCWrDataIndex=\'d0, protCtrl_c_wr_data_mem_uce_index} :
+                              \= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual ? {" +(wUCErrEntry-wRdBuffIndex)+"'d0, transCtrl_rd_buffer_mem_uce_index} :" :""=\
+                              \=CMDOverflowBufInSRAM ? "protCtrl_CmdReq_sb_mem_out_uerr_qual ?"+((wCErrEntry -protCsrInterface["CmdReq_sb_mem_out_err_index"]) > 0  ? "{"+(wCErrEntry -protCsrInterface["CmdReq_sb_mem_out_err_index"])+"'d0,protCtrl_CmdReq_sb_mem_out_err_index }:" :   "protCtrl_CmdReq_sb_mem_out_err_index["+(wUCErrEntry-1)+":0] :")  :  ""=\
+                              \=MRDOverflowBufInSRAM ? "protCtrl_MrdReq_sb_mem_out_uerr_qual?"+((wCErrEntry -protCsrInterface["MrdReq_sb_mem_out_err_index"]) > 0 ? "{"+(wCErrEntry - protCsrInterface["MrdReq_sb_mem_out_err_index"])+"'d0,protCtrl_MrdReq_sb_mem_out_err_index }:" :   "protCtrl_MrdReq_sb_mem_out_err_index["+(wUCErrEntry-1)+":0] :")  :  ""=\                              
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wUCErrEntry-1=\:0]    :
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wUCErrEntry-1=\:0] :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wUCErrEntry-1=\:0] :
+                              protCtrl_atomic_programming_error_qual     ? protCtrl_atomic_programming_addr[\=wUCErrEntry-1=\:0]    :
+                              tt_timeout_ue_valid             ? tt_timeout_ue_addr[\=wUCErrEntry-1=\:0]        : 
+                              \=wUCErrEntry=\'b0;
+
+assign uncorr_err_way       = protCtrl_c_wr_data_mem_uce_qual  ? \=wUCErrWay=\'d0 :
+\= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual ? " +wUCErrWay+ "'d0 :" : ""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wUCErrEntry + wUCErrWay-1=\:\=wUCErrEntry=\] :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wUCErrEntry + wUCErrWay-1=\:\=wUCErrEntry=\] :
+                              protCtrl_atomic_programming_error_qual     ? protCtrl_atomic_programming_addr[\=wUCErrEntry + wUCErrWay-1=\:\=wUCErrEntry=\]    : 
+                              tt_timeout_ue_valid             ? tt_timeout_ue_addr[\=wUCErrEntry + wUCErrWay-1=\:\=wUCErrEntry=\]        : \=wUCErrWay=\'b0;
+
+assign uncorr_err_word      = protCtrl_c_wr_data_mem_uce_qual  ? \=wUCErrWord=\'d0:
+\= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual ? " +wUCErrWord+"'d0 :" : ""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wUCErrEntry + wUCErrWay + wUCErrWord-1=\:\=wUCErrEntry + wUCErrWay=\] :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wUCErrEntry + wUCErrWay + wUCErrWord-1=\:\=wUCErrEntry + wUCErrWay=\] : 
+                              protCtrl_atomic_programming_error_qual     ? protCtrl_atomic_programming_addr[\=wUCErrEntry + wUCErrWay + wUCErrWord-1=\:\=wUCErrEntry + wUCErrWay=\] :
+                              tt_timeout_ue_valid             ? tt_timeout_ue_addr[\=wUCErrEntry + wUCErrWay + wUCErrWord-1=\:\=wUCErrEntry + wUCErrWay=\]        : \=wUCErrWord=\'b0;
+
+\jsbegin
+// wAddr can be 32,40,44,48. width=32(APB data width) & wUCErrAddr=20. So wAddr of 52 not possible on ncore3.2
+/* istanbul ignore if env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+if ( wAddr == (wUCErrAddr + width) ) {
+\jsend
+assign uncorr_err_erraddr   = protCtrl_c_wr_data_mem_uce_qual  ? \=wUCErrAddr=\'b0 :
+\= enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual ? " +wUCErrAddr+"'b0 :":""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? pipe_transCtrl_downstream_baddr[\=wAddr-1=\:\=width=\] :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? pipe_transCtrl_downstream_raddr[\=wAddr-1=\:\=width=\] :
+                              protCtrl_atomic_programming_error_qual    ?protCtrl_atomic_programming_addr[\=(wAddr-1)=\:\=width=\]  :
+                              tt_timeout_ue_valid             ? tt_timeout_ue_addr[\=wAddr-1=\:\=width=\]        : \=wUCErrAddr=\'b0;
+\jsbegin
+
+} 
+else { 
+
+    if ( wAddr > width ) {
+\jsend
+assign uncorr_err_erraddr   = protCtrl_c_wr_data_mem_uce_qual  ? \=wUCErrAddr=\'b0 :
+\=enableReadDataInterleaving ? "transCtrl_rd_buffer_mem_uce_qual ? "+wUCErrAddr+"'b0:" : ""=\
+                              pipe_transCtrl_downstream_bresp_err_qual   ? {\=wUCErrAddr-wAddr+width=\'b0, pipe_transCtrl_downstream_baddr[\=wAddr-1=\:\=width=\]} :
+                              pipe_transCtrl_downstream_rresp_err_qual   ? {\=wUCErrAddr-wAddr+width=\'b0, pipe_transCtrl_downstream_raddr[\=wAddr-1=\:\=width=\]} :
+                              protCtrl_atomic_programming_error_qual? {\=(wUCErrAddr-wAddr+width)=\'b0, protCtrl_atomic_programming_addr[\=(wAddr-1)=\:\=width=\]}  :
+                              tt_timeout_ue_valid             ? {\=wUCErrAddr-wAddr+width=\'b0, tt_timeout_ue_addr[\=wAddr-1=\:\=width=\]}        : \=wUCErrAddr=\'b0;
+\jsbegin
+    } else {
+\jsend
+assign uncorr_err_erraddr   = \=wUCErrAddr=\'b0;
+\jsbegin
+    }
+  }
+ } //end if(useSmc)
+ \jsend
+
+assign csr_timeout_threshold        = DMIUTOCR_TimeOutThreshold_out;
+assign csr_timeout_ref_en           = DMIUTOCR_TimeOutRefEn_out;
+assign csr_timeout_reset            = DMIUTOCR_sw_wr;
+
+assign csr_protocol_timeout_value  = {|{DMIUSEPTOCR_TimeOutThreshold_out}} ? ({|{DMIUSEPTOCR_TimeOutThreshold_out[30:8]}} ? {\=wProtocolTimeout=\{1'b1}} : {DMIUSEPTOCR_TimeOutThreshold_out[7:0], {12{1'b0}}}) : {\=wProtocolTimeout=\{1'b0}};
+assign csr_sys_evt_sender_enable   = ~DMIUTCR_EventDisable_out;
+ 
+
+\js if ( useQos ) {
+assign protCtrl_csr_starv_count_threshold    = DMIUQOSCR0_EventThreshold_out;
+assign rsrcCtrl_EvictionQoS    = DMIUQOSCR0_EvictionQoS_out;
+assign rsrcCtrl_useEvictionQoS   = DMIUQOSCR0_useEvictionQoS_out;
+assign QOSTHldWttQoSRsv                      = DMIUTQOSCR0_WttQoSRsv_out;
+assign QOSTHldRttQoSRsv                      = DMIUTQOSCR0_RttQoSRsv_out;
+assign QOSTHldQoSThVal                       = DMIUTQOSCR0_QoSThVal_out;
+\js }
+
+\jsbegin
+if(useScratchpad){
+\jsend
+assign rsrcCtrl_DMIAMIGR_Valid   = DMIAMIGR0_Valid_out;
+assign rsrcCtrl_DMIUAMIGR_AMIGS   = DMIAMIGR0_AMIGS_out;
+assign rsrcCtrl_DMIUMIFSR_A16WIFId   = DMIMIFSR0_MIG16AIFId_out;
+assign rsrcCtrl_DMIUMIFSR_A8WIFId   = DMIMIFSR0_MIG8AIFId_out;
+assign rsrcCtrl_DMIUMIFSR_A4WIFId   = DMIMIFSR0_MIG4AIFId_out;
+assign rsrcCtrl_DMIUMIFSR_A2WIFId   = DMIMIFSR0_MIG2AIFId_out;
+\jsbegin
+}
+\jsend
+
+assign DMIUCELR0_ErrAddr_wr         =(corr_err_vld & ~DMIUCESR_ErrVld_out);
+assign DMIUCELR1_ErrAddr_wr         =(corr_err_vld & ~DMIUCESR_ErrVld_out);
+
+assign DMIUCELR0_ErrEntry_in        = corr_err_entry;
+assign DMIUCELR0_ErrWay_in          = corr_err_way;
+assign DMIUCELR0_ErrWord_in         = corr_err_word;
+assign DMIUCELR0_ErrAddr_in         = {corr_err_word,corr_err_way,corr_err_entry};
+assign DMIUCELR1_ErrAddr_in         = corr_err_erraddr; 
+
+assign DMIUUELR0_ErrAddr_wr        =(uncorr_err_vld & ~DMIUUESR_ErrVld_out);
+assign DMIUUELR1_ErrAddr_wr         =(uncorr_err_vld & ~DMIUUESR_ErrVld_out);
+
+assign DMIUUELR0_ErrEntry_in        = uncorr_err_entry;
+assign DMIUUELR0_ErrWay_in          = uncorr_err_way;
+assign DMIUUELR0_ErrWord_in         = uncorr_err_word;     
+assign DMIUUELR0_ErrAddr_in         = {uncorr_err_word, uncorr_err_way,uncorr_err_entry};
+assign DMIUUELR1_ErrAddr_in         = uncorr_err_erraddr;
+
+\js if(useMemProt) {
+assign csr_UEDR_MemErrDetEn         = DMIUUEDR_MemErrDetEn_out;
+assign csr_CECR_ErrDetEn            = DMIUCECR_ErrDetEn_out;
+
+\js } else {
+assign csr_UEDR_MemErrDetEn         = 1'b0;
+assign csr_CECR_ErrDetEn            = 1'b0;
+\js }
+assign csr_UEDR_TransErrDetEn       = DMIUUEDR_TransErrDetEn_out;
+assign csr_UEDR_ProtErrDetEn        = DMIUUEDR_ProtErrDetEn_out;
+assign csr_UEDR_TimeoutErrDetEn     = DMIUUEDR_TimeoutErrDetEn_out;
+
+assign DMIUIDR_RPN_in               = my_csr_rpn;
+assign DMIUIDR_NRRI_in              = my_csr_nrri;
+assign DMIUIDR_NUnitId_in           = my_n_unit_id;
+assign DMIUFUIDR_FUnitId_in         = my_f_unit_id;
+assign DMIUTAR_TransActv_wr         = DMIUTAR_TransActv_in ^ DMIUTAR_TransActv_out;
+
+\js // Values are from csr cpr fiexd reset value
+assign DMIUIDR_Valid_in             = 1'd0;
+assign DMIUINFOR_ImplVer_in         = \=wImplVer=\'d0;
+assign DMIUINFOR_UT_in              = \=wUT=\'d0;
+assign DMIUINFOR_AE_in              = \=wAE=\'d0;
+assign DMIUINFOR_SMC_in             = \=wSMC=\'d0;
+assign DMIUINFOR_UST_in             = \=wUST=\'d0;
+assign DMIUINFOR_Valid_in           = 1'd0;
+assign DMIUEVIDR_EngVerId_in        = \=wEngVerId=\'d0;
+
+assign MRDSBSIR_Valid_in = 1'd0;
+assign MRDSBSIR_SkidBufArb_in = \=wSkidBufArb=\'d0;
+assign MRDSBSIR_SkidBufSize_in = \=wSkidBufSize=\'d0;
+assign CMDSBSIR_SkidBufArb_in = \=wSkidBufArb=\'d0;
+assign CMDSBSIR_SkidBufSize_in = \=wSkidBufSize=\'d0;
+assign CMDSBSIR_Valid_in = 1'd0;
+
+
+\js if(useCmc) {
+assign DMIUSMCMAR_MntOpActv_wr      = DMIUSMCMAR_MntOpActv_in    ^ DMIUSMCMAR_MntOpActv_out;
+assign DMIUSMCTAR_EvictActive_wr    = DMIUSMCTAR_EvictActive_in  ^ DMIUSMCTAR_EvictActive_out;
+assign DMIUSMCTAR_AllocActive_wr    = DMIUSMCTAR_AllocActive_in  ^ DMIUSMCTAR_AllocActive_out;
+assign DMIUSMCISR_TagInitDone_wr    = DMIUSMCISR_TagInitDone_in  ^ DMIUSMCISR_TagInitDone_out;
+assign DMIUSMCISR_DataInitDone_wr   = DMIUSMCISR_DataInitDone_in ^ DMIUSMCISR_DataInitDone_out;
+assign DMIUSMCIFR_NumSet_in         = 20'd0;
+assign DMIUSMCIFR_NumWay_in         = 6'd0;
+assign DMIUSMCIFR_WP_in             = 1'd0;
+assign DMIUSMCIFR_nWP_in            = 4'd0;
+assign DMIUSMCIFR_SP_in             = 1'd0;
+assign DMIUSMCISR_TagInitDone_in    = ccp_SMCISR_Tag_Init_Done;
+assign DMIUSMCISR_DataInitDone_in   = ccp_SMCISR_Data_Init_Done;
+assign DMIUSMCMAR_MntOpActv_in      = ccp_mntop_active | pipe_ccp_mntop_active|pipe_ccp__maint_active;
+assign DMIUSMCTAR_EvictActive_in    = pipe_transCtrl_evict_active;
+assign DMIUSMCTAR_AllocActive_in    = pipe_transCtrl_fill_active;
+assign DMIUSMCMDR_MntData_wr        = pipe_ccp__maint_read_data_en;
+assign DMIUSMCMDR_MntData_in        = pipe_ccp__maint_read_data;
+assign csr_SMCTCR_AllocEn           = DMIUSMCTCR_AllocEn_out;
+assign csr_SMCTCR_LookupEn          = DMIUSMCTCR_LookupEn_out;
+assign csr_SMCMLR0_MntSet           = DMIUSMCMLR0_MntSet_out;
+assign csr_SMCMLR0_MntWay           = DMIUSMCMLR0_MntWay_out;
+assign csr_SMCMLR0_MntWord          = DMIUSMCMLR0_MntWord_out;
+assign csr_SMCMLR1_MntAddr          = DMIUSMCMLR1_MntAddr_out;
+assign csr_SMCMLR1_MntAddrRange     = DMIUSMCMLR1_MntRange_out;
+\js // TODO: check width
+assign csr_SMCMCR_SecAttr           = DMIUSMCMCR_SecAttr_out[0];
+assign csr_SMCMCR_ArrId             = DMIUSMCMCR_ArrayID_out[0];
+assign csr_SMCMCR_MntOp             = DMIUSMCMCR_MntOp_out;
+assign csr_MntOp_init               = DMIUSMCMCR_sw_wr & ~pipe_ccp__maint_active;
+assign csr_SMCAPR_TOF_Alloc         = DMIUSMCAPR_TOFAllocDisable_out;
+assign csr_SMCAPR_ClnWr_Alloc       = DMIUSMCAPR_ClnWrAllocDisable_out;
+assign csr_SMCAPR_DtyWr_Alloc       = DMIUSMCAPR_DtyWrAllocDisable_out;
+assign csr_SMCAPR_Wr_Alloc          = DMIUSMCAPR_WrAllocDisable_out;
+assign csr_SMCAPR_Rd_Alloc          = DMIUSMCAPR_RdAllocDisable_out;
+
+\=obj.lib.dffre(width, 'csr_SMCMDR_MntData',      'DMIUSMCMDR_MntData_sw_wdata',   width+"'b0", 'DMIUSMCMDR_sw_wr',    'clk', 'reset_n')=\
+\js }
+
+assign DMIUTAR_TransActv_in         = transCtrl_trans_active  |
+                                      protCtrl_active         |
+\js if(useCmc) {
+                                      ccp_trans_active        |
+\js }
+                                      cmux_active;
+assign dmi_busy_4clkGate            = transCtrl_trans_active_4clkGate  |
+                                      protCtrl_active_4clkGate         |
+\js if(useCmc) {
+                                      ccp_trans_active_4clkGate        |
+\js }
+                                      cmux_active;
+
+assign dmi_busy                     = dmi_busy_4clkGate | apb_slv_psel;
+
+\js if (useWayPartitioning) {
+\js     for (var i = 0; i < nWayPartitioningRegisters; i++) {
+assign csr_SMCWP\=i=\_Id            = DMIUSMCWPCR0\=i=\_WpAgentId_out[\=wWpId-1=\:0];
+assign csr_SMCWP\=i=\_Way           = DMIUSMCWPCR1\=i=\_WpWayVector_out[\=nWays-1=\:0];
+assign csr_SMCWP\=i=\_Valid         = DMIUSMCWPCR0\=i=\_Valid_out;
+\js     }
+\js }
+
+\jsbegin
+    var dmi_apb_csr_params = {
+        csr                     : CSR,
+        flopAPB                 : "yes",
+        protectionStyle         : regProtStyle,
+        protectionInterface     : {"name": regProtInterfaceName, "signals": regProtInterface},
+        cfgInterface            : {"name": 'apb_slv_',           "signals": apbInterface},
+        clkInterface            : {"name": '',                   "signals": clkInterface}
+    };
+
+    var APB_CSR_INTF = [];
+    APB_CSR_INTF.push({
+        modulePrefix: '', 
+        localPrefix: '', 
+        interface: clkInterface
+    });
+
+    APB_CSR_INTF.push({
+        modulePrefix:'apb_slv_', 
+        localPrefix: 'apb_slv_', 
+        interface: apbInterface
+    });
+//fixed parameter
+/* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7*/
+if(regProtStyle != null) {
+    //fixed parameter
+    /* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if(regProtStyle.protection != "none") {
+        APB_CSR_INTF.push({
+            modulePrefix: regProtInterfaceName, 
+            localPrefix: regProtInterfaceName, 
+            interface: regProtInterface
+        });
+    }
+}    
+csrHwPorts['DMICCTRLR_ndn0Tx_out'] = 'prequal_CCTRLR_ndn0Tx_out';
+csrHwPorts['DMICCTRLR_ndn0Rx_out'] = 'prequal_CCTRLR_ndn0Rx_out';
+csrHwPorts['DMICCTRLR_ndn1Tx_out'] = 'prequal_CCTRLR_ndn1Tx_out';
+csrHwPorts['DMICCTRLR_ndn1Rx_out'] = 'prequal_CCTRLR_ndn1Rx_out';
+csrHwPorts['DMICCTRLR_ndn2Tx_out'] = 'prequal_CCTRLR_ndn2Tx_out';
+csrHwPorts['DMICCTRLR_ndn2Rx_out'] = 'prequal_CCTRLR_ndn2Rx_out';
+csrHwPorts['DMICCTRLR_dn0Tx_out'] = 'prequal_CCTRLR_dn0Tx_out';
+csrHwPorts['DMICCTRLR_dn0Rx_out'] = 'prequal_CCTRLR_dn0Rx_out';
+csrHwPorts['DMIUWRDATACLN_EnClnDataWr_out'] = 'DMIUWRDATACLN_EnClnDataWr';
+
+\jsend
+
+
+\=obj.lib.instance({
+    instanceName: 'u_dmi_apb_csr',
+    moduleName: 'apb_csr',
+    params: dmi_apb_csr_params,
+    verilogParams: {},
+    ports: csrHwPorts,
+    interfaces: APB_CSR_INTF,
+    portsDelimiter: '\n'
+})=\
+\js if ( useResiliency ) {
+assign res_cerr_thresh = DMIUCRTR_ResThreshold_out;
+\js }
+
+assign DMICCTRLR_ndn0Tx_out = prequal_CCTRLR_ndn0Tx_out && dmi_en_debug_bist;
+assign DMICCTRLR_ndn0Rx_out = prequal_CCTRLR_ndn0Rx_out && dmi_en_debug_bist;
+assign DMICCTRLR_ndn1Tx_out = prequal_CCTRLR_ndn1Tx_out && dmi_en_debug_bist;
+assign DMICCTRLR_ndn1Rx_out = prequal_CCTRLR_ndn1Rx_out && dmi_en_debug_bist;
+assign DMICCTRLR_ndn2Tx_out = prequal_CCTRLR_ndn2Tx_out && dmi_en_debug_bist;
+assign DMICCTRLR_ndn2Rx_out = prequal_CCTRLR_ndn2Rx_out && dmi_en_debug_bist;
+assign DMICCTRLR_dn0Tx_out = prequal_CCTRLR_dn0Tx_out && dmi_en_debug_bist;
+assign DMICCTRLR_dn0Rx_out = prequal_CCTRLR_dn0Rx_out && dmi_en_debug_bist;
+
+assign uncorr_prot_err_int      = DMIUUEIR_ProtErrIntEn_out     & DMIUUESR_ErrVld_out & (DMIUUESR_ErrType_out == \=wUCErrType=\'h2 | DMIUUESR_ErrType_out == \=wUCErrType=\'h3);
+\js if(useMemProt) {
+assign uncorr_mem_err_int       = DMIUUEIR_MemErrIntEn_out      & DMIUUESR_ErrVld_out & ((DMIUUESR_ErrType_out == \=wUCErrType=\'h0) | (DMIUUESR_ErrType_out == \=wUCErrType=\'h1));
+\js }
+assign uncorr_trans_err_int     = DMIUUEIR_TransErrIntEn_out    & DMIUUESR_ErrVld_out & (DMIUUESR_ErrType_out == \=wUCErrType=\'h8);
+assign uncorr_timeout_err_int   = DMIUUEIR_TimeoutErrIntEn_out  & DMIUUESR_ErrVld_out & ((DMIUUESR_ErrType_out == \=wUCErrType=\'h9) | (DMIUUESR_ErrType_out == \=wUCErrType=\'ha));
+assign uncorr_software_err_int = DMIUUEIR_SoftwareProgConfigErrIntEn_out & DMIUUESR_ErrVld_out & (DMIUUESR_ErrType_out == \=wUCErrType=\'hc);
+\jsbegin
+//=============================================================================
+// Scratchpad
+//=============================================================================
+ if(useScratchpad) {
+\jsend
+assign csr_SMCSPR_Base       =
+
+                        \jsbegin
+                                if (wAddr < 33) {
+                        \jsend
+                               DMIUSMCSPBR0_ScPadBaseAddr_out[\=wAddr-wCacheLineOffset=\:0];
+\jsbegin 
+                                } else { 
+\jsend                      
+                               {DMIUSMCSPBR1_ScPadBaseAddrHi_out[\=wAddr-width-wCacheLineOffset=\:0], DMIUSMCSPBR0_ScPadBaseAddr_out};
+\jsbegin
+ }      
+\jsend                             
+assign csr_SMCSPR_nSPWays    = DMIUSMCSPCR0_NumScPadWays_out;
+assign csr_SMCSPR_Size       = DMIUSMCSPCR1_ScPadSize_out;
+assign csr_SMCSPR_SPEnable   = DMIUSMCSPCR0_ScPadEn_out;
+\jsbegin
+}
+
+
+//=============================================================================
+// IRQ
+//=============================================================================
+for (let i = 0; i < nPerfCounters; i++){ \jsend
+assign corr_pmon_ovf_int[\=i=\] = DMICNTCR\=i=\_InterruptEn_out & DMICNTCR\=i=\_OverFlowStatus_out; \jsbegin
+}
+\jsend
+
+wire corr_pmon_int; \jsbegin
+if (nPerfCounters) { \jsend
+assign corr_pmon_int = |corr_pmon_ovf_int; \jsbegin
+} else { \jsend
+assign corr_pmon_int = 1'b0; \jsbegin
+} \jsend
+
+
+assign irq_c  = irq_c_q;
+assign irq_uc = irq_uc_q;
+
+assign irq_c_sig  = (DMIUCECR_ErrIntEn_out & DMIUCESR_ErrVld_out) | corr_pmon_int;
+assign irq_uc_sig = uncorr_prot_err_int     |
+\js if(useMemProt) {
+                    uncorr_mem_err_int      |
+\js }
+                    uncorr_trans_err_int    |
+                    uncorr_timeout_err_int |
+                    uncorr_software_err_int ;
+
+\=obj.lib.dffre(1, 'irq_c_q',  'irq_c_sig',  "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=obj.lib.dffre(1, 'irq_uc_q', 'irq_uc_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+endmodule
+

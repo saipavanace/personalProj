@@ -1,0 +1,57 @@
+//=============================================================================
+// Copyright (C) 2024 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Filename: dce_ecc_dec_err.tachl
+// Generate single bit, double bit errors based on the syndrome, data and ecc.
+//=============================================================================
+
+var u  = obj.lib;
+var utilFunctions = obj.userLib.lib_utils;
+
+//=============================================================================
+// Parameters
+//=============================================================================
+var data_width   = u.getParam('data_width');
+
+var ecc_width    = utilFunctions.getEccWidth(data_width);
+
+//=============================================================================
+// Ports
+//=============================================================================
+u.port('input', 'data',     data_width);
+u.port('input', 'ecc',      ecc_width);
+u.port('input', 'syndrome', ecc_width);
+u.port('output', 'err_sb',  1);
+u.port('output', 'err_db',  1);
+
+\jsend
+
+module \= u.getModuleName()=\ (\=u.getPorts('\n ')=\);
+
+  \=u.instance({
+     instanceName: 'u_xor_tree_err_sb',
+     moduleName:   'logic_tree',
+     params: {'width' : data_width+ecc_width,
+             'logic' : '^'},
+     ports: {
+       din : '{data,ecc}',
+       dout : 'err_sb'}
+     })=\
+
+  wire or_syndrome;
+
+  \=u.instance({
+    instanceName: 'u_or_tree_syndrome',
+    moduleName:   'logic_tree',
+    params: {'width' : ecc_width,
+            'logic' : '|'},
+    ports: {
+      din : 'syndrome',
+      dout : 'or_syndrome'}
+    })=\
+
+   assign err_db = ~err_sb & or_syndrome;
+
+endmodule

@@ -1,0 +1,112 @@
+<h2 id="Ncore3.6DMI:2024w34:08/19/24-08/24/24-Highlights:">Highlights:</h2><h2 id="Ncore3.6DMI:2024w34:08/19/24-08/24/24-Activities:">Activities:</h2><ul><li><p>3.6.4</p><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15280" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15280?src=confmacro" class="jira-issue-key">CONC-15280</a>
+                            </span>
+</p><ul><li><p>The spec in general is quite confusing to comprehend and vague to model this in DV.</p></li><li><p>After a bunch of back and forth and a lot of failed attempts. I was able to go over the initial, incoming and final states with design which gave me a clearer understanding of how to design the prediction function for it.</p></li><li><p>Bring up the new model proved to be a bit difficult due to the incoming offset based differentiation between how beats are maintained in the local model and how they are received in DTW and cache fills and how they are exported out on a read. The fact that 128 and 256 wData both had their own corner cases made it difficult. Also, there were multiple check points and expected packet generation that had to be modified.</p></li><li><p>After spending some time on trying to derive a common solution for both 128 and 256, I decided it was better to move on by separating these cases and modeling them for each. </p></li><li><p>256 had specific cases depending on which half of the cache line was being written first. Moreover, fills/atomics, write fulls behaved differently but were simpler. Write partial aka DtwMrgMrd was the one with the corner cases. There was also a need to model an internal SM to track the state of the SP line in the model because it would generate different poison outcomes depending on it.</p></li><li><p>128 had specific wrap cases(3,01,2  and 1,2,3,0) which were packing 2 beats in odd patternss depending on which arrived first. This had to be modeled to make the prediction accurate. Once this was separated from regular modeling, I was able to achieve some consistency. Although the regression numbers were &lt; 20% for -l poison. </p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15311" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15311?src=confmacro" class="jira-issue-key">CONC-15311</a>
+                            </span>
+ </p><ul><li><p>Found this RTL issue when the size of the payload is lesser than interface size but it looks like an older issue which needs a specific DV qualifier to get past.</p></li></ul></li></ul></li></ul></li><li><p>3.7 DMI Sequence Redesign: Paused</p></li></ul><h2 id="Ncore3.6DMI:2024w34:08/19/24-08/24/24-Amee:">Amee:</h2><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12284" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12284?src=confmacro" class="jira-issue-key">CONC-12284</a>
+                            </span>
+ </p><ul><li><p>Quick turnaround on root-causing why this test fails. We were able to narrow it down to the fact that it is being modeled by forces on the axi I/F and that we can’t achieve the same outcome using VIP. These tests were removed from DII as well when the VIP was integrated.</p></li></ul></li></ul>

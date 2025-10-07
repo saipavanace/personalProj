@@ -1,0 +1,804 @@
+ //=============================================================================
+// Copyright(C) 2017 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//\jsbegin
+// Rtt control
+// Author: Shilpa Sawant 
+// Module controls the RTT entries
+//=============================================================================
+//\jsend
+
+\jsbegin
+    var u = obj.lib;
+
+    var bundleFunctions  = obj.userLib.bundleFunctions;
+    var log2ceil         = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+    var wData            = u.getParam('wData');
+    var wAddr            = u.getParam('wAddr');
+    var axi_id_width     = u.getParam('axi_id_width');
+    var nWttEntries      = u.getParam('nWttEntries');
+    var wtt_num_entries  = u.getParam('nWttEntries');
+    var rtt_num_entries  = u.getParam('nRttEntries');
+    var tt_id_width      = u.getParam('tt_id_width');
+    var wMsgId           = u.getParam('wMsgId');
+    var tid_width        = u.getParam('wMsgId');
+    var init_id_width    = u.getParam('wInitiatorId'); 
+    var wInitiatorId     = u.getParam('wInitiatorId');
+    var wtt_id_width     = log2ceil(wtt_num_entries);
+    var cmd_intf_width   = u.getParam('wIntfSize');
+    var cmd_mpf1_width   = u.getParam('wMpf1');
+    var cmd_mpf2_width   = u.getParam('wMpf2');
+    var wIntfSize        = u.getParam('wIntfSize');
+    var wMpf1            = u.getParam('wMpf1');
+    var wMpf2            = u.getParam('wMpf2');
+    var wQos             = u.getParam('wQos');    
+    var wPri             = u.getParam('wPri');
+    var wQl              = u.getParam('wQl');    
+    var cmd_tof_width    = u.getParam('wTOF');
+    var wTOF             = u.getParam('wTOF');
+    var arprot_width     = u.getParam('arprot_width');
+    var arcache_width    = u.getParam('arcache_width');
+    var aruser_width     = u.getParam('aruser_width');
+    var write_req_width  = u.getParam('write_req_width');
+    var str_req_width    = u.getParam('str_req_width');
+    var TT1              = obj.lib.getParam('TT1');
+    var TTentry2         = obj.lib.getParam('TTentry2');
+    var hasUser          = u.getParam('hasUser');    
+    var wFUnitId         = u.getParam('wFUnitId');
+    var wFPortId         = obj.lib.getParam('wFPortId');
+    var wChipletId       = obj.lib.getParam('wChipletId');
+    var wLinkId          = obj.lib.getParam('wLinkId');
+\jsend
+
+
+\jsbegin
+//=============================================================================
+// ports
+//=============================================================================
+for (var i = 0; i < wtt_num_entries; i++) {
+    // CLEANUP : Interface has this as an input but its being driven out. Additionally the input isnt used for the entry
+    u.port('output', 'wtt_entry'+i+'_muxarb_valid',   1);
+    u.port('output', 'wtt_entry'+i+'_valid', 1);
+    u.port('output', 'wtt_entry'+i+'_sleep', 1);
+    u.port('output', 'wtt_entry'+i+'_data_pending', 1);    
+
+    obj.lib.interface('wtt_entry'+i+'_', 'master', obj.lib.getParam('TTentry2'), ['cmo','qos','resp_pending','clear','wr_enable','muxarb_valid','valid','sleep','narrow']);
+    obj.lib.interface('wtt_entry'+i+'_', 'master', obj.lib.getParam('TT1'), ['prot', 'tof','resp_pending','mpf2', 'lock', 'attr', 'prot', 'tof','ewa_sent','ac','vz','cmo','ex_pass']);
+ };
+    u.port('input',  'clk',                    1);
+    u.port('input',  'reset_n',                1);
+    u.port('input',  'wtt_ro_match_rd',        1);
+    u.port('input',  'wtt_ro_match_wr',        1);
+    u.port('input',  'wtt_eo_match_rd',        1);
+    u.port('input',  'wtt_eo_match_wr',        1);
+    u.port('input',  'wtt_wo_match_wr',        1);
+    u.port('input',  'wr_ro_depnd_set',        1);
+    u.port('input',  'wr_eo_depnd_set',        1);
+    u.port('input',  'wr_wo_depnd_set',        1);
+    u.port('input',  'wr_axi_depnd_set',       1);
+    u.port('input',  'wr_sleep_set',           1);
+    u.port('input',  'wr_ro_depnd_clear',      wtt_num_entries);
+    u.port('input',  'wr_eo_depnd_clear',      wtt_num_entries);
+    u.port('input',  'wr_wo_depnd_clear',      wtt_num_entries);
+    u.port('input',  'wr_axi_depnd_clear',     wtt_num_entries);
+    u.port('input',  'wr_sleep_clear',         wtt_num_entries);
+    u.port('input',  'wr_axi_depnd_id_entry',  wtt_num_entries);
+    u.port('input',  'axi_id_match_wr',        wtt_num_entries);
+    u.port('input',  'wtt_retire_entry',       wtt_num_entries);
+    u.port('input',  'wtt_new_wr_entry',       wtt_num_entries);
+    u.port('input',  'wr_ro_depnd_id_in',      tt_id_width);
+    u.port('input',  'wr_eo_depnd_id_in',      tt_id_width);
+    u.port('input',  'wr_wo_depnd_id_in',      tt_id_width);
+    u.port('input',  'wr_axi_depnd_id_in',     tt_id_width);
+    u.port('input',  'wr_axi_id_in',           axi_id_width);    
+    u.port('input',  'wtt_new_axi_id',         axi_id_width);
+    u.port('input',  'wtt_allocate_new_entry', 1);
+    u.port('input',  'rtt_allocate_new_entry', 1);
+    u.port('input',  'write_req_fifo_ready',   1);
+    u.port('input',  'str_req_fifo_ready_wr',  1);
+    u.port('input',  'init_cond',              1);
+    u.port('input',  'ro_match_wtt_id',        wtt_num_entries);
+    u.port('input',  'eo_match_wtt_id',        wtt_num_entries);
+    u.port('input',  'wo_match_wtt_id',        wtt_num_entries);
+    u.port('input',  'wtt_ewa_sent_set',       wtt_num_entries);
+    u.port('input',  'wtt_addr_ewa_match_id',  wtt_num_entries);
+    u.port('input',  'rtt_read_alloc_id' ,     tt_id_width);
+    u.port('output', 'rtt_cmo_blocked',        rtt_num_entries);
+    u.port('output', 'write_req_valid',        1);
+    u.port('output', 'write_req_data',         write_req_width);
+    u.port('output', 'wtt_valid_entries',      wtt_num_entries);
+    u.port('output', 'wtt_muxarb_grant',       wtt_num_entries);
+    u.port('output', 'wtt_grant_given',        wtt_num_entries);
+    u.port('output', 'wtt_grant_given_in',     wtt_num_entries);
+    u.port('output', 'wtt_empty',              1);
+    u.port('output', 'wtt_full',               1);
+    u.port('output', 'wtt_axi_id',             axi_id_width);
+    u.port('output', 'wtt_entry_id',           wtt_id_width);    
+    u.port('input',  'addr_match_wtt'  ,       wtt_num_entries);
+    u.port('input',  'init_id_match_wtt'    ,  wtt_num_entries);
+    u.port('output', 'str_req_fifo_valid_wr',  1);
+    u.port('output', 'str_req_fifo_data_wr' ,  str_req_width);
+    u.port('output', 'str_req_fifo_last_wr' ,  1);
+
+    u.port('output', 'wtt_eo_full', 1);
+
+    if (wChipletId > 0) {
+    u.port('input', 'my_chiplet_id',             wChipletId);
+    }
+    u.port('input', 'my_f_unit_id',              wFUnitId);
+
+    u.port('input', 'dtw_req_slv_ready' ,  1);
+    obj.lib.interface('tt_', 'slave', obj.lib.getParam('TT1'));
+    obj.lib.interface('dtw_req_slv_', 'slave', obj.lib.getParam('DTWReqInterface'), ['ready','initiator_id','rl','tm','primary','mpf1','mpf2','data','be','dwid']);
+
+\jsend
+
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+    wire                              write_request_muxarb_source_ready;
+    wire                              write_request_muxarb_source_valid;
+    wire                              write_request_muxarb_source_last;
+    wire [\=write_req_width -1=\:0]   write_request_muxarb_source_data;
+    wire [\=wtt_num_entries-1=\:0]    oldest_entry_set;
+    wire [\=wtt_num_entries-1=\:0]    oldest_entry_clear;
+    wire [\=wtt_num_entries-1=\:0]    dtw_ptr_write;
+    wire [\=wtt_num_entries -1=\:0]   wtt_data_rcvd;
+    wire [\=axi_id_width -1=\:0]      wtt_axi_id_v1;
+    wire [\=wtt_id_width -1=\:0]      wtt_entry_id_v1;    
+    reg  [\=tt_id_width-1=\:0]        write_comp_id;
+    wire [\=tid_width-1=\:0]          dtw_tid_in;
+    \jsbegin
+    // No ql for this release
+    /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */    
+    if (wQl) {
+    \jsend
+    wire [\=wQl-1=\:0]                dtw_ql_in;    
+    \js }
+    \js if (wPri) {
+    wire [\=wPri-1=\:0]               dtw_priority_in;    
+    \js }    
+    wire [\=str_req_width - 1=\:0]    str_request_muxarb_source_data;
+    wire [\=wtt_id_width -1=\:0]      last_rb_id;
+    wire [\=wtt_num_entries=\-1:0]    wtt_ro_depnd;
+    wire [\=wtt_num_entries=\-1:0]    wtt_eo_depnd;
+    wire [\=wtt_num_entries=\-1:0]    wtt_wo_depnd;
+    wire [\=wtt_num_entries=\-1:0]    wtt_dbad_in;
+    wire                              dtw_new_write;
+    wire                              wtt_retire;
+    wire                              allocate_bypassing;
+    wire                              allocate_valid;
+    wire                              write_req_last;
+    wire                              str_request_muxarb_source_ready;
+    wire                              str_request_muxarb_source_valid;
+    wire                              str_request_muxarb_source_last;
+\jsbegin
+  for (var i = 0; i < wtt_num_entries; i++) {
+\jsend
+
+    wire                              write_request_muxarb_sink\=i=\_ready;
+    wire                              write_request_muxarb_sink\=i=\_valid;
+    wire                              write_request_muxarb_sink\=i=\_last;
+    wire [\=write_req_width - 1=\:0]  write_request_muxarb_sink\=i=\_data;
+    wire [\=write_req_width - 1=\:0]  wtt_entry\=i=\_data;
+    wire                              str_request_muxarb_sink\=i=\_ready;
+    wire                              str_request_muxarb_sink\=i=\_valid;
+    wire                              str_request_muxarb_sink\=i=\_last;
+    wire [\=str_req_width - 1=\:0]    str_request_muxarb_sink\=i=\_data;
+    wire [\=str_req_width - 1=\:0]    wtt_entry\=i=\_str_data;
+    wire                              wtt_entry\=i=\_axi_depnd_in;
+    wire [\=tt_id_width=\-1:0]        wtt_entry\=i=\_cmo_halt_id;
+    wire                              wtt_entry\=i=\_cmo_halt;
+    wire                              wtt_entry\=i=\_str_sent;
+    wire                              wtt_entry\=i=\_grant;
+    wire                              wtt_entry\=i=\_str_grant;
+\jsbegin
+    }
+\jsend
+
+wire                        incoming_msg_target_mismatch;
+    \js if (wChipletId > 0) {
+assign                      incoming_msg_target_mismatch = (dtw_req_slv_target_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\] != my_f_unit_id) |
+                                                           (dtw_req_slv_target_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\] != my_chiplet_id);
+    \js } else {
+assign                      incoming_msg_target_mismatch = (dtw_req_slv_target_id != {my_f_unit_id,\=wFPortId=\'b0});
+    \js }
+
+wire                        incoming_msg_cmstatus_error;
+assign                      incoming_msg_cmstatus_error = (dtw_req_slv_cm_status[7:6] == 2'b11);
+
+wire                        dtw_req_slv_valid_mask =  dtw_req_slv_valid & !incoming_msg_cmstatus_error & !incoming_msg_target_mismatch;
+
+\jsbegin
+for (var i = 0; i < wtt_num_entries; i++) {
+\jsend
+   \=bundleFunctions.wiresFromInterface('wtt_entry'+i+'_', TT1, ['qos','tm', 'narrow','prot','tof','addr', 'ca', 'ch', 'mpf1', 'ex_pass','lock', 'ql', 'priority',  'st', 'init_id', 'ordering', 'tid', 'size', 'mpf2','ewa', 'ewa_sent','intfsize','dtw_tid','dtw_ql','dtw_priority', 'user'], obj.lib.bundle)=\
+\jsbegin
+}
+\jsend
+
+assign wtt_data_rcvd[\=wtt_num_entries -1=\:0] = (\=wtt_num_entries=\'b1  << (dtw_req_slv_rb_id[\=wtt_id_width=\-1:0]))   &  {\=wtt_num_entries=\{dtw_req_slv_valid_mask & dtw_req_slv_ready & dtw_req_slv_last}};
+assign wtt_dbad_in[\=wtt_num_entries -1=\:0] = (\=wtt_num_entries=\'b1  << (dtw_req_slv_rb_id[\=wtt_id_width=\-1:0]))   &  {\=wtt_num_entries=\{dtw_req_slv_valid_mask & dtw_req_slv_ready & dtw_req_slv_last & |dtw_req_slv_dbad}};
+
+assign dtw_new_write = (dtw_req_slv_rb_id[\=wtt_id_width-1=\:0] != last_rb_id) | init_cond;
+
+// The RB_ID coming back can never be greater than an entry in the table. 
+
+\=u.dffre(       wtt_id_width
+              , 'last_rb_id'
+	      , 'dtw_req_slv_rb_id['+wtt_id_width+'-1:0]'
+	      , '{'+wtt_id_width+'{1\'b0}}'
+	      , 'dtw_req_slv_valid_mask'
+	      , 'clk'
+	      , 'reset_n')=\
+
+assign dtw_ptr_write[\=wtt_num_entries -1=\:0]  =  (\=wtt_num_entries=\'b1  << (dtw_req_slv_rb_id[\=wtt_id_width=\-1:0]))   &  {\=wtt_num_entries=\{dtw_req_slv_valid_mask & dtw_new_write}};
+
+//always @* begin
+//        case (1'b1)
+//             for (entry=0; entry < wtt_num_entries; entry++) {
+//             (wr_axi_depnd_id_entry[\=entry=\] & ~wr_sleep_set): begin
+//                  wtt_axi_id_v1 =  wtt_entry\=entry=\_axi_id;
+//              end
+//            }
+//               default:
+//                 wtt_axi_id_v1  =  wtt_new_axi_id;
+//        endcase
+//    end
+
+\jsbegin
+var wtt_axi_id_v1_ports = {};
+var wtt_entry_id_v1_ports = {};
+
+for (i=0; i<wtt_num_entries ;i++) {
+         wtt_axi_id_v1_ports['in'+i] = "wtt_entry"+i+"_axi_id";
+         wtt_entry_id_v1_ports['in'+i] = wtt_id_width+"'d"+i;
+}
+ 
+wtt_axi_id_v1_ports['sel']   = "wr_axi_depnd_id_entry";
+wtt_axi_id_v1_ports['out']   = "wtt_axi_id_v1";
+ 
+wtt_entry_id_v1_ports['sel']   = "wr_axi_depnd_id_entry";
+wtt_entry_id_v1_ports['out']   = "wtt_entry_id_v1";
+ 
+\jsend
+    
+\=u.instance({
+        instanceName: 'u_wtt_axi_id_v1',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : wtt_num_entries,
+                        wMux             : axi_id_width
+        },
+        verilogParams: {},
+        ports: wtt_axi_id_v1_ports
+})=\
+
+\=u.instance({
+        instanceName: 'u_wtt_entry_id_v1',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : wtt_num_entries,
+                        wMux             : wtt_id_width
+        },
+        verilogParams: {},
+        ports: wtt_entry_id_v1_ports
+})=\
+
+
+assign wtt_axi_id   = wtt_axi_id_v1;
+assign wtt_entry_id = wtt_entry_id_v1;
+
+//---------------------------------------------------------
+// Indication the WTT only has a single entry left for the bypassing writes. (Non-EO) 
+//
+
+// If there is an open entry, or if an entry already has a non EO write, then the wtt isnt eo full.
+
+wire [\=wtt_num_entries=\-1:0] wtt_open_or_bypass;
+
+assign wtt_eo_full = (( 1'b0
+\js for (entry=0; entry < wtt_num_entries; entry++) {
+ + wtt_open_or_bypass[\=entry=\]
+\js }
+) == 1);
+
+\js for (entry=0; entry < wtt_num_entries; entry++) {
+assign wtt_open_or_bypass[\=entry=\] = ((wtt_entry\=entry=\_valid) ? (wtt_entry\=entry=\_ordering != 2'b11) : 1'b1);  
+\js }
+
+//---------------------------------------------------------
+// Create vector indicating which CMOs are blocked from EWA Writes
+//
+
+\js for (entry=0; entry < wtt_num_entries; entry++) {
+wire [\=rtt_num_entries=\-1:0]  halt_id_vec_mask\=entry=\ = wtt_entry\=entry=\_cmo_halt ? (\=rtt_num_entries=\'b1 << wtt_entry\=entry=\_cmo_halt_id) : \=rtt_num_entries=\'h0;
+\js }
+
+assign rtt_cmo_blocked[\=rtt_num_entries-1=\:0] = {\=rtt_num_entries=\{1'b0}}
+\js for (entry=0; entry < wtt_num_entries; entry++) {
+                        | halt_id_vec_mask\=entry=\ 
+\js }
+;
+
+//Calculationg the tt id of the completed read
+    always @* begin
+        case (1'b1)
+\js       for (var entry = 0 ; entry < wtt_num_entries ; entry++) {
+             (wtt_retire_entry[\=entry=\] ):
+                          write_comp_id =  \=tt_id_width=\'d\=entry=\;
+\js        }
+               default:
+                          write_comp_id =  \=tt_id_width=\'d0;
+        endcase
+    end
+
+assign wtt_retire = |(wtt_retire_entry);
+assign dtw_tid_in = dtw_req_slv_message_id;
+\jsbegin
+// No ql for this release
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */   
+if (wQl) {
+\jsend
+assign dtw_ql_in       = dtw_req_slv_ql;
+\js }
+\js if (wPri) {
+assign dtw_priority_in = dtw_req_slv_priority;
+\js}
+\jsbegin
+
+var instance_ports_for_wtt_entry = [];
+var wtt_entry_interfaces = [];
+var dii_num = 0
+
+for (var i = 0; i < wtt_num_entries; i++) {
+
+    wtt_entry_interfaces[dii_num] = {
+             modulePrefix : '',
+             localPrefix : 'wtt_entry'+i+'_',
+             interface : TTentry2 , exclude: ['cmo','resp_pending','clear','wr_enable','muxarb_valid']
+                        } ;
+    dii_num++
+
+    wtt_entry_interfaces[dii_num] = {
+             modulePrefix : '',
+             localPrefix : 'wtt_entry'+i+'_',
+             interface : TT1, exclude: ['resp_pending','mpf2', 'attr', 'cmo','priority']
+                        } ;
+    dii_num++
+
+\jsend
+
+\js // If there was an EO with an address match, the youngest RO has to be updated properly. The below signals are used to clear the youngest bits.
+assign wtt_ro_depnd[\=i=\] = (((wtt_ro_match_rd | wtt_ro_match_wr) & ro_match_wtt_id[\=i=\]) | ((tt_ordering == 3) & init_id_match_wtt[\=i=\] & addr_match_wtt[\=i=\]));
+assign wtt_eo_depnd[\=i=\] = (wtt_eo_match_rd | wtt_eo_match_wr) & eo_match_wtt_id[\=i=\];
+assign wtt_wo_depnd[\=i=\] =  wtt_wo_match_wr & wo_match_wtt_id[\=i=\];
+
+wire axi_depnd_sent\=i=\ = wtt_grant_given[wtt_entry\=i=\_axi_depnd_id[\=wtt_id_width-1=\:0]] & wtt_entry\=i=\_valid;
+
+\jsbegin
+var wtt_entry_ports = {
+         clk                    : 'clk',
+         reset_n                : 'reset_n',
+         wtt_entry_muxarb_valid : 'wtt_entry'+i+'_muxarb_valid',
+         ewa                    : 'wtt_entry'+i+'_ewa',
+         data_pending_out       : 'wtt_entry'+i+'_data_pending',
+         str_sent_out           : 'wtt_entry'+i+'_str_sent',
+         wtt_grant              : 'wtt_entry'+i+'_grant',
+         wtt_str_grant          : 'wtt_entry'+i+'_str_grant',
+         dtw_tid                : 'wtt_entry'+i+'_dtw_tid',
+         tof                    : 'wtt_entry'+i+'_tof',
+         tm                     : 'wtt_entry'+i+'_tm',	 	 
+         dtw_tid_in             : 'dtw_tid_in',	 
+         ordering_in            : 'tt_ordering',
+         tid_in                 : 'tt_tid',
+         init_id_in             : 'tt_init_id',
+         addr_in                : 'tt_addr',
+         size_in                : 'tt_size',
+         tof_in                 : 'tt_tof',
+         narrow_in              : 'tt_narrow',	 
+	 intfsize_in            : 'tt_intfsize',
+	 tm_in                  : 'tt_tm',
+	 st_in                  : 'tt_st',
+	 ca_in                  : 'tt_ca',
+         ac_in                  : 'tt_ac',
+         vz_in                  : 'tt_vz',
+         ch_in                  : 'tt_ch',
+         ex_pass_in             : 'tt_ex_pass',
+         mpf1_in                : 'tt_mpf1',
+         mpf2_in                : 'tt_mpf2',
+         lock_in                : 'tt_lock',
+	 cmo_in                 : 'tt_cmo',
+	 cmo_halt_set           : 'wtt_addr_ewa_match_id['+i+']',
+	 cmo_halt_id_in         : 'rtt_read_alloc_id',
+	 cmo_halt               : 'wtt_entry'+i+'_cmo_halt',
+	 cmo_halt_id            : 'wtt_entry'+i+'_cmo_halt_id',
+         data_rcvd              : 'wtt_data_rcvd['+i+']',
+         axi_id_in              : 'wr_axi_id_in',
+         wtt_allocate_new_entry : 'wtt_allocate_new_entry',
+         rtt_allocate_new_entry : 'rtt_allocate_new_entry',
+         ro_depnd_set           : 'wr_ro_depnd_set',
+         eo_depnd_set           : 'wr_eo_depnd_set',
+         wo_depnd_set           : 'wr_wo_depnd_set',
+         axi_depnd_set          : 'wr_axi_depnd_set',
+         wr_enable              : 'wtt_new_wr_entry['+i+']',
+         oldest_entry_set       : 'oldest_entry_set['+i+']',
+         sleep_set              : 'wr_sleep_set',
+         ro_depnd_clear         : 'wr_ro_depnd_clear['+i+']',
+         eo_depnd_clear         : 'wr_eo_depnd_clear['+i+']',
+         wo_depnd_clear         : 'wr_wo_depnd_clear['+i+']',
+         axi_depnd_clear        : 'wr_axi_depnd_clear['+i+']',
+         oldest_entry_clear     : 'oldest_entry_clear['+i+']',
+         sleep_clear            : 'wr_sleep_clear['+i+']',
+         valid_clear            : 'wtt_retire_entry['+i+']',
+	 ewa_sent_set           : 'wtt_ewa_sent_set['+i+']',
+         new_wtt_ro_depnd       : 'wtt_ro_depnd['+i+']',
+         new_wtt_eo_depnd       : 'wtt_eo_depnd['+i+']',
+         new_wtt_wo_depnd       : 'wtt_wo_depnd['+i+']',
+         ro_depnd_id_in         : 'wr_ro_depnd_id_in',
+         eo_depnd_id_in         : 'wr_eo_depnd_id_in',
+         wo_depnd_id_in         : 'wr_wo_depnd_id_in',
+         axi_depnd_id_in        : 'wr_axi_depnd_id_in',
+         wtt_ro_match_wr        : 'wtt_ro_match_wr',
+         wtt_eo_match_wr        : 'wtt_eo_match_wr',
+         wtt_wo_match_wr        : 'wtt_wo_match_wr',
+         axi_depnd_in           : 'wtt_entry'+i+'_axi_depnd_in',
+         wtt_grant_given        : 'wtt_grant_given['+i+']',
+         wtt_grant_given_in     : 'wtt_grant_given_in['+i+']',
+	 wtt_dbad_in            : 'wtt_dbad_in['+i+']',
+         axi_depnd_sent         : 'axi_depnd_sent'+i
+         };
+
+	 
+if(TT1.qos != undefined) {
+   wtt_entry_ports['qos_in']          = 'tt_qos';
+}
+
+// No ql for this release
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6 ,ncore_3p7*/   
+if(TT1.ql != undefined) {
+   wtt_entry_ports['ql_in']           = 'tt_ql';
+   wtt_entry_ports['dtw_ql_in']       = 'dtw_ql_in';
+   wtt_entry_ports['dtw_ql']          = 'wtt_entry'+i+'_dtw_ql';      
+}
+
+if(TT1.priority != undefined) {
+   wtt_entry_ports['dtw_priority_in'] = 'dtw_priority_in';
+   wtt_entry_ports['dtw_priority']    = 'wtt_entry'+i+'_dtw_priority';   
+   wtt_entry_ports['priority_in']     = 'tt_priority';
+   wtt_entry_ports['priority_out']    = 'wtt_entry'+i+'_priority';   
+}
+
+if (hasUser == 'Y') {
+   wtt_entry_ports['user_in'] = 'tt_user';
+}
+
+   wtt_entry_ports['prot_in'] = 'tt_prot';
+
+\jsend
+
+\=u.instance({
+        instanceName: 'wtt_entry'+i, 
+        moduleName: 'dii_wtt_entry',
+        params : {
+        wAddr           : wAddr,
+        axi_id_width    : axi_id_width,
+        wMsgId          : wMsgId,
+        wInitiatorId    : wInitiatorId,
+        nWttEntries     : nWttEntries,
+        tt_id_width     : tt_id_width,
+        wIntfSize       : wIntfSize,
+	wQos            : wQos,
+	wPri            : wPri,
+	wQl             : wQl,
+        wMpf1           : wMpf1,
+        wMpf2           : wMpf2,
+        wTOF            : wTOF,
+        arprot_width    : arprot_width,
+        arcache_width   : arcache_width,
+        aruser_width    : aruser_width,
+        TTentry2        : TTentry2,
+        TT1             : TT1,
+	wChipletId      : wChipletId,
+	wFUnitId        : wFUnitId,
+        wFPortId        : wFPortId
+		},
+        verilogParams: {},
+        ports: wtt_entry_ports,
+        interfaces : wtt_entry_interfaces,
+        portsDelimiter: '\n    '
+    })=\
+
+\jsbegin
+}
+\jsend
+
+\jsbegin
+for (var i = 0; i < wtt_num_entries; i++) { 
+\jsend
+       \js if (wData == 64) {
+       wire shift\=i=\ = 1'b0;       
+       \js } else {
+       wire shift\=i=\ = (wtt_entry\=i=\_intfsize < \=(wData/64)-1=\);
+       \js }
+       
+       reg wtt_entry\=i=\_rotate;
+       always @ (*) begin
+        case(wtt_entry\=i=\_intfsize) 
+          0: begin
+            wtt_entry\=i=\_rotate =(wtt_entry\=i=\_addr[3] \=(wData == 256) ? '| wtt_entry'+i+'_addr[4])' : ')'=\ & shift\=i=\; 
+	   end
+          1: begin
+            wtt_entry\=i=\_rotate = wtt_entry\=i=\_addr[4] & shift\=i=\; 
+          end
+          default: begin
+            wtt_entry\=i=\_rotate = 1'h0;
+           end
+          endcase
+        end
+  
+        assign wtt_valid_entries[\=i=\] = {wtt_entry\=i=\_valid};
+        assign wtt_muxarb_grant[\=i=\] =  {wtt_entry\=i=\_grant};
+        assign wtt_entry\=i=\_data = {wtt_entry\=i=\_ex_pass,
+	                              wtt_entry\=i=\_rotate,
+	                              \=wtt_id_width=\'d\=i=\,
+				      wtt_entry\=i=\_tof ,
+				      wtt_entry\=i=\_narrow ,
+				      wtt_entry\=i=\_st ,
+				      wtt_entry\=i=\_ca,
+				      wtt_entry\=i=\_ac,
+				      wtt_entry\=i=\_vz,
+				      wtt_entry\=i=\_ch,
+				      wtt_entry\=i=\_ordering,
+				      \= (hasUser == 'Y') ? 'wtt_entry'+i+'_user,' : '' =\				      
+				      wtt_entry\=i=\_lock,
+				      wtt_entry\=i=\_mpf1,
+				      \jsbegin
+				      /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+				      if (arprot_width != 0) {
+				      \jsend
+				      wtt_entry\=i=\_prot,
+				      \js } 
+				      \= (wQos != 0) ? 'wtt_entry'+i+'_qos,' : '' =\
+				      wtt_entry\=i=\_size,
+				      wtt_entry\=i=\_axi_id,
+				      wtt_entry\=i=\_addr};
+
+
+        assign wtt_entry\=i=\_str_data = {wtt_entry\=i=\_tm,
+	                                  \jsbegin
+	                                  // No ql for this release
+                                          /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */   
+	                                  if (wQl) {
+					  \jsend
+					  wtt_entry\=i=\_ql,
+					  \js }
+					  \js if (wPri) {
+					  wtt_entry\=i=\_priority,
+					  \js }
+					  \js if (wQos) {
+					  wtt_entry\=i=\_qos,
+					  \js }
+	                                  1'b1,
+					  \=tt_id_width=\'d\=i=\,
+					  wtt_entry\=i=\_init_id,
+					  wtt_entry\=i=\_tid}; //TT ID, Target ID , R-Message ID
+
+\jsbegin
+        }
+\jsend
+        assign wtt_empty = ~(|(wtt_valid_entries[\=wtt_num_entries-1=\:0]));
+        assign wtt_full =    &(wtt_valid_entries[\=wtt_num_entries-1=\:0]);
+
+\jsbegin
+for (var i = 0; i < wtt_num_entries; i++) {
+\jsend
+
+//	assign write_request_muxarb_sink\=i=\_valid = (wtt_entry\=i=\_valid & ~wtt_entry\=i=\_data_pending) & ~(wtt_entry\=i=\_ro_depnd | wtt_entry\=i=\_eo_depnd | wtt_entry\=i=\_wo_depnd | wtt_entry\=i=\_axi_depnd);
+        assign write_request_muxarb_sink\=i=\_valid = wtt_entry\=i=\_muxarb_valid;
+	assign write_request_muxarb_sink\=i=\_last  = wtt_entry\=i=\_muxarb_valid;
+	assign write_request_muxarb_sink\=i=\_data  = wtt_entry\=i=\_data;
+
+        assign wtt_entry\=i=\_grant = write_request_muxarb_sink\=i=\_ready;
+
+\jsbegin
+        }
+\jsend
+
+//Setting the oldest entry
+//The entry is set to the oldest at the time of allocation if it does not have any RO or EO dependencies or when an older entry that it is dependent on completes.
+// Below Register is need for corner case: CONC-4429 (Fixes other than this connected the read return path to the depnd_set path which broke timing.
+// - The case is when the axi dependancy is set to the entry that is being retired the same cycle the depndancy is being set.
+// - (wtt_entry\=entry=\_valid & wtt_entry\=entry=\_axi_depnd & (wtt_entry\=entry=\_axi_depnd_id == write_comp_id) & wtt_retire) only applys after the entry has been clocked in and not when its being set
+// - The fix is to remember what entry was retired. If the entry that was retired matches the axi dependancy then it is the oldest
+
+wire                       r_wtt_retire;
+wire [\=tt_id_width-1=\:0] r_write_comp_id;
+
+\=u.dffre(       1
+              , 'r_wtt_retire'
+	      , 'wtt_retire'
+	      , "1'b0"
+	      , "1'b1" 
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.dffre(       tt_id_width
+              , 'r_write_comp_id'
+	      , 'write_comp_id'
+	      , '{'+tt_id_width+'{1\'b0}}'
+	      , "1'b1" 
+	      , 'clk'
+	      , 'reset_n')=\
+
+\jsbegin
+       for (var entry = 0 ; entry < wtt_num_entries ; entry++) {
+\jsend
+
+     assign oldest_entry_set[\=entry=\] =     // Entry is oldest on AXI dependency chain
+                              (wtt_allocate_new_entry & wtt_new_wr_entry[\=entry=\] & tt_ex_pass & ~wtt_entry\=entry=\_axi_depnd_in) |
+                              (wtt_entry\=entry=\_valid & wtt_entry\=entry=\_axi_depnd & (wtt_entry\=entry=\_axi_depnd_id == write_comp_id) & wtt_retire) |
+			      (wtt_entry\=entry=\_valid & wtt_entry\=entry=\_axi_depnd & (wtt_entry\=entry=\_axi_depnd_id == r_write_comp_id) & r_wtt_retire);
+
+
+     assign oldest_entry_clear[\=entry=\] =   wtt_retire_entry[\=entry=\];
+                                             //axi_id_match_wr[\=entry=\] & wtt_entry\=entry=\_oldest  & wtt_retire;
+
+\jsbegin
+                }
+\jsend
+
+\jsbegin
+    var requestMuxarbParam = {
+        width             : write_req_width,
+        number_of_inputs  : wtt_num_entries
+    };
+    var instance_ports_for_write_request_muxarb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        source_ready        : 'write_request_muxarb_source_ready',
+        source_valid        : 'write_request_muxarb_source_valid',
+        source_last         : 'write_request_muxarb_source_last',
+        source_data         : 'write_request_muxarb_source_data'
+    };
+    for (var i = 0; i < wtt_num_entries; i++) {
+        instance_ports_for_write_request_muxarb['sink'+i+'_ready'] = 'write_request_muxarb_sink'+i+'_ready';
+        instance_ports_for_write_request_muxarb['sink'+i+'_valid'] = 'write_request_muxarb_sink'+i+'_valid';
+        instance_ports_for_write_request_muxarb['sink'+i+'_last']  = 'write_request_muxarb_sink'+i+'_last';
+        instance_ports_for_write_request_muxarb['sink'+i+'_data']  = 'write_request_muxarb_sink'+i+'_data'; 
+    }
+
+\jsend
+    \=u.instance({
+        instanceName: 'request_muxarb',
+        moduleName: 'muxarb',
+        params : requestMuxarbParam,
+        verilogParams: {},
+        ports: instance_ports_for_write_request_muxarb,
+        portsDelimiter: '\n    '
+    })=\
+
+
+//
+//assign  allocate_bypassing = allocate_bypassing = (read_req_fifo_ready & ~wtt_read_req_active & read_req_fifo_empty &  (allocate_sfipriv[6:0] != MrdFlush) & ~allocate_wr_outstanding & allocate_alloc);
+assign allocate_bypassing = 1'b0;
+assign allocate_valid = 1'b0;
+
+assign write_req_valid = allocate_bypassing ? allocate_valid : write_request_muxarb_source_valid;
+assign write_req_data = allocate_bypassing ? {\=write_req_width=\{1'b0}} : write_request_muxarb_source_data;
+
+//
+assign write_req_last = write_req_valid;
+
+assign write_request_muxarb_source_ready = write_req_fifo_ready;
+
+//MUX for STR request
+
+wire [\=wtt_num_entries=\-1:0] depnd_txn_str_sent;
+wire [\=wtt_num_entries=\-1:0] depnd_clr_vector;
+wire [\=wtt_num_entries=\-1:0] depnd_grant_vector;
+
+wire [\=wtt_num_entries=\-1:0] speculation_vector;
+wire [\=wtt_num_entries=\-1:0] speculating;
+wire [\=wtt_num_entries=\-1:0] speculation_vector_in;
+wire [2:0]                     speculation_count;
+wire                           block_speculation; 
+
+// ET:Need to clear speculation vector when all the dependencies have been granted. Once forward progress is garunteed in front of it (including data in the buffer) its not speculative
+
+\js for ( let i = 0; i < wtt_num_entries; i++) {
+   wire not_speculating_\=i=\ =  ~(wtt_entry\=i=\_ro_depnd[1]) &
+                                 ~(wtt_entry\=i=\_eo_depnd[1]) &
+                                (~(wtt_entry\=i=\_ro_depnd[0])                        | depnd_grant_vector[wtt_entry\=i=\_ro_depnd_id[\=wtt_id_width=\-1:0]])  &
+                                (~(wtt_entry\=i=\_eo_depnd[0])                        | depnd_grant_vector[wtt_entry\=i=\_eo_depnd_id[\=wtt_id_width=\-1:0]])  &
+                                (~(wtt_entry\=i=\_wo_depnd)                           | depnd_grant_vector[wtt_entry\=i=\_wo_depnd_id[\=wtt_id_width=\-1:0]])  &
+                                (~(wtt_entry\=i=\_axi_depnd)                          | depnd_grant_vector[wtt_entry\=i=\_axi_depnd_id[\=wtt_id_width=\-1:0]]);
+
+   assign speculation_vector_in[\=i=\] = (wtt_entry\=i=\_str_grant) ? speculating[\=i=\] : (speculation_vector[\=i=\] & ~(not_speculating_\=i=\));
+\js }
+
+assign speculation_count = 3'b0 
+\js for ( let i = 0; i < wtt_num_entries; i++) {
+       + {2'b0, speculation_vector[\=i=\]} 
+\js }
+;
+
+assign block_speculation = (speculation_count == 7);
+
+\=u.dffre(       wtt_num_entries
+              , 'speculation_vector'
+	      , 'speculation_vector_in'
+	      , '{'+wtt_num_entries+'{1\'b0}}'
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+
+\jsbegin
+for (var i = 0; i < wtt_num_entries; i++) {
+\jsend
+
+assign depnd_grant_vector[\=i=\] = ~wtt_entry\=i=\_valid | wtt_entry\=i=\_grant;
+
+assign depnd_clr_vector[\=i=\] = ~wtt_entry\=i=\_valid | wtt_entry\=i=\_str_sent;
+
+assign speculating[\=i=\] = ((|wtt_entry\=i=\_ro_depnd) | (|wtt_entry\=i=\_eo_depnd) | wtt_entry\=i=\_wo_depnd | wtt_entry\=i=\_axi_depnd) & depnd_txn_str_sent[\=i=\];
+
+assign depnd_txn_str_sent[\=i=\] = (~(wtt_entry\=i=\_ro_depnd[0])                        | depnd_clr_vector[wtt_entry\=i=\_ro_depnd_id[\=wtt_id_width=\-1:0]])  &
+                                   (~(wtt_entry\=i=\_eo_depnd[0])                        | depnd_clr_vector[wtt_entry\=i=\_eo_depnd_id[\=wtt_id_width=\-1:0]])  &
+				   (~(wtt_entry\=i=\_wo_depnd)                           | depnd_clr_vector[wtt_entry\=i=\_wo_depnd_id[\=wtt_id_width=\-1:0]])  &
+				   (~(wtt_entry\=i=\_axi_depnd)                          | depnd_clr_vector[wtt_entry\=i=\_axi_depnd_id[\=wtt_id_width=\-1:0]]);   
+
+//Enqueue a STR request for valid WTT entries 
+	assign str_request_muxarb_sink\=i=\_valid = wtt_entry\=i=\_valid & depnd_txn_str_sent[\=i=\] & ~wtt_entry\=i=\_str_sent & (~speculating[\=i=\] | ~block_speculation);
+	assign str_request_muxarb_sink\=i=\_last  = str_request_muxarb_sink\=i=\_valid;
+	assign str_request_muxarb_sink\=i=\_data  = wtt_entry\=i=\_str_data;
+
+	assign wtt_entry\=i=\_str_grant = str_request_muxarb_sink\=i=\_ready;
+
+\jsbegin
+        }
+\jsend
+
+	assign str_request_muxarb_source_ready = str_req_fifo_ready_wr;
+
+\jsbegin
+    var str_requestMuxarbParam = {
+        width             : str_req_width,
+        number_of_inputs  : wtt_num_entries
+    };
+    var instance_ports_for_str_request_muxarb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        source_ready        : 'str_request_muxarb_source_ready',
+        source_valid        : 'str_request_muxarb_source_valid',
+        source_last         : 'str_request_muxarb_source_last',
+        source_data         : 'str_request_muxarb_source_data'
+    };
+    for (var i = 0; i < wtt_num_entries; i++) {
+        instance_ports_for_str_request_muxarb['sink'+i+'_ready'] = 'str_request_muxarb_sink'+i+'_ready';
+        instance_ports_for_str_request_muxarb['sink'+i+'_valid'] = 'str_request_muxarb_sink'+i+'_valid';
+        instance_ports_for_str_request_muxarb['sink'+i+'_last']  = 'str_request_muxarb_sink'+i+'_last';
+        instance_ports_for_str_request_muxarb['sink'+i+'_data']  = 'str_request_muxarb_sink'+i+'_data';
+    }
+
+\jsend
+    \=u.instance({
+        instanceName: 'str_request_wr_muxarb',
+        moduleName: 'muxarb',
+        params : str_requestMuxarbParam,
+        verilogParams: {},
+        ports: instance_ports_for_str_request_muxarb,
+        portsDelimiter: '\n    '
+    })=\
+
+//
+assign str_req_fifo_valid_wr = allocate_bypassing ? allocate_valid : str_request_muxarb_source_valid;
+assign str_req_fifo_data_wr = allocate_bypassing ? {\=str_req_width=\{1'b0}} : str_request_muxarb_source_data;
+assign str_req_fifo_last_wr = str_req_fifo_valid_wr;
+
+endmodule
+ 

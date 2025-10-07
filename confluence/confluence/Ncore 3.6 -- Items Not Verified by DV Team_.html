@@ -1,0 +1,371 @@
+<ol start="1"><li><p>DV will not be able do performance verification. We will do very limited performance checking (via waveform) on limited configurations.</p></li><li><p>Any <strong>corner cases</strong> which are not identified / defined (thus far) by Architecture, Design and DV teams.</p></li><li><p>Any <strong>error scenarios</strong> which are not identified / defined (thus far) by Architecture, Design and DV teams.</p></li><li><p>For Ncore 3.6 release DV using Inhouse APB4 VIP due to license limitations on Synopsys VIP. </p></li><li><p>On the fly (in the middle of simulation) CSR changing is not verified. Details in DCE table (item 1) and DMI table (item 3).</p></li></ol><h2 id="Ncore3.6--ItemsNotVerifiedbyDVTeam:-CAIU:">CAIU :</h2><p><a class="confluence-userlink user-mention" data-account-id="624b3741ed4d6b0070161f12" href="https://arterisip.atlassian.net/wiki/people/624b3741ed4d6b0070161f12?ref=confluence" target="_blank" data-linked-resource-id="788105" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Balaji Krishnaswamy</a> &amp; <a class="confluence-userlink user-mention current-user-mention" data-account-id="624b3807a629c30068a79f50" href="https://arterisip.atlassian.net/wiki/people/624b3807a629c30068a79f50?ref=confluence" target="_blank" data-linked-resource-id="790813" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Sai Pavan Yaraguti</a> </p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="82db4329-ceff-4618-9ac5-f4f68326579f" class="confluenceTable"><colgroup><col/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item Description </strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>Interface Parity: All input signals have duplicated “_chk” signals associated with them, which are used to drive “odd parity“ bits. When wrong values are driven on the “_chk“ signals, we log an error. However, to simulate a parity mismatch, we just toggle the bits in the “_chk“ signals and, to avoid complications, we don’t introduce errors in the actual signals itself</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>I spoke to the designer, <a class="confluence-userlink user-mention" data-account-id="624b3798699649006ae98ff8" href="https://arterisip.atlassian.net/wiki/people/624b3798699649006ae98ff8?ref=confluence" target="_blank" data-linked-resource-id="756836" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Darshan Alagud</a> , and we both agree that it is a low risk when we don’t introduce error on the actual signals</p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>System Events is not going to be verified at CAIU. It will be verified at FSYS level to avoid redundant effort</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b3833258562006fa6932c" href="https://arterisip.atlassian.net/wiki/people/624b3833258562006fa6932c?ref=confluence" target="_blank" data-linked-resource-id="758716" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Abdelaziz El Hamadi</a> is going to take care of this feature at FSYS and CAIU will provide support for any scoreboard updates</p></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>FSC feature is not being verified at CAIU block level. It will be verified at FSYS level since it is easier to verify it at FSYS</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b372a45ece00069cca842" href="https://arterisip.atlassian.net/wiki/people/624b372a45ece00069cca842?ref=confluence" target="_blank" data-linked-resource-id="755141" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Urvish Panchal</a> is going to take care of this feature at FSYS and he will CAIU will provide support for any specific scenarios that can be verified only at block level</p></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p>unsupported and undefined commands verification (same as IO-AIU item 2)</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12527" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12527?src=confmacro" class="jira-issue-key">CONC-12527</a>
+                            </span>
+</p></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><p /><h2 id="Ncore3.6--ItemsNotVerifiedbyDVTeam:-IOAIU:">IOAIU :</h2><p><a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a> </p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="57bf59ea-d91c-458d-932c-09982871500f" class="confluenceTable"><colgroup><col/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item Description </strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>AXI and ACE interfaces functional coverage close using in-house VIPs (not Synopsys VIPs) due to schedule and resource (including VIP) limitations.</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Plan to move AXI and ACE Synopsys VIPs right after Ncore3.6 release when we move to new IOAIU design.</p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>ACE4 unsupported and undefined commands verification (same as CHI item 4)</p><p>and interface checker Errors</p><p>as defined in <a href="https://arterisip.atlassian.net/wiki/download/attachments/59605622/Ncore%203.6%20Error%20Architecture%20Specification_056.pdf?version=2&amp;modificationDate=1695926743819&amp;cacheVersion=1&amp;api=v2" rel="nofollow">3.6 Error Architecture Specification_056.pdf</a></p><p>1.2.3.2 Uncorrectable ErrorType and Info Table</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9235" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9235?src=confmacro" class="jira-issue-key">CONC-9235</a>
+                            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12799" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12799?src=confmacro" class="jira-issue-key">CONC-12799</a>
+                            </span>
+</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>System Events (AIU as Sender) is not going to be verified at IOAIU. It will be verified at FSYS level to avoid redundant effort</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b3833258562006fa6932c" href="https://arterisip.atlassian.net/wiki/people/624b3833258562006fa6932c?ref=confluence" target="_blank" data-linked-resource-id="758716" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Abdelaziz El Hamadi</a>  is going to take care of this feature at FSYS and IOAIU will provide support for any scoreboard updates</p></td></tr></tbody></table></div><p /><h2 id="Ncore3.6--ItemsNotVerifiedbyDVTeam:-FSYS:">FSYS :</h2><p><a class="confluence-userlink user-mention" data-account-id="624b36c3699649006ae98f71" href="https://arterisip.atlassian.net/wiki/people/624b36c3699649006ae98f71?ref=confluence" target="_blank" data-linked-resource-id="754035" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Cyrille Ludwig</a> <a class="confluence-userlink user-mention" data-account-id="624b378f699649006ae98ff1" href="https://arterisip.atlassian.net/wiki/people/624b378f699649006ae98ff1?ref=confluence" target="_blank" data-linked-resource-id="789132" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Naveen Rajagopal</a> &amp; <a class="confluence-userlink user-mention" data-account-id="624b37217a3f9e006ab52f6c" href="https://arterisip.atlassian.net/wiki/people/624b37217a3f9e006ab52f6c?ref=confluence" target="_blank" data-linked-resource-id="755289" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Neha Fotaria</a> </p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="9d323635-92cd-44e6-b3e0-2327fd0a3f99" class="confluenceTable"><colgroup><col/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item Description </strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>End to end memory consistency and cache state checking using FSYS scoreboard.</p></td><td class="confluenceTd"><p><a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-11645" rel="nofollow">CONC-11645</a></p></td><td class="confluenceTd"><p>Plan to add this in Ncore3.8.</p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>DVM on ACE-LITE with synopsys vip</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>ACE-LITE protocol (ARM IHI 0022H.c) does not allow DVM operations and Snoop channels. However, Maestro allows eAC==1 &amp; enableDvm==true. Hence, this maestro dvm extension allows ACE-LITE to receive DVM message. This has to be verified with inhouse vip at ioaiu.</p></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>Coverage excluded from 3.6 timeline: Cross between each AIU, each possible destination &amp; all possible CmdReq types. </p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13360" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13360?src=confmacro" class="jira-issue-key">CONC-13360</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p>These bins were identified and added later in the release cycle(<a class="external-link" href="https://arterisip.atlassian.net/browse/CONC-13254" rel="nofollow">CONC-13254</a>). This coverpoint needs to be added. Team doesn’t have bandwidth to close on it for 3.6 release.</p></td></tr></tbody></table></div><p /><h2 id="Ncore3.6--ItemsNotVerifiedbyDVTeam:-DCE:">DCE :</h2><p><a class="confluence-userlink user-mention" data-account-id="63751eaf00cb2fc3f985f5b9" href="https://arterisip.atlassian.net/wiki/people/63751eaf00cb2fc3f985f5b9?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Yokesh Ramasamy (Deactivated)</a> </p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="5675536f-1a5d-4231-85f5-bb0a4f7aa247" class="confluenceTable"><colgroup><col/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item Description </strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>Mid-sim CSR value changes have not been verified extensively and not planned for 3.6. For now, only error status registers are being read mid-sim</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12642" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12642?src=confmacro" class="jira-issue-key">CONC-12642</a>
+                            </span>
+ </p><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>PLRU checks will be disabled upon first mismatch when there is a victim buffer in the configuration as victim buffer model is not cycle accurate. However, we have regression where the PLRU checks are on completely for configs with no victim buffer and they are clean</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13011" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13011?src=confmacro" class="jira-issue-key">CONC-13011</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>When the victim buffer was removed in one of the configs, the DCE scoreboard prediction on the update command status was wrong as the prediction is not cycle accurate which causes issue with predicting the pipelined design</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13075" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13075?src=confmacro" class="jira-issue-key">CONC-13075</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p>DMI Not connected error generation<br/>This is difficult to verify as this is only supported for recall commands and when the address map doesn't point to the configured DMIs.</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><h2 id="Ncore3.6--ItemsNotVerifiedbyDVTeam:-DII:">DII :</h2><p><a class="confluence-userlink user-mention" data-account-id="624b376a1da0e100713c9ab3" href="https://arterisip.atlassian.net/wiki/people/624b376a1da0e100713c9ab3?ref=confluence" target="_blank" data-linked-resource-id="788461" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Zied Tlili</a> </p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="c330b67e-5f51-467c-aa51-8e09dbf0cdfa" class="confluenceTable"><colgroup><col/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item Description </strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>The verification of the FSC feature does not take place at the DII block level; instead, it will be conducted at the FSYS level due to the greater ease of verification in that context.</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><p /><h2 id="Ncore3.6--ItemsNotVerifiedbyDVTeam:-DMI:">DMI :</h2><p><a class="confluence-userlink user-mention" data-account-id="6377ef4c3e79f12e572009c2" href="https://arterisip.atlassian.net/wiki/people/6377ef4c3e79f12e572009c2?ref=confluence" target="_blank" data-linked-resource-id="90865694" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Vikram Sundaram</a> </p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="b03074c5-7c13-4d69-abbd-9d63bd96f5e6" class="confluenceTable"><colgroup><col/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item Description </strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p>Unable to port Performance Counter tests to Synopsys VIP</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12284" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12284?src=confmacro" class="jira-issue-key">CONC-12284</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p>The ROI for time spent on figuring out how to copy over AXI modeling to VIP responses is not justifiable and not the highest priority. This is already well modeled and tested using the inhouse AXI VIP</p></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p>Timeout Error tests requiring very specific delay modeling in Synopsys VIP</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12282" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12282?src=confmacro" class="jira-issue-key">CONC-12282</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p>Similar to the issue above, although some tests have been ported the inhouse AXI has been tailored specifically for these tests and they are difficult to port over to VIP. This is on the back burner considering the inhouse AXI functions well to test this feature.</p></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p>Register programming for passing clean write data downstream to AXI should be performed initially. Cannot validate on the fly programming.</p></td><td class="confluenceTd"><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12515" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12515?src=confmacro" class="jira-issue-key">CONC-12515</a>
+                            </span>
+ </p></td><td class="confluenceTd"><p>Difficult to distinguish which transaction is pending in DV if register is programmed on the fly. Will validate programming on initialization/boot.</p></td></tr><tr><td class="numberingColumn confluenceTd">4</td><td class="confluenceTd"><p>PLRU Integrated not functionally checked</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>PLRU policy is integrated and being used by some configurations in DMI but there is no model to check the functionality of it. The same algorithm is checked at DCE/IOAIU</p></td></tr></tbody></table></div><p /><h2 id="Ncore3.6--ItemsNotVerifiedbyDVTeam:-DVE:">DVE :</h2><p><a class="confluence-userlink user-mention" data-account-id="624b36eb45ece00069cca831" href="https://arterisip.atlassian.net/wiki/people/624b36eb45ece00069cca831?ref=confluence" target="_blank" data-linked-resource-id="786785" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Kavish Shah</a> </p><div class="table-wrap"><table data-table-width="1800" data-layout="default" data-local-id="3074cb12-361d-40aa-bcc7-d23ad49bded4" class="confluenceTable"><colgroup><col/></colgroup><tbody><tr><th class="numberingColumn confluenceTh" /><th class="confluenceTh"><p><strong>Item Description </strong></p></th><th class="confluenceTh"><p><strong>Jira (if any)</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="numberingColumn confluenceTd">1</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">2</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="numberingColumn confluenceTd">3</td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><p />

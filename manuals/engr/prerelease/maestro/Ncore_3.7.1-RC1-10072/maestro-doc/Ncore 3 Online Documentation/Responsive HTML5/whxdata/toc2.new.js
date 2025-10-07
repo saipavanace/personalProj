@@ -1,0 +1,4 @@
+(function() {
+var toc =  [{"name":"Maestro Feature Set","type":"item","url":"Ncore_3_Online_Documentation/Get_Started/Getting_Started/Maestro_Feature_Set.htm#963664"},{"name":"Maestro System Requirements","type":"item","url":"Ncore_3_Online_Documentation/Get_Started/Getting_Started/Maestro_System_Requirements.htm#970235"},{"key":"toc3","name":"Obtaining Maestro","type":"book","url":"Ncore_3_Online_Documentation/Get_Started/Getting_Started/Obtaining_Maestro.htm#982452"},{"name":"Installing Maestro","type":"item","url":"Ncore_3_Online_Documentation/Get_Started/Getting_Started/Installing_Maestro.htm#962709"},{"key":"toc4","name":"Installation Path","type":"book","url":"Ncore_3_Online_Documentation/Get_Started/Getting_Started/Installing_Maestro.htm#964309bc-1"}];
+window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
+})();

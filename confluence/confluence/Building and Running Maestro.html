@@ -1,0 +1,133 @@
+<style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759723399480 {padding: 0px;}
+div.rbtoc1759723399480 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759723399480 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759723399480'>
+<ul class='toc-indentation'>
+<li><a href='#BuildingandRunningMaestro-UploadingGitLabSSHKeys'>Uploading GitLab SSH Keys</a></li>
+<li><a href='#BuildingandRunningMaestro-GettingMaestroCode'>Getting Maestro Code</a></li>
+<li><a href='#BuildingandRunningMaestro-InstallingGitdependencies'>Installing Git dependencies</a></li>
+<li><a href='#BuildingandRunningMaestro-BuildingMaestro'>Building Maestro</a>
+<ul class='toc-indentation'>
+<li><a href='#BuildingandRunningMaestro-ccache'>ccache</a></li>
+<li><a href='#BuildingandRunningMaestro-Pre-buildEnvironmentConfiguration'>Pre-build Environment Configuration</a>
+<ul class='toc-indentation'>
+<li><a href='#BuildingandRunningMaestro-ChoosingTool-chaingcc'>Choosing Tool-chain gcc</a></li>
+<li><a href='#BuildingandRunningMaestro-ChoosingTool-chainclangandllvm'>Choosing Tool-chain clang and llvm</a></li>
+</ul>
+</li>
+<li><a href='#BuildingandRunningMaestro-MaestroBuild'>Maestro Build</a></li>
+<li><a href='#BuildingandRunningMaestro-BuildMaestrowithdynamiclinking'>Build Maestro with dynamic linking</a></li>
+<li><a href='#BuildingandRunningMaestro-SupportedBuildHosts'>Supported Build Hosts</a></li>
+<li><a href='#BuildingandRunningMaestro-Troubleshooting'>Troubleshooting</a></li>
+</ul>
+</li>
+<li><a href='#BuildingandRunningMaestro-RunningMaestro'>Running Maestro</a>
+<ul class='toc-indentation'>
+<li><a href='#BuildingandRunningMaestro-License'>License</a></li>
+<li><a href='#BuildingandRunningMaestro-RunningMaestro.1'>Running Maestro</a></li>
+</ul>
+</li>
+<li><a href='#BuildingandRunningMaestro-MaestroUnitTests'>Maestro Unit Tests</a></li>
+<li><a href='#BuildingandRunningMaestro-MaestroLocalInstallation'>Maestro Local Installation</a></li>
+</ul>
+</div><h1 id="BuildingandRunningMaestro-UploadingGitLabSSHKeys">Uploading GitLab SSH Keys</h1><p>Maestro is hosted as a git repository on the Arteris GitLab server. In order to get it, please create and upload ssh keys for your machine (both remote and and local VM). Instructions can be found here: <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16167950/Generating+and+Uploading+Gitlab+SSH+Keys" data-linked-resource-id="16167950" data-linked-resource-version="4" data-linked-resource-type="page">Generating and Uploading Gitlab SSH Keys</a></p><h1 id="BuildingandRunningMaestro-GettingMaestroCode">Getting Maestro Code</h1><p>When working on the Arteris server, please use /scratch/username/ directory for code and build.</p><p>When working on the VM (virtual machine) use any directory you like.</p><p>Change to the appropriate directory and clone Maestro repository:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ git clone git@gitlab.arteris.com:maestro/maestro.git</pre>
+</div></div><h1 id="BuildingandRunningMaestro-InstallingGitdependencies">Installing Git dependencies</h1><p>DeepDiff python 3 package is required</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">(may be sudo) pip3 install deepdiff</pre>
+</div></div><p>if there is trouble about version, you can force installation using:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">pip3 install --force-reinstall -v &quot;deepdiff==4.2.0&quot;</pre>
+</div></div><h1 id="BuildingandRunningMaestro-BuildingMaestro">Building Maestro</h1><h2 id="BuildingandRunningMaestro-ccache">ccache</h2><p><code>ccache</code> is a tool that stores compiled files in the cache and uses them if the original source files weren't changed. The details can be found on the website <a class="external-link" href="https://ccache.dev/" rel="nofollow">https://ccache.dev/</a>.</p><p><code>ccahe</code> usage is optional but highly recommended.</p><p>If you develop on the gr6-3 server you already use <code>ccache</code>.</p><p>To install and configure <code>ccache</code> on your local VM follow the instructions below.</p><ol start="1"><li><p>Install ccache:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ sudo yum install ccache</pre>
+</div></div></li><li><p>Make sure that path to the compiler is updated:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ which g++</pre>
+</div></div><p>The output should be:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">/usr/lib64/ccache/g++</pre>
+</div></div><p>If you still have <code>/usr/bin/g++</code> try to re-login or reboot.</p></li><li><p>Populate the cache by building maestro from scratch. Go to Maestro directory and do the following:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ ccache -C  # clean cache
+$ make clobber  # to clean up all build files (you can also explicitly remove a build directory, e.g. `rm -rf build_debug`
+$ make build_debug  # or any other build type</pre>
+</div></div></li><li><p>After build is done, check that the cache is populated:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ccache -s</pre>
+</div></div><p>The cache size should be about 3.5 Gb.</p></li></ol><p>Now project recompilation should be faster.</p><p>If you are using Qt creator to build maestro and want to use <code>ccache</code> tool you need to update your kit configuration in Qt Creator in order to use proper compiler. This is done by setting <strong>Preferences-&gt;Kits-&gt;name_of_your_kit-&gt;GCC (G++)</strong> to<strong> /usr/lib64/ccache/gcc</strong> and <strong>g++</strong> respectively.</p><div class="confluence-information-macro confluence-information-macro-warning"><span class="aui-icon aui-icon-small aui-iconfont-error confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>ccache has not been tested yet with devtoolkit8.</p></div></div><h2 id="BuildingandRunningMaestro-Pre-buildEnvironmentConfiguration">Pre-build Environment Configuration</h2><p>Setting path and environment variables required for the following build. On a build server, these are set using modules, either <code>module load maestro</code> for gcc 4.8 builds or <code>module load maestro/gcc8</code> for gcc 8.3 builds. If these modules are not available in your environment, assure that you have these tools in your path.</p><ul><li><p>cmake</p></li><li><p>cpplint</p></li><li><p>git</p></li><li><p>qt</p></li><li><p>python</p></li></ul><h3 id="BuildingandRunningMaestro-ChoosingTool-chaingcc">Choosing Tool-chain gcc</h3><p>By default, on CentOS 7 build hosts, you will get the v4 tool-chain so you don't need to do anything else to use that. If you are going to us devtoolset8 which is necessary to build with gcc8.3, you must run this command before you build</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ scl enable devtoolset-8 bash
+
+# check version
+$ gcc --version
+cc (GCC) 8.3.1 20190311 (Red Hat 8.3.1-3)
+Copyright (C) 2018 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.</pre>
+</div></div><h3 id="BuildingandRunningMaestro-ChoosingTool-chainclangandllvm">Choosing Tool-chain clang and llvm</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Enable llvm-toolset-7:
+$ scl enable llvm-toolset-7 bash</pre>
+</div></div><h2 id="BuildingandRunningMaestro-MaestroBuild">Maestro Build</h2><p>Make sure you have Conan installed and configured as well as other dependencies.</p><p>Change to the Maestro repository directory (e.g. /scratch/username/maestro/) and use one of the following commands:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># Build debug target.
+$ make build_debug
+
+# Build release target.
+$ make build_release
+
+# Build debug target instrumented with coverage analysis.
+$ make build_cov</pre>
+</div></div><h2 id="BuildingandRunningMaestro-BuildMaestrowithdynamiclinking">Build Maestro with dynamic linking </h2><p>Maestro can be built using dynamic linking (i. e. linking to many dynamic library files - .so - ) in order to drastically reduce build time.</p><p>To do so, you have to turn cmake variable <strong>MAESTRO_LINK_SHARED </strong>to <strong>ON</strong>.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># move to build folder (for example build_debug)
+$ cd &lt;build folder&gt;
+
+# configure project with dynamic linking
+$ cmake -DMAESTRO_LINK_SHARED=ON .
+
+# Build target.
+cmake --build . --target maestro</pre>
+</div></div><h2 id="BuildingandRunningMaestro-SupportedBuildHosts">Supported Build Hosts</h2><p>The Maestro build and run environment is supported, currently, on calistoga, jenkins01/02 (for Jenkins only). Other login servers may or may not support the Maestro build environment so use at your own risk. Please never use any login server with name starting with &quot;gr&quot; as these are grid hosts.</p><h2 id="BuildingandRunningMaestro-Troubleshooting">Troubleshooting</h2><div id="expander-285440588" class="expand-container"><div id="expander-control-285440588" class="expand-control"><span class="expand-control-icon"><img style="vertical-align:middle;" class="expand-control-image" src="https://arterisip.atlassian.net/wiki/images/icons/grey_arrow_down.png"></span><span class="expand-control-text">CMake 3.12 or higher is required.  You are running version 2.8.12.2</span></div><div id="expander-content-285440588" class="expand-content"><p>If it happens on the Arteris server (gr6-3.arteris.com) run `module load maestro` to update your environment settings.</p><p>If something like that happens on your local VM please install the latest CMake.</p></div></div><div id="expander-36034467" class="expand-container"><div id="expander-control-36034467" class="expand-control"><span class="expand-control-icon"><img style="vertical-align:middle;" class="expand-control-image" src="https://arterisip.atlassian.net/wiki/images/icons/grey_arrow_down.png"></span><span class="expand-control-text">ERROR: Profile not found: gcc83-dts8</span></div><div id="expander-content-36034467" class="expand-content"><p>To resolve this, you need to update your .conan settings. Here is the command:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">conan config install /engr/dev/tools/maestro/conan/config/conan_config_arteris.tar.gz</pre>
+</div></div></div></div><div id="expander-1318558998" class="expand-container"><div id="expander-control-1318558998" class="expand-control"><span class="expand-control-icon"><img style="vertical-align:middle;" class="expand-control-image" src="https://arterisip.atlassian.net/wiki/images/icons/grey_arrow_down.png"></span><span class="expand-control-text">Failed to download Conan dependencies</span></div><div id="expander-content-1318558998" class="expand-content"><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ERROR: Error downloading file http://conan:9300/v1/files/boost/1.70.0/conan/stable/0/export/conanmanifest.txt?signature=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyZXNvdXJjZV9wYXRoIjoiYm9vc3QvMS43MC4wL2NvbmFuL3N0YWJsZS8wL2V4cG9ydC9jb25hbm1hbmlmZXN0LnR4dCIsInVzZXJuYW1lIjpudWxsLCJmaWxlc2l6ZSI6bnVsbCwiZXhwIjoxNTkyOTExMjAxfQ.Hm7Ou9ifv6sEjWHWyP9WmQFQPn3WENgkk4A_-MbsUEg: &#39;HTTPConnectionPool(host=&#39;conan&#39;, port=9300): Max retries exceeded with url: /v1/files/boost/1.70.0/conan/stable/0/export/conanmanifest.txt?signature=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyZXNvdXJjZV9wYXRoIjoiYm9vc3QvMS43MC4wL2NvbmFuL3N0YWJsZS8wL2V4cG9ydC9jb25hbm1hbmlmZXN0LnR4dCIsInVzZXJuYW1lIjpudWxsLCJmaWxlc2l6ZSI6bnVsbCwiZXhwIjoxNTkyOTExMjAxfQ.Hm7Ou9ifv6sEjWHWyP9WmQFQPn3WENgkk4A_-MbsUEg (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x7f32a5bb5c50&gt;: Failed to establish a new connection: [Errno -2] Name or service not known&#39;,))&#39;. [Remote: arteris]</pre>
+</div></div><p>Try to add `search arteris.com` to /etc/resolv.conf:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">sudo sed -i &#39;1 i search arteris.com arterisip.net&#39; /etc/resolv.conf</pre>
+</div></div><p>If it still doesn't work, you need to check if resolv.conf file is overwritten by NetworkManager.</p><p>In this case you add <strong>'dns=none'</strong> in /etc/NetworkManager/NetworkManager.conf.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">[main]
+dns=none</pre>
+</div></div><p>It's possible in Centos 7 version, you can find in /etc/resolv.conf <strong>'search home'</strong> : you need to remove this line.</p></div></div><h1 id="BuildingandRunningMaestro-RunningMaestro">Running Maestro</h1><h2 id="BuildingandRunningMaestro-License">License</h2><p>Maestro to always insist on a valid Maestro license, even for the debug build.</p><p><strong>On the Arteris server</strong></p><p>Put ‘module load license/arteris’ in your .cshrc or .bashrc and it will set the variable to a path appropriate to your site (lic-node0 for US, and yquem for France).</p><p><strong>On local VM</strong></p><div class="confluence-information-macro confluence-information-macro-note"><span class="aui-icon aui-icon-small aui-iconfont-warning confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>Local license installation process is a subject to change.</p></div></div><p>Share your VM MAC address with Arteris in order to get a license file generated.</p><p>Once you have a license file, follow the steps below:</p><ol start="1"><li><p>Install additional libraries required:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ sudo yum install redhat-lsb</pre>
+</div></div></li><li><p>Download <a href="https://arterisip.atlassian.net/wiki/download/attachments/16156693/license.tgz?version=1&amp;modificationDate=1592971706412&amp;cacheVersion=1&amp;api=v2" rel="nofollow">license.tgz</a></p></li><li><p>Untar the <code>license.tgz</code> file into <code>$HOME/license</code>:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ tar xvfz license.tgz -C ~</pre>
+</div></div></li><li><p>Edit <code>~/license/arterisd.service</code> and replace all instances of <code>&lt;USER&gt;</code> with your local username.</p></li><li><p>Copy your license file to <code>~/license</code> directory.</p></li><li><p>Make sure that your license file name corresponds to the one in the <code>~/license/arterisd.service</code> (see <code>-c ./license_&lt;USER&gt;.dat </code>line). Rename if needed.</p></li><li><p>Verify the first statement of your license (SERVER). For example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">SERVER localhost.localdomain 080027ee6677 5281</pre>
+</div></div><ol start="1"><li><p><code>localhost.localdomain</code> - should correspond to your VM <u>static hostname</u>; <code>localhost.localdomain</code> is a default value for CentOS 7; you can check yours with `hostnamectl` command.</p></li><li><p>080027ee6677 - must be your VM MAC address; if not, please contact the license provider.</p></li><li><p>5281 - port; normally you do not need to change this value.</p></li></ol></li><li><p>Copy <code>arterisd.service</code> file to <code>/usr/lib/systemd/system/arterisd.service</code></p></li><li><p>Enable and start Arteris license server:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ sudo systemctl enable arterisd.service
+$ sudo systemctl start arterisd.service</pre>
+</div></div></li><li><p>Export <code>ARTERISD_LICENSE_FILE</code> environment variable (if your machine Static Hostname is different from the default <code>localhost.localdomain</code>, edit the value accordingly):</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">echo &quot;export ARTERISD_LICENSE_FILE=5281@localhost.localdomain&quot; &gt;&gt; ~/.bashrc</pre>
+</div></div></li></ol><h2 id="BuildingandRunningMaestro-RunningMaestro.1">Running Maestro</h2><p>After successful build Maestro executable will be located in  the <code>&lt;build_directory&gt;/bin/</code> directory, e.g. <code>build_debug/bin/maestro.</code> Maestro supports a number of command line options. To list them all use --help argument:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># Prints help message with all the command line arguments.
+./build_debug/bin/maestro --help</pre>
+</div></div><p>Maestro can operate in two modes: console and GUI. GUI is the default mode.</p><p>Please note that if you need to run Maestro GUI on the remote server you need to use X11 forwarding or similar method (e.g. connect to a remote with -X option: <code>ssh -X username@gr6-3.arteris.com</code>).</p><p>Some other Maestro options (adjust build directory (e.g. <code>build_debug</code>/, <code>build/</code>) as needed):</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># Enter Maestro Tcl console.
+$ ./build_debug/bin/maestro -c
+
+# Load Tcl script in maestro.
+$ ./build_debug/bin/maestro -s=/some/script/location/script.tcl</pre>
+</div></div><h1 id="BuildingandRunningMaestro-MaestroUnitTests">Maestro Unit Tests</h1><p>There are several options to run Maestro unit tests:</p><ol start="1"><li><p>Invoke <code>ctest</code> directly. Change to a build directory (e.g.<code> build_debug</code>) and run:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ ctest -j 4</pre>
+</div></div></li><li><p>It's also possible to launch a single test of interest; the -R option runs a regex on all tests to pick all that match the pattern, while the -j option can be used to parallelize execution if more than one test is to be run:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ ctest -R hw_config_01 -j NNN</pre>
+</div></div></li><li><p>Using make. Go to the root Maestro directory and run one of the following:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ make test
+$ make test_only
+$ make test_only_debug
+...</pre>
+</div></div></li></ol><h1 id="BuildingandRunningMaestro-MaestroLocalInstallation">Maestro Local Installation</h1><p>Sometimes it makes sense to pack and install Maestro locally to check that all the components are installed correctly.</p><p>To install Maestro locally follow the steps described below:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># 1. Create a package using CPack.
+make package_debug  # &quot;make package_release&quot; for release package, &quot;make packages&quot; to create both debug and release packages
+
+# 2. Make an installation directory, change to it and untar the package.
+mkdir build_installed
+cd build_installed
+tar xvfz ../build_debug/*.gz
+
+# 3. Verify the installation.
+cd maestro-0.5.0-Exp-*-debug/
+./bin/maestro</pre>
+</div></div><p />

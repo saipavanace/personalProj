@@ -1,0 +1,96 @@
+<%let max_id_width = 0;%>
+<%for(let i=0; i< obj.nAIUs; i+= 1){
+    if(!obj.AiuInfo[i].fnNativeInterface.includes('CHI')) {
+        if (Array.isArray(obj.AiuInfo[i].interfaces.axiInt)) {
+            for (let j=0; j<obj.AiuInfo[i].interfaces.axiInt.length; j+=1){
+                if(obj.AiuInfo[i].interfaces.axiInt[j].params.wAwId > max_id_width) {
+                    max_id_width = obj.AiuInfo[i].interfaces.axiInt[j].params.wAwId;
+                }
+                if(obj.AiuInfo[i].interfaces.axiInt[j].params.wArId > max_id_width) {
+                    max_id_width = obj.AiuInfo[i].interfaces.axiInt[j].params.wArId;
+                }
+            }
+        }else{
+            if(obj.AiuInfo[i].interfaces.axiInt.params.wAwId > max_id_width) {
+                max_id_width = obj.AiuInfo[i].interfaces.axiInt.params.wAwId;
+            }
+            if(obj.AiuInfo[i].interfaces.axiInt.params.wArId > max_id_width) {
+                max_id_width = obj.AiuInfo[i].interfaces.axiInt.params.wArId;
+            }
+        }
+    }
+}%>
+<%for(let i=0; i< obj.nDMIs; i+=1){
+    if(obj.DmiInfo[i].interfaces.axiInt.params.wAwId > max_id_width){
+        max_id_width = obj.DmiInfo[i].interfaces.axiInt.params.wAwId;
+    }
+    if(obj.DmiInfo[i].interfaces.axiInt.params.wArId > max_id_width){
+        max_id_width = obj.DmiInfo[i].interfaces.axiInt.params.wArId;
+    }
+}%>
+<%for(let i=0; i< obj.nDIIs; i+=1){
+    if(obj.DiiInfo[i].interfaces.axiInt.params.wAwId > max_id_width){
+        max_id_width = obj.DiiInfo[i].interfaces.axiInt.params.wAwId;
+    }
+    if(obj.DiiInfo[i].interfaces.axiInt.params.wArId > max_id_width){
+        max_id_width = obj.DiiInfo[i].interfaces.axiInt.params.wArId;
+    }
+}%>
+
+///////////////////////////////////////////////////////////
+// Overriding ACE VIP defines with Concerto system defines
+///////////////////////////////////////////////////////////
+
+`ifndef SVT_AXI_INCLUDE_USER_DEFINES
+
+`define SVT_AXI_INCLUDE_USER_DEFINES
+
+`define SVT_AXI_MAX_ADDR_WIDTH                  <%=obj.Widths.Concerto.Ndp.Body.wAddr%> 
+`define SVT_AXI_MAX_DATA_WIDTH                  <%=obj.Widths.Concerto.Dp.Data.wDpData%>
+`define SVT_AXI_MAX_ID_WIDTH                    <%=max_id_width%>
+`define SVT_AXI_MAX_BURST_LENGTH_WIDTH          8
+`define SVT_AXI4_MAX_BURST_LENGTH               256 
+`define SVT_AXI_LOCK_WIDTH                      1
+`define SVT_AXI_LOCK_WIDTH_AS_ONE               1
+`define SVT_AXI_SIZE_WIDTH                      3
+`define SVT_AXI_BURST_WIDTH                     2
+`define SVT_AXI_CACHE_WIDTH                     4
+`define SVT_AXI_PROT_WIDTH                      3
+`define SVT_AXI_QOS_WIDTH                       4
+`define SVT_AXI_WSTRB_WIDTH                     `SVT_AXI_MAX_DATA_WIDTH/8
+`define SVT_AXI_RESP_WIDTH                      4
+`define SVT_AXI_MAX_CACHE_LINE_SIZE             64 
+`define SVT_AXI_MAX_ADDR_USER_WIDTH             32
+`define SVT_AXI_MAX_DATA_USER_WIDTH             8
+`define SVT_AXI_MAX_BRESP_USER_WIDTH            8
+`define SVT_AXI_MAX_NUM_CACHE_LINES             2048
+`define SVT_AXI_MAX_ARVALID_DELAY 0
+`define SVT_AXI_MAX_RVALID_DELAY 100
+`define SVT_AXI_MAX_RREADY_DELAY 0
+`define SVT_AXI_MAX_BVALID_DELAY 0
+`define SVT_AXI_MAX_BREADY_DELAY 0
+`define SVT_AXI_MAX_ACREADY_DELAY 0
+`define SVT_AXI_MAX_CDVALID_DELAY 0
+`define SVT_AXI_MAX_CRVALID_DELAY 0
+`define SVT_AXI_MAX_ACVALID_DELAY 0
+`define SVT_AXI_MAX_CRREADY_DELAY 0
+`define SVT_AXI_MAX_CDREADY_DELAY 0
+`define SVT_AXI_MAX_RACK_DELAY 0
+`define SVT_AXI_MAX_WACK_DELAY 0
+`define SVT_AXI_MAX_ARREADY_DELAY 0
+`define SVT_AXI_MAX_AWREADY_DELAY 0
+`define SVT_AXI_MAX_AWVALID_DELAY 0
+`define SVT_AXI_INACTIVE_CHAN_LOW_VAL 0
+
+
+`define SVT_AXI_MAX_WVALID_DELAY 0
+`define SVT_AXI_MAX_WDATA_DELAY 0
+`define SVT_AXI_MAX_WREADY_DELAY 0
+`define SVT_AXI_MAX_READ_DATA_INTERLEAVE_SIZE   0
+`define SVT_AXI_MAX_READ_DATA_REORDERING_DEPTH  1
+`define SVT_AXI_MAX_NUM_SLAVES_128  1
+`define SVT_AXI_MAX_NUM_MASTERS_128 1
+`define SVT_AXI_MAX_NUM_OUTSTANDING_XACT        128
+`define SVT_ACE5_ENABLE
+
+`endif

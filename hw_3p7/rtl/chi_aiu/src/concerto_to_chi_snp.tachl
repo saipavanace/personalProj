@@ -1,0 +1,62 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+
+var cm_type  = u.getParam('cm_type');
+var chi_cmd  = u.getParam('chi_cmd');
+var chi_a    = u.getParam('chi_a');
+
+var fix_chi_a = 1;
+
+\jsend
+
+\jsbegin
+
+//var interfaces = obj.lib.libLocal('./interfaces.js');
+
+u.port('input','conc_snp_cmd', 8);
+u.port('output','chi_snp_cmd', 5, 'reg') ;
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+always @(*) 
+begin
+
+    casez(conc_snp_cmd)
+
+    \=cm_type.SnpVldDtr=\           : chi_snp_cmd  = \=chi_cmd.SnpShared=\ ;
+    \=cm_type.SnpClnDtr=\           : chi_snp_cmd  = \=chi_cmd.SnpClean=\  ;
+    \=cm_type.SnpNitc=\             : chi_snp_cmd  = \=chi_cmd.SnpOnce=\   ;
+    \=cm_type.SnpInvDtr=\           : chi_snp_cmd  = \=chi_cmd.SnpUnique=\ ;
+    \=cm_type.SnpClnDtw=\           : chi_snp_cmd  = \=chi_cmd.SnpCleanShared=\  ;
+    \=cm_type.SnpInvDtw=\           : chi_snp_cmd  = \=chi_cmd.SnpCleanInvalid=\ ;
+    \=cm_type.SnpInv=\              : chi_snp_cmd  = \=chi_cmd.SnpMakeInvalid=\ ;
+    \=cm_type.SnpDvmMsg=\           : chi_snp_cmd  = \=chi_cmd.SnpDvmOp=\  ;
+    \=cm_type.SnpInvStsh=\          : chi_snp_cmd  = \=chi_cmd.SnpMakeInvalidStash=\ ;
+    \=cm_type.SnpUnqStsh=\          : chi_snp_cmd  = \=chi_cmd.SnpUniqueStash=\  ;
+    \=cm_type.SnpStshShd=\          : chi_snp_cmd  = \=chi_cmd.SnpStashShared=\ ;
+    \=cm_type.SnpStshUnq=\          : chi_snp_cmd  = \=chi_cmd.SnpStashUnique=\ ;
+    \=cm_type.SnpNitcCI=\           : chi_snp_cmd  = \=chi_cmd.SnpUnique=\ ;
+    \=cm_type.SnpNitcMI=\           : chi_snp_cmd  = \=chi_cmd.SnpUnique=\ ;
+\jsbegin
+//fix tied off
+/* istanbul ignore next env ncore_3p6, ncore_3p7 */
+if (chi_a && fix_chi_a) { \jsend
+    \=cm_type.SnpNoSDInt=\          : chi_snp_cmd  = \=chi_cmd.SnpShared=\ ;
+\js } else {
+    \=cm_type.SnpNoSDInt=\          : chi_snp_cmd  = \=chi_cmd.SnpNotSharedDirty=\ ;
+\js }
+    default                     : chi_snp_cmd  = 5'h0 ;
+    endcase
+end
+
+endmodule 

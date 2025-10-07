@@ -1,0 +1,98 @@
+{
+  "name": "giu",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "giu",
+      "params": [
+        {
+          "parameterName": "unit",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit"
+        },
+        {
+          "parameterName": "interfaces",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.internal"
+        },
+        {
+          "parameterName": "nPerfCounters",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.nPerfCounters"
+        },
+        {
+          "parameterName": "system",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return system"
+        },
+        {
+          "parameterName": "BootInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/bootAndCsrInfo.tachl.cpr#BootInfo"
+        },
+        {
+          "parameterName": "CsrInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/bootAndCsrInfo.tachl.cpr#CsrInfo"
+        },
+        {
+          "parameterName": "InterleaveInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/interleaveInfo.tachl.cpr"
+        },
+        {
+          "parameterName": "concParams",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/concMsg.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "cmType",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/concMsgCmType.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "fnCsrAccess",
+          "type": "integer",
+          "formula": "return 1",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "nGPRA",
+          "type": "integer",
+          "formula": "return system.nGPWindows",
+          "parameterType": "architecture"
+        },       
+        {
+          "parameterName": "ImplementationParameters",
+          "type": "object",
+          "formula": "return unit.ImplementationParameters",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "nDiis",
+          "type": "object",
+          "formula": "return system.nDiis",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiPortParams",
+          "type": "object",
+          "formula": "return unit.SmiPortMsgMap",
+          "parameterType": "architecture"
+        },
+        {"parameterName" : "nAiuConnectedDces",
+        "type" : "integer",
+        "value" :  0}
+      ]
+    }
+  ]
+}

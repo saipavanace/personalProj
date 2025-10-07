@@ -1,0 +1,303 @@
+\jsbegin
+//============================================================================
+// Copyright (C) 2019 Arteris, Inc.
+// All rights reserved.
+//============================================================================
+// Reorder Buffer comprising multiple write entries, each entry per cacheline comprising multiple beats.
+//
+// Author: Boon Chuan
+//============================================================================
+
+//============================================================================     
+// Variables
+//============================================================================
+   
+let u = obj.lib;
+let m = obj.userLib;
+let bundleFunctions = m.bundleFunctions;
+
+//============================================================================
+// Parameters
+//============================================================================
+u.paramDefault('assertOn','int',0);
+
+let assertOn            = u.getParam('assertOn');
+let nBeats              = u.getParam('nBeats');
+let wBundle             = u.getParam('wBundle');
+let wTxnID              = u.getParam('wTxnID');
+let depth               = m.ParamDefaultGet(u, 'depth',     'int', 2);
+
+let wBeats              = 3;
+
+//============================================================================
+// Ports
+//============================================================================
+u.port('input',  'clk', 1);
+u.port('input',  'reset_n', 1);
+u.port('output', 'full',  1);
+u.port('output', 'empty', 1);
+u.port('output', 'interleaved_vec', depth);
+
+u.port('input',  'data_beat_in_valid', 1);
+u.port('output', 'data_beat_in_ready', 1);
+u.port('input',  'data_beat_in_txnid', wTxnID);
+u.port('input',  'data_beat_in_count', wBeats);
+u.port('input',  'data_beat_in_bundle', wBundle);
+
+u.port('output', 'data_beat_out_valid', 1);
+u.port('input',  'data_beat_out_ready', 1);
+u.port('output', 'data_beat_out_last',  1);
+u.port('output', 'data_beat_out_bundle', wBundle);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+\jsbegin
+//============================================================================
+// Wires
+//============================================================================
+\jsend
+
+wire [\=depth-1=\:0] rob_entry_empty_vec;
+wire [\=depth-1=\:0] rob_entry_interleaved_vec;
+
+wire [\=depth-1=\:0] rob_entry_in_valid_vec;
+wire [\=depth-1=\:0] rob_entry_in_ready_vec;
+wire [\=depth-1=\:0] rob_entry_out_valid_vec;
+wire [\=depth-1=\:0] rob_entry_out_ready_vec;
+wire [\=depth-1=\:0] rob_entry_out_last_vec;
+
+\js for ( var i = 0; i < depth; i++ ) {
+wire [\=wBundle-1=\:0] rob_entry_out_bundle\=i=\;
+\js }
+
+wire txnid_is_new;
+
+wire dff_enable = 1'b1;
+
+\jsbegin
+//================================================================================
+// Data Rotation Buffer Entry Instantiation
+//================================================================================
+\jsend
+
+\jsbegin
+
+var robEntryParams = { 
+    nBeats              : nBeats,
+    wBundle             : wBundle
+};
+
+
+for ( var i = 0; i < depth; i++ ) {
+
+var robEntryPorts = {  
+    clk                 : 'clk',
+    reset_n             : 'reset_n',
+    txnid_is_new        : 'txnid_is_new',
+    empty               : 'rob_entry_empty_vec['+i+']',
+    interleaved         : 'rob_entry_interleaved_vec['+i+']',
+
+    data_beat_in_valid  : 'rob_entry_in_valid_vec['+i+']',
+    data_beat_in_ready  : 'rob_entry_in_ready_vec['+i+']',
+    data_beat_in_bundle : 'data_beat_in_bundle',
+    data_beat_in_count  : 'data_beat_in_count',
+ 
+    data_beat_out_ready : 'rob_entry_out_ready_vec['+i+']',
+    data_beat_out_valid : 'rob_entry_out_valid_vec['+i+']',
+    data_beat_out_last  : 'rob_entry_out_last_vec['+i+']',
+    data_beat_out_bundle: 'rob_entry_out_bundle'+i
+};
+
+var robEntryInterfaces = [];
+
+\jsend
+
+\=u.instance({
+    instanceName:'rob_entry'+i,
+    moduleName  :'chi_rob_entry',
+    params      : robEntryParams,
+    ports       : robEntryPorts,
+    interfaces  : robEntryInterfaces,
+})=\
+
+\js }
+
+assign interleaved_vec = rob_entry_interleaved_vec;
+
+wire [\=depth-1=\:0] tt_valid_set;
+wire [\=depth-1=\:0] tt_valid_clr;
+wire [\=depth-1=\:0] tt_valid_in;
+wire [\=depth-1=\:0] tt_valid;
+wire [\=depth-1=\:0] tt_alloc_vec;
+wire [\=depth-1=\:0] tt_dealloc_vec;
+wire [\=depth-1=\:0] rd_ptr_onehot;
+wire [\=depth-1=\:0] wr_ptr_onehot;
+wire [\=depth-1=\:0] tt_cam_match_vec;
+wire [\=depth-1=\:0] arb__sink_ready;
+wire [\=depth-1=\:0] arb__sink_valid;
+wire [\=depth-1=\:0] arb__sink_last;
+wire [\=depth-1=\:0] arb__sink_grant;
+wire arb__source_ready;
+wire arb__source_valid;
+wire arb__source_last;
+wire tt_alloc;
+wire tt_dealloc;
+wire tt_cam_match;
+
+    \js for (var i = 0; i < depth; i++) {
+wire [\=wTxnID-1=\:0] tt_txnid\=i=\;
+wire tt_txnid_en\=i=\;
+    \js }
+
+wire [\=wTxnID-1=\:0] prev_tt_txnid;
+
+\=u.dffre(wTxnID, 'prev_tt_txnid', 'data_beat_in_txnid', wTxnID+"'b0", 'data_beat_in_valid & data_beat_in_ready', 'clk', 'reset_n')=\
+
+assign txnid_is_new = (prev_tt_txnid != data_beat_in_txnid) & data_beat_in_valid & data_beat_in_ready;
+
+
+
+\=u.dffre(depth, 'tt_valid', 'tt_valid_in', depth+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+     \=u.instance({
+          instanceName: 'find_first_tt_invalid',
+          moduleName: 'find_first_one',
+          params: { width : depth } ,
+         verilogParams: {},
+          ports: { invec : "~tt_valid" ,
+                   outvec : "tt_alloc_vec"
+                 },
+          portsDelimiter: '\n    '
+    })=\
+
+assign tt_valid_set  = tt_alloc   ? tt_alloc_vec   : \=depth=\'b0;
+assign tt_valid_clr  = tt_dealloc ? tt_dealloc_vec : \=depth=\'b0;
+assign tt_valid_in   = tt_valid_set | (tt_valid & ~tt_valid_clr);
+
+assign tt_alloc   = data_beat_in_valid & data_beat_in_ready & ~tt_cam_match;
+assign tt_dealloc = data_beat_out_valid & data_beat_out_ready & data_beat_out_last;
+
+assign tt_dealloc_vec = rd_ptr_onehot;
+
+assign wr_ptr_onehot = tt_cam_match ? tt_cam_match_vec : tt_alloc_vec;
+assign rd_ptr_onehot = arb__sink_grant;
+
+assign arb__sink_valid = rob_entry_out_valid_vec;
+assign arb__sink_last  = rob_entry_out_last_vec;
+
+assign arb__source_ready = data_beat_out_ready;
+
+\jsbegin
+    var arbParams = {
+        num_inputs  : depth
+    };
+    var instance_ports_for_arb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        sink_ready          : 'arb__sink_ready',
+        sink_valid          : 'arb__sink_valid',
+        sink_last           : 'arb__sink_last',
+        sink_grant          : 'arb__sink_grant',
+        source_ready        : 'arb__source_ready',
+        source_valid        : 'arb__source_valid',
+        source_last         : 'arb__source_last'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'arb',
+        moduleName: 'rr_arb_comb_mux',
+        params : arbParams,
+        verilogParams: {},
+        ports: instance_ports_for_arb,
+        portsDelimiter: '\n    '
+    })=\
+
+
+    \js for (var i = 0; i < depth; i++) {
+\=u.dffre(wTxnID, 'tt_txnid'+i, 'data_beat_in_txnid', wTxnID+"'b0", 'tt_txnid_en'+i, 'clk', 'reset_n')=\
+    \js }
+
+    \js for (var i = 0; i < depth; i++) {
+assign tt_txnid_en\=i=\ = tt_alloc & tt_alloc_vec[\=i=\];
+    \js }
+
+    \js for (var i = 0; i < depth; i++) {
+assign tt_cam_match_vec[\=i=\] = tt_valid[\=i=\] & data_beat_in_valid & (data_beat_in_txnid == tt_txnid\=i=\);
+    \js }
+
+assign tt_cam_match = {|{tt_cam_match_vec}};
+
+
+\jsbegin
+//================================================================================
+// Input Demux
+//================================================================================
+\jsend
+\js for ( var i = 0 ; i < depth ; i++ ) {
+assign rob_entry_in_valid_vec[\=i=\] = wr_ptr_onehot[\=i=\] & data_beat_in_valid;
+\js }
+
+
+\jsbegin
+//================================================================================
+// Output Ready Demux
+//================================================================================
+\jsend
+
+\js for ( var i = 0 ; i < depth ; i++ ) {
+assign rob_entry_out_ready_vec[\=i=\] = rd_ptr_onehot[\=i=\] & data_beat_out_ready;
+\js }
+
+\jsbegin
+//================================================================================
+// Output Mux 
+//================================================================================
+\jsend
+
+assign data_beat_in_ready = ~full;
+
+assign data_beat_out_valid = 
+                             (rd_ptr_onehot[0] & rob_entry_out_valid_vec[0])
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                           | (rd_ptr_onehot[\=i=\] & rob_entry_out_valid_vec[\=i=\])
+\js }
+                           ;
+
+assign data_beat_out_bundle = 
+                            ({\=wBundle=\{rd_ptr_onehot[0]}} & rob_entry_out_bundle0)
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                          | ({\=wBundle=\{rd_ptr_onehot[\=i=\]}} & rob_entry_out_bundle\=i=\)
+\js }
+                          ;
+
+assign data_beat_out_last = 
+                            (rd_ptr_onehot[0] & rob_entry_out_last_vec[0])
+\js for ( var i = 1 ; i < depth ; i++ ) {
+                          | (rd_ptr_onehot[\=i=\] & rob_entry_out_last_vec[\=i=\])
+\js }
+                          ;
+
+
+assign full  =  {&{rob_entry_out_valid_vec}} | (~tt_cam_match & {&{tt_valid}});
+assign empty = ~{|{rob_entry_out_valid_vec}} & {&{rob_entry_empty_vec}};
+
+\jsbegin
+//================================================================================
+// Assertion
+//================================================================================
+\jsend
+
+\js if (assertOn) {
+
+    property p_alloc_not_all_in_use;
+        @(posedge clk) disable iff (~reset_n)
+            (tt_alloc |-> ~{&{tt_alloc_vec}});
+    endproperty
+
+    assert_alloc_not_all_in_use: assert property (p_alloc_not_all_in_use)
+        else begin $error("CHI Reorder Buffer must have available entry for allocation !"); #100 $finish; end
+
+\js }
+
+endmodule

@@ -1,0 +1,138 @@
+
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// CHI AIU skid buffer contains an input fifo, a pri age arbiter and an output fifo. 
+//It can implement the input fifo using an SRAM when both useSramFifo is true and the memory type is SYNOPSYS
+// Filename: dmi_skid_buffer.tachl
+// Parameters : reqInterface, clkInterface, wStarvThreshold, bufferSize ({Skidfifo :, SkidBuffer :}), useOutputFifo,
+//              useSmallArea, priAgeBypass, useQos, priorityThreshold
+//=============================================================================
+
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+
+let p=u.getParam();
+
+//clock and reset
+u.interface("","slave", p.clkInterface, )
+
+//input interface
+u.interface("req_in_", "slave",p.reqInterface);
+
+
+//output interface
+u.interface("req_out_","master",p.reqInterface);
+u.interface("sb_mem_", "master", p.snpReqSbMemInterface);
+u.interface("sb_mem_out_", "master", p.snpReqSbErrInterface);
+/* istanbul ignore if env ncore_3p7 */
+if(p.useQos){
+
+    u.port("input","starv_en",              1);
+    u.port("input","starv_threshold",       p.wStarvThreshold);
+    u.port("input","qos_disable",           1);
+    u.port("output","starv_overflow_event", 1);
+    u.port("output", "starv_mode",          1);
+    u.port("output","full",                 1);   
+
+}
+
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts()=\);
+
+\jsbegin
+
+//==============================================================================
+// CMD Skid Buffer
+//==============================================================================
+/* istanbul ignore next env ncore_3p7 */
+if (p.useSramFifo && p.bufferSize.Skidfifo) { 
+
+  var wSkidBuffer                   = bundleFunctions.getBundleWidth(p.reqInterface, ['valid', 'ready'], u.bundle); \jsend
+
+wire [\=wSkidBuffer-1=\:0]  req_in_data;
+wire [\=wSkidBuffer-1=\:0]  req_out_data;
+wire sb_mem_out_uerr_unqual;
+wire sb_mem_out_cerr_unqual;
+wire req_out_valid_unqual;
+
+\jsbegin
+    var com_fifo_mem_params = {
+        width: wSkidBuffer,
+        depth: p.bufferSize.Skidfifo,
+        fnErrDetectCorrect: "PARITY",
+        bypass_mode : 1,
+        memoryType  : "SYNOPSYS"
+        };
+
+    var com_fifo_mem_ports = {
+        clk:            'clk',
+        reset_n:        'reset_n',
+        in_valid:       'req_in_valid',
+        in_ready:       'req_in_ready',
+        in_data:        'req_in_data',
+        out_valid:      'req_out_valid_unqual',
+        out_ready:      'req_out_ready',
+        out_data:       'req_out_data',
+        out_uerr:       'sb_mem_out_uerr_unqual',
+        out_cerr:       'sb_mem_out_cerr_unqual',
+        out_err_index : "sb_mem_out_err_index",
+        wt_sel:         'sb_mem_write_en',
+        wt_addr:        'sb_mem_write_addr' ,
+        wt_data:        'sb_mem_write_data' ,
+        rd_sel:         'sb_mem_read_en',
+        rd_addr:        'sb_mem_read_addr' ,
+        rd_data:        'sb_mem_read_data' 
+
+        }; \jsend
+
+
+        \=u.instance({
+            instanceName: 'u_com_fifo_mem',
+            moduleName: 'com_fifo_mem',
+            params: com_fifo_mem_params,
+            ports: com_fifo_mem_ports,
+            interfaces: []
+        })=\
+
+
+assign sb_mem_out_uerr   = sb_mem_out_uerr_unqual & req_out_ready & req_out_valid_unqual;
+assign sb_mem_out_cerr   = sb_mem_out_cerr_unqual & req_out_ready & req_out_valid_unqual;
+assign req_out_valid     = req_out_valid_unqual & ~sb_mem_out_uerr_unqual;
+assign req_in_data       = \=bundleFunctions.packetizeBundle('req_in_',  p.reqInterface, ['valid', 'ready'], u.bundle)=\ ;
+
+assign   \=bundleFunctions.packetizeBundle('req_out_',  p.reqInterface, ['valid', 'ready'], u.bundle)=\ = req_out_data ;
+
+
+\jsbegin
+
+} else {
+ var cmdSkidBufferInputFifoInterfaces = [];
+ cmdSkidBufferInputFifoInterfaces.push({modulePrefix: '',         localPrefix: '',            interface: p.clkInterface,  exclude: []               });
+ cmdSkidBufferInputFifoInterfaces.push({modulePrefix: 'push_',  localPrefix: 'req_in_',    interface: p.reqInterface,     exclude: []              });
+ cmdSkidBufferInputFifoInterfaces.push({modulePrefix: 'pop_',  localPrefix: 'req_out_',    interface: p.reqInterface,     exclude: []              });
+ var cmdSkidBufferInputFifoParams = {
+     width           : bundleFunctions.getBundleWidth(p.reqInterface, ['valid', 'ready'], u.bundle),
+     depth           : p.bufferSize.Skidfifo,
+     zerodepth       : p.bufferSize.Skidfifo  <= 0 ? 1: 0,
+     bypass_mode     : 1,
+     interface       : p.reqInterface
+ }
+ 
+ \jsend
+ // FIFO depth = \=cmdSkidBufferInputFifoParams.depth=\
+ \=u.instance({
+     instanceName    : 'input_fifo',
+     moduleName      : 'fifo_bundle',
+     params          : cmdSkidBufferInputFifoParams,
+     interfaces      : cmdSkidBufferInputFifoInterfaces,
+ })=\ \jsbegin
+} \jsend 
+
+ endmodule

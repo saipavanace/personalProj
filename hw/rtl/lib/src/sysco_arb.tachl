@@ -1,0 +1,76 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// SysCo Arbiter
+//
+// Author: Boon Chuan
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+u.port('input',  'clk',      1);
+u.port('input',  'reset_n',  1);
+
+u.port('input',  'hwp_sysco_req', 1);
+u.port('output', 'hwp_sysco_ack', 1);
+
+u.port('input',  'csr_sysco_req', 1);
+u.port('output', 'csr_sysco_ack', 1);
+
+u.port('output', 'sysco_req', 1);
+u.port('input',  'sysco_ack', 1);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+wire dff_enable = 1'b1;
+
+wire [1:0] ST_IDLE            = 2'b00;
+wire [1:0] ST_WAIT_HWP        = 2'b01;
+wire [1:0] ST_WAIT_CSR        = 2'b10;
+
+reg  [1:0] next_state;
+wire [1:0] state;
+
+\jsbegin
+//=============================================================================
+// The State Machine has the following states to execute the SysCo Attach/Detach protocol:
+//=============================================================================
+\jsend
+
+always @(*)
+case (state)
+    ST_IDLE        : next_state = hwp_sysco_req ? ST_WAIT_HWP :
+                                  csr_sysco_req ? ST_WAIT_CSR :
+                                                  ST_IDLE;
+
+    ST_WAIT_HWP    : next_state = ~hwp_sysco_req & ~hwp_sysco_ack ? ST_IDLE : ST_WAIT_HWP;
+
+    ST_WAIT_CSR    : next_state = ~csr_sysco_req & ~csr_sysco_ack ? ST_IDLE : ST_WAIT_CSR;
+
+    default next_state = ST_IDLE;
+endcase
+
+\=u.dffre(2, 'state', 'next_state', "2'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign sysco_req = hwp_sysco_req | csr_sysco_req;
+
+assign hwp_sysco_ack = (state == ST_WAIT_HWP) ? sysco_ack : 1'b0;
+
+assign csr_sysco_ack = (state == ST_WAIT_CSR) ? sysco_ack : 1'b0;
+
+endmodule

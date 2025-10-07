@@ -1,0 +1,151 @@
+<p><br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">var utilFunctions = obj.userLib;
+var interfaces    = utilFunctions.hierGetParam(&#39;interfaces&#39;,u.getParam);
+ 
+u.nInterfaces(interfaces);
+
+  var clkInterface = {};
+  var clkInterfaceFunc = new obj.userLib[interfaces.clkInterface.interface];
+  clkInterface.signals = clkInterfaceFunc.getSignalsBundle(interfaces.clkInterface.params);
+  clkInterface.name    = interfaces.clkInterface.name;
+
+    if(interfaces.intInterface._SKIP_ != true){
+  var cfgInterface = {};
+  var cfgInterfaceFunc = new obj.userLib[interfaces.cfgInterface.interface];
+  cfgInterface.signals = cfgInterfaceFunc.getSignalsBundle(interfaces.cfgInterface.params);
+  cfgInterface.name    = interfaces.cfgInterface.name;
+    }
+
+    if(interfaces.intInterface._SKIP_ != true){
+  var intInterface = {};
+  var intInterfaceFunc = new obj.userLib[interfaces.intInterface.interface];
+  intInterface.signals = intInterfaceFunc.getSignalsBundle(interfaces.intInterface.params);
+  intInterface.name    = interfaces.intInterface.name;
+    }
+
+  var inReqInterface = {};
+  var inReqInterfaceFunc = new obj.userLib[interfaces.inReqInterface.interface];
+  inReqInterface.signals = inReqInterfaceFunc.getSignalsBundle(interfaces.inReqInterface.params);
+  inReqInterface.name    = interfaces.inReqInterface.name;
+
+  var inRspInterface = {};
+  var inRspInterfaceFunc = new obj.userLib[interfaces.inRspInterface.interface];
+  inRspInterface.signals = inRspInterfaceFunc.getSignalsBundle(interfaces.inRspInterface.params);
+  inRspInterface.name    = interfaces.inRspInterface.name;</pre>
+</div></div><p><br/></p><p><br/></p><p>An example of an interfaces object for the sym_mutlicast :</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+&quot;clkInterface&quot;:{
+&quot;params&quot;:{&quot;wTestEn&quot;:0,&quot;wClkEn&quot;:0,&quot;wEdgeEn&quot;:0,&quot;wPreEdgeEn&quot;:0,&quot;wRetRst&quot;:0},
+&quot;name&quot;:&quot;cluster_1350m_Regime_Cm_root_&quot;,
+&quot;interface&quot;:&quot;InterfaceCLK&quot;,
+&quot;blkClkGateOn&quot;:false,
+&quot;direction&quot;:&quot;slave&quot;,
+&quot;_SKIP_&quot;:false
+},
+&quot;cfgInterface&quot;:{
+&quot;params&quot;:{&quot;wAddr&quot;:1,&quot;wData&quot;:0,&quot;wPSlverr&quot;:0},
+&quot;_SKIP_&quot;:true,
+&quot;name&quot;:&quot;apb_&quot;,
+&quot;interface&quot;:&quot;InterfaceAPB&quot;,
+&quot;direction&quot;:&quot;master&quot;
+},
+&quot;intInterface&quot;:{
+&quot;params&quot;:{&quot;width&quot;:0},
+&quot;name&quot;:&quot;int_&quot;,
+&quot;_SKIP_&quot;:true,
+&quot;interface&quot;:&quot;InterfaceINT&quot;,
+&quot;direction&quot;:&quot;master&quot;
+},
+&quot;inReqInterface&quot;:{
+&quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:162,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+&quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_request_nw_128&quot;,&quot;params&quot;:{}},
+&quot;name&quot;:&quot;pp_mlf1_mcs_0_3i0_&quot;,
+&quot;interface&quot;:&quot;InterfaceATP&quot;,
+&quot;pktStyle&quot;:&quot;serial&quot;,
+&quot;wData&quot;:128,
+&quot;direction&quot;:&quot;slave&quot;,
+&quot;_SKIP_&quot;:false
+},
+&quot;inRspInterface&quot;:{
+  &quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:166,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+  &quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_response_nw_128&quot;,&quot;params&quot;:{}},
+  &quot;name&quot;:&quot;pp_mlf1_mcs_0_3o4_&quot;,
+  &quot;interface&quot;:&quot;InterfaceATP&quot;,
+  &quot;pktStyle&quot;:&quot;serial&quot;,
+  &quot;wData&quot;:128,
+  &quot;direction&quot;:&quot;master&quot;,
+  &quot;_SKIP_&quot;:false
+},
+&quot;protectionInterface&quot;:{
+  &quot;params&quot;:{&quot;wErrPar&quot;:0,&quot;wErrSb&quot;:0,&quot;wErrDb&quot;:0,&quot;wSynd&quot;:0,&quot;wIndex&quot;:0},
+  &quot;_SKIP_&quot;:true,
+  &quot;name&quot;:&quot;prot&quot;,
+  &quot;interface&quot;:&quot;InterfacePROT&quot;,
+  &quot;direction&quot;:&quot;master&quot;
+},
+&quot;outReqInterfaces&quot;:[
+{
+  &quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:162,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+  &quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_request_nw_128&quot;,&quot;params&quot;:{}},
+  &quot;name&quot;:&quot;pp_mlf1_mcs_0_3o0_&quot;,
+  &quot;interface&quot;:&quot;InterfaceATP&quot;,
+  &quot;pktStyle&quot;:&quot;serial&quot;,
+  &quot;wData&quot;:128,
+  &quot;direction&quot;:&quot;master&quot;,
+  &quot;_SKIP_&quot;:false
+},
+{
+  &quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:162,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+  &quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_request_nw_128&quot;,&quot;params&quot;:{}},
+  &quot;name&quot;:&quot;pp_mlf1_mcs_0_3o1_&quot;,
+  &quot;interface&quot;:&quot;InterfaceATP&quot;,
+  &quot;pktStyle&quot;:&quot;serial&quot;,
+  &quot;wData&quot;:128,
+  &quot;direction&quot;:&quot;master&quot;,
+  &quot;_SKIP_&quot;:false
+},
+{
+  &quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:162,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+  &quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_request_nw_128&quot;,&quot;params&quot;:{}},
+  &quot;name&quot;:&quot;pp_mlf1_mcs_0_3o3_&quot;,
+  &quot;interface&quot;:&quot;InterfaceATP&quot;,
+  &quot;pktStyle&quot;:&quot;serial&quot;,
+  &quot;wData&quot;:128,
+  &quot;direction&quot;:&quot;master&quot;,
+  &quot;_SKIP_&quot;:false
+}
+],
+&quot;outRspInterfaces&quot;:[
+{
+  &quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:166,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+  &quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_response_nw_128&quot;,&quot;params&quot;:{}},
+  &quot;name&quot;:&quot;pp_mlf1_mcs_0_3i1_&quot;,
+  &quot;interface&quot;:&quot;InterfaceATP&quot;,
+  &quot;pktStyle&quot;:&quot;serial&quot;,
+  &quot;wData&quot;:128,
+  &quot;direction&quot;:&quot;slave&quot;,
+  &quot;_SKIP_&quot;:false
+},
+{
+  &quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:166,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+  &quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_response_nw_128&quot;,&quot;params&quot;:{}},
+  &quot;name&quot;:&quot;pp_mlf1_mcs_0_3i2_&quot;,
+  &quot;interface&quot;:&quot;InterfaceATP&quot;,
+  &quot;pktStyle&quot;:&quot;serial&quot;,
+  &quot;wData&quot;:128,
+  &quot;direction&quot;:&quot;slave&quot;,
+  &quot;_SKIP_&quot;:false
+},
+{
+  &quot;params&quot;:{&quot;nVc&quot;:1,&quot;wBus&quot;:166,&quot;wProt&quot;:0,&quot;wPress&quot;:0},
+  &quot;pktDef&quot;:{&quot;packet&quot;:&quot;PacketATP_csr_response_nw_128&quot;,&quot;params&quot;:{}},
+  &quot;name&quot;:&quot;pp_mlf1_mcs_0_3i3_&quot;,
+  &quot;interface&quot;:&quot;InterfaceATP&quot;,
+  &quot;pktStyle&quot;:&quot;serial&quot;,
+  &quot;wData&quot;:128,
+  &quot;direction&quot;:&quot;slave&quot;,
+  &quot;_SKIP_&quot;:false
+}
+]
+}</pre>
+</div></div>

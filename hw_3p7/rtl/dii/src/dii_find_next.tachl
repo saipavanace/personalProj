@@ -1,0 +1,36 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+
+\jsbegin
+var u = obj.lib;
+\jsend
+
+\jsbegin
+//=========================================================================
+// ports
+//=========================================================================
+
+var  WIDTH = u.getParam('width');
+
+u.port('input',  'invec',  'WIDTH');
+u.port('output', 'outvec', 'WIDTH');
+\jsend
+
+module \=u.getModuleName()=\
+#(
+   parameter WIDTH = \=u.getParam('width')=\
+) (\=u.getPorts('\n    ')=\);
+
+wire last_entry_reached;
+wire [WIDTH-1:0] invec_n;
+wire init_cond;
+
+assign last_entry_reached = (invec[WIDTH-1:0]  == 1'b1); 
+assign init_cond = &(invec);
+
+assign invec_n = ~invec;
+assign outvec = (init_cond | last_entry_reached) ? \=WIDTH=\'b1 : ( ((invec_n << 1'b1) | invec_n) ^ invec_n);
+
+endmodule

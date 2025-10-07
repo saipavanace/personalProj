@@ -1,0 +1,158 @@
+{
+  "name": "SW_NcoreNCAIU",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "genericports",
+          "parameterTitle": "GenericPorts",
+          "parameterType": "architecture",
+          "docID": 515,
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/SW_GenericPort.design.cpr",
+          "guiDescription": "user specified protection ports for place holder"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "snoopFilterAssignment",
+          "parameterTitle": "Snoop Filter Assignment",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Snoop filter associated with this AIU. This only applies for AIUs with proxy cache.",
+          "docID": 537,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "hasProxyCache",
+          "parameterTitle": "Enable Proxy Cache",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "This options enables proxy cache support. This is supported only wiht coherent AXI interface.",
+          "docID": 538,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nOttCtrlEntries",
+          "parameterTitle": "Outstanding transaction table Entries",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of outstanding native transactions this AIU should support.",
+          "docID": 539,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDceCmdCredits",
+          "parameterTitle": "Number of Credits per DCE",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of credits for coherent transactions per DCE. \nThis should be determined based on required bandwidth and netwrok round trip latency.",
+          "docID": 540,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDmiCmdCredits",
+          "parameterTitle": "Number of Credits per DMI",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of credits for non coherent transactions per DMI. \nThis should be determined based on required bandwidth and netwrok round trip latency.",
+          "docID": 541,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDiiCmdCredits",
+          "parameterTitle": "Number of Credits per DII",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of credits for non-coherent transactions per DII. \nThis should be determined based on required bandwidth and netwrok round trip latency.",
+          "docID": 542,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDceWrCmdCredits",
+          "parameterTitle": "Number of Reserved Write Credits per DCE",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of reserved write credits for coherent transactions with DCE. This shoudl be smaller than the number",
+          "docID": 351,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDmiWrCmdCredits",
+          "parameterTitle": "Number of Reserved Write Credits per DMI",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of reserved write credits for non coherent transactions with DMI. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "docID": 352,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDiiWrCmdCredits",
+          "parameterTitle": "Number of Reserved Write Credits per DII",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of reserved write credits for non coherent transactions with DII. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "docID": 353,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "memories",
+          "parameterTitle": "Memories",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/SW_Memory.design.cpr",
+          "guiDescription": "Required memory related specification"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "mappedObjects",
+          "parameterTitle": "Mapped Objects",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/COMMON_ObjectBase.design.cpr"
+        }
+      ],
+      "baseName": "NC_NcoreUnit"
+    }
+  ]
+}

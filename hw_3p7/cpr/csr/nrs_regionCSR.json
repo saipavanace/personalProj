@@ -1,0 +1,66 @@
+[
+  {
+    "name": "xNRSBAR",
+    "fields": [
+              {
+                "name": "NRSBA",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "NRSBA",
+                "scope": "All",
+                "reset": "return derived.CsrInfo.csrBaseAddress.replace(\"'h\", \"0x\")",
+                "description": "NRSBA field indicates bits[51:20] of the Base address of the Ncore Register Space"
+              }
+    ]
+  },
+  {
+    "name": "xNRSBHR",
+    "fields": [
+              {
+                "name": "NRSBA",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RO",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "NRSBA field indicates bits[51:20] of the Base address of the Ncore Register Space"
+              }
+    ]
+  },
+  {
+    "name": "xNRSBLR",
+    "fields": [
+              {
+                "name": "NRSDIIId",
+                "bitOffset": 4,
+                "bitWidth": "10",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.nDiis - 1",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "This field is set to NUId of the DII to which the Ncore is connected"
+              },
+              {
+                "name": "BALoaded",
+                "bitOffset": 31,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "Engg",
+                "description": "This field is set when NRSBHR is stored into and reset when this register is read "
+              }
+    ]
+  }
+]

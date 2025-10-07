@@ -1,0 +1,73 @@
+<p>The models and testbench elements are configured using SystemC attributes and SystemC-CCI parameters (subsumed as properties in the following). These attributes and parameters can be configured using either a JSON or a YAML file. In both cases the keys of a hash of hashes form the hierarchical name of a property by concatenation of the keys using a '.'. So the following two examples in JSON format are equal:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+    &quot;ncore_sim&quot;: {
+        &quot;caiu0_drv&quot;: {
+            &quot;master&quot;: {
+                &quot;log_level&quot;: 6
+            }
+        }
+    }
+}</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+    &quot;ncore_sim.caiu0_drv.master.log_level&quot;: 6
+}</pre>
+</div></div><p>The same in YAML can be expressed as </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ncore_sim:
+    caiu0_drv:
+        master:
+            log_level: 6</pre>
+</div></div><p /><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ncore_sim.caiu0_drv.master.log_level: 6</pre>
+</div></div><p>The YAML format has an advantage over JSON: it supports including other YAMl files. Taking the example above and splitting it into caiu.yaml</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">caiu0_drv:
+        master:
+            log_level: 6</pre>
+</div></div><p>and ncore_sim.yaml including caiu.yaml:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ncore_sim: !include caiu.yaml</pre>
+</div></div><p>results in the same setup as shown before.</p><p>The used infrastructure allows to use globbing and regular expressions to match hierarchical names.</p><p>The globbing supports the following meta symbols:</p><ul><li><p>‘*' any character except '.’ in any quantity</p></li><li><p>‘**’ any character in any quantity</p></li><li><p>'?' any character exactly once</p></li><li><p>‘[…]*’ the character class given in [] in any quantity</p></li><li><p>‘[…]?’ the character class given in [] exactly one</p></li></ul><p>A regular expression has <strong>always</strong> to begin with ‘^'. The hierarchical name is treated as a string. This means if there is a need to match the hierarchy separator it needs to be escaped ('\.').</p><p>As an example, the following 5 snippets achieve the same result, enabling the logging in caiu0_drv and its components:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+    &quot;ncore_sim&quot;: {
+        &quot;caiu0_drv&quot;: {
+            &quot;log_level&quot;: 6,
+            &quot;master&quot;: {
+                &quot;log_level&quot;: 6
+            },
+            &quot;pe&quot;: {
+                &quot;log_level&quot;: 6
+            },
+            &quot;parser&quot;: {
+                &quot;log_level&quot;: 6
+            },
+            &quot;cache&quot;: {
+                &quot;log_level&quot;: 6
+            }
+        }
+    }
+}</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+    &quot;ncore_sim&quot;: {
+        &quot;caiu0_drv**.log_level&quot;: 6
+    }
+}</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ncore_sim:
+  caiu0_drv:
+    log_level: 6
+    master:
+      log_level: 6
+    pe:
+      log_level: 6
+    parser:
+      log_level: 6
+    cache:
+      log_level: 6</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ncore_sim:
+  caiu0_drv**.log_level: 6</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">ncore_sim.caiu0_drv**.log_level: 6</pre>
+</div></div><p>The last example as a regular expression it might look like</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">^ncore_sim\.caiu0_drv.*\.log_level$: 6</pre>
+</div></div>

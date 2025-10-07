@@ -1,0 +1,283 @@
+\jsbegin
+var u = obj.lib;
+var m = obj.userLib;
+
+var ioaiu_log = function(n) { return (n > 1) ? m.log2ceil(n) : /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 1; };
+
+var assertOn = u.getParam('assertOn');
+
+var usePLRU = u.getParam('usePLRU');
+var WAYS = u.getParam('WAYS');
+var SETS = u.getParam('SETS');
+
+var nWays = WAYS;
+var nSets = SETS;
+var wSets = m.log2ceil(nSets);
+var SW = ioaiu_log(SETS);
+
+u.port('input','clk_i',1);
+u.port('input','reset_ni',1);
+
+u.port('input','p2_stall_i',1);
+u.port('input','p2_cancel_i',1); //p2_cancel_i = dce_dm::w_p2_cancel which is FIFO output
+u.port('input','p2_vretry_i',1);
+u.port('input','p2_rc_hit_i',1);
+u.port('input','t_p2_valid',1);
+u.port('input','t_p2_retry',1);
+u.port('input','t_p2_cancel',1); //t_p2_cancel = t_p2_error | (t_p2_valid & p2_cancel_i) | p2_stall_i;
+u.port('input','t_p2_alloc',1);
+u.port('input','t_p2_vals',WAYS);
+u.port('input','t_p2_hits',WAYS);
+u.port('input','q_p2_upd',1);
+u.port('input','q_p2_busy',WAYS);
+u.port('input','q_p2_home',1);
+u.port('input','q_p2_retry',1);
+u.port('input','t_vb_hit',1);
+u.port('input','w_vb_ready',1);
+u.port('input','t_p0_res_0',1);
+u.port('input','t_p0_rindex',SW);
+
+// For PLRU
+u.port('input','n_p1_valid',1);
+u.port('input','w_p1_ready',1);
+u.port('input','w_p1_valid',1);
+u.port('input','n_p1_ready',1);
+u.port('input','n_p2_valid',WAYS);
+u.port('input','w_p2_ready',WAYS);
+u.port('input','w_p2_valid',WAYS);
+u.port('input','n_p2_ready',WAYS);
+
+u.port('output','n_vb_valid',1);
+u.port('output','t_p2_invals',WAYS);
+u.port('output','t_p2_ebv',WAYS);
+u.port('output','w_p2_evbv',WAYS);
+
+    if (usePLRU) {
+u.port('input',  'plru_mem_init',       1);
+u.port('input',  'plru_mem_init_addr',  wSets);
+u.port('output', 'plru_mem_read_en',    1);     // p0
+u.port('output', 'plru_mem_read_addr',  wSets); // p0
+u.port('input',  'plru_mem_read_data',  nWays); // p1
+u.port('output', 'plru_mem_write_en',   1);     // p3
+u.port('output', 'plru_mem_write_addr', wSets); // p3
+u.port('output', 'plru_mem_write_data', nWays); // p3
+    }
+
+\jsend
+
+module \=u.getModuleName()=\
+        (\=u.getPorts('\n\t')=\
+);
+
+localparam WAYS = \=WAYS=\;
+localparam SETS = \=SETS=\;
+
+localparam SW = \=SW=\;
+
+wire dff_enable = 1'b1;
+
+wire [WAYS-1:0] w_p2_eibv, w_p2_eibv_org, w_p2_evbv_org; 
+wire w_p2_einval;
+wire t_p2_arb, t_p2_arb11, t_p2_arb21, t_p2_arb22, t_p2_arb_cond;
+
+\js if (usePLRU) {
+
+wire plru_p1_valid_flop_en;
+wire plru_p2_valid_flop_en;
+wire plru_p3_valid_flop_en;
+wire plru_p4_valid_flop_en;
+wire plru_p5_valid_flop_en;
+
+wire plru_p1_data_flop_en;
+wire plru_p2_data_flop_en;
+wire plru_p3_data_flop_en;
+wire plru_p4_data_flop_en;
+wire plru_p5_data_flop_en;
+
+wire plru_lookup_valid_p0;
+wire [\=wSets-1=\:0] plru_lookup_index_p0;
+wire [\=nWays-1=\:0] plru_valid_ways_p2;
+wire [\=nWays-1=\:0] plru_hit_way_p2;
+wire [\=nWays-1=\:0] plru_victim_way_p2;
+wire plru_result_valid_p2;
+wire plru_result_commit_p2;
+
+\js }
+
+
+assign t_p2_invals = ~t_p2_vals & ~q_p2_busy;
+
+\jsbegin
+// Min number of ways in ncore_3p2 is 2, and sets is 16.
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (WAYS > 1) {
+\jsend
+
+    \=u.instance({
+        instanceName: 'u_or_tree_t_p2_invals',
+        moduleName:   'logic_tree',
+        params: {'width' : WAYS,
+                 'logic' : '|'},
+        ports: { 'din'  : 't_p2_invals',
+                 'dout' : 'w_p2_einval' }
+    })=\
+
+    \=obj.lib.instance({
+        instanceName: 'u_find_first_one_t_p2_invals',
+        moduleName: 'find_first_one',
+        params: { width : WAYS },
+        verilogParams: { WIDTH : WAYS },
+        ports: {
+            invec  : 't_p2_invals',
+            outvec : 'w_p2_eibv_org'
+        }
+    })=\
+
+    \=u.instance({
+        moduleName: 'dce_dir_arb',
+        instanceName: 'vways',
+        params: { DW: WAYS },
+        ports: {
+                clk:            'clk_i',
+                reset_n:        'reset_ni',
+                ready_i:        't_p2_arb',
+                bv_i:           't_p2_vals',
+                wbv_o:          'w_p2_evbv_org'
+        }
+    })=\
+
+\js } else {
+
+assign w_p2_einval = t_p2_invals[0];
+assign w_p2_eibv_org = t_p2_invals[0];
+assign w_p2_evbv_org = t_p2_vals[0];
+
+\js }
+
+wire t_p2_ebv_clear = (((~q_p2_home | ~t_p2_alloc | ~w_vb_ready) & ~t_vb_hit) | 
+		   (& q_p2_busy) |
+                   (| t_p2_hits));
+
+\js if (usePLRU) {
+assign t_p2_ebv = t_p2_ebv_clear ? {WAYS{1'b0}} : plru_victim_way_p2;
+\js } else {
+assign t_p2_ebv = t_p2_ebv_clear ? {WAYS{1'b0}} :
+		  w_p2_einval ? w_p2_eibv : 
+				w_p2_evbv;
+\js }
+
+\js // tag filter miss allocate but all ways are full, so need to pick a victim for tag filter eviction to victim buffer
+
+assign t_p2_arb_cond = t_p2_valid
+                     & ~t_p2_cancel 
+                     & ~q_p2_upd
+                     & ~p2_rc_hit_i
+                     & (~| t_p2_hits) 
+                     & (| t_p2_vals) 
+\js if (usePLRU) {
+                     & ((~| t_p2_invals) | {|{plru_victim_way_p2 & t_p2_vals}});
+\js } else {
+                     & (~| t_p2_invals);
+\js }
+
+assign t_p2_arb = t_p2_arb11 | t_p2_arb21 | t_p2_arb22;
+
+assign t_p2_arb11 = t_p2_arb_cond & t_vb_hit & ~q_p2_home;
+
+assign t_p2_arb22 = t_p2_arb_cond & t_vb_hit & ~p2_vretry_i & ~q_p2_retry;
+
+assign t_p2_arb21 = t_p2_arb_cond             & (q_p2_home & t_p2_alloc & ~p2_vretry_i & ~q_p2_retry);
+
+assign n_vb_valid = t_p2_arb_cond & ~t_vb_hit & (q_p2_home & t_p2_alloc & ~p2_vretry_i & ~q_p2_retry) & w_vb_ready;
+
+
+\js if (usePLRU) {
+
+assign plru_p1_valid_flop_en =    (n_p1_valid & w_p1_ready)   |    (w_p1_valid & n_p1_ready);
+assign plru_p2_valid_flop_en = ({|{n_p2_valid & w_p2_ready}}) | ({|{w_p2_valid & n_p2_ready}});
+assign plru_p3_valid_flop_en = ~p2_stall_i;
+assign plru_p4_valid_flop_en = ~p2_stall_i;
+assign plru_p5_valid_flop_en = ~p2_stall_i;
+
+assign plru_p1_data_flop_en = n_p1_valid & w_p1_ready;
+assign plru_p2_data_flop_en = {|{n_p2_valid & w_p2_ready}};
+assign plru_p3_data_flop_en = ~p2_stall_i;
+assign plru_p4_data_flop_en = ~p2_stall_i;
+assign plru_p5_data_flop_en = ~p2_stall_i;
+
+assign plru_lookup_valid_p0   = t_p0_res_0;
+assign plru_lookup_index_p0   = t_p0_rindex;
+assign plru_valid_ways_p2     = w_p2_einval ? t_p2_invals : t_p2_vals; //~q_p2_busy; // CONC-12795
+assign plru_hit_way_p2        = t_p2_cancel | q_p2_upd | p2_vretry_i | q_p2_retry ? {\=WAYS=\{1'b0}} : t_p2_hits;
+assign plru_result_commit_p2  = plru_result_valid_p2 & (({|{plru_victim_way_p2}} & t_p2_alloc & q_p2_home) | {|{plru_hit_way_p2}}) & ~p2_cancel_i & ~q_p2_upd & ~t_p2_retry;
+
+    \=obj.lib.instance({
+        moduleName: 'dce_plru_ctrl',
+        instanceName: 'u_plru_ctrl',
+        params: {
+            assertOn : assertOn,
+            nWays : nWays,
+            nSets : nSets
+        },
+        ports: {
+            clk:             'clk_i',
+            reset_n:         'reset_ni',
+            p2_stall_i:      'p2_stall_i',
+            p1_valid_flop_en:'plru_p1_valid_flop_en',
+            p2_valid_flop_en:'plru_p2_valid_flop_en',
+            p3_valid_flop_en:'plru_p3_valid_flop_en',
+            p4_valid_flop_en:'plru_p4_valid_flop_en',
+            p5_valid_flop_en:'plru_p5_valid_flop_en',
+            p1_data_flop_en: 'plru_p1_data_flop_en',
+            p2_data_flop_en: 'plru_p2_data_flop_en',
+            p3_data_flop_en: 'plru_p3_data_flop_en',
+            p4_data_flop_en: 'plru_p4_data_flop_en',
+            p5_data_flop_en: 'plru_p5_data_flop_en',
+            lookup_valid_p0: 'plru_lookup_valid_p0',
+            lookup_index_p0: 'plru_lookup_index_p0',
+            valid_ways_p2:   'plru_valid_ways_p2',
+            hit_way_p2:      'plru_hit_way_p2',
+            victim_way_p2:   'plru_victim_way_p2',
+            result_valid_p2: 'plru_result_valid_p2',
+            result_commit_p2:'plru_result_commit_p2',
+            busy_ways_p2:    'q_p2_busy',
+            mem_init:        'plru_mem_init',
+            mem_init_addr:   'plru_mem_init_addr',
+            mem_read_en:     'plru_mem_read_en',
+            mem_read_addr:   'plru_mem_read_addr',
+            mem_read_data:   'plru_mem_read_data',
+            mem_write_en:    'plru_mem_write_en',
+            mem_write_addr:  'plru_mem_write_addr',
+            mem_write_data:  'plru_mem_write_data'
+        }
+    })=\
+
+\js }
+
+\js if (usePLRU) {
+assign w_p2_evbv = w_p2_einval ? 'b0                : plru_victim_way_p2;
+assign w_p2_eibv = w_p2_einval ? plru_victim_way_p2 : 'b0;
+\js } else {
+assign w_p2_evbv = w_p2_evbv_org;
+assign w_p2_eibv = w_p2_eibv_org;
+\js }
+
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) { \jsend
+
+`ifdef OVL_ASSERT_ON
+
+//coverage off
+//pragma synthesis_off
+
+
+//pragma synthesis_on
+//coverage on
+
+`endif
+
+\js }
+
+endmodule

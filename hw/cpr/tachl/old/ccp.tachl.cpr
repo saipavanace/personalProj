@@ -1,0 +1,222 @@
+{
+  "name": "ccp",
+  "tachl": [
+    {
+      "name": "",
+      "params": [
+        {
+          "parameterName": "num_ports",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.num_ports"
+        },
+        {
+          "parameterName": "wCacheLineOffset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 6,
+          "formula": "return system.wCacheLineOffset"
+        },
+        {
+          "parameterName": "nTableEntries",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return unit.nTableEntries"
+        },
+        {
+          "parameterName": "nSets",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 16,
+          "formula": "return unit.nSets"
+        },
+        {
+          "parameterName": "nWays",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "formula": "return unit.nWays"
+        },
+        {
+          "parameterName": "wData",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 128,
+          "formula": "return unit.wData"
+        },
+        {
+          "parameterName": "useScratchpad",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 0,
+          "formula": "return unit.useScratchpad"
+        },
+        {
+          "parameterName": "nBeatsPerBank",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.nBeatsPerBank",
+          "validValues": "1"
+        },
+        {
+          "parameterName": "nTagBanks",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.nTagBanks",
+          "validValues": "1, 2"
+        },
+        {
+          "parameterName": "nDataBanks",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.nDataBanks",
+          "validValues": "1, 2, 4"
+        },
+        {
+          "parameterName": "PortPriSubDiagAddrBits",
+          "type": "array",
+          "parameterType": "architecture",
+          "reference": "",
+          "formula": "return unit.PortPriSubDiagAddrBits",
+          "arrayType": "integer",
+          "description": ""
+        },
+        {
+          "parameterName": "PortSecSubRows",
+          "type": "array",
+          "parameterType": "architecture",
+          "reference": "",
+          "formula": "return unit.PortSecSubRows",
+          "arrayType": "string"
+        },
+        {
+          "parameterName": "PriSubDiagAddrBits",
+          "type": "array",
+          "parameterType": "architecture",
+          "reference": "",
+          "formula": "return unit.PriSubDiagAddrBits",
+          "arrayType": "integer",
+          "description": "U"
+        },
+        {
+          "parameterName": "SecSubRows",
+          "type": "array",
+          "parameterType": "architecture",
+          "reference": "",
+          "formula": "return unit.SecSubRows",
+          "arrayType": "string",
+          "description": "U"
+        },
+        {
+          "parameterName": "TagBankSelBits",
+          "type": "array",
+          "parameterType": "architecture",
+          "reference": "",
+          "formula": "return unit.TagBankSelBits",
+          "arrayType": "integer",
+          "description": "U"
+        },
+        {
+          "parameterName": "DataBankSelBits",
+          "type": "array",
+          "parameterType": "architecture",
+          "reference": "",
+          "formula": "return unit.DataBankSelBits",
+          "arrayType": "integer",
+          "description": "U"
+        },
+        {
+          "parameterName": "TagErrInfo",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "NONE, SECDED, PARITY",
+          "default": "NONE",
+          "formula": "return unit.TagErrInfo",
+          "description": "U"
+        },
+        {
+          "parameterName": "DataErrInfo",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "NONE, SECDED, PARITY",
+          "default": "NONE",
+          "formula": "return unit.DataErrInfo",
+          "description": "U"
+        },
+        {
+          "parameterName": "wAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 48,
+          "formula": "return unit.wAddr"
+        },
+        {
+          "parameterName": "wSecurity",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return system.wNS",
+          "description": "",
+          "validValues": "0, 1"
+        },
+        {
+          "parameterName": "wStateBits",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "formula": "return unit.wStateBits",
+          "minimum": 1,
+          "maximum": 4
+        },
+        {
+          "parameterName": "nClkDiv",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.ClkDiv"
+        },
+        {
+          "parameterName": "nRPPorts",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.nRPPorts",
+          "minimum": 1,
+          "maximum": 2
+        },
+        {
+          "parameterName": "RepPolicy",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "RANDOM, NRU",
+          "default": "NRU",
+          "formula": "return unit.RepPolicy"
+        },
+        {
+          "parameterName": "useDinBuffer",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 0,
+          "formula": "return unit.useDinBuffer",
+          "description": "U"
+        },
+        {
+          "parameterName": "useDoutBuffer",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 1,
+          "formula": "return unit.useDoutBuffer",
+          "description": "U"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,477 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU
+// Author: Benjamin Madon
+//=============================================================================
+
+
+var utilFunctions   = obj.userLib.lib_utils;
+
+var newToOldStyleInterface	= obj.userLib.newToOldStyleInterface.bind( null, obj.userLib );
+var m = obj.userLib;
+var u=obj.lib;
+
+var p =u.getParam();
+u.nInterfaces(p.interfaces);
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+function wire(prefix,NewInterface,exclude){
+  return m.bundleFunctions.wiresFromInterface(prefix+NewInterface.name,        newToOldStyleInterface(NewInterface).signals,       exclude,  u.bundle)
+}
+
+
+function concat_flit_fields (packet_descriptor,vc_descriptor,beat,data,start,credits){
+var wdata=512;
+
+var payload_upper = packet_descriptor.PayloadBits[beat]+packet_descriptor.GranuleSizeInBytes*packet_descriptor.NumberOfGranulePerBeat*8;
+var credit_vcs=[];
+var credit_b = [];
+var credit_w = [];
+for (var c in packet_descriptor.CreditReturnBits){
+  if (packet_descriptor.CreditReturnBits[c]["values"][0]==beat) {
+    credit_vcs.push(c);
+    credit_b.push(packet_descriptor.CreditReturnBits[c]["values"][1]);
+    credit_w.push(packet_descriptor.CreditReturnBits[c]["values"][2]);
+  }
+}
+
+var q=[]
+var s=""
+var zero =1;
+var zero_count =0;
+var total_width = 0;
+for (var b=0; b<wdata;b++){
+  zero=1
+
+    for (var g=0; g< packet_descriptor.NumberOfGranulePerBeat;g++){
+      if (b == packet_descriptor.StartBits[beat]["GranuleId"][g]){
+        if (zero_count>0){  q.push(zero_count+"'h0"); total_width+=zero_count;}
+        q.push(start+"["+g+"]")
+        total_width+=1;
+        zero=0;
+        zero_count=0;
+      }
+    }
+    if (b>=packet_descriptor.PayloadBits[beat] & b<payload_upper){
+      if (zero_count>0){  q.push(zero_count+"'h0"); total_width+=zero_count;}
+      q.push(data);
+      total_width+=packet_descriptor.NumberOfGranulePerBeat*8*packet_descriptor.GranuleSizeInBytes;
+      b=payload_upper-1;
+      zero=0;
+      zero_count=0;
+    }
+    for (var v in credit_vcs){
+      if (b == credit_b[v]) {
+        if (zero_count>0){  q.push(zero_count+"'h0");total_width+=zero_count;}
+        q.push(credits+credit_vcs[v]);
+        total_width+=credit_w[v];
+        b+=credit_w[v]-1;
+        zero=0;
+        zero_count=0;
+        }
+    }
+    if (zero){
+      zero_count+=1;
+    }
+  }
+  s+= "{"
+  if ((wdata-total_width)>0) {
+    s+=(wdata-total_width)+"'d0,";
+  }
+  for (var els = q.length-1; els >0;els--) {
+    s+= q[els]+","
+  }
+  s+=q[0]+"};"
+return s
+}
+
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+
+
+\jsbegin
+for (var vc=0;vc<p.vc_descriptor["nVC"];vc++) {
+    var prefix="VC_"+vc+"_to_framer_push_";
+    var Fifo_pack_interface={};
+    var Fifo_pack_prefix={};
+    for (var i=0; i<p.vc_descriptor.MessageSizeInGranule[vc];i++){
+      Fifo_pack_interface["push_"+i+"_"] ={
+        "params": {
+          "wData": p.packet_descriptor.GranuleSizeInBytes*8,
+          },
+        "name": "push_"+i+"_",
+        "_SKIP_": false,
+        "interface": "InterfaceGenRdyVld",
+        "direction": "slave",
+        "blkClkGateOn": true
+      };
+      Fifo_pack_prefix["push_"+i+"_"] ={name : prefix+i+"_"};
+    }
+
+
+
+    for (var i=0; i<p.packet_descriptor.NumberOfGranulePerBeat;i++){
+        Fifo_pack_interface["pop_"+i+"_"] ={
+          "params": {
+            "wData": p.packet_descriptor.GranuleSizeInBytes*8,
+            },
+          "name": "pop_"+i+"_",
+          "_SKIP_": false,
+          "interface": "InterfaceGenRdyVld",
+          "direction": "master",
+          "blkClkGateOn": true
+        };
+        Fifo_pack_prefix["pop_"+i+"_"] ={name : "VC_"+vc+"_pop_"+i+"_"};
+      }
+
+
+    Fifo_pack_interface["clkInt"] = m.deepCopy(p.interfaces ["clkInt"]);
+    Fifo_pack_interface["clkInt"].name = "";
+    Fifo_pack_prefix["clkInt"] ={name: p.interfaces ["clkInt"].name};
+
+
+    var Fifo_pack_parameters ={interfaces : Fifo_pack_interface,
+                                NumberOfGranulePerBeat  : p.packet_descriptor.NumberOfGranulePerBeat,
+                                GranuleSizeInBytes : p.packet_descriptor.GranuleSizeInBytes,
+                                MessageSizeinG :p.vc_descriptor.MessageSizeInGranule[vc],
+                                size :Math.max(6,p.vc_descriptor.MessageSizeInGranule[vc] * 4)
+}
+
+\jsend
+
+\jsbegin
+for (var i=0; i<p.packet_descriptor.NumberOfGranulePerBeat;i++){
+\jsend
+\=wire("VC_"+vc+"_",Fifo_pack_interface["pop_"+i+"_"],[] )=\
+\jsbegin
+}
+
+for (var i=0; i<p.vc_descriptor.MessageSizeInGranule[vc];i++){
+\jsend
+\=wire("VC_"+vc+"_to_framer_",Fifo_pack_interface["push_"+i+"_"],[] )=\
+\jsbegin
+}
+\jsend
+    \=u.nInstance({
+        instanceName: prefix+'Fifo_pack',
+        moduleName: 'Fifo_pack',
+        params: Fifo_pack_parameters, 
+        interfaceObj: {
+            interfaces: Fifo_pack_interface,
+            prefixes: Fifo_pack_prefix
+        }
+      })=\
+
+      \jsbegin
+      for (var g=0; g<p.vc_descriptor.MessageSizeInGranule[vc];g++){
+        \jsend
+        assign VC_\=vc=\_to_framer_push_\=g=\_data = \=p.interfaces["VC_"+vc].name=\data[\=(g+1)*p.packet_descriptor.GranuleSizeInBytes*8-1=\ : \=g*p.packet_descriptor.GranuleSizeInBytes*8=\];
+        assign VC_\=vc=\_to_framer_push_\=g=\_valid = \=p.interfaces["VC_"+vc].name=\valid;
+
+        \jsbegin
+      }
+      \jsend
+      assign \=p.interfaces["VC_"+vc].name=\ready = VC_\=vc=\_to_framer_push_0_ready 
+                                                        \jsbegin
+                                                        for (var g=1; g<p.vc_descriptor.MessageSizeInGranule[vc];g++){
+                                                          \jsend
+                                                     & VC_\=vc=\_to_framer_push_\=g=\_ready
+                                                    \jsbegin
+                                                  }
+                                                  \jsend
+                                                  ;
+\jsbegin
+  }
+\jsend
+
+
+
+\jsbegin
+var GIU_current_beat_interfaces={};
+var framer_out_cxs_in_ = m.deepCopy(p.interfaces["framer_out_cxs_in_"]);
+framer_out_cxs_in_["interface"]="InterfaceGenVld";
+framer_out_cxs_in_["params"]["wData"]=0;
+framer_out_cxs_in_["direction"] = "slave";
+framer_out_cxs_in_["name"] = "framer_out_cxs_in_ready_";
+GIU_current_beat_interfaces["cxs_out_deframer_in_"] =framer_out_cxs_in_;
+
+
+var current_beat_ = m.deepCopy(p.Generic_interfaces.Generic_interface); 
+current_beat_["params"]["wOut"] = 0;
+current_beat_["params"]["wIn"] = m.log2ceil(4);
+current_beat_["name"] = "current_beat_";
+current_beat_["direction"] = "slave";
+GIU_current_beat_interfaces["current_beat_"] =current_beat_;
+
+GIU_current_beat_interfaces["clkInt"] = m.deepCopy(p.interfaces ["clkInt"]);
+var GIU_current_beat_parameters = {};
+GIU_current_beat_parameters["interfaces"] = GIU_current_beat_interfaces;
+GIU_current_beat_parameters["NumberOfBeatPerContainer"] = 4;
+\jsend
+
+\=wire("",GIU_current_beat_interfaces["current_beat_"],[])=\
+wire framer_out_cxs_in_ready_valid;
+
+assign framer_out_cxs_in_ready_valid = \=p.interfaces["framer_out_cxs_in_"].name=\valid & \=p.interfaces["framer_out_cxs_in_"].name=\ready;
+
+  \=u.nInstance({
+      instanceName: 'GIU_current_beat',
+      moduleName: 'GIU_current_beat',
+      params: GIU_current_beat_parameters, 
+      interfaceObj: {
+      interfaces: GIU_current_beat_interfaces,
+      prefixes: GIU_current_beat_interfaces
+    }
+  })=\
+
+
+  wire [\=p.packet_descriptor.NumberOfGranulePerBeat-1=\:0] start_pointer_data;
+  wire [\=p.packet_descriptor.NumberOfGranulePerBeat*log2ceil(p.vc_descriptor.nVC)-1=\:0] mux_select_data;
+  wire [\=p.packet_descriptor.NumberOfGranulePerBeat-1=\ : 0 ] mux_select_valid_data;
+  wire flit_accepted_data;
+
+\jsbegin
+var giu_scheduler_interfaces= {};
+
+  for (var vc=0;vc<p.vc_descriptor["nVC"];vc++){
+
+
+    giu_scheduler_interfaces["VC_"+vc+"_to_framer_push_ready_valid"] ={
+      "params": {
+        "wData": 1,
+        },
+      "name": "VC_"+vc+"_to_framer_push_0_ready_valid_",
+      "_SKIP_": false,
+      "interface": "InterfaceGenData",
+      "direction": "slave",
+      "blkClkGateOn": true
+    };
+
+    var message_credit_status_ = m.deepCopy(p.Generic_interfaces["InterfaceGenData"]);
+    message_credit_status_["params"]["wData"] = p.vc_descriptor["wCredit"];
+    message_credit_status_["name"] = "message_credit_status_VC_"+vc+"_";
+    message_credit_status_["direction"] = "slave";
+    giu_scheduler_interfaces["message_credit_status_VC_"+vc] = message_credit_status_;
+
+    var message_credit_use_ = m.deepCopy(p.Generic_interfaces["InterfaceGenVld"]);
+    message_credit_use_["params"]["wData"] = p.packet_descriptor.CreditReturnBits[vc]["values"][2];
+    message_credit_use_["name"] = "message_credit_use_VC_"+vc+"_";
+    message_credit_use_["direction"] = "master";
+    giu_scheduler_interfaces["message_credit_use_VC_"+vc] =message_credit_use_;
+
+
+    var credit_status_ = m.deepCopy(p.Generic_interfaces["InterfaceGenData"]);
+    credit_status_["params"]["wData"] = p.vc_descriptor["wCredit"];
+    credit_status_["name"] = "credit_status_VC_"+vc+"_";
+    credit_status_["direction"] = "slave";
+    giu_scheduler_interfaces["credit_status_VC_"+vc] = credit_status_;
+  }
+
+  giu_scheduler_interfaces["clkInt"] = m.deepCopy(p.interfaces ["clkInt"]);
+
+  var flit_accepted = m.deepCopy(p.Generic_interfaces["InterfaceGenData"]);
+  flit_accepted["params"]["wData"] = 1;
+  flit_accepted["name"] = "flit_accepted_";
+  flit_accepted["direction"] = "slave";
+  giu_scheduler_interfaces["flit_accepted"] = flit_accepted;
+
+  var start_pointer = m.deepCopy(p.Generic_interfaces["InterfaceGenData"]);
+  start_pointer["params"]["wData"] = p.packet_descriptor.NumberOfGranulePerBeat;
+  start_pointer["name"] = "start_pointer_";
+  start_pointer["direction"] = "master";
+  giu_scheduler_interfaces["start_pointer"] = start_pointer;
+
+  var mux_select = m.deepCopy(p.Generic_interfaces["InterfaceGenData"]);
+  mux_select["params"]["wData"] = p.packet_descriptor.NumberOfGranulePerBeat*log2ceil(p.vc_descriptor.nVC);
+  mux_select["name"] = "mux_select_";
+  mux_select["direction"] = "master";
+  giu_scheduler_interfaces["mux_select"] = mux_select;
+
+  var mux_select_valid_data = m.deepCopy(p.Generic_interfaces["InterfaceGenData"]);
+  mux_select_valid_data["params"]["wData"] = p.packet_descriptor.NumberOfGranulePerBeat;
+  mux_select_valid_data["name"] = "mux_select_valid_";
+  mux_select_valid_data["direction"] = "master";
+  giu_scheduler_interfaces["mux_select_valid_data"] = mux_select_valid_data;
+
+
+
+  var giu_scheduler_parameters = {interfaces : giu_scheduler_interfaces,
+                                  vc_descriptor : p.vc_descriptor,
+                                  packet_descriptor : p.packet_descriptor,
+                                  priority : [0,1,2,3],
+                                  MaxNumberOfMEssagePerVC : [3,3,3,3]
+                                };
+  \jsend
+
+  \jsbegin
+  for (var vc = 0 ; vc < p.vc_descriptor.nVC; vc ++){
+\jsend
+
+    wire VC_\=vc=\_to_framer_push_0_ready_valid_data;
+    assign VC_\=vc=\_to_framer_push_0_ready_valid_data = VC_\=vc=\_to_framer_push_0_valid & VC_\=vc=\_to_framer_push_0_ready;
+
+\jsbegin
+  }
+\jsend
+
+\=u.nInstance({
+  instanceName: 'giu_scheduler',
+  moduleName: 'giu_scheduler',
+  params: giu_scheduler_parameters, 
+  interfaceObj: {
+  interfaces: giu_scheduler_interfaces,
+  prefixes: giu_scheduler_interfaces
+}
+})=\
+
+
+wire [\=p.packet_descriptor["GranuleSizeInBytes"]*8*p.packet_descriptor["NumberOfGranulePerBeat"]-1=\:0] pop_data;
+
+\jsbegin
+for ( var g=0; g< p.packet_descriptor["NumberOfGranulePerBeat"];g++){
+\jsend
+  reg [\=p.packet_descriptor.GranuleSizeInBytes*8-1=\:0] pop_data_\=g=\;
+\jsbegin
+}
+\jsend
+
+assign pop_data = {
+  \jsbegin
+  for ( var g=p.packet_descriptor["NumberOfGranulePerBeat"]-1; g>0 ;g--){
+  \jsend
+    pop_data_\=g=\,
+\jsbegin
+  }
+\jsend
+    pop_data_0};
+
+reg [511:0] framer_out_cxs_in_data_reg;
+
+\jsbegin
+for(var vc=0; vc<p.vc_descriptor["nVC"];vc++){
+\jsend
+      wire [\=p.packet_descriptor.CreditReturnBits[vc]["values"][2]-1 =\ : 0] credit_return_\=vc=\ ;
+      assign   credit_return_\=vc=\ = | \=p.interfaces["credit_status_"+vc].name=\data[\=p.vc_descriptor["wCredit"]-1=\:\=p.packet_descriptor.CreditReturnBits[vc]["values"][2]=\] ? {\=p.packet_descriptor.CreditReturnBits[vc]["values"][2]=\{1'b1}} : \=p.interfaces["credit_status_"+vc].name=\data[\=p.packet_descriptor.CreditReturnBits[vc]["values"][2]-1=\:0];
+
+
+  \jsbegin
+    }
+  \jsend
+
+
+
+always @(*) begin
+case (current_beat_in)
+\jsbegin
+for (var beat =0; beat < p.packet_descriptor.NumberOfBeatPerContainer; beat++){
+\jsend
+  \=log2ceil(p.packet_descriptor.NumberOfBeatPerContainer)=\'d\=beat=\ : framer_out_cxs_in_data_reg  = \=concat_flit_fields(p.packet_descriptor,p.vc_descriptor,beat,"pop_data","start_pointer_data","credit_return_") =\
+\jsbegin
+}
+\jsend
+  default : framer_out_cxs_in_data_reg =512'd0;
+
+endcase
+end
+
+\jsbegin
+for(var vc=0; vc<p.vc_descriptor["nVC"];vc++){
+\jsend
+assign \=p.interfaces["credit_use_VC_"+vc].name=\data = credit_return_\=vc=\;
+assign \=p.interfaces["credit_use_VC_"+vc].name=\valid = framer_out_cxs_in_ready & framer_out_cxs_in_valid & current_beat_in == 2'd\=p.packet_descriptor.CreditReturnBits[vc]["values"][0]=\;
+\jsbegin
+}
+\jsend
+
+assign framer_out_cxs_in_data = framer_out_cxs_in_data_reg;
+
+\jsbegin
+for (var g=0;g<p.packet_descriptor.NumberOfGranulePerBeat;g++){
+  for(var vc=0; vc<p.vc_descriptor["nVC"];vc++){
+\jsend
+    reg VC_\=vc=\_pop_\=g=\_ready_reg;
+  \jsbegin
+  }
+}
+\jsend
+
+
+
+\jsbegin
+for (var g=0;g<p.packet_descriptor.NumberOfGranulePerBeat;g++){
+\jsend
+always @(*) begin
+  case (mux_select_data[\=(g+1)*log2ceil(p.vc_descriptor["nVC"])-1=\:\=g*log2ceil(p.vc_descriptor["nVC"])=\])
+  \jsbegin
+    for(var vc=0; vc<p.vc_descriptor["nVC"];vc++){
+  \jsend
+        \=log2ceil(p.vc_descriptor["nVC"])=\'d\=vc=\ : begin
+                  pop_data_\=g=\ = VC_\=vc=\_pop_\=g=\_data;  
+            \jsbegin
+              for(var vc2=0; vc2<p.vc_descriptor["nVC"];vc2++){
+                if (vc == vc2){
+            \jsend
+                  VC_\=vc2=\_pop_\=g=\_ready_reg = mux_select_valid_data[\=g=\] & framer_out_cxs_in_ready;
+            \jsbegin
+                } else {
+            \jsend
+                  VC_\=vc2=\_pop_\=g=\_ready_reg = 1'b0;
+            \jsbegin
+            }
+          }
+        
+        \jsend
+        end
+        \jsbegin
+    }
+    \jsend
+        default : 
+        begin 
+            pop_data_\=g=\ = \=p.packet_descriptor.GranuleSizeInBytes*8=\'d0 ;
+        \jsbegin
+          for(var vc2=0; vc2<p.vc_descriptor["nVC"];vc2++){
+        \jsend
+              VC_\=vc2=\_pop_\=g=\_ready_reg = 1'b0;
+        \jsbegin
+            }
+        \jsend
+        end
+        endcase 
+end
+\jsbegin
+}
+\jsend
+
+\jsbegin
+for (var g=0;g<p.packet_descriptor.NumberOfGranulePerBeat;g++){
+  for(var vc=0; vc<p.vc_descriptor["nVC"];vc++){
+\jsend
+assign  VC_\=vc=\_pop_\=g=\_ready = VC_\=vc=\_pop_\=g=\_ready_reg;
+\jsbegin
+  }
+}
+\jsend
+
+
+assign flit_accepted_data = framer_out_cxs_in_ready;
+\jsbegin
+// we will send empty flit if the first one of a seried of four has already been sent.
+\jsend
+assign framer_out_cxs_in_valid = (|mux_select_valid_data) | (|current_beat_in) | (|credit_return_0) ;
+
+assign \=p.interfaces["active"].name=\active = framer_out_cxs_in_valid 
+\jsbegin
+for (var vc=0 ; vc<p.vc_descriptor["nVC"]; vc++){
+\jsend
+    | VC_\=vc=\_to_framer_valid
+\jsbegin
+}
+\jsend
+;
+endmodule

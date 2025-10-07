@@ -1,0 +1,45 @@
+{
+  "name": "qosInfo",
+  "tachl": [
+    {
+      "name": "qosInfo",
+      "params": [
+        {
+          "parameterName": "qosMap",
+          "type": "array",
+          "parameterType": "micro-architecture",
+          "arrayType": "string",
+          "default": [],
+          "formula": "return system.qosparams.fnEnableQos ? system.qosparams.qosMap : []",
+          "description": "Length of array defines number of buckets. Bucket 0 is LSB."
+        },
+        {
+          "parameterName": "qosCredits",
+          "type": "array",
+          "parameterType": "micro-architecture",
+          "arrayType": "integer",
+          "default": [],
+          "formula": "return system.qosparams.qosMap.map(v => 0);",
+          "description": "Credit per bucket maps to buckets in qosMap."
+        },
+        {
+          "parameterName": "qosCreditsRsv",
+          "type": "array",
+          "parameterType": "micro-architecture",
+          "arrayType": "integer",
+          "default": [],
+          "formula": "return system.qosparams.fnEnableQos ? system.qosparams.qosCreditsRsv : []",
+          "description": "Number of credits reserved per QoS (for now this is fixed at 1 per bucket)."
+        },
+        {
+          "parameterName": "qosEventThreshold",
+          "type": "integer",
+          "parameterType": "micro-architecture",
+          "default": 0,
+          "formula": "return system.qosparams.fnEnableQos ? system.qosparams.qosEventThreshold : 0",
+          "description": "This is the reset value for starvation event counter."
+        }
+      ]
+    }
+  ]
+}

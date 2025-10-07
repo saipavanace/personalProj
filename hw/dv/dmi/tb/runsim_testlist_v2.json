@@ -1,0 +1,1836 @@
+{
+    "version": "0.1",
+    "iter": "1",
+    "defines": "RTL_DUT,COVER_ON,INHOUSE_APB_VIP,USE_VIP_SNPS,SVT_AXI_INCLUDE_USER_DEFINES,RESILIENCY_TESTING",
+    "plusargs": {
+        "+UVM_MAX_QUIT_COUNT": "1",
+        "+UVM_VERBOSITY": "UVM_NONE",
+        "+UVM_TIMEOUT": "25000000000",
+        "+EN_DMI_VSEQ": "1",
+        "+k_targ_src_id_chk_en": "1",
+        "+dmi_fix_index":"1",
+        "+prob_ace_rd_resp_error": "0",
+        "+prob_ace_wr_resp_error": "0"
+    },
+    "ignoreJson": "$WORK_TOP/rtl/top/ignore.json",
+    "tbTopTachl": "$WORK_TOP/rtl/dmi/src/dmi.tachl",
+    "pkgPath"   : "dmi/tb/dvPkg.json",
+    "configlist": {
+        "config1": {
+            "purpose": "bringup regression with nonCMC and enable Qos",
+            "tcl_lib": "hw_config_50",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_50/hw_config_50.tcl ", 
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config1_waiver.json",
+            "label": ["regr_cov", "tachl_cover"]
+        },
+        "hw_d2d_config_01": {
+            "purpose": "Die to Die bringup for DMI",
+            "tcl_lib": "hw_d2d_config_01",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_d2d_config_01/", 
+            "defines": "ERROR_TEST,ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "chiplet" : "DIE_1",
+	          "instance" : "SBSX0",
+            "compile_args": "",
+            "label": ["regr"]
+        },
+        "hw_cfg_22": {
+            "purpose": "bringup regression with nonCMC and enable Qos",
+            "tcl_lib": "hw_config_22",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_22 ", 
+            "defines": "ERROR_TEST,ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        
+        "hw_config_nxpauto": {
+            "purpose": "nightly regression: NXP auto config",
+            "tcl_lib": "hw_config_nxpauto",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_nxpauto",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config2": {
+            "purpose": "bringup regression with nonCMC and enable PMA  ",
+            "tcl_lib": "hw_config_51",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_51/hw_config_51.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config3": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+unit+TI ",
+            "tcl_lib": "hw_config_52",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_52/hw_config_52.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config4": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+Place+TI+qos+PMA",
+            "tcl_lib": "hw_config_53",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_53/hw_config_53.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "exclusionsDoFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config4_waiver.do",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config4_waiver.json",
+            "label": ["regr_cov", "tachl_cover"]
+        },
+        "config5": {
+            "purpose": "bringup regression with CMC+Atomic Resilency+Place+TI+unit with 4RTT",
+            "tcl_lib": "hw_config_54",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_54/hw_config_54.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config5_waiver.json",
+            "label": ["regr_cov", "tachl_cover"]
+        },
+        "config5b": {
+            "purpose": "bringup regression with CMC+Atomic Resilency+Place+TI+unit with 64RTT",
+            "tcl_lib": "hw_config_54b",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_54b/hw_config_54b.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config6": {
+            "purpose": "bringup regression with CMC+ScratchPad Resilency+Native+TI",
+            "tcl_lib": "hw_config_55",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_55/hw_config_55.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config6_waiver.json",
+            "label": ["regr_cov", "tachl_cover"]
+        },
+        "config7": {
+            "purpose": "bringup regression with CMC+wayParti+AddrTrans",
+            "tcl_lib": "hw_config_56",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_56/hw_config_56.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "exclusionsDoFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config7_waiver.do",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config7_waiver.json",
+            "label": ["regr_cov", "tachl_cover"]
+        },
+        "config7_axi_assert_off": {
+            "purpose": "bringup regression with CMC+wayParti+AddrTrans+assert_off for axi perfmon",
+            "tcl_lib": "hw_config_56",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_56/hw_config_56.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ASSERT_OFF,OVL_ASSERT_OFF,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config8": {
+            "purpose": "bringup regression with CMC+Scractch+atomic+wayPartition",
+            "tcl_lib": "hw_config_57",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_57/hw_config_57.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	        	"instance" : "dmi0",
+            "compile_args": "-deraceclockdata",
+            "exclusionsDoFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config8_waiver.do",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config8_waiver.json",
+            "label": ["weekly", "tachl_cover"]
+        },
+        "config8_random": {
+            "purpose": "bringup regression with CMC+Scractch+atomic+wayPartition",
+            "tcl_lib": "hw_config_57_random",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_57/hw_config_57_random.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	        	"instance" : "dmi0",
+            "compile_args": "-deraceclockdata",
+            "label": ["weekly"]
+        },
+        "config9": {
+            "purpose": "Memory Interleaving enabled with SP to test address utilization",
+            "tcl_lib": "hw_config_61",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_61/hw_config_61.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+          	"instance" : "dmi0",
+            "compile_args": "-deraceclockdata",
+            "exclusionsDoFile": "",
+            "patFile": "",
+            "label": []
+        },
+        "config_flc":{ 
+            "purpose": "test flc configuration", 
+            "tcl_lib": "hw_config_flc", 
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_flc/hw_config_flc.tcl",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	        	"instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "hw_cfg_meye_q7_dmi": {
+            "purpose": "Mobileye config with dmi1 instance",
+            "tcl_lib": "hw_config_meye_q7_latest",
+	         "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_meye_q7",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+            "instance": "dmi0",
+            "compile_args": "",
+            "exclusionsDoFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_hw_cfg_meye_q7.do",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_hw_cfg_meye_q7.json",
+            "label": ["meye", "meye_dmi", "weekly"]
+        },
+        "config8_mprs": {
+            "purpose": "Same as config8 + memory_prot=PARITY & resiliency_prot=SECDED",
+            "tcl_lib": "hw_config_57_mprs",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_57_mprs/hw_config_57_mprs.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+            "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config8_msrp": {
+            "purpose": "Same as config8 + memory_prot=SECDED & resiliency_prot=PARITY",
+            "tcl_lib": "hw_config_57_msrp",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_57_msrp/hw_config_57_msrp.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+            "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["weekly"]
+            
+        },
+        "config7_snps": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_config_07_synthesis/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "exclusionsDoFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config7_snps_waiver.do",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config7_snps_waiver.json",
+            "label": ["regr_cov", "tachl_cover"]
+        }, 
+        "config7_snps0": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../dmi_config/hw_config_07_synthesis0/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+  	        "instance" : "dmi0",
+            "compile_args": "-deraceclockdata",
+            "exclusionsDoFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config7_snps0_waiver.do",
+            "patFile": "$WORK_TOP/rtl/dmi/exclusions/dmi_config7_snps0_waiver.json",
+            "label": ["regr_cov", "tachl_cover"]
+        }, 
+        "hw_config_resiliency_placeholder": {
+            "purpose": "nightly regression",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7_parity -y hw_config_07",
+            "compile_args": "",
+            "label": ["weekly"],
+    	    	"instance" : "dmi0",
+            "defines" : "AXI4_XCHECK_OFF,ASSERT_OFF,OVL_ASSERT_OFF,ADDR_MGR,DATA_ADEPT,DATA_DROP"
+        },
+
+        "config1_xprop_xtrap": {
+            "purpose": "bringup regression with nonCMC and enable Qos",
+            "tcl_lib": "hw_config_50",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_50/hw_config_50.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config2_xprop_xtrap": {
+            "purpose": "bringup regression with nonCMC and enable PMA  ",
+            "tcl_lib": "hw_config_51",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_51/hw_config_51.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config3_xprop_xtrap": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+unit+TI ",
+            "tcl_lib": "hw_config_52",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_52/hw_config_52.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["weekly"]
+        },
+        "config4_xprop_xtrap": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+Place+TI+qos+PMA",
+            "tcl_lib": "hw_config_53",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_53/hw_config_53.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config5_xprop_xtrap": {
+            "purpose": "bringup regression with CMC+Atomic Resilency+Place+TI+unit",
+            "tcl_lib": "hw_config_54",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_54/hw_config_54.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config6_xprop_xtrap": {
+            "purpose": "bringup regression with CMC+ScratchPad Resilency+Native+TI",
+            "tcl_lib": "hw_config_55",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_55/hw_config_55.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config7_xprop_xtrap": {
+            "purpose": "bringup regression with CMC+wayParti+AddrTrans",
+            "tcl_lib": "hw_config_56",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_56/hw_config_56.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config8_xprop_xtrap": {
+            "purpose": "bringup regression with CMC+Scractch+atomic+wayPartition",
+            "tcl_lib": "hw_config_57",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_57/hw_config_57.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+    	    	"instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config7_snps_xprop_xtrap": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_config_07_synthesis/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        }, 
+        "config7_snps0_xprop_xtrap": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../dmi_config/hw_config_07_synthesis0/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        }, 
+        "hw_config_resiliency_placeholder_xprop_xtrap": {
+            "purpose": "nightly regression",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7_parity -y hw_config_07",
+            "compile_args": "",
+            "label": ["weekly"],
+	        	"instance" : "dmi0",
+            "xprop_mode": "xtrap",
+            "defines" : "AXI4_XCHECK_OFF,ASSERT_OFF,OVL_ASSERT_OFF,ADDR_MGR,DATA_ADEPT,DATA_DROP"
+        },
+
+        "config1_xprop_pass": {
+            "purpose": "bringup regression with nonCMC and enable Qos",
+            "tcl_lib": "hw_config_50",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_50/hw_config_50.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config2_xprop_pass": {
+            "purpose": "bringup regression with nonCMC and enable PMA  ",
+            "tcl_lib": "hw_config_51",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_51/hw_config_51.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "label": ["weekly"],
+            "compile_args": ""
+        },
+        "config3_xprop_pass": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+unit+TI ",
+            "tcl_lib": "hw_config_52",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_52/hw_config_52.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "label": ["weekly"],
+            "compile_args": ""
+        },
+        "config4_xprop_pass": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+Place+TI+qos+PMA",
+            "tcl_lib": "hw_config_53",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_53/hw_config_53.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config5_xprop_pass": {
+            "purpose": "bringup regression with CMC+Atomic Resilency+Place+TI+unit",
+            "tcl_lib": "hw_config_54",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_54/hw_config_54.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config6_xprop_pass": {
+            "purpose": "bringup regression with CMC+ScratchPad Resilency+Native+TI",
+            "tcl_lib": "hw_config_55",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_55/hw_config_55.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config7_xprop_pass": {
+            "purpose": "bringup regression with CMC+wayParti+AddrTrans",
+            "tcl_lib": "hw_config_56",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_56/hw_config_56.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config8_xprop_pass": {
+            "purpose": "bringup regression with CMC+Scractch+atomic+wayPartition",
+            "tcl_lib": "hw_config_57",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_57/hw_config_57.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+    	    	"instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config7_snps_xprop_pass": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_config_07_synthesis/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        }, 
+        "config7_snps0_xprop_pass": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../dmi_config/hw_config_07_synthesis0/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+  	        "instance" : "dmi0",
+            "xprop_mode": "pass",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        }, 
+        "hw_config_resiliency_placeholder_xprop_pass": {
+            "purpose": "nightly regression",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7_parity -y hw_config_07",
+            "compile_args": "",
+            "label": ["weekly"],
+    	    	"instance" : "dmi0",
+            "xprop_mode": "pass",
+            "defines" : "AXI4_XCHECK_OFF,ASSERT_OFF,OVL_ASSERT_OFF,ADDR_MGR,DATA_ADEPT,DATA_DROP"
+        },
+
+        "config1_resolve": {
+            "purpose": "bringup regression with nonCMC and enable Qos",
+            "tcl_lib": "hw_config_50",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_50/hw_config_50.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config2_resolve": {
+            "purpose": "bringup regression with nonCMC and enable PMA  ",
+            "tcl_lib": "hw_config_51",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_51/hw_config_51.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "label": ["weekly"],
+            "compile_args": ""
+        },
+        "config3_resolve": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+unit+TI ",
+            "tcl_lib": "hw_config_52",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_52/hw_config_52.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "label": ["weekly"],
+            "compile_args": ""
+        },
+        "config4_resolve": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+Place+TI+qos+PMA",
+            "tcl_lib": "hw_config_53",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_53/hw_config_53.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+  	        "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config5_resolve": {
+            "purpose": "bringup regression with CMC+Atomic Resilency+Place+TI+unit",
+            "tcl_lib": "hw_config_54",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_54/hw_config_54.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config6_resolve": {
+            "purpose": "bringup regression with CMC+ScratchPad Resilency+Native+TI",
+            "tcl_lib": "hw_config_55",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_55/hw_config_55.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config7_resolve": {
+            "purpose": "bringup regression with CMC+wayParti+AddrTrans",
+            "tcl_lib": "hw_config_56",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_56/hw_config_56.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	          "instance" : "dmi0",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config8_resolve": {
+            "purpose": "bringup regression with CMC+Scractch+atomic+wayPartition",
+            "tcl_lib": "hw_config_57",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../base_configs/hw_config_57/hw_config_57.tcl ",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+	        	"instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        },
+        "config7_snps_resolve": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_config_07_synthesis/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        }, 
+        "config7_snps0_resolve": {
+            "purpose": "bringup",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../dmi_config/hw_config_07_synthesis0/default_design -y hw_config_07",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP",
+	          "instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "compile_args": "",
+            "label": ["regr_xprop"]
+        }, 
+        "hw_config_resiliency_placeholder_resolve": {
+            "purpose": "nightly regression",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7_parity -y hw_config_07",
+            "compile_args": "",
+            "label": ["weekly"],
+	        	"instance" : "dmi0",
+            "xprop_mode": "resolve",
+            "defines" : "AXI4_XCHECK_OFF,ASSERT_OFF,OVL_ASSERT_OFF,ADDR_MGR,DATA_ADEPT,DATA_DROP"
+       },
+       "hw_cfg_ultrarisc_mpf": {
+            "purpose": "bringup regression with nonCMC and enable Resilency+unit+TI ",
+            "tcl_lib": "hw_config_ultrarisc_mpf",
+            "tcl_dir": "$MAESTRO_EXAMPLES/../../ncore_v3.6_configs/base_configs/hw_config_ultrarisc_mpf/hw_config_ultrarisc_mpf.tcl",
+            "defines": "ADDR_MGR,DATA_ADEPT,DATA_DROP,ERROR_TEST",
+            "instance" : "dmi0",
+            "compile_args": ""
+        }
+    },
+    "testlist": {
+         "random": {
+            "name": "dmi_test",
+            "purpose": "Exercise new vseq with randomization",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config5",
+                "config6",
+                "config7",
+                "config8",
+                "config8_random",
+                "config7_snps0",
+                "config7_snps",
+                "hw_d2d_config_01"
+            ],
+            "iter":20,
+            "plusargs": {
+                "+k_num_cmd": "1000",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+random_cctrlr_value":"1",
+                "+wt_reuse_addr": "90",
+                "+tStampChk": "0",
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "trace_capture_cctrlr_modify" : {
+                 "iter":1,
+                 "purpose": "Modify CCTRLR value mid test",
+                 "plusargs": { 
+                    "+k_disable_axi_backpressure":"1",
+                    "+cctrlr_mod": "1",
+                    "+k_cctrlr_value":"123900ff",
+                    "+random_cctrlr_value":"0"
+                  }
+              },
+              "trace_capture_alter_frc" : {
+                 "iter":1,
+                 "purpose": "Modify FRC value",
+                 "plusargs": {
+                    "+k_num_cmd": "3000",
+                    "+k_disable_axi_backpressure":"1",
+                    "+frcModified":"1",
+                    "+k_cctrlr_value":"abc800ff",
+                    "+random_cctrlr_value":"0"
+                  }
+              },
+              "axi_zero_delay" : {
+                "iter":1,
+                "purpose" : "Constrain no delays on AXI",
+                "plusargs": {"+k_axi_zero_delay":"1"}
+              },
+              "axi_resp_errors" : {
+                "iter":5,
+                "purpose" : "Inject AXI response errors",
+                "plusargs": {
+                   "+prob_ace_rd_resp_error" :100,
+                   "+prob_ace_wr_resp_error" :100
+                }
+              },
+              "qos" : {
+                 "iter":15,
+                 "purpose" : "Turn on QoS Feature",
+                 "plusargs": {
+                   "+prog_dmi_qos_th_csr":"1"
+                }
+              },
+              "qos_modify" : {
+                 "iter":15,
+                 "purpose" : "Turn on QoS Feature and update QoS threshold value during simulation",
+                 "plusargs": {
+                   "+prog_dmi_qos_th_csr":"1",
+                   "+upd_dmi_qos_th_csr":"1"
+                }
+              }
+            },
+            "label": ["regr","regr_cov","sanity"]
+        },
+        "scratchpad": {
+            "name": "dmi_test",
+            "purpose": "Target Scratchpad Addresses",
+            "config": [
+                "config6",
+                "config7_snps0",
+                "config8",
+                "config9"
+            ],
+            "iter":20,
+            "plusargs": {
+                "+k_num_cmd": "1000",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+tcap_scb_en":"1",
+                "+wt_exclusives":"5",
+                "+k_sp_en":"1",
+                "+k_no_CMO_traffic":"1",
+                "+tStampChk": "0",
+                "+random_cctrlr_value":"1",
+                "+k_back_to_back_types": "999",
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "all_ways_for_SP" : {
+                "iter":5,
+                "purpose" : "Set all ways to SP",
+                "plusargs": { "+all_ways_for_sp": "1"}
+              },
+              "dtr_req_backpressure" : {
+                "iter":1,
+                "purpose" : "Backpressure DTR",
+                "plusargs": { "+dtr_req_backpressure": null}
+              },
+              "dbad": {
+                "iter":5,
+                "purpose" : "Send DBAD/Poison on DtwReq",
+                "plusargs": { 
+                   "+k_random_dbad_on_dtw_req" :1,
+                   "+k_force_allocate":1,
+                   "+wt_reuse_addr": "5"
+                }
+              },
+              "atomic": {
+                "iter":2,
+                "purpose" : "Atomic only traffic to SP",
+                "plusargs": { 
+                    "+k_atomic_traffic_only" : "1",
+                    "+wt_sp_addr_range": "100"
+                }
+              },
+              "atomic_errors": {
+                "iter":3,
+                "purpose" : "Atomic only traffic to SP with 100% response errors",
+                "plusargs": { 
+                   "+k_atomic_traffic_only"  : "1",
+                   "+wt_sp_addr_range": "50",
+                   "+k_random_dbad_on_dtw_req" :1,
+                   "+prob_ace_rd_resp_error" :100,
+                   "+prob_ace_wr_resp_error" :100
+                }
+              },
+              "usage" : {
+                "iter":2,
+                "purpose" : "Warmup SP with write data and stream random traffic after",
+                "plusargs": { 
+                  "+k_num_cmd": "1000",
+                  "+k_SP_warmup": "1"
+                }
+              }
+            },
+            "label": ["regr","regr_cov","scratchpad","sanity"]
+        },
+        "address_reuse": {
+            "name": "dmi_test",
+            "purpose": "Target toggling NS bit on same addresses with varying traffic",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config5",
+                "config6",
+                "config7",
+                "config8",
+                "config8_random",
+                "config7_snps0",
+                "config7_snps"
+            ],
+            "iter":20,
+            "plusargs": {
+                "+k_num_cmd": "1500",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+tcap_scb_en":"1",
+                "+wt_noncoh_addr":"50",
+                "+wt_coh_addr":"50",
+                "+k_reuse_addr": "1",
+                "+k_limit_addresses" : "64",
+                "+tStampChk": "0",
+                "+random_cctrlr_value":"1",
+                "+k_back_to_back_types": "999",
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "exclusive_access": {
+                "purpose": "Maintain EX and NS field to hit EXOKAY on AXI",
+                "plusargs": { 
+                  "+k_pattern_type": "DMI_EXCLUSIVE_p",
+                  "+k_force_ns": "1",
+                  "+k_limit_addresses" : "16",
+                  "+wt_randomly_streamed_exclusives":"100",
+                  "+wt_exclusives":"100"
+                  }
+                },
+              "CMO_on_WR_fixed_ns": {
+                "purpose": "Maintain NS field to hit address reuse on SMI types send CMOs and Writes",
+                "plusargs": { 
+                  "+k_pattern_type": "DMI_CMO_on_WR_p",
+                  "+k_force_ns": "1"
+                  }
+              },
+              "shared_coh_noncoh_regions" : {
+                "purpose" : "Mix coherent traffic to non-coherent address regions and vice-versa",
+                "plusargs": { "+k_shared_c_nc_addressing": "1"}
+              }
+            },
+            "label": ["regr","regr_cov"]
+        },
+        "exmon": {
+            "name": "dmi_test",
+            "purpose": "Target exclusive monitor configs",
+            "config": [
+                "config4",
+                "config6"
+            ],
+            "iter":0,
+            "plusargs": {
+                "+k_num_cmd": "1000",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+tcap_scb_en":"1",
+                "+wt_noncoh_addr":"50",
+                "+wt_coh_addr":"50",
+                "+k_reuse_addr": "1",
+                "+tStampChk": "0",
+                "+random_cctrlr_value":"1",
+                "+k_pattern_type": "DMI_EXCLUSIVE_p",
+                "+k_force_ns": "1",
+                "+k_limit_addresses" : "16",
+                "+wt_randomly_streamed_exclusives":"100",
+                "+wt_exclusives":"100",
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "sys_event": {
+                "iter":2,
+                "purpose": "Maintain EX and NS field to hit pass exclusive condition",
+                "plusargs": { 
+                  "+ex_sys_evt": "1"
+                }
+              },
+              "sys_event_timeout": {
+                "iter":2,
+                "purpose": "Maintain NS field to hit address reuse on SMI types send CMOs and Writes",
+                "plusargs": { 
+                   "+ex_sys_evt": "1",
+                   "+sys_rsp_timeout": "1",
+                   "+uesr_poll_err_test": "1",
+                   "+wait_for_empty_tt": "1",
+                   "+uesr_errtype": "A",
+                   "+uesr_errinfo": "0"
+                }
+              }
+            },
+            "label": ["regr","regr_cov","exmon"]
+        },
+        "smc": {
+            "name": "dmi_test",
+            "purpose": "Exercise the cache more",
+            "config": [
+                "config4",
+                "config6",
+                "config7",
+                "config7_snps0",
+                "config7_snps",
+                "config8",
+                "config8_random"
+            ],
+            "iter":0,
+            "plusargs": {
+                "+k_num_cmd": "1000",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+tcap_scb_en":"1",
+                "+k_cmc_policy_rand": "11",
+                "+k_timeout": "2000000"
+            },
+           "flavors": {
+             "warmup": {
+                "purpose": "Warmup cache first then stream randomized traffic",
+                "iter":10,
+                "plusargs": { 
+                  "+k_cache_warmup": "1"
+                  }
+              },
+              "force_allocate": {
+                "purpose": "Force allocation",
+                "iter":5,
+                "plusargs": { "+k_force_allocate": "1"}
+              },
+              "max_evicts": {
+                "purpose": "100% same set addressing",
+                "iter":10,
+                "plusargs": { 
+                  "+wt_ccp_evict_addr": "100",
+                  "+wt_rb_release" : "0",
+                  "+wt_exclusives" : "0",
+                  "+k_force_mw" : "0",
+                  "+k_write_with_data_traffic_only" : "1"
+                  }
+              },
+              "shared_coh_noncoh_regions" : {
+                "purpose" : "Mix coherent traffic to non-coherent address regions and vice-versa",
+                "iter":10,
+                "plusargs": { 
+                  "+k_shared_c_nc_addressing": "1"
+                }
+              }
+            },
+            "label": ["regr","regr_cov","sanity"]
+        },
+        "CMO_debug_RAW_mntop": {
+            "name": "dmi_test",
+            "purpose": "Check CMO debug r/w functionality",
+            "config": [
+                "config4",
+                "config5",
+                "config6",
+                "config7",
+                "config7_snps0",
+                "config7_snps",
+                "config8",
+                "config8_random"
+            ],
+            "iter":10,
+            "plusargs": {
+                "+k_num_cmd": "1500",
+                "+k_cmc_policy_rand": "11",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+wt_noncoh_addr":"50",
+                "+wt_coh_addr":"50",
+                "+wt_exclusives" : "0",
+                "+wt_reuse_addr":"0",
+                "+k_force_mw": "0",
+                "+wt_sp_addr_range" :"0",
+                "+k_force_allocate": "1",
+                "+k_csr_SMC_mntop_seq_for_error": "dmi_csr_CMO_test_seq",
+                "+k_timeout": "2000000"
+            },
+            "label": ["regr","regr_cov","mntop"]
+        },
+        "CMO_RAW_mntop_simple": {
+            "name": "dmi_test",
+            "purpose": "RAW on all ways,sets through maintenance operations",
+            "config": [
+                "config6",
+                "config7",
+                "config7_snps0",
+                "config7_snps",
+                "config8",
+                "config8_random"
+            ],
+            "iter":5,
+            "plusargs": {
+                "+k_num_cmd": "0",
+                "+k_cmc_policy_rand": "11",
+                "+k_cache_warmup": "1",
+                "+init_mem_with_rand_data": "1",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "0",
+                "+ccp_scb_en": "0",
+                "+wt_reuse_addr":"0",
+                "+k_force_mw": "0",
+                "+wt_exclusives" : "0",
+                "+wt_sp_addr_range" :"0",
+                "+k_force_allocate": "1",
+                "+waive_mission_fault_eos_check" : "1",
+                "+k_csr_seq": "dmi_csr_mnt_CMO_RAW_seq",
+                "+k_timeout": "4000000"
+            },
+            "label": ["regr","regr_cov","mntop","sanity"]
+        },
+        "MaintOp": {
+            "name": "dmi_test",
+            "purpose": "MntOp Testing",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config5",
+                "config6",
+                "config7",
+                "config7_snps0",
+                "config7_snps",
+                "config8",
+                "config8_random"
+            ],
+            "iter":0,
+            "plusargs": {
+                "+k_num_cmd": "1000",
+                "+k_cmc_policy_rand": "11",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+wt_reuse_addr":"0",
+                "+k_force_mw": "0",
+                "+k_force_allocate": "1",
+                "+wt_exclusives" : "0",
+                "+wt_sp_addr_range" :"0",
+                "+Data_rand_single_bit_error_test": "1",
+                "+tag_rand_single_bit_error_test": "1",
+                "+err_interrupt_check_ignore": null,
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "flush_by_addr_range": {
+                "iter":1,
+                "purpose": "Flush SMC by addr_range",
+                "plusargs": { 
+                  "+k_csr_SMC_mntop_seq": "dmi_csr_flush_by_addr_range_seq"
+                 }
+              },
+              "flush_by_addr": {
+                "iter":1,
+                "purpose": "Flush SMC by specified addr",
+                "plusargs": { 
+                  "+k_csr_SMC_mntop_seq": "dmi_csr_flush_by_addr_seq"
+                 }
+              },
+              "flush_by_index_way_range" : {
+                "iter":1,
+                "purpose" : "Flush SMC by index and way over the range",
+                "plusargs": {
+                  "+k_csr_SMC_mntop_seq": "dmi_csr_flush_by_index_way_range_seq"
+                 }
+              },
+              "flush_by_index_way": {
+                "iter":1,
+                "purpose": "Flush SMC by specified index and way",
+                "plusargs": {
+                  "+k_csr_SMC_mntop_seq": "dmi_csr_flush_by_index_way_seq"
+                 }
+              },
+              "flush_all_entries": {
+                "iter":1,
+                "purpose": "Flush SMC all entries",
+                "plusargs": {
+                  "+k_csr_SMC_mntop_seq": "dmi_ccp_offline_seq"
+                 }
+              },
+              "flush_random_all_type": {
+                "iter":1,
+                "purpose": "Flush SMC randomly all type",
+                "plusargs": {
+                  "+k_csr_SMC_mntop_seq": "dmi_csr_rand_all_type_flush_seq"
+                 }
+              },
+              "flush_random_all_type_max_range": {
+                "iter":1,
+                "purpose": "Set MLR address range to max cache size",
+                "plusargs": {
+                  "+mntop_addr_range_max": "1",
+                  "+k_csr_SMC_mntop_seq": "dmi_csr_rand_all_type_flush_seq"
+                 }
+              }
+            },
+            "label": ["regr","regr_cov","mntop","sanity"]
+        },
+        "address_translation": {
+            "name": "dmi_test",
+            "purpose": "Turn on DMI address translation",
+            "config": [
+                "config2",
+                "config3",
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config6",
+                "config7",
+                "config8"
+            ],
+            "iter":10,
+            "plusargs": {
+                "+k_num_cmd": "100",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+k_translate_addresses":"1",
+                "+wt_reuse_addr": "0",
+                "+k_force_mw": "0",
+                "+wt_randomly_streamed_exclusives":"0",
+                "+k_timeout": "2000000"
+            },
+            "label": ["regr","regr_cov"]
+        },
+        "response_error": {
+            "name": "dmi_test",
+            "purpose": "Inject response error on native I/F for all traffic",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config5",
+                "config6",
+                "config7",
+                "config8",
+                "config8_random",
+                "config7_snps0",
+                "config7_snps"
+            ],
+            "iter":10,
+            "plusargs": {
+                "+k_num_cmd": "1000",
+                "+zero_delay":"1",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+wt_reuse_addr": "90",
+                "+tStampChk": "0",
+                "+k_cctrlr_value":"23e30003",
+                "+prob_ace_wr_resp_error":"100",
+                "+prob_ace_rd_resp_error":"100",
+                "+wt_randomly_streamed_exclusives":"0",
+                "+k_timeout": "2000000"
+            },
+            "label": ["regr","regr_cov"]
+        },
+        "fill_TT": {
+            "name": "dmi_test",
+            "purpose": "stall native I/F to ensure TT is filled up",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "config5",
+                "config6",
+                "config7",
+                "config7_snps",
+                "config7_snps0",
+                "config8",
+                "config8_random",
+                "hw_cfg_meye_q7_dmi"
+            ],
+            "iter": 0,
+            "plusargs": {
+                "+k_num_cmd": "500",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+tStampChk": "0",
+                "+k_no_exclusives":"1",
+                "+wt_sp_addr_range" :"0",
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "write_long_delay"  : {
+                "iter": 3,
+                "plusargs": {
+                  "+k_axi_long_delay" : "1", 
+                  "+wt_rb_release":"0",
+                  "+k_force_no_allocate": "1",
+                  "+k_cmc_policy_rand": "00",
+                  "+k_write_with_data_traffic_only": "1"
+                }
+              },
+              "read_long_delay"  : {
+                "iter": 3,
+                "plusargs": {
+                  "+k_axi_long_delay" : "1", 
+                  "+k_force_no_allocate": "1",
+                  "+k_cmc_policy_rand": "00",
+                  "+k_noncoh_read_traffic_only": "1"
+                }
+              },
+              "write_rsp_chnl"  : {
+                "iter": 2,
+                "plusargs": {
+                  "+axi_suspend_W_resp" : "1", 
+                  "+QoS_ctrl_threshold":"0",
+                  "+wt_rb_release":"0",
+                  "+k_force_no_allocate": "1",
+                  "+k_force_mw": "0",
+                  "+k_cmc_policy_rand": "00",
+                  "+k_write_with_data_traffic_only": "1"
+                }
+              },
+              "read_rsp_chnl_nc_reads"  : {
+                "iter": 2,
+                "plusargs": {
+                  "+axi_suspend_R_resp" : "1", 
+                  "+QoS_ctrl_threshold":"0",
+                  "+k_force_no_allocate": "1",
+                  "+k_cmc_policy_rand": "00",
+                  "+k_noncoh_read_traffic_only": "1"
+                 }
+              }
+            },
+            "label": ["regr","regr_cov","backpressure_test","tt_full"]
+        },
+       "axi_backpressure": {
+            "name": "dmi_test",
+            "purpose": "Apply backpressure on AW/W and AR channels",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "config5",
+                "config6",
+                "config7",
+                "config7_snps",
+                "config7_snps0",
+                "config8",
+                "config8_random",
+                "hw_cfg_meye_q7_dmi"
+            ],
+            "iter": 0,
+            "plusargs": {
+                "+k_num_cmd": "1000",
+                "+tStampChk": "0",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+wt_sp_addr_range" :"0",
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "rw_addr_chnl" : {
+                "iter": 3, 
+                "plusargs": {
+                  "+axi_rw_address_chnl_backpressure": "1"
+                }
+              },
+              "rd_data_chnl" : {
+                "iter": 3, 
+                "plusargs": {
+                  "+axi_rd_data_chnl_backpressure": "1"
+                }
+              },
+              "wr_resp_chnl" : {
+                "iter": 3, 
+                "plusargs": {
+                  "+axi_wr_resp_chnl_backpressure": "1"
+                }
+              },
+              "rd_resp_chnl" : {
+                "iter": 3, 
+                "plusargs": {
+                  "+axi_rd_resp_chnl_backpressure": "1"
+                }
+              },
+              "rd_resp_chnl_with_late_MRDs" : {
+                "iter": 3, 
+                "plusargs": {
+                  "+k_pattern_type": "DMI_LATE_MRD_p",
+                  "+k_force_late_rsp": "1",
+                  "+axi_rd_resp_chnl_backpressure": "1"
+                }
+              },
+              "AXI_OOO" : {
+                "iter": 3, 
+                "plusargs": {
+                  "+k_num_cmd": "500",
+                  "+k_OOO_axi_response" : "1",
+                  "+axi_rd_resp_chnl_backpressure": "1",
+                  "+axi_wr_resp_chnl_backpressure": "1"
+                }
+              },
+              "wr_data_chnl"  : {
+                "iter": 3,
+                "plusargs": {
+                  "+axi_wr_data_chnl_backpressure" : "1"
+                }
+              }
+            },
+            "label": ["regr","regr_cov","backpressure_test"]
+        },
+        "q_channel": {
+            "name": "q_channel_dmi_test",
+            "purpose": "Verify Q channel support",
+            "config": [
+                "config1",
+                "config6",
+                "config8",
+                "config9",
+                "hw_cfg_meye_q7_dmi",
+                "hw_config_nxpauto"
+            ],
+            "iter": 0,
+            "plusargs": {
+                "+k_num_cmd": "4",
+                "+Data_rand_single_bit_error_test": "1",
+                "+tag_rand_single_bit_error_test": "1",
+                "+err_interrupt_check_ignore": null,
+                "+k_force_mw": "0",
+                "+wt_rb_release": "0",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1",
+                "+disable_pri_check": 1,
+                "tb_delay": "1",
+                "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "sanity" : {
+                "iter": 1, 
+                "plusargs": {
+                  "+dmi_qchannel_sanity_test":"1"
+                }
+              },
+              "reset_test" : {
+                "iter": 1, 
+                "plusargs": {
+                  "+dmi_qchannel_reset_test":"1"
+                }
+              },
+              "multiple_requests" : {
+                "iter": 1, 
+                "plusargs": {
+                  "+dmi_qchannel_multiple_request_test":"1"
+                }
+              },
+              "request_between_cmd" : {
+                "iter": 1, 
+                "plusargs": {
+                  "+dmi_qchannel_req_between_cmd_test":"1"
+                }
+              },
+              "request_during_cmd" : {
+                "iter": 1,
+                "plusargs": {
+                  "+dmi_qchannel_req_during_cmd_test":"1"
+                }
+              }
+            },
+            "label": ["regr","regr_cov","q_regr"]
+        },
+        "resiliency_transport_parity": {
+            "name": "dmi_test",
+            "purpose": "Parity UC fault injection for transport protection",
+            "config": [
+                "config4",
+                "config6",
+                "config7_snps0",
+                "hw_cfg_meye_q7_dmi"
+            ],
+            "iter": 0,
+            "plusargs": {
+               "+k_num_cmd": "1000",
+               "+inj_cntl": 4,
+               "+disable_pri_check": 1,
+               "+err_interrupt_check_ignore": null,
+               "+dmi_scb_en": "0",
+               "+ccp_scb_en": "1",
+               "+wt_merging_write_success" : 90,
+               "+c_wr_buff_rb_counter_ovl_dis": null,
+               "+expect_mission_fault": "1",
+               "+collect_resiliency_cov": null,
+               "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "all_UCE" : {
+                "iter": 1, 
+                "plusargs": {
+                  "+smi_ndp_err_inj": 1,
+                  "+smi_hdr_err_inj": 1,
+                  "+smi_dp_ecc_inj": 1,
+                  "+parity_error_inj_pcnt": 5
+                }
+              },
+              "all_UCE_timeout" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+k_num_cmd": "100",
+                   "+smi_ndp_err_inj": 1,
+                   "+smi_hdr_err_inj": 1,
+                   "+smi_dp_ecc_inj": 1,
+                   "+parity_error_inj_pcnt": 90,
+                   "+RDY_NOT_ASSERTED_TIMEOUT": 2000000,
+                   "+expect_mission_fault_cov": null
+                }
+              },
+              "DP_UCE" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_dp_ecc_inj": 1,
+                   "+single_err_inj": null,
+                   "+parity_error_inj_pcnt": 15
+                }
+              },
+              "HDR_UCE" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_hdr_err_inj": 1,
+                   "+single_err_inj": null,
+                   "+parity_error_inj_pcnt": 10
+                }
+              },
+              "NDP_UCE" : {
+                "iter": 1,
+                "plusargs": {
+                   "+smi_ndp_err_inj": 1,
+                   "+single_err_inj": null,
+                   "+parity_error_inj_pcnt": 10
+                }
+              }
+            },
+            "label": ["regr","regr_cov","resiliency"]
+        },
+        "resiliency_transport_ECC_CE": {
+            "name": "dmi_test",
+            "purpose": "ECC CE fault injection for transport protection",
+            "config": [
+               "config3",
+               "config4",
+               "config5",
+               "config7_snps0",
+               "hw_cfg_meye_q7_dmi"
+            ],
+            "iter": 0,
+            "plusargs": {
+               "+inj_cntl": 1,
+               "+err_interrupt_check_ignore": null,
+               "+k_num_cmd": "1000",
+               "+wt_dtw_intervention": "0",
+               "+dmi_scb_en": "1",
+               "+ccp_scb_en": "1",
+               "+wt_sp_addr_range" :"0",
+               "+collect_resiliency_cov": null,
+               "+k_timeout": "2000000"
+            },
+            "flavors": {
+              "all" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_ndp_err_inj": 1,
+                   "+smi_hdr_err_inj": 1,
+                   "+smi_dp_ecc_inj": 1,
+                   "+corr_error_inj_pcnt": 1
+                }
+              },
+              "all_vs_cnt" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_ndp_err_inj": 1,
+                   "+smi_hdr_err_inj": 1,
+                   "+smi_dp_ecc_inj": 1,
+                   "+corr_error_inj_pcnt": 1,
+                   "+check_corr_error_cnt": null,
+                   "+res_corr_err_threshold": 25
+                }
+              },
+              "DP" : {
+                "iter": 1, 
+                "plusargs": {
+                  "+smi_dp_ecc_inj": 1,
+                  "+corr_error_inj_pcnt": 1
+                }
+              },
+              "HDR" : {
+                "iter": 1, 
+                "plusargs": {
+                  "+smi_hdr_err_inj": 1,
+                  "+corr_error_inj_pcnt": 1
+                }
+              },
+              "NDP" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_ndp_err_inj": 1,
+                   "+corr_error_inj_pcnt": 5
+                }
+              }
+            },
+            "label": ["regr","regr_cov","resiliency"]
+        },
+        "resiliency_transport_ECC_UCE": {
+            "name": "dmi_test",
+            "purpose": "ECC UCE injection for transport protection",
+            "config": [
+               "config3",
+               "config5"
+            ],
+            "iter": 0,
+            "plusargs": {
+               "+k_num_cmd": "1000",
+               "+disable_pri_check": 1,
+               "+inj_cntl": 2,
+               "+err_interrupt_check_ignore": null,
+               "+expect_mission_fault": 1,
+               "+dmi_scb_en": "0",
+               "+ccp_scb_en": "1",
+               "+wt_merging_write_success" : 100,
+               "+wt_sp_addr_range" :"0",
+               "+c_wr_buff_rb_counter_ovl_dis": null,
+               "+collect_resiliency_cov": null,
+               "+k_timeout": "2000000"      
+            },
+            "flavors": {
+              "all" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_ndp_err_inj": 1,
+                   "+smi_hdr_err_inj": 1,
+                   "+smi_dp_ecc_inj": 1,
+                   "+inject_smi_uncorr_error" :1,
+                   "+uncorr_error_inj_pcnt": 80
+                }
+              },
+              "all_timeout" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+k_num_cmd": "100",
+                   "+smi_ndp_err_inj": 1,
+                   "+smi_hdr_err_inj": 1,
+                   "+smi_dp_ecc_inj": 1,
+                   "+uncorr_error_inj_pcnt": 90,
+                   "+expect_mission_fault_cov": null,
+                   "+RDY_NOT_ASSERTED_TIMEOUT": 2000000
+                }
+              },
+              "DP" : {
+                "iter": 1, 
+                "plusargs": {
+                "+smi_dp_ecc_inj": 1,
+                "+single_err_inj": null,
+                "+uncorr_error_inj_pcnt": 5
+                }
+              },
+              "HDR" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_hdr_err_inj": 1,
+                   "+single_err_inj": null,
+                   "+uncorr_error_inj_pcnt": 5
+                }
+              },
+              "NDP" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+smi_ndp_err_inj": 1,
+                   "+single_err_inj": null,
+                   "+uncorr_error_inj_pcnt": 5
+                }
+              }
+            },
+            "label": ["regr","regr_cov","resiliency"]
+        },
+        "unit_duplication": {
+            "name": "resiliency_unitduplication_test",
+            "purpose": "Test unit duplication logic by using the fault_injector module",
+            "config": [
+                "config3",
+                "config5",
+                "config4",
+                "config6",
+                "config7_snps0",
+                "hw_cfg_meye_q7_dmi"
+            ],
+            "iter": 1,
+            "plusargs": {
+                "+test_unit_duplication": 1,
+                "+init_mem_with_ecc_encoded": 1,
+                "+expect_mission_fault": 1,
+                "+k_smi_cov_en": "0",
+                "+err_interrupt_check_ignore": null,
+                "+tStampChk": "0",
+                "+AXI_assertions_off" : "1", 
+                "+collect_resiliency_cov": null,
+                "+k_timeout": "2000000"
+            },
+            "label": ["regr","regr_cov","resiliency"]
+        },
+        "smi_backpressure": {
+            "name": "dmi_test",
+            "purpose": "Test SMI backpressure ",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "config5",
+                "config6",
+                "config7",
+                "config7_snps",
+                "config7_snps0",
+                "config8",
+                "config8_random",
+                "hw_cfg_meye_q7_dmi"
+            ],
+            "iter": 0,
+            "plusargs": {
+               "+k_num_cmd": "1000",
+               "+Data_rand_single_bit_error_test": "1",
+               "+tag_rand_single_bit_error_test": "1",
+               "+err_interrupt_check_ignore": null,
+               "+dmi_scb_en": "1",
+               "+ccp_scb_en": "1",
+               "+tStampChk": "0",
+               "+k_cmc_policy_rand": "11",
+               "+wait_for_empty_tt": "1",
+               "+k_timeout": "2000000"
+            },
+           "flavors": {
+              "dtw_rsp" : {
+                "iter": 2, 
+                "plusargs": {
+                  "+k_dtwmrgmrd_traffic_only":"1",
+                  "+dtw_rsp_backpressure" :"1"
+                }
+              },
+              "write_extreme" : {
+                "iter": 2, 
+                "plusargs": {
+                   "+dtw_rsp_backpressure": "1",
+                   "+rbr_rsp_extreme_backpressure": "1",
+                   "+k_write_with_data_traffic_only":"1",
+                   "+axi_wr_resp_chnl_backpressure": "1"
+                }
+              },
+              "write_extreme_coh_only" : {
+                "iter": 2, 
+                "plusargs": {
+                   "+dtw_rsp_backpressure": "1",
+                   "+rbr_rsp_extreme_backpressure": "1",
+                   "+k_coh_write_traffic_only":"1",
+                   "+axi_wr_resp_chnl_backpressure": "1"
+                }
+              },
+              "dtr_req" : {
+                "iter": 2, 
+                "plusargs": {
+                   "+dtr_req_backpressure": "1",
+                   "+k_read_traffic_only":"1"
+                }
+              },
+              "dtr_rsp" : {
+                "iter": 2, 
+                "plusargs": {
+                   "+dtr_rsp_backpressure": "1",
+                   "+k_read_traffic_only":"1"
+                }
+              },
+              "dtr_rsp_write_merge" : {
+                "iter": 1, 
+                "plusargs": {
+                   "+dtr_rsp_backpressure": "1",
+                   "+wt_dtw_intervention": "10",
+                   "+k_dtwmrgmrd_traffic_only":"1"
+                }
+              },
+              "str_req" : {
+                "iter": 4, 
+                "plusargs": {
+                   "+k_cctrlr_value":"123400cc",
+                   "+str_req_backpressure": null
+                }
+              },
+              "rb_rsp" : {
+                "iter": 2, 
+                "plusargs": {
+                  "+rbr_rsp_backpressure": null
+                }
+              }
+            },
+            "label": ["regr","regr_cov","backpressure"]
+        },
+        "always_inject_correctable_error": {
+            "name": "dmi_test",
+            "purpose": "always inject correctable error for SECDED configs",
+            "config": [
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config8_msrp",
+                "config8"
+            ],
+            "iter": 1,
+            "plusargs": {
+                "+always_inject_error":null,
+                "+err_interrupt_check_ignore": null,
+                "+k_csr_seq": "always_inject_error",
+                "+k_cmc_policy_rand": "11",
+                "+k_num_cmd": "100",
+                "+k_limit_address": "32",
+                "+wt_rb_release": "0",
+                "+wt_dtw_intervention": "0",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1", 
+                "+k_timeout": "2000000",
+                "+k_force_allocate": "1"
+            },
+            "label": ["csr","regr","regr_cov","error"]
+        },
+        "correctable_error_type": {
+            "name": "dmi_test",
+            "purpose": "Inject CESR register errors",
+            "config": [
+                "config2",
+                "config3",
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config5",
+                "config6",
+                "config7",
+                "config8"
+            ],
+            "iter": 0,
+            "plusargs": {
+                "+k_csr_seq": "dmi_CESR_seq",
+                "+k_cmc_policy_rand": "11",
+                "+dmi_scb_en": "1",
+                "+ccp_scb_en": "1", 
+                "+k_timeout": "2000"
+            },
+            "flavors": {
+              "transport" : {
+                "iter": 1,
+                "purpose": "Transport error type 0x8 on sourceID",
+                "plusargs": {
+                   "+CESR_transport_errors" : "1"
+                }
+              }
+            },
+            "label": ["csr","regr","regr_cov","error"]
+        },
+        "sram_skidbuf_corr_error": {
+            "name": "dmi_test",
+            "purpose": "Inject correctable error for SECDED/PARITY configs",
+            "config": [
+                "config4"
+            ],
+            "iter": 1,
+            "plusargs": {
+              "+k_csr_seq": "dmi_CESR_seq",
+              "+CESR_skid_buffer_errors" : "1",
+              "+err_interrupt_check_ignore": null,
+              "+k_cmc_policy_rand": "11",
+              "+sram_single_bit_err": "1",
+              "+k_num_cmd": "3000",
+              "+wt_reuse_addr": "0",
+              "+k_cmd_mrd_traffic_only": "1",
+              "+dmi_scb_en": "1",
+              "+ccp_scb_en": "1", 
+              "+k_back_to_back_types": "999",
+              "+k_timeout": "2000000"
+            },
+            "label": ["csr","regr","regr_cov","error"]
+        },
+        "csr_bit_bash": {
+            "name": "dmi_csr_bit_bash_test",
+            "purpose": "uvm built in bit bash seq for all regs, disabled on config7 due to long cache initialization causing RO registers to be inadvertently 1 when checked for 0",
+            "config": [
+                "config1",
+                "config2",
+                "config3",
+                "config4",
+                "hw_cfg_meye_q7_dmi",
+                "config5",
+                "config6",
+                "config8",
+                "config8_random",
+                "config7_snps0",
+                "config7_snps"
+            ],
+            "iter": 1,
+            "plusargs": {
+                "+k_num_cmd": "0"
+            },
+            "label": ["regr","regr_cov","csr"]
+        },
+        "csr_hw_reset": {
+           "name": "dmi_csr_all_reg_rd_reset_val_test",
+           "purpose": "uvm built in hw reset values of all regs",
+           "config": [
+               "config1",
+               "config2",
+               "config3",
+               "config4",
+               "hw_cfg_meye_q7_dmi",
+               "config5",
+               "config6",
+               "config7",
+               "config8",
+               "config8_random",
+               "config7_snps0",
+               "config7_snps"
+           ],
+           "iter": 1,
+           "plusargs": { "+k_num_cmd": "0"},
+           "label": [ "regr", "regr_cov","csr" ]
+        },
+        "uncorr_atomics": {
+           "name": "dmi_test",
+           "purpose": "Trigger an uncorrectable atomics error by sending atomics when cache is absent or disabled",
+           "config": [
+                   "config1",
+                   "config2",
+                   "config3",
+                   "config4",
+                   "config5",
+                   "config5b",
+                   "config7_snps",
+                   "config7_snps0"
+           ],
+           "iter": 1,
+           "plusargs": {
+               "+k_num_cmd": "10",
+               "+dmi_scb_en": "0",
+               "+ccp_scb_en": "0",
+               "+tStampChk": "0",
+               "+k_stimulus_debug": "1",
+               "+uesr_poll_err_test": "1",
+               "+uesr_errtype": "C",
+               "+uesr_errinfo": "0",
+               "+enable_only_atomics": "1",
+               "+k_cmc_policy_rand": "000000",
+               "+k_timeout": "2000000"
+           },
+           "label": ["regr","regr_cov","error","UCE"]
+        },
+       "plru_errors": {
+          "name": "dmi_test",
+          "purpose": "Inject errors in PLRU configs",
+          "config": ["config5"],
+          "iter": 1,
+          "plusargs": {
+              "+k_num_cmd": "1000",
+              "+err_interrupt_check_ignore": null,
+              "+k_csr_seq": "plru_error_injection_seq",
+              "+k_cmc_policy_rand": "11",
+              "+k_reuse_addr": "1",
+              "+wt_ccp_evict_addr": "90",
+              "+wt_sp_addr_range" :"0",
+              "+wt_rb_release": "0",
+              "+dmi_scb_en": "1",
+              "+ccp_scb_en": "1", 
+              "+check_eos_plru_err_count" : "1",
+              "+k_force_allocate": "1",
+              "+k_timeout": "2000000"
+          },
+          "label": [ "sram_error", "errors","regr", "regr_cov"]
+        },
+        "deadlock": {
+          "name": "dmi_test",
+          "config": [
+            "config7_snps0"
+          ],
+          "iter": 0,
+          "purpose": "Target deadlock for CONC-17975",
+          "plusargs": {
+               "+k_stimulus_debug": "1",
+               "+dmi_scb_en": "1",
+               "+ccp_scb_en": "1",
+               "+wt_sp_addr_range" :"0",
+               "+k_cmc_policy_rand" : "11",
+               "+k_timeout": "2000000"
+          },
+          "flavors": {
+              "atm_mrg" : {
+                "iter": 5,
+                "purpose": "Atomic hits with Dtw merge traffic",
+                "plusargs": {
+                   "+k_num_cmd" : "1000",
+                   "+dtr_req_backpressure": null,
+                   "+k_super_pattern_type" : "DEADLOCK_ATM_MRG_s_p"
+                }
+              }
+            },
+          "label": [ "deadlock", "regr", "regr_cov"]
+        }
+     }
+}

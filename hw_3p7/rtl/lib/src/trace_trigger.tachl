@@ -1,0 +1,240 @@
+// ======================================================================
+// Copyright(C) 2017 Arteris, Inc.
+// All rights reserved.
+// ======================================================================
+\jsbegin
+//
+// This Tachl component implements the Trace Trigger block
+//
+// ======================================================================
+const u							= obj.lib;
+const libUtils					= obj.userLib;
+const bundleFunctions			= obj.userLib.bundleFunctions;
+const vlogGen					= libUtils.vlogGen();
+const vlogSignal				= vlogGen.vlogSignal;
+const getVlogBundle				= vlogGen.getVlogBundle;
+const declareVlogWires			= vlogGen.declareVlogBundle.bind(null, {type: "wire", tabs: 1});
+
+//---------------------------------------------------------------------
+// Default Parameter Declarations
+//---------------------------------------------------------------------
+u.paramDefault('clkInterface','object', null);
+u.paramDefault('csrInterface','object',null);
+u.paramDefault('nativeTrigger','object',null);
+u.paramDefault('nTraceRegisters', 'int', 1);
+
+// Read all block parameters
+const nTraceRegisters			= libUtils.hierGetParam('nTraceRegisters', u.getParam);
+const clkInterface				= libUtils.hierGetParam('clkInterface', u.getParam);
+const csrInterface				= libUtils.hierGetParam('csrInterface', u.getParam);
+const nativeTrigger				= libUtils.hierGetParam('nativeTrigger', u.getParam);
+
+// Derived parameters
+const nOpcodes					= 4;
+const wAddrMax					= 52;
+
+//---------------------------------------------------------------------
+// Local Functions
+//---------------------------------------------------------------------
+function csrPort(register, field, type) {
+	return csrInterface.name+libUtils.getHWPortName(register, field, type);
+}
+
+
+function csrPortOut( register, field ) {
+	return csrPort( register, field, "out");
+}
+
+
+//function csrWidth( register, field, type ) {
+//	const name					= libUtils.getHWPortName( register, field, type );
+//	return Math.abs( csrInterface.signals[name] || 0 );
+//}
+
+
+function nativePort( name ) {
+	return nativeTrigger.name+name;
+}
+
+
+function nativeWidth( name ) {
+	return nativeTrigger.signals[name] || 0;
+}
+
+
+// Function that returns an array of expressions (strings) for generating 
+// opCode valid and opCode match signals for a given set
+function getOpcodeValidsAndMatches( set ) {
+	const valids1and2						= [ csrPortOut("TOPCR0"+set, "valid1"), csrPortOut("TOPCR0"+set, "valid2") ];
+	const valids3and4						= [ csrPortOut("TOPCR1"+set, "valid3"), csrPortOut("TOPCR1"+set, "valid4") ];
+	
+	const matches1and2						= [
+		csrPortOut("TOPCR0"+set, "opcode1") + " == " + nativePort("opcode"),
+		csrPortOut("TOPCR0"+set, "opcode2") + " == " + nativePort("opcode") 
+	];
+	
+	const matches3and4						= [
+		csrPortOut("TOPCR1"+set, "opcode3") + " == " + nativePort("opcode"),
+		csrPortOut("TOPCR1"+set, "opcode4") + " == " + nativePort("opcode") 
+	];
+
+	return { valids: valids1and2.concat(valids3and4), matches: matches1and2.concat(matches3and4) };
+}
+
+
+//---------------------------------------------------------------------
+// Interface Declarations
+//---------------------------------------------------------------------
+u.interface(clkInterface.name, 'slave', clkInterface.signals);
+u.interface(csrInterface.name, 'slave', csrInterface.signals);
+u.interface(nativeTrigger.name, 'slave', nativeTrigger.signals);
+
+//---------------------------------------------------------------------
+// Port Declarations
+//---------------------------------------------------------------------
+u.port('output', 'tracetag', 1);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+\jsbegin
+// Create tables of possible match types and their corresponding enable bits
+const matchTypes				= [ "addrMatch", "targetMatch", "opcodeMatch", "memattrMatch" ];	// Single-bit wires that indicate if a match occured
+const matchEnFields				= [ "addr_match_en", "target_type_match_en", "opcode_match_en", "memattr_match_en" ]; // Array of all enable fields in TCTRLRx register
+
+if(nativeWidth("user")) {
+	matchTypes.push( "userMatch" );
+	matchEnFields.push( "user_match_en" );
+}
+// TraceEn always enabled
+/* istanbul ignore else env ncore_3p6 */
+if(nativeWidth("trace")) {
+	matchTypes.push( "nativeTrace" );
+	matchEnFields.push( "native_trace_en" );
+}
+
+// Create a bundle of local wires with unique names and declare them
+const names						= libUtils.createUniqNameFactory();	// Used to create unique names
+const local						= {
+	trace						: vlogSignal(nTraceRegisters, names.get("trace")),
+	tieoffHi					: vlogSignal(1, names.get("tie_off_hi")),
+	inAddr						: vlogSignal(wAddrMax, names.get("addr_ext")),
+	userMaskValid				: vlogSignal(nTraceRegisters, names.get("user_mask_valid")),
+	userNotMatch				: vlogSignal(nTraceRegisters, names.get("user_not_match"))
+};
+
+// Create local wires for each match type, one bit per register set if matchType is a bit-vector
+matchTypes.forEach( matchType => {
+	local[matchType]			= vlogSignal( nTraceRegisters, names.get(matchType) );
+});
+
+const regionSignals				= { "size": 6, "address_lo": wAddrMax, "size_offset": 4};  // Interface signals for the address region interfaces
+const regionInterfaces			= [];
+
+for(let i=0; i<nTraceRegisters; i++) {
+	local["opcodeValids"+i]		= vlogSignal(nOpcodes, names.get("opcode_valids_set"+i));
+	local["opcodeMatches"+i]	= vlogSignal(nOpcodes, names.get("opcode_matches_set"+i));
+	local["csrHutOneHot"+i]		= vlogSignal(2, names.get("csr_hut_one_hot_set"+i));
+	local["awArCheck"+i]		= vlogSignal(2, names.get("aw_ar_check"+i));
+	local["enables"+i]			= vlogSignal(matchTypes.length, names.get("enables_set"+i));
+	local["matches"+i]			= vlogSignal(matchTypes.length, names.get("matches_set"+i));
+	local["userBitsMasked"+i]	= vlogSignal(nativeWidth("user"), names.get("user_bits_masked"+i));
+	local["rangeSize"+i]	= vlogSignal(wAddrMax, names.get("range_size"+i));
+	local["compareAddrLoRange"+i]	= vlogSignal(wAddrMax, names.get("compare_addr_lo_range"+i));
+	local["compareAddrHiRange"+i]	= vlogSignal(wAddrMax, names.get("compare_addr_hi_range"+i));
+
+	const regionInterface		= { name: names.get("region_"+i+"_"), signals: regionSignals };
+	regionInterfaces.push(regionInterface); \jsend
+	\=bundleFunctions.wiresFromInterface(regionInterface.name, regionInterface.signals, [], obj.lib.bundle)=\ \jsbegin
+} \jsend
+
+	\=declareVlogWires(local)=\
+
+	\jsbegin
+	// Extend native trigger interface address to match width of input 'address' port on addr_map_compare:
+	const addrExtended							= vlogSignal( nativeWidth("addr"), nativePort("addr") ).extend0( wAddrMax ); \jsend
+    assign \=local.inAddr=\						= \=addrExtended=\;
+	assign \=local.tieoffHi=\	= 1'b1;
+
+
+// Generate *match signals on a per trace-register-set basis, asserted when
+// associated condition is true (opcode matched, addr-range matched, user-bits matched etc.)
+// Each *match wire is a bit-vector with each bit corresponding to one of nTraceRegisters sets \jsbegin
+for(let i=0; i<nTraceRegisters; i++) {
+  const csrCtrl									= csrPortOut.bind(null, "TCTRLR"+i); // Returns a function that returns the CSR Port name of a field in "TCTRLR"+i register
+// TraceEn always enabled
+/* istanbul ignore else env ncore_3p6 */
+  if(local.nativeTrace) { \jsend
+	// Native trace bit for set \=i=\
+	assign \=local.nativeTrace.bit(i)=\			= \=nativePort("trace")=\; \jsbegin
+  }
+
+  if(local.userMatch) { \jsend
+	// User-bits match for set \=i=\
+	// Instantiate logic_tree to generate user_not_match
+	\=u.instance({ 
+		instanceName: 'logic_or_tree_user_not_match_'+i,
+		moduleName:   'logic_tree',
+		params:	{ width: nativeWidth("user"), logic: '|' },
+		ports: { "din": local["userBitsMasked"+i], "dout": local.userNotMatch.bit(i).expr }
+	})=\
+
+	// Instantiate logic_tree to OR all user-mask bits to generate user_mask_valid
+	\=u.instance({ 
+		instanceName: 'logic_or_tree_user_mask_valid_'+i,
+		moduleName:   'logic_tree',
+		params:	{ width: nativeWidth("user"), logic: '|' },
+		ports: { "din": csrPort("TUBMR"+i, "user_mask", "out"), "dout": local.userMaskValid.bit(i).expr }
+	})=\
+
+	assign \=local["userBitsMasked"+i]=\		= (\=csrPortOut("TUBR"+i, "user")=\ ^ \=nativePort("user")=\) & \=csrPortOut("TUBMR"+i, "user_mask")=\;
+	assign \=local.userMatch.bit(i)=\			= ~\=local.userNotMatch.bit(i)=\ & \=local.userMaskValid.bit(i)=\; \jsbegin
+  } \jsend
+
+	// Target match for set \=i=\
+	assign \=local["csrHutOneHot"+i]=\			= { \=csrCtrl("hut")=\ == 1'd1, \=csrCtrl("hut")=\ == 1'd0 };
+	assign \=local.targetMatch.bit(i)=\			= (\=csrCtrl("hui")=\ ==  \=nativePort("hui")=\) & |({\=nativePort("dii_hit")=\, \=nativePort("dmi_hit")=\} & \=local["csrHutOneHot"+i]=\);
+
+	// Opcode match for set \=i=\ \jsbegin
+  const opCodeValidsAndMatches					= getOpcodeValidsAndMatches( i ); \jsend
+	assign \=local["opcodeValids"+i]=\			= { \=opCodeValidsAndMatches.valids.join(", ")=\ };
+	assign \=local["opcodeMatches"+i]=\			= { \=opCodeValidsAndMatches.matches.join(", ")=\ };
+	assign \=local.opcodeMatch.bit(i)=\			= |( \=local["opcodeValids"+i]=\ & \=local["opcodeMatches"+i]=\ );
+	// MemAttr match for set \=i=\ \jsbegin
+  /* istanbul ignore if env ncore_3p6 */
+  if(nativeWidth("aw") && nativeWidth("ar")) { \jsend
+	assign \=local["awArCheck"+i]=\				= { \=csrCtrl("aw")=\, \=csrCtrl("ar")=\ } & { \=nativePort("aw")=\, \=nativePort("ar")=\ }; \jsbegin
+  } else { \jsend
+	assign \=local["awArCheck"+i]=\				= 2'b11; \jsbegin
+  } \jsend
+	assign \=local.memattrMatch.bit(i)=\		= (\=csrCtrl("memattr")=\ == \=nativePort("memattr")=\) & |\=local["awArCheck"+i]=\; 
+
+	// Address Match for set\=i=\
+	assign \=regionInterfaces[i].name=\size				= \=csrCtrl("range")=\;
+	assign \=regionInterfaces[i].name=\size_offset		= 4'd12;
+	assign \=regionInterfaces[i].name=\address_lo		= {\=csrPortOut("TBAHR"+i, "base_addr_hi")=\,\=csrPortOut("TBALR"+i, "base_addr_lo")=\,12'h0};
+
+	// Instantiate logic to check if inAddr is within an address region
+	\=u.instance({ 
+		instanceName: 'addr_region_check_'+i,
+		moduleName:   'addr_region_check',
+		params:	{ regionInterface: { name: "region_", signals: regionSignals } },
+		interfaces: [ {modulePrefix: "region_", localPrefix: regionInterfaces[i].name, "interface": regionSignals } ],
+		ports: { "address": local.inAddr.expr, "region_hit": local.addrMatch.bit(i).expr }
+	})=\
+
+\jsbegin
+}
+
+// Compute trace bit per set as AND of all possible match types 
+// qualified by their enables and output tracetag as OR of all
+// per-set trace-bits\jsbegin
+for(let i=0; i<nTraceRegisters; i++) {
+  const csrCtrl									= csrPortOut.bind(null, "TCTRLR"+i); // Returns a function that returns the CSR Port name of a field in "TCTRLR"+i register \jsend
+	assign \=local["matches"+i]=\				= { \=matchTypes.map( x => local[x].bit(i) ).join(", ")=\ };	// Pack all *match signals into a bit-vector
+	assign \=local["enables"+i]=\				= { \=matchEnFields.map( csrCtrl ).join(", ")=\ };				// Pack all *match_en signals into a bit-vector
+	assign \=local.trace.bit(i)=\				= &(\=local["matches"+i]=\ | ~\=local["enables"+i]=\) & |\=local["enables"+i]=\; \jsbegin
+} \jsend
+	assign tracetag								= |\=local.trace=\;
+
+endmodule

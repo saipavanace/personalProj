@@ -1,0 +1,4 @@
+(function() {
+var toc =  [{"name":"2.4.1  Tasks View Pane","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Panes.htm#1054117bc-1"},{"name":"2.4.2  Project Tree Pane","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Panes.htm#1038441bc-2"},{"name":"2.4.3  Object Editor pane","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Panes.htm#1038874bc-3"},{"name":"2.4.4  Parameter View Pane","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Panes.htm#1038465bc-4"},{"name":"2.4.7  Console Interface Pane and Other tabs","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Maestro_Panes.htm#1038840bc-5"}];
+window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
+})();

@@ -1,0 +1,242 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+//
+// NAME: dce_credit
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+// credit for DCE
+//
+//=============================================================================
+//
+// Variables
+//
+var u = obj.lib;
+var m = obj.userLib;
+//
+// Params
+//
+
+u.paramDefault('ccrCsrInterface', 'object', null);
+var ccrCsrInterface  = m.hierGetParam('ccrCsrInterface', u.getParam);
+
+let ASSERT_ON = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+
+let N_ATT = m.ParamDefaultGet(u, 'nAttEntries', 'int', 32);
+let N_TARGS = m.ParamDefaultGet(u, 'nTargets', 'int', 4);
+let W_TARG_ID = m.ParamDefaultGet(u, 'wTargetId', 'int', 8);
+let N_CREDITS = m.ParamDefaultGet(u, 'nCreditsPerTarget', 'int', 8);
+
+let N_DMIS = m.ParamDefaultGet(u, 'nDmis', 'int', 4);
+
+let W_N_CREDITS = Math.max(Math.floor(Math.log2(N_CREDITS))+1, 1);
+
+// Returns a subset of the credit control CSR interface that comprises the
+// CCF (Credit control field) interface for a given unit and CCR register
+function genCCFInterface(ccrCsrInterface, register, unit) {
+  var ccfSignalList       = ["CreditLimit_out", "CounterState_out", "CounterState_in", "CounterState_wr"];
+  var regUnitPrefix       = register+"_"+unit.toUpperCase();
+
+  var ccfSignalBundle     = {};
+
+  ccfSignalList.forEach( ccfSignalName => {
+    var ccrPortName       = regUnitPrefix+ccfSignalName;
+    ccfSignalBundle[ccfSignalName] = ccrCsrInterface.signals[ccrPortName];
+  });
+
+  return { name: ccrCsrInterface.name+regUnitPrefix, signals: ccfSignalBundle };
+}
+
+var clkInterface = {
+    clk: 1,
+    reset_n: 1
+}
+
+//
+// Ports
+//
+
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+
+u.port('input', 'att_req_credit', N_ATT);
+u.port('input', 'att_req_credit_id_vec', N_ATT*N_TARGS);
+
+u.port('input', 'att_targ_ids', N_TARGS*W_TARG_ID);
+
+u.port('input', 'att_void_credit', 1);
+u.port('input', 'att_void_credit_id', W_TARG_ID);
+
+u.port('output', 'att_credit_grant', N_ATT*N_TARGS);
+u.port('output', 'att_credit_grant_err', N_ATT*N_TARGS);
+
+u.interface(ccrCsrInterface.name, 'slave', ccrCsrInterface.signals);
+
+u.port('input', 'hexDceDmiVec', N_DMIS);
+
+u.port('output', 'credit_limit_err_detected', 1);
+u.port('output', 'credit_limit_err_att_id_onehot', N_ATT);
+
+//
+// Module
+//
+
+\jsend
+
+module \=u.getModuleName()=\
+         (\=u.getPorts()=\
+          );
+   
+\jsbegin
+//
+// verilog params
+//
+\jsend
+     
+localparam
+  N_ATT = \=N_ATT=\,
+  N_TARGS = \=N_TARGS=\,
+  W_TARG_ID = \=W_TARG_ID=\,
+  N_CREDITS = \=N_CREDITS=\,
+  N_CREDITS_MINUS_1 = N_CREDITS - 'd1,
+  W_N_CREDITS = \=W_N_CREDITS=\;
+
+
+
+wire credit_limit_err, credit_limit_err_q;
+wire [N_TARGS-1:0] credit_limit_err_vec, credit_limit_err_sel;
+wire [N_TARGS*N_ATT-1:0] credit_limit_err_att_id_vec;
+
+wire [N_TARGS*N_ATT-1:0] targ_req_sel_mask, targ_sel_req, credit_sel_ready, targ_sel_gnt;
+wire [N_TARGS-1:0] credit_req_valid, credit_req_ready, credit_req_last;
+
+wire [\=N_DMIS-1=\:0] hexDceDmiVec_sig = hexDceDmiVec;
+
+
+\js for(var gi=0; gi< N_ATT; gi++) {
+
+    \js  for(let i=0; i<N_TARGS; i++) {                    
+assign targ_req_sel_mask[N_ATT*\=i=\ + \=gi=\] = att_req_credit_id_vec[\=i=\+(N_TARGS*\=gi=\)];  
+    \js     } 
+
+\js }
+          
+
+
+\js for(var gi=0; gi< N_TARGS; gi++) {
+
+assign targ_sel_req[\=gi=\*N_ATT +: N_ATT] = targ_req_sel_mask[\=gi=\*N_ATT +: N_ATT] & att_req_credit;
+        // ARB
+        \=u.instance ({
+                       instanceName: 'credit_rr_arb'+gi,
+                       moduleName: 'rr_arb_comb_mux_therm',
+                       params: {
+                                num_inputs: N_ATT,
+                                interleave_mode : 1
+                                },
+                       verilogParams: {},
+                       ports: {
+                               'clk' : 'clk',
+                               'reset_n' : 'reset_n',
+                               'sink_valid':'targ_sel_req['+gi+'*N_ATT +: N_ATT]',
+                               'sink_last': "{N_ATT{1'b1}}",
+                               'sink_ready': 'credit_sel_ready['+gi+'*N_ATT +: N_ATT]',
+                               'sink_grant': 'targ_sel_gnt['+gi+'*N_ATT +: N_ATT]',
+                               'source_valid': 'credit_req_valid['+gi+']',
+                               'source_ready': 'credit_req_ready['+gi+']',
+                               'source_last' : 'credit_req_last['+gi+']'
+                               }
+                       })=\
+
+\js }
+
+
+\js for(var gi=0; gi< N_ATT; gi++) {
+
+    \js for(let i=0; i<N_TARGS; i++) {  
+assign att_credit_grant[\=i=\+(N_TARGS*\=gi=\)]     = credit_sel_ready[N_ATT*\=i=\ +\=gi=\] & ~credit_limit_err_vec[\=i=\];
+assign att_credit_grant_err[\=i=\+(N_TARGS*\=gi=\)] = credit_sel_ready[N_ATT*\=i=\ +\=gi=\] &  credit_limit_err_vec[\=i=\];
+    \js } 
+
+\js }
+
+
+
+wire [\=N_TARGS-1=\:0] credit_inc;
+wire [\=N_TARGS-1=\:0] credit_dec;
+wire [\=N_TARGS-1=\:0] credit_avail;
+wire [\=N_TARGS-1=\:0] credit_p1_avail;
+
+assign credit_req_ready = credit_avail | credit_limit_err_vec;
+
+assign credit_dec = credit_req_valid & credit_avail;
+
+\js for (var k = 0; k < N_TARGS; k++ ) {
+assign credit_inc[\=k=\] = att_void_credit & (att_void_credit_id == att_targ_ids[\=k*W_TARG_ID=\ +: \=W_TARG_ID=\]);
+\js }
+
+\jsbegin
+    for (var k = 0; k < N_TARGS; k++ ) {
+      // Create a CCF (Credit control field) interface for the credit counter
+      var ccfInterface = genCCFInterface(ccrCsrInterface, "CCR"+k, 'dmi');
+\jsend
+
+      \=u.instance({
+        instanceName: 'credit_ctrl_dmi_'+k,
+        moduleName: 'variable_limit_credit_counter',
+        params: {
+          assertOn:     ASSERT_ON,
+          clkInterface: {name: "", signals: clkInterface},
+          ccfInterface: {name: "", signals: ccfInterface.signals}
+        },
+        ports: {
+          inc_count         : 'credit_inc['+k+']',
+          dec_count         : 'credit_dec['+k+']',
+          connected         : 'hexDceDmiVec_sig['+k+']',
+          credit_avail      : 'credit_avail['+k+']',
+          credit_p1_avail   : 'credit_p1_avail['+k+']'
+        },
+        interfaces: [
+          {modulePrefix: '', localPrefix: '',                interface: clkInterface },
+          {modulePrefix: '', localPrefix: ccfInterface.name, interface: ccfInterface.signals}
+        ]
+      })=\
+
+assign credit_limit_err_vec[\=k=\] = credit_req_valid[\=k=\] & (~{|{\=ccfInterface.name=\CreditLimit_out}} | ~hexDceDmiVec_sig[\=k=\]);
+
+\jsbegin
+    }
+\jsend
+
+assign credit_limit_err = {|{credit_limit_err_vec}};
+
+\=u.dffre(1, 'credit_limit_err_q', 'credit_limit_err', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+assign credit_limit_err_detected = credit_limit_err & ~credit_limit_err_q;
+
+
+assign credit_limit_err_att_id_vec = targ_req_sel_mask;
+
+    \=u.instance({
+      instanceName : 'u_find_first_credit_limit_err_vec',
+      moduleName : 'find_first_one',
+      params : {
+          width :  N_TARGS
+      },
+      ports : {
+          invec  : 'credit_limit_err_vec',
+          outvec : 'credit_limit_err_sel'
+      }
+    })=\
+
+assign credit_limit_err_att_id_onehot = {\=N_ATT=\{1'b0}} 
+    \js for (var k = 0; k < N_TARGS; k++ ) {
+                                   | ({\=N_ATT=\{credit_limit_err_sel[\=k=\]}} & credit_limit_err_att_id_vec[\=k*N_ATT=\ +: \=N_ATT=\])
+    \js }
+                                   ;
+
+endmodule 

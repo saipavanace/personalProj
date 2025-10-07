@@ -1,0 +1,491 @@
+[
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_c.*",
+     "line_pat" : "\\= m_penable \\& m_psel \\& m_pwrite\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_c.*",
+     "line_pat" : "\\= m_penable \\& m_psel \\& ~m_pwrite\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_c.*",
+     "line_pat" : "\\= m_penable \\& m_psel \\& \\(addr_no_hit \\| non_sec_access\\)\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_c.*",
+     "line_pat" : "\\= m_penable \\& m_psel\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "test_se will not be set to 1 in functional mode.",
+     "file_pat" : "cg_prim.*",
+     "line_pat" : "\\= test_se \\| en\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {test_se will not be set to 1 in functional mode.}"
+    },
+	{"comment" : "dffre library elements can be waived",
+	"file_pat" : "dffre*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src %file%"
+	},    
+	{"comment" : "rr_arb_comb_mux library elements can be waived",
+	"file_pat" : "rr_arb_comb_mux*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src %file%"
+	},    
+    {
+     "comment": "connected input is tied off to 1",
+     "file_pat": "variable_limit_credit_counter*",
+	 "line_pat" : "assign save_limit",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 3"
+    },
+    {
+     "comment": "connected input is tied off to 1",
+     "file_pat": "variable_limit_credit_counter*",
+	 "line_pat" : "assign credit_counter_en",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 3"
+    },
+    {"comment" : "STT_ENTRY for DTR: CHI SnpRespData cannot have RespErr=NonData Error.",
+     "file_pat" : "stt_entry_a.*",
+     "line_pat" : "assign dtr_req_cm_status ",
+     "line_offset" : 2,
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 2 -comment {STT_ENTRY for DTR: CHI SnpRespData cannot have RespErr=NonData Error.}"
+    },
+    {"comment" : "STT_ENTRY for DTW: CHI SnpRespData cannot have RespErr=NonData Error.",
+     "file_pat" : "stt_entry_a.*",
+     "line_pat" : "assign dtw_req_cm_status ",
+     "line_offset" : 2,
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 2 -comment {STT_ENTRY for DTW: CHI SnpRespData cannot have RespErr=NonData Error.}"
+    },
+    {
+    "comment": "up will alsways be 3 (owner) or 1(Unique prescence) when aiu_provider_id matches mpf3", 
+     "file_pat": "stt_entry*",
+	 "line_pat" : "\\bsnp_req_sent_dropped_trig_in\\s*\\=",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 11"
+    },
+    {
+    "comment": "up will alsways be 3 (owner) or 1(Unique prescence) when aiu_provider_id matches mpf3",
+     "file_pat": "stt_entry*",
+	 "line_pat" : "\\bsnp_req_RetToSrc\\s*\\=",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 3"
+    },
+    {
+     "comment": "Only possible RXRSP_Opcode for non forward type Snoop Response without data = 1",
+     "file_pat": "snp_resp_gen_*",
+     "line_pat": "\\bSnpResp_[SU][CD]\\s*\\=",
+     "exclusion": "coverage exclude -src {%file%} -fecexprrow %line% 3"
+    },
+    {
+     "comment": "Only possible RXRSP_Opcode for non forward type Snoop Response without data = 1",
+     "file_pat": "snp_resp_gen_*",
+     "line_pat": "\\bdatapull\\s*\\=",
+     "exclusion": "coverage exclude -src {%file%} -fecexprrow %line% 1"
+    },
+    {
+     "comment": "For RXRSP_Opcode values 1,3,5,6, RXDat_Opcode is always 1 as per table in CHI spec. Forward type snoops are never issued by CHI-AIU.",
+     "file_pat": "snp_dat_gen_*",
+     "line_pat": "\\bsnp_resp_Data_(S[CD]|[US]C_PD)\\s*\\=",
+     "exclusion": "coverage exclude -src {%file%} -fecexprrow %line% 1"
+    },
+    {
+     "comment": "CHI-B doesn't support WriteCleanPartial",
+     "file_pat": "ott_entry*",
+	 "line_pat" : "assign writebacks",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 8"
+    },
+    {
+     "comment": "CHI-B doesn't support WriteCleanPartial",
+     "file_pat": "ott_entry*",
+	 "line_pat" : "assign write_ptl_cpbk",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 4"
+    },
+    {
+     "comment": "Ncore 3.4 doesn't support any WriteStash",
+     "file_pat": "ott_entry*",
+	 "line_pat" : "\\bforce_ch_1\\s*\\=",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 24 26"
+    },
+    {
+     "comment": "RXDAT_Opcode can only be 2 when RXDAT_resp = 1 or 2 as per table in CHI spec",
+     "file_pat": "ott_entry*",
+	 "line_pat" : "\\bdtw_req_cm_type_clean\\s*\\=",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 1"
+    },
+    {
+     "comment": "RXDAT_Opcode can only be 2 when RXDAT_resp = 6 or 7, and RXDAT_RESP can only be 0 when RXDAT_opcode = NCPBKWrite as per table in CHI spec",
+     "file_pat": "ott_entry*",
+	 "line_pat" : "\\bdtw_req_cm_type_full_dirty\\s*\\=",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 1 13"
+    },
+    {
+     "comment": "RXDAT_Opcode can only be 2 when RXDAT_resp = 6 or 7, and RXDAT_RESP can only be 0 when RXDAT_opcode = NCPBKWrite as per table in CHI spec",
+     "file_pat": "ott_entry_.*",
+	 "line_pat" : "\\bdtw_req_cm_type_ptl_dirty\\s*\\=",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 1 11"
+    },
+    {
+     "comment": "if cur_cmd_out_req_dmi is 1, then q_req_in_dmi_id must be 1",
+     "file_pat": "ott_entry_.*",
+	 "line_pat" : "\\bcmd_out_req\\s*\\=",
+	 "exclusion" : "coverage exclude -src {%file%} -fecexprrow %line% 11"
+    },
+    {
+     "comment": "TXLINKACTIVEACK_sync is delayed by a clock due to simple pipe. RXLINKACTIVEACK is generated combinationally from RXLINKACTIVEREQ_sync in this state and hence appears first",
+     "file_pat": "rx_tx_link_ctrl_.*",
+     "line_pat": "{TXACT,RXACT}:",
+     "line_offset": 1,
+	 "exclusion" : "coverage exclude -src {%file%} -feccondrow %line% 1 2 4"
+    },
+    {
+     "comment": "TXLINKACTIVEACK_sync is delayed by a clock due to simple pipe. RXLINKACTIVEACK is generated combinationally from RXLINKACTIVEREQ_sync in this state and hence appears first",
+     "file_pat": "rx_tx_link_ctrl_.*",
+     "line_pat": "{TXACT,RXACT}:",
+     "line_offset": 1,
+	 "exclusion" : "coverage exclude -src %file% -line %line% -code s"
+    },
+    {
+     "comment": "TXLINKACTIVEACK_sync is delayed by a clock due to simple pipe. RXLINKACTIVEACK is generated combinationally from RXLINKACTIVEREQ_sync in this state and hence appears first",
+     "file_pat": "rx_tx_link_ctrl_.*",
+     "line_pat": "{TXACT,RXACT}:",
+     "line_offset": 8,
+	 "exclusion" : "coverage exclude -src {%file%} -line %line% -code s"
+    },
+    {
+     "comment": "When entering this state RXLINKACTIVEREQ_sync is already active and RXLINKACTIVEACK is asserted in the same cycle and hence always switches to a new state",
+     "file_pat": "rx_tx_link_ctrl_.*",
+     "line_pat": "{TXACT,RXACT}:",
+     "line_offset": 11,
+	 "exclusion" : "coverage exclude -src {%file%} -line %line% -code s"
+    },
+    {
+     "comment": "Cannot allow state-transition to TXACT-RXDEACT (banned transition)",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXACT,RXRUN}:",
+     "line_offset": 1,
+	 "exclusion" : "coverage exclude -src {%file%} -feccondrow %line% 3"
+    },
+    {
+     "comment": "Cannot allow state-transition to TXACT-RXDEACT (banned transition)",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXACT,RXRUN}:",
+     "line_offset": 5,
+	 "exclusion" : "coverage exclude -src {%file%} -line %line% -code s"
+    },
+    {
+     "comment": "This state is referenced to only in the {TXSTOP,RXSTOP} state but in that state TXLINKACTIVEREQ is always asserted i RXLINKACTIVEREQ_sync is asserted and hence TXACT-RXRUN state can never be reached",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXACT,RXSTOP}:",
+     "line_offset": 1,
+	 "exclusion" : "coverage exclude -src {%file%} -feccondrow %line% 1 2 3 4"
+    },
+    {
+     "comment": "This state is referenced to only in the {TXSTOP,RXSTOP} state but in that state TXLINKACTIVEREQ is always asserted i RXLINKACTIVEREQ_sync is asserted and hence TXACT-RXRUN state can never be reached",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXACT,RXSTOP}:",
+     "line_offset": 5,
+	 "exclusion" : "coverage exclude -src {%file%} -line %line% -code s"
+    },
+    {
+     "comment": "This state is referenced to only in the {TXSTOP,RXSTOP} state but in that state TXLINKACTIVEREQ is always asserted i RXLINKACTIVEREQ_sync is asserted and hence TXACT-RXRUN state can never be reached",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXACT,RXSTOP}:",
+     "line_offset": 8,
+	 "exclusion" : "coverage exclude -src {%file%} -line %line% -code s"
+    },
+    {
+     "comment": "This state can never be reached since its only referenced in TXACT-RXSTOP state from which the transition to TXRUN-RXSTOP is banned",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXRUN,RXSTOP}:",
+     "line_offset": 2,
+	 "exclusion" : "coverage exclude -src {%file%} -line %line% -code s"
+    },
+    {
+     "comment": "This state can never be reached since its only referenced in TXACT-RXSTOP state from which the transition to TXRUN-RXSTOP is banned",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXRUN,RXSTOP}:",
+     "line_offset": 5,
+	 "exclusion" : "coverage exclude -src {%file%} -line %line% -code s"
+    },
+    {
+     "comment": "For entering this state RXLINKACTIVEREQ_sync must already be deasserted, which in turn drives RXLINKACTIVEACK low in this state",
+     "file_pat": "rx_tx_link_ctrl_.*",
+	 "line_pat" : "{TXRUN,RXDEACT}:",
+     "line_offset": 1,
+	 "exclusion" : "coverage exclude -src %file% -feccondrow %line% 2 -comment {For entering this state RXLINKACTIVEREQ_sync must already be deasserted, which in turn drives RXLINKACTIVEACK low in this state}"
+    },
+    {"comment" : "RX_TX_LINK_CTRL (TxDeact,RxRun) can never be entered because Ncore3 only supports Remote Initiate",
+     "file_pat" : "rx_tx_link_ctrl_a.*",
+     "line_pat" : "{TXDEACT,RXRUN}: begin",
+     "line_offset" : 1,
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 2 3 4 -comment {(TxDeact,RxRun) can never be entered because Ncore3 only supports Remote Initiate.}"
+    },
+    {"comment" : "RX_TX_LINK_CTRL (TxDeact,RxDeact) can never be entered for Ncore3 because Ncore3 only supports Remote Initiate, and the propagation from RXREQ deassertion to TXREQ deassertion takes more than 1 clock cycle",
+     "file_pat" : "rx_tx_link_ctrl_a.*",
+     "line_pat" : "{TXDEACT,RXDEACT}: begin",
+     "line_offset" : 1,
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 2 3 4 -comment {(TxDeact,RxDeact) can never be entered for Ncore3 because Ncore3 only supports Remote Initiate, and the propagation from RXREQ deassertion to TXREQ deassertion takes more than 1 clock cycle.}"
+    },
+    {"comment" : "OTT_ENTRY ExCompAck is not applicable for Atomic transaction.",
+     "file_pat" : "ott_entry_a.*",
+     "line_pat" : "wire atomic_coh_done ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 10 -comment {ExCompAck is not applicable for Atomic transaction.}"
+    },
+    {"comment" : "OTT_ENTRY q_cmd_req_coh_flag can never assert for atomic transaction when both q_str_req_coh_flag and q_cmd_rsp_coh_flag are deasserted.",
+     "file_pat" : "ott_entry_a.*",
+     "line_pat" : "assign atomic_coh_in_progress ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {q_cmd_req_coh_flag can never assert for atomic transaction when both q_str_req_coh_flag and q_cmd_rsp_coh_flag are deasserted.}"
+    },
+    {"comment" : "OTT_ENTRY cmd_rsp_coh_flag_set is mutually exclusive with cmd_rsp_coh_flag_clr.",
+     "file_pat" : "ott_entry_a.*",
+     "line_pat" : "wire cmd_rsp_coh_flag_in ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {cmd_rsp_coh_flag_set is mutually exclusive with cmd_rsp_coh_flag_clr.}"
+    },
+    {"comment" : "OTT_ENTRY q_entry_valid can never be 0 if any of the concerto message pending flag is set.",
+     "file_pat" : "ott_entry_a.*",
+     "line_pat" : "assign str_rsp_out_req ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1 -comment {q_entry_valid can never be 0 if any of the concerto message pending flag is set.}"
+    },
+    {"comment" : "OTT_ENTRY q_dtr_req_flag can never be 1 if q_dtr_rsp_flag is 1 and q_entry_valid is 1.",
+     "file_pat" : "ott_entry_a.*",
+     "line_pat" : "assign dtr_rsp_out_req ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {q_dtr_req_flag can never be 1 if q_dtr_rsp_flag is 1 and q_entry_valid is 1.}"
+    },
+    {"comment" : "OTT_ENTRY q_entry_valid can never be 0 if q_dtr_rsp_flag is 1 and q_dtr_req_flag is 0.",
+     "file_pat" : "ott_entry_a.*",
+     "line_pat" : "assign dtr_rsp_out_req ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {q_entry_valid can never be 0 if q_dtr_rsp_flag is 1 and q_dtr_req_flag is 0.}"
+    },
+    {"comment" : "OTT_TOP dtr_req_transport_err can never reach ott_top",
+     "file_pat" : "ott_top_a.*",
+     "line_pat" : "assign dtr_req_slv_ready ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 8 -comment {dtr_req_transport_err can never reach ott_top.}"
+    },
+    {"comment" : "OTT_TOP global timeout event can never assert when all ott entries are idle",
+     "file_pat" : "ott_top_a.*",
+     "line_pat" : "wire  timeout_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {global timeout event can never assert when all ott entries are idle.}"
+    },
+    {"comment" : "SYS_EVT_RECEIVER For sys_evt_receiver, cmstatus_arrival_err is never 1 for Ncore3",
+     "file_pat" : "sys_evt_receiver_a.*",
+     "line_pat" : "ST_IDLE  \\: next_state",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 2 -comment {For sys_evt_receiver, cmstatus_arrival_err is never 1 for Ncore3.}"
+    },
+    {"comment" : "SYS_EVT_RECEIVER For sys_evt_receiver, cmstatus_arrival_err is never 1 for Ncore3",
+     "file_pat" : "sys_evt_receiver_a.*",
+     "line_pat" : "assign cmstatus_mod\\[2\\:0\\] ",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 4 -comment {For sys_evt_receiver, cmstatus_arrival_err is never 1 for Ncore3.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, receive_counter can only be enabled during CONNECT and DISCONNECT state.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "assign receive_counter_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {For sys_coh_sender, receive_counter can only be enabled during CONNECT and DISCONNECT state.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, receive_counter can only be enabled during CONNECT and DISCONNECT state.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "assign receive_counter_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 7 -comment {For sys_coh_sender, receive_counter can only be enabled during CONNECT and DISCONNECT state.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, responses can only be received during CONNECT and DISCONNECT state.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "wire all_responses_received_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {For sys_coh_sender, responses can only be received during CONNECT and DISCONNECT state.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, responses can only be received during CONNECT and DISCONNECT state.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "wire all_responses_received_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {For sys_coh_sender, responses can only be received during CONNECT and DISCONNECT state.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_sys_rsp_error_set is excluded, only protocol_timeout can happen.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "assign any_sys_rsp_error_set ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% -comment {For sys_coh_sender, any_sys_rsp_error_set is excluded, only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_sys_rsp_error_set is excluded, only protocol_timeout can happen.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "assign any_sys_rsp_error_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {For sys_coh_sender, any_sys_rsp_error_set is excluded, only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, protocol_timeout_flag_clr and procotol_timeout_flag_set is mutually exclusive.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "assign protocol_timeout_flag_in ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {For sys_coh_sender, protocol_timeout_flag_clr and procotol_timeout_flag_set is mutually exclusive.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_CONNECT         \\: next_state ",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 6 -comment {For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_CONNECT         \\: next_state ",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 3 -comment {For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_CONNECT         \\: next_state ",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 4 -comment {For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_DISCONNECT      \\: next_state",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 6 -comment {For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_DISCONNECT      \\: next_state",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 3 -comment {For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_DISCONNECT      \\: next_state",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 4 -comment {For sys_coh_sender, any_rsp_sys_error is excluded because only protocol_timeout can happen.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, all_requests_sent is never 0 when all_responses_received or protocol_timeout.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_CONNECT         \\: next_state ",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 -comment {For sys_coh_sender, all_requests_sent is never 0 when all_responses_received or protocol_timeout.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, all_requests_sent is never 0 when all_responses_received.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_CONNECT         \\: next_state ",
+     "line_offset" : 1,
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 -comment {For sys_coh_sender, all_requests_sent is never 0 when all_responses_received.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, all_requests_sent is never 0 when all_responses_received.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_DISCONNECT      \\: next_state",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 -comment {For sys_coh_sender, all_requests_sent is never 0 when all_responses_received.}"
+    },
+    {"comment" : "SYS_COH_SENDER For sys_coh_sender, all_requests_sent is never 0 when all_responses_received.",
+     "file_pat" : "sys_coh_sender_a.*",
+     "line_pat" : "ST_DISCONNECT      \\: next_state",
+     "line_offset" : 1,
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 -comment {For sys_coh_sender, all_requests_sent is never 0 when all_responses_received.}"
+    },
+    {"comment" : "OTT_STASH_ENTRY rx_rsp_valid is never 0 when snp_rxrsp_match_txn_id is 1.",
+     "file_pat" : "ott_stash_entry_a.*",
+     "line_pat" : "wire stash_snp_resp_valid ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {rx_rsp_valid is never 0 when snp_rxrsp_match_txn_id is 1.}"
+    },
+    {"comment" : "OTT_STASH_ENTRY when q_entry_valid is 1, q_stashing_entry_d is never 0 for dealloc_me.",
+     "file_pat" : "ott_stash_entry_a.*",
+     "line_pat" : "assign dealloc_me ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 9 -comment {when q_entry_valid is 1, q_stashing_entry_d is never 0 for dealloc_me.}"
+    },
+    {"comment" : "OTT_STASH_ENTRY when q_dtr_rsp_flag is 1, q_entry_valid can never be 0.",
+     "file_pat" : "ott_stash_entry_a.*",
+     "line_pat" : "assign dtr_rsp_out_req ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {when q_dtr_rsp_flag is 1, q_entry_valid can never be 0.}"
+    },
+    {"comment" : "SYS_EVT_COH_CONCERTO sys_rsp_rx_cm_status_transport_err will never reach sys_coh_evt_concerto module when sys_rsp_rx_valid is 1.",
+     "file_pat" : "sys_evt_coh_concerto_a.*",
+     "line_pat" : "assign sender_sysrsp_valid ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {sys_rsp_rx_cm_status_transport_err will never reach sys_coh_evt_concerto module when sys_rsp_rx_valid is 1.}"
+    },
+    {"comment" : "SYS_EVT_RECEIVER sysrsp_fifo__pop_valid is always 1 when state_is_DONE that asserts sysrsp_fifo__push_valid.",
+     "file_pat" : "sys_evt_receiver_a.*",
+     "line_pat" : "assign sysrsp_fifo__push_valid ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {sysrsp_fifo__pop_valid is always 1 when state_is_DONE that asserts sysrsp_fifo__push_valid.}"
+    },
+    {"comment" : "CHI_DRB chi is credit based, so data rotation buffer for chi snoop data can never backpressure.",
+     "file_pat" : "chi_drb_a.*",
+     "line_pat" : "assign wr_ptr_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {chi is credit based, so data rotation buffer for chi snoop data can never backpressure.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY chi is credit based, so data rotation buffer for chi snoop data can never backpressure.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign wr_beat_en ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {chi is credit based, so data rotation buffer for chi snoop data can never backpressure.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_0 and rob_dw_valid_clr_0 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_0 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_0 and rob_dw_valid_clr_0 are mutually exclusive.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_1 and rob_dw_valid_clr_1 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_1 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_1 and rob_dw_valid_clr_1 are mutually exclusive.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_2 and rob_dw_valid_clr_2 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_2 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_2 and rob_dw_valid_clr_2 are mutually exclusive.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_3 and rob_dw_valid_clr_3 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_3 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_3 and rob_dw_valid_clr_3 are mutually exclusive.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_4 and rob_dw_valid_clr_4 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_4 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_4 and rob_dw_valid_clr_4 are mutually exclusive.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_5 and rob_dw_valid_clr_5 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_5 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_5 and rob_dw_valid_clr_5 are mutually exclusive.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_6 and rob_dw_valid_clr_6 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_6 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_6 and rob_dw_valid_clr_6 are mutually exclusive.}"
+    },
+    {"comment" : "CHI_DRB_ENTRY rob_dw_valid_set_7 and rob_dw_valid_clr_7 are mutually exclusive.",
+     "file_pat" : "chi_drb_entry_a.*",
+     "line_pat" : "assign rob_dw_valid_d_7 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {rob_dw_valid_set_7 and rob_dw_valid_clr_7 are mutually exclusive.}"
+    },
+    {"comment" : "RXDAT_CHAN_STT when drb_data_beat_out_replay_progress is 1, holding_fifo_pop_valid is always 1.",
+     "file_pat" : "rxdat_chan_stt_a.*",
+     "line_pat" : "assign dtw_data_valid ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1 -comment {when drb_data_beat_out_replay_progress is 1, holding_fifo_pop_valid is always 1.}"
+    },
+    {"comment" : "RXDAT_CHAN_STT when RXDATFLIT_TxnID[7] is 1, RXDATFLIT_OpCode is never 0.",
+     "file_pat" : "rxdat_chan_stt_a.*",
+     "line_pat" : "assign stt_chi_rx_dat_flitv_d1 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {when RXDATFLIT_TxnID[7] is 1, RXDATFLIT_OpCode is never 0.}"
+    },
+    {"comment" : "TXDAT_CHAN_HANDLER when ready & valid is 1, sync_reset_n is never 0.",
+     "file_pat" : "txdat_chan_handler_a.*",
+     "line_pat" : "assign chi_tx_dat_flitv_a ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {when ready & valid is 1, sync_reset_n is never 0.}"
+    },
+    {"comment" : "TXRSP_CHAN_HANDLER when ready & valid is 1, sync_reset_n is never 0.",
+     "file_pat" : "txrsp_chan_handler_a.*",
+     "line_pat" : "assign chi_tx_rsp_flitv_a1 ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {when ready & valid is 1, sync_reset_n is never 0.}"
+    },
+    {"comment" : "RXDAT_CHAN_HANDLER when rxdat_chan_handler is in run state, PMA never goes to sleep.",
+     "file_pat" : "rxdat_chan_handler_a.*",
+     "line_pat" : "assign chi_rx_dat_lcrdv ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {when rxdat_chan_handler is in run state, PMA never goes to sleep.}"
+    },
+    {"comment" : "RXRSP_CHAN_HANDLER when rxrsp_chan_handler is in run state, PMA never goes to sleep.",
+     "file_pat" : "rxrsp_chan_handler_a.*",
+     "line_pat" : "assign chi_rx_rsp_lcrdv ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {when rxrsp_chan_handler is in run state, PMA never goes to sleep.}"
+    },
+    {"comment" : "REQ_CHAN_HANDLER when req_chan_handler is in run state, PMA never goes to sleep.",
+     "file_pat" : "req_chan_handler_a.*",
+     "line_pat" : "assign chi_rx_req_lcrdv ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {when req_chan_handler is in run state, PMA never goes to sleep.}"
+    },
+    {"comment" : "REQ_CHAN_HANDLER when req_chan_handler is in run state, sync_reset_n_0 never asserts.",
+     "file_pat" : "req_chan_handler_a.*",
+     "line_pat" : "assign chi_rx_req_lcrdv ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 9 -comment {when req_chan_handler is in run state, sync_reset_n_0 never asserts.}"
+    },
+    {"comment" : "RX_TX_LINK_CTRL when sysco state is CONNECT, rx_state_run is never 0.",
+     "file_pat" : "rx_tx_link_ctrl_a.*",
+     "line_pat" : "wire SYSCOACK_set ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 7 -comment {when sysco state is CONNECT, rx_state_run is never 0.}"
+    },
+    {"comment" : "RX_TX_LINK_CTRL when sysco state is CONNECT and rx_state_run is 1 and tx_state_run is 1, co_state_connect_ready is never 0.",
+     "file_pat" : "rx_tx_link_ctrl_a.*",
+     "line_pat" : "wire SYSCOACK_set ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {when sysco state is CONNECT and rx_state_run is 1 and tx_state_run is 1, co_state_connect_ready is never 0.}"
+    }
+]

@@ -1,0 +1,328 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE Transaction Manager MRDreq
+//
+// Filename: dce_tm_mrd_req.tachl
+//=============================================================================
+
+var u = obj.lib;
+var m = obj.userLib;
+
+let ASSERT_ON    = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+let N_ATT        = m.ParamDefaultGet(u, 'nAttEntries', 'int', 32);
+let W_FUNIT_ID   = m.ParamDefaultGet(u, 'wFUnitId', 'int', 4);
+let W_FPORT_ID   = m.ParamDefaultGet(u, 'wFPortId', 'int', 4);
+let CMD_REQ_INTF = m.ParamDefaultGet(u, 'cmdReqInterface', 'object', {});
+let MRD_REQ_INTF = m.ParamDefaultGet(u, 'mrdReqInterface', 'object', {});
+let SNP_REQ_INTF = m.ParamDefaultGet(u, 'snpReqInterface', 'object', {});
+
+let wChipletId = u.getParam('wChipletId');
+let wLinkId    = u.getParam('wLinkId');
+let wFUnitId   = W_FUNIT_ID;
+let wFPortId   = W_FPORT_ID;
+
+let W_TARGET_ID  = CMD_REQ_INTF.target_id;
+let W_D_ID       = CMD_REQ_INTF.d_id;
+let W_CM_TYPE    = CMD_REQ_INTF.cm_type;
+let W_MSG_ID     = CMD_REQ_INTF.message_id;
+let W_QOS        = SNP_REQ_INTF.qos;
+let W_M_PROT     = MRD_REQ_INTF.m_prot;
+let W_H_PROT     = CMD_REQ_INTF.h_prot;
+let W_T_TIER     = SNP_REQ_INTF.t_tier;
+let W_STEER      = SNP_REQ_INTF.steering;
+let W_PRI        = SNP_REQ_INTF.priority;
+let W_QL         = SNP_REQ_INTF.ql;
+let W_CM_STATUS  = CMD_REQ_INTF.cm_status;
+let W_ADDR       = CMD_REQ_INTF.addr;
+let W_NS         = CMD_REQ_INTF.ns;
+let W_AC         = CMD_REQ_INTF.ac;
+let W_PR         = CMD_REQ_INTF.pr;
+let W_RL         = CMD_REQ_INTF.rl;
+let W_TM         = CMD_REQ_INTF.tm;
+let W_MPF1       = CMD_REQ_INTF.mpf1;
+let W_MPF2       = CMD_REQ_INTF.mpf2;
+let W_SIZE       = CMD_REQ_INTF.size;
+let W_INTF_SIZE  = CMD_REQ_INTF.intf_size;
+let W_AUX        = CMD_REQ_INTF.aux;
+
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+u.port('input', 'my_f_unit_id', W_FUNIT_ID);
+if (wChipletId > 0) {
+u.port('input', 'my_chiplet_id', wChipletId);
+}
+
+u.port('input', 'att_entry_req_mrd_valid', N_ATT);
+u.port('input', 'att_entry_req_mrd_last',  N_ATT);
+u.port('output','att_entry_req_mrd_ready', N_ATT);
+u.port('output','att_entry_req_mrd_grant', N_ATT);
+
+u.port('input', 'att_entry_req_d_id',      N_ATT * W_D_ID);
+u.port('input', 'att_entry_req_mrd_type',  N_ATT * W_CM_TYPE);
+u.port('input', 'att_entry_req_addr',      N_ATT * W_ADDR);
+u.port('input', 'att_entry_req_ns',        N_ATT * W_NS);
+u.port('input', 'att_entry_req_ac',        N_ATT * W_AC);
+u.port('input', 'att_entry_req_pr',        N_ATT * W_PR);
+u.port('input', 'att_entry_mrd_req_rl',    N_ATT * W_RL);
+u.port('input', 'att_entry_req_tm',        N_ATT * W_TM);
+u.port('input', 'att_entry_req_mrd_mpf1',  N_ATT * W_MPF1);
+u.port('input', 'att_entry_req_mrd_mpf2',  N_ATT * W_MPF2);
+u.port('input', 'att_entry_req_size',      N_ATT * W_SIZE);
+u.port('input', 'att_entry_req_intf_size', N_ATT * W_INTF_SIZE);
+
+if ( W_QOS != 0 ) {
+u.port('input', 'att_entry_req_qos',       N_ATT * W_QOS);
+}
+if ( W_PRI != 0 ) {
+u.port('input', 'att_entry_req_pri',       N_ATT * W_PRI);
+}
+if ( W_AUX != 0 ) {
+u.port('input', 'att_entry_req_aux',       N_ATT * W_AUX);
+}
+
+m.defineMasterPortsFromInterface('tm_mrd_req_', MRD_REQ_INTF, u.port);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts()=\);
+
+localparam
+  W_M_PROT = \=W_M_PROT=\,
+  W_H_PROT = \=W_H_PROT=\,
+  W_T_TIER = \=W_T_TIER=\,
+  W_STEER = \=W_STEER=\,
+  W_PRI = \=W_PRI=\,
+  W_QL = \=W_QL=\,
+  W_MSG_ID = \=W_MSG_ID=\,
+  W_TARGET_ID = \=W_TARGET_ID=\,
+  W_ADDR = \=W_ADDR=\,
+  W_CM_STATUS = \=W_CM_STATUS=\,
+  W_CM_TYPE = \=W_CM_TYPE=\,
+  W_AC = \=W_AC=\,
+  W_NS = \=W_NS=\,
+  W_PR = \=W_PR=\,
+  W_RL = \=W_RL=\,
+  W_TM = \=W_TM=\,
+  W_MPF1 = \=W_MPF1=\,
+  W_MPF2 = \=W_MPF2=\,
+  W_SIZE = \=W_SIZE=\,
+  W_INTF_SIZE = \=W_INTF_SIZE=\,
+  W_D_ID = \=W_D_ID=\,
+  W_QOS = \=W_QOS=\,
+  W_AUX = \=W_AUX=\,
+  N_ATT = \=N_ATT=\,
+  W_FUNIT_ID = \=W_FUNIT_ID=\,
+  W_FPORT_ID = \=W_FPORT_ID=\;
+
+//
+// MRDreq arbiter and packet
+//
+
+wire tm_mrd_req_last;
+
+\=u.instance ({
+               instanceName: 'mrd_req_rr_arb',
+               moduleName: 'rr_arb_comb_mux_therm',
+               params: {
+                        num_inputs: N_ATT,
+                        interleave_mode : 1
+                        },
+               verilogParams: {},
+               ports: {
+                       'clk' : 'clk',
+                       'reset_n' : 'reset_n',
+                       'sink_valid':'att_entry_req_mrd_valid',
+                       'sink_last': 'att_entry_req_mrd_last',
+                       'sink_ready': 'att_entry_req_mrd_ready',
+                       'sink_grant': 'att_entry_req_mrd_grant',
+                       'source_valid': 'tm_mrd_req_valid',
+                       'source_ready': 'tm_mrd_req_ready',
+                       'source_last' : 'tm_mrd_req_last'
+                       }
+               })=\ 
+
+wire [W_FUNIT_ID-1:0] tm_mrd_req_target_f_unit_id = (
+\js for (let i=0; i< N_ATT ; i++) {
+                                ({W_FUNIT_ID{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_d_id[W_FUNIT_ID*\=i=\ +:W_FUNIT_ID]) |
+\js }
+                                {W_FUNIT_ID{1'b0}});
+
+    \js if (wChipletId > 0) {
+assign tm_mrd_req_target_id = { my_chiplet_id, \=wLinkId=\'d0, tm_mrd_req_target_f_unit_id, \=wFPortId=\'b0 };
+    \js } else {
+assign tm_mrd_req_target_id = { tm_mrd_req_target_f_unit_id, \=wFPortId=\'b0 };
+    \js }
+
+    \js if (wChipletId > 0) {
+assign tm_mrd_req_initiator_id = {my_chiplet_id, \=wLinkId=\'d0, my_f_unit_id, {W_FPORT_ID{1'b0}}};                               
+    \js } else {
+assign tm_mrd_req_initiator_id = {my_f_unit_id, {W_FPORT_ID{1'b0}}};                               
+    \js }
+
+assign tm_mrd_req_cm_type = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_CM_TYPE{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_mrd_type[W_CM_TYPE*\=i=\ +: W_CM_TYPE]) |
+\js                             }
+                                {W_CM_TYPE{1'b0}});
+assign tm_mrd_req_message_id = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_MSG_ID{att_entry_req_mrd_grant[\=i=\]}} & \=W_MSG_ID=\'d\=i=\) |
+\js                             }
+                                \=W_MSG_ID=\'d0);
+
+\js if (W_QOS != 0) {
+assign tm_mrd_req_qos        = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_QOS{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_qos[W_QOS*\=i=\ +: W_QOS]) |
+\js                             }
+                                \=W_QOS=\'d0);
+
+\js }
+\js if (W_M_PROT > 0) {
+assign tm_mrd_req_m_prot = \=W_M_PROT=\'b0;
+\js }
+\js if (W_H_PROT > 0) {
+assign tm_mrd_req_h_prot = {W_H_PROT{1'b0}};
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if (W_T_TIER > 0) {
+\jsend
+assign tm_mrd_req_t_tier = {W_T_TIER{1'b0}};
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if (W_STEER > 0) {
+\jsend
+assign tm_mrd_req_steering = {W_STEER{1'b0}};
+\js }
+\js if (W_PRI > 0) {
+assign tm_mrd_req_priority = (
+\jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_PRI{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_pri[W_PRI*\=i=\ +: W_PRI]) |
+\js                             }
+                                \=W_PRI=\'d0);
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if (W_QL > 0) {
+\jsend
+assign tm_mrd_req_ql = {W_QL{1'b0}};   
+\js }
+assign tm_mrd_req_cm_status = {W_CM_STATUS{1'b0}};
+assign tm_mrd_req_addr = (
+\jsbegin
+                          for (let i=0; i< N_ATT ; i++)
+                          {
+\jsend
+                           ({W_ADDR{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_addr[W_ADDR*\=i=\ +: W_ADDR]) |
+\js                        }
+                           {W_ADDR{1'b0}});                          
+assign tm_mrd_req_ac =  (
+\jsbegin
+                         for (let i=0; i< N_ATT ; i++)
+                         {
+\jsend
+                          ({W_AC{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_ac[W_AC*\=i=\ +: W_AC]) |
+\js                       }
+                          {W_AC{1'b0}}); 
+assign tm_mrd_req_ns = (
+ \jsbegin
+                        for (let i=0; i< N_ATT ; i++)
+                        {
+\jsend
+                         ({W_NS{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_ns[W_NS*\=i=\ +: W_NS]) |
+\js                      }
+                         {W_NS{1'b0}});                      
+assign tm_mrd_req_pr = (
+ \jsbegin
+                        for (let i=0; i< N_ATT ; i++)
+                        {
+\jsend
+                         ({W_PR{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_pr[W_PR*\=i=\ +: W_PR]) |
+\js                      }
+                         {W_PR{1'b0}});
+assign tm_mrd_req_rl = (
+ \jsbegin
+                        for (let i=0; i< N_ATT ; i++)
+                        {
+\jsend                       
+                         ({W_RL{att_entry_req_mrd_grant[\=i=\ ]}} & att_entry_mrd_req_rl[W_RL*\=i=\ +: W_RL]) | 
+                         
+\js                      }
+                         {W_RL{1'b0}});
+assign tm_mrd_req_tm = (
+ \jsbegin
+                        for (let i=0; i< N_ATT ; i++)
+                        {
+\jsend
+                         ({W_TM{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_tm[W_TM*\=i=\ +: W_TM]) |
+\js                      }
+                         {W_TM{1'b0}}); 
+assign tm_mrd_req_mpf1 = (
+ \jsbegin
+                          for (let i=0; i< N_ATT ; i++)
+                          {    
+\jsend
+                           ({W_MPF1{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_mrd_mpf1[W_MPF1*\=i=\ +: W_MPF1]) |
+\js                        }
+                           {W_MPF1{1'b0}}); 
+assign tm_mrd_req_mpf2 = (
+ \jsbegin
+                          for (let i=0; i< N_ATT ; i++)
+                          {
+\jsend
+                           ({W_MPF2{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_mrd_mpf2[W_MPF2*\=i=\ +: W_MPF2]) |
+\js                      } 
+                         {W_MPF2{1'b0}});
+assign tm_mrd_req_size = (
+ \jsbegin
+                          for (let i=0; i< N_ATT ; i++)
+                          {
+\jsend
+                           ({W_SIZE{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_size[W_SIZE*\=i=\ +: W_SIZE]) |
+\js                      } 
+                         {W_SIZE{1'b0}});
+assign tm_mrd_req_intf_size = (
+ \jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_INTF_SIZE{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_intf_size[W_INTF_SIZE*\=i=\ +: W_INTF_SIZE]) |
+\js                              } 
+                                {W_INTF_SIZE{1'b0}});
+\jsbegin
+/* istanbul ignore if env ncore_3p0 */
+    if (W_AUX) {
+\jsend      
+wire [W_AUX-1:0] tm_mrd_req_aux_int = (
+ \jsbegin
+                               for (let i=0; i< N_ATT ; i++)
+                               {
+\jsend
+                                ({W_AUX{att_entry_req_mrd_grant[\=i=\]}} & att_entry_req_aux[W_AUX*\=i=\ +: W_AUX]) |
+\js                              } 
+                                {W_AUX{1'b0}});
+\js }
+
+
+\js if (W_AUX) {
+assign tm_mrd_req_aux = tm_mrd_req_aux_int;
+\js }
+
+endmodule

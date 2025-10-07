@@ -1,0 +1,396 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+//
+// 
+//=========================================================================
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+var readProtInterface = u.getParam('readProtInterface');
+var writeProtInterface= u.getParam('writeProtInterface');
+var nWriteBuffers     = u.getParam('nWriteBuffers');
+var wWriteDataBufferId= u.getParam('wWriteDataBufferId');
+var cmType            = u.getParam('cmType');
+var wQos              = readProtInterface.qos;
+var enRdPipe          = u.getParam('enRdPipe');
+var enWrPipe          = u.getParam('enWrPipe');
+var wAddr             = readProtInterface.addr;
+var wCacheLineOffset  = obj.lib.getParam('wCacheLineOffset');
+var wRdProt           = bundleFunctions.getBundleWidth(readProtInterface, ['valid', 'ready'], obj.lib.bundle);
+var wWrProt           = bundleFunctions.getBundleWidth(writeProtInterface, ['valid', 'ready'], obj.lib.bundle);
+var assertOn = obj.lib.getParam('assertOn');
+//=========================================================================
+// ports
+//=========================================================================
+u.interface('', 'slave', obj.lib.getParam('clkInterface'));
+
+// upstream from NoC
+u.interface('read_prot_', 'slave', readProtInterface);
+u.interface('return_data_', 'master', obj.lib.getParam('returnDataInterface'));
+u.interface('read_resp_',   'master', obj.lib.getParam('writeResponseInterface'));
+u.interface('write_prot_', 'slave', obj.lib.getParam('writeProtInterface'));
+u.port('output', 'write_prot_error', 1);
+u.interface('write_prot_data_', 'slave', obj.lib.getParam('writeProtDataInterface'));
+u.interface('return_resp_', 'master', obj.lib.getParam('respInterface'));
+
+// downstream to bus
+u.interface('mrg_', 'slave', obj.lib.getParam('writeDataBufferInterface'));
+u.interface('read_res_', 'master', readProtInterface);
+u.interface('bus_data_', 'slave', obj.lib.getParam('returnDataInterface'));
+u.interface('write_res_', 'master', obj.lib.getParam('writeProtInterface'));
+u.interface('write_res_data_', 'master', obj.lib.getParam('writeDataInterface'));
+u.interface('bus_resp_', 'slave', obj.lib.getParam('writeResponseInterface'));
+u.port('output', 'read_res_bus_valid', 1);
+u.interface('', 'master', obj.lib.getParam('rsrcCsrInterface'));
+
+u.interface('read_cam_',  'master', obj.lib.getParam('camAddrInterface'));
+u.interface('write_cam_', 'master', obj.lib.getParam('camAddrInterface'));
+u.port('output', 'write_req_valid' , 1);
+u.port('output', 'write_req_ready' , 1);
+u.port('output', 'read_req_valid' , 1);
+u.port('output', 'read_req_ready' , 1);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+localparam RD_WSCLN = \=cmType['MrdRdWSCln']=\;
+localparam RD_WUCLN = \=cmType['MrdRdWUCln']=\;
+localparam RD_WUNIQ = \=cmType['MrdRdWU']=\;
+localparam RD_WINV  = \=cmType['MrdRdWInv']=\;
+localparam RD_PREF  = \=cmType['MrdPref']=\;
+localparam RD_CLEAN = \=cmType['MrdCln']=\;
+localparam RD_INV   = \=cmType['MrdInv']=\;
+localparam RD_FLUSH = \=cmType['MrdFlush']=\;
+
+localparam HN_READ  = \=cmType['HntRead']=\;
+
+localparam NC_CMDRD = \=cmType['CmdRdNC']=\;
+localparam NC_CLEAN = \=cmType['CmdClnVld']=\;
+localparam NC_PRSST = \=cmType['CmdClnShPsist']=\;
+localparam NC_FLUSH = \=cmType['CmdClnInv']=\;
+localparam NC_MKINV = \=cmType['CmdMkInv']=\;
+localparam NC_PREF  = \=cmType['CmdPref']=\;
+
+localparam WM_INV   = \=cmType['DtwMrgMrdInv']=\;
+localparam WM_RSCLN = \=cmType['DtwMrgMrdSCln']=\;
+localparam WM_RSDTY = \=cmType['DtwMrgMrdSDty']=\;
+localparam WM_RUCLN = \=cmType['DtwMrgMrdUCln']=\;
+localparam WM_RUDTY = \=cmType['DtwMrgMrdUDty']=\;
+
+localparam DT_INV   = \=cmType['DtrDataInv']=\;
+localparam DT_SCLN  = \=cmType['DtrDataSCln']=\;
+localparam DT_SDTY  = \=cmType['DtrDataSDty']=\;
+localparam DT_UCLN  = \=cmType['DtrDataUCln']=\;
+localparam DT_UDTY  = \=cmType['DtrDataUDty']=\;
+
+    function automatic [\=readProtInterface['cm_type']-1=\:0] return_type;
+        input [\=readProtInterface['cm_type']-1=\:0] cm_type;
+        input hitdirty;
+        begin
+            return_type = (cm_type==RD_WSCLN | cm_type==WM_RSCLN) ?  DT_SCLN :
+                          (cm_type==RD_WUCLN | cm_type==WM_RUCLN) ?  DT_UCLN :
+                           cm_type==RD_WUNIQ                      ?  DT_UCLN :
+                          (cm_type==RD_WINV  | cm_type==WM_INV)   ?  DT_INV  :
+                          (cm_type==NC_CMDRD)                     ?  DT_INV  :
+                          // cm_type==WM_RSDTY ?                       DT_SDTY :
+                          // cm_type==WM_RUDTY ?                       DT_UDTY :
+                                                                     cm_type;
+        end
+    endfunction
+
+    function automatic is_cacheop;
+        input [\=readProtInterface['cm_type']-1=\:0] cm_type;
+        begin
+            is_cacheop = (cm_type == RD_PREF)  | (cm_type == NC_PREF)  | (cm_type == HN_READ) |
+                         (cm_type == RD_FLUSH) | (cm_type == NC_FLUSH) |
+                         (cm_type == RD_CLEAN) | (cm_type == NC_CLEAN) | (cm_type == NC_PRSST) | 
+                         (cm_type == RD_INV)   | (cm_type == NC_MKINV);
+        end
+    endfunction
+
+    function automatic is_dtwmergemrd;
+        input [\=obj.lib.getParam('writeProtInterface','cm_type')-1=\:0] cm_type;
+        begin
+            is_dtwmergemrd = (cm_type == WM_INV)   |
+                           //(cm_type == WM_RSCLN) | (cm_type == WM_RSDTY) |
+                             (cm_type == WM_RUCLN) | (cm_type == WM_RUDTY);
+        end
+    endfunction
+
+    wire rd_enable ;
+    wire wr_enable ;
+    \=bundleFunctions.wiresFromInterface('read_req_',   obj.lib.getParam('readProtInterface'), ['valid', 'ready'], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('write_req_',  obj.lib.getParam('writeProtInterface'), ['valid', 'ready'], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('write_addr_', obj.lib.getParam('writeProtInterface'), [], obj.lib.bundle)=\
+    wire rd_drop_cmo;
+    wire write_res_data_req_valid;
+    wire write_res_data_req_ready;
+    wire [\=obj.lib.getParam('writeProtInterface', 'trans_id')-1=\:0] write_res_data_req_id;
+    wire [\=obj.lib.getParam('writeProtDataInterface', 'mpf1')-1=\:0] write_res_data_mpf1;
+    wire [\=obj.lib.getParam('writeProtInterface', 'trans_id')-1=\:0] wrdata0_unlock_id;
+    wire wrdata0_unlock;
+    \=bundleFunctions.assignByBundle('write_res_', 'write_req_', writeProtInterface, ['valid', 'ready', 'vz'], obj.lib.bundle)=\
+    // not needed for no ccp
+    assign wrdata0_unlock    = write_req_valid & write_req_ready & (write_res_cm_type == WM_RUDTY);
+    assign wrdata0_unlock_id = write_res_trans_id;
+    assign write_prot_error  = 1'b0;
+    assign atm_error_valid = 1'b0;
+    assign atm_error_source_id = \=obj.lib.getParam("rsrcCsrInterface").atm_error_source_id=\'d0;
+    assign atm_error_addr  = \=obj.lib.getParam("rsrcCsrInterface").atm_error_addr=\'d0;
+    
+    \=u.instance({
+        instanceName: 'write_data_buffer',
+        moduleName: 'dmi_wdata_buffer',
+        params: {
+            wCacheLineOffset:   obj.lib.getParam('wCacheLineOffset'),
+            nWriteBuffers:      nWriteBuffers,
+            cmType:             cmType,
+            clkInterface:       obj.lib.getParam('clkInterface'),
+            writeAddrInterface: obj.lib.getParam('writeProtInterface'),
+            writeDataInterface: obj.lib.getParam('writeProtDataInterface'),
+            writeDataBufferInterface: obj.lib.getParam('writeDataBufferInterface'),
+            assertOn : assertOn
+        },
+        interfaces: [
+                {modulePrefix: '',                 localPrefix: '',                 interface: obj.lib.getParam('clkInterface') },
+                {modulePrefix: 'write_prot_',      localPrefix: 'write_prot_',      interface: obj.lib.getParam('writeProtInterface')},
+                {modulePrefix: 'write_prot_data_', localPrefix: 'write_prot_data_', interface: obj.lib.getParam('writeProtDataInterface')},
+                {modulePrefix: 'write_res_',       localPrefix: 'write_addr_',      interface: obj.lib.getParam('writeProtInterface'), exclude: ['valid','ready','vz']},
+                {modulePrefix: 'wrdata0_',         localPrefix: 'write_res_data_',  interface: obj.lib.getParam('writeDataBufferInterface')},
+                {modulePrefix: 'wrdata1_',         localPrefix: 'mrg_',             interface: obj.lib.getParam('writeDataBufferInterface')}
+        ],
+        ports: {
+                write_res_valid:    'write_addr_valid',
+                write_res_ready:    'write_addr_ready',
+                write_res_vz:       'write_addr_vz',
+                write_res_trans_id: 'write_addr_trans_id',
+                wrdata0_unlock:     'wrdata0_unlock',
+                wrdata0_unlock_id:  'wrdata0_unlock_id'
+        },
+        portsDelimiter: '\n        '
+    })=\
+    //assign write_res_trans_id = write_req_trans_id;
+    // without cache, just store write buffer ids in fifo and read data back in that order
+    wire wdata_id_valid;
+    wire wdata_id_ready;
+    wire write_mergemrd;
+    wire mergemrd_blockrd;
+    wire mergemrd_blockwr;
+    \=obj.lib.instance({
+        instanceName: 'wdata_id_ff',
+        moduleName: 'fifo',
+        params: {
+            width: wWriteDataBufferId,
+            depth: nWriteBuffers,
+            zerodepth: 0,
+            bypass_mode: 0
+        },
+        interfaces: [{ modulePrefix: '', localPrefix: '', interface: obj.lib.getParam('clkInterface') }],
+        ports: {
+            push_valid: 'wdata_id_valid',
+            push_ready: 'wdata_id_ready',
+            push_data:  'write_res_trans_id',
+            pop_valid:  'write_res_data_req_valid',
+            pop_ready:  'write_res_data_req_ready',
+            pop_data:   'write_res_data_req_id'
+        },
+        portsDelimiter: '\n        '
+    })=\
+    assign wdata_id_valid = write_res_valid & write_res_ready;
+    
+    // DTWMergeMRD special handling
+    // flag to only read data, but not deallocate
+    // Deallocation will happen later when merge buffer requests data
+    assign write_mergemrd = is_dtwmergemrd(write_res_cm_type) & write_req_valid;
+
+    // if dtwmergemrd, then send to WTT and RTT
+    // Keep simple, only send when both are ready and send at same time
+    assign mergemrd_blockrd = write_mergemrd & (~write_res_ready |  read_cam_match) & ~(write_res_cm_type == WM_RUDTY);
+    assign mergemrd_blockwr = write_mergemrd & (~ read_res_ready | write_cam_match);
+
+    // vz bit for dtwmergmrd means late response for read portion only
+    assign write_res_vz    = ~write_mergemrd & write_req_vz;
+    assign read_res_vz     =  write_mergemrd ? write_req_vz : read_req_vz;
+
+    assign \=bundleFunctions.packetizeBundle('read_res_', obj.lib.getParam('readProtInterface'), ['valid','ready','vz'], obj.lib.bundle)=\ = 
+                      write_mergemrd ? \=bundleFunctions.packetizeBundle('write_res_', obj.lib.getParam('readProtInterface'), ['valid','ready','vz'], obj.lib.bundle)=\
+                                     : \=bundleFunctions.packetizeBundle('read_req_', obj.lib.getParam('readProtInterface'), ['valid','ready','vz'], obj.lib.bundle)=\;
+
+    // Ordering Logic
+    assign write_cam_addr  = read_req_addr;
+    assign write_cam_ns    = read_req_ns;
+    assign read_cam_addr   = write_req_addr;
+    assign read_cam_ns     = write_req_ns;
+    assign read_cam_mask   = {\=obj.lib.getParam('camAddrInterface', 'mask')-obj.lib.getParam('wCacheLineOffset')=\'b0,{\=obj.lib.getParam('wCacheLineOffset')=\{1'b1}}};
+    assign write_cam_mask  = {\=obj.lib.getParam('camAddrInterface', 'mask')-obj.lib.getParam('wCacheLineOffset')=\'b0,{\=obj.lib.getParam('wCacheLineOffset')=\{1'b1}}};
+    // need to avoid use of same valid in the enable
+    // so that ready is not dependent on same valid (creates timing loop)
+    assign rd_enable       = ~write_cam_match & ~mergemrd_blockrd;
+    assign wr_enable       = (~read_cam_match | (write_res_cm_type == WM_RUDTY)) & ~mergemrd_blockwr;
+    assign read_res_valid  = rd_enable  & (read_req_valid & ~is_cacheop(read_req_cm_type) | write_mergemrd);
+    assign read_req_ready  = rd_enable  & (read_res_ready & (~write_mergemrd & ~is_cacheop(read_req_cm_type) | (is_cacheop(read_req_cm_type) & read_resp_ready)));
+    assign write_res_valid = wr_enable  & write_req_valid & ~(write_res_cm_type == WM_RUDTY);
+    assign write_req_ready = wr_enable  & (write_res_ready | (read_res_ready & (write_res_cm_type == WM_RUDTY)));
+
+    assign rd_drop_cmo = read_req_valid & read_req_ready & is_cacheop(read_req_cm_type); 
+
+    // without cache, just wire these together
+    assign read_res_bus_valid = read_res_valid;
+
+    \=bundleFunctions.assignByBundle('return_data_', 'bus_data_', obj.lib.getParam('returnDataInterface'), ['cm_type'], obj.lib.bundle)=\
+
+    assign return_data_cm_type = return_type(bus_data_cm_type, 1'b0);
+
+    \=bundleFunctions.assignByBundle('return_resp_', 'bus_resp_', obj.lib.getParam('respInterface'), [], obj.lib.bundle)=\
+
+//     assign \=bundleFunctions.packetizeBundle('read_resp_', obj.lib.getParam('writeResponseInterface'), ['valid', 'ready'], obj.lib.bundle)=\ = 'b0;
+    
+    assign read_resp_valid        = rd_drop_cmo;   
+    assign read_resp_vz           = read_req_vz; 
+    assign read_resp_tm           = read_req_tm; 
+    assign read_resp_cm_type      = read_req_cm_type; 
+    assign read_resp_resp         = \=obj.lib.getParam("writeResponseInterface").resp=\'d0; 
+    assign read_resp_aiu_id       = read_req_aiu_id; 
+    assign read_resp_aiu_trans_id = read_req_aiu_trans_id; 
+    \jsbegin
+    if(obj.lib.getParam("nExclusiveEntries") > 0){
+        \jsend
+    assign read_resp_ex_pass      = read_req_ex_pass;
+    \jsbegin
+    }
+    \jsend
+\js if (wQos != 0) {
+    assign read_resp_qos          = read_req_qos; 
+\js }
+
+\jsbegin
+// user field only present on aw/ar channels
+/* istanbul ignore if env ncore_3p4,ncore_3p6 */
+if(obj.lib.getParam('writeResponseInterface').user>0) { \jsend
+    assign read_resp_user = \=obj.lib.getParam('writeResponseInterface').user=\'b0;
+\jsbegin
+} \jsend
+wire read_pipe_match, write_pipe_match;
+// This is to cut long timing path from valid to ready since RTT/WTT does not sleep requests
+\jsbegin
+// In no cache configuration, pipe is always present
+/* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (enRdPipe) {
+    var readPipeParam = {
+        width       : wRdProt,
+        depth       : 2,
+        bypass_mode : 0
+    };
+
+    var readPipePorts = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        search_data         : 'read_pipe_search_data',
+        search_mask         : 'read_pipe_search_mask',
+        match               : 'read_pipe_match',
+        push_data           : 'read_pipe_push_data',
+        push_valid          : 'read_pipe_push_valid',
+        push_ready          : 'read_pipe_push_ready',
+        pop_data            : 'read_pipe_pop_data',
+        pop_valid           : 'read_pipe_pop_valid',
+        pop_ready           : 'read_pipe_pop_ready'
+    };
+\jsend
+
+wire read_pipe_pop_valid, read_pipe_pop_ready;
+wire read_pipe_push_valid, read_pipe_push_ready;
+wire [\=wRdProt-1=\:0] read_pipe_push_data, read_pipe_pop_data;
+wire [\=wRdProt-1=\:0] read_pipe_search_mask, read_pipe_search_data;
+
+assign read_pipe_push_valid = read_prot_valid & ~write_pipe_match;
+assign read_pipe_pop_ready = read_req_ready;
+assign read_pipe_push_data = \=bundleFunctions.packetizeBundle('read_prot_', obj.lib.getParam('readProtInterface'), ['valid','ready'], obj.lib.bundle)=\;
+assign read_prot_ready = ~write_pipe_match & read_pipe_push_ready;
+assign read_req_valid = read_pipe_pop_valid;
+assign \=bundleFunctions.packetizeBundle('read_req_', obj.lib.getParam('readProtInterface'), ['valid','ready'], obj.lib.bundle)=\ = read_pipe_pop_data;
+assign read_pipe_search_mask = {{\=wAddr-wCacheLineOffset=\{1'b1}}, \=wCacheLineOffset=\'b0, 1'b1, {\=wRdProt-wAddr-1=\{1'b0}}};
+assign read_pipe_search_data = {write_addr_addr, write_addr_ns, \=wRdProt-wAddr-1=\'b0};
+    \=u.instance({
+        instanceName: 'read_pipe',
+        moduleName: 'cam_fifo',
+        params : readPipeParam,
+        ports: readPipePorts
+    })=\
+\jsbegin
+} else { \jsend
+\=bundleFunctions.assignByBundle('read_req_', 'read_prot_', readProtInterface, [], obj.lib.bundle)=\
+assign read_pipe_match = 1'b0;
+\jsbegin
+} \jsend
+
+\jsbegin
+// In no cache configuration, pipe is always present
+/* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+if (enWrPipe) {
+    var writePipeParam = {
+        width       : wWrProt,
+        depth       : 2,
+        bypass_mode : 0
+    };
+    var writePipePorts = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        search_data         : 'write_pipe_search_data',
+        search_mask         : 'write_pipe_search_mask',
+        match               : 'write_pipe_match',
+        push_data           : 'write_pipe_push_data',
+        push_valid          : 'write_pipe_push_valid',
+        push_ready          : 'write_pipe_push_ready',
+        pop_data            : 'write_pipe_pop_data',
+        pop_valid           : 'write_pipe_pop_valid',
+        pop_ready           : 'write_pipe_pop_ready'
+    };
+\jsend
+
+wire write_pipe_pop_valid, write_pipe_pop_ready;
+wire write_pipe_push_valid, write_pipe_push_ready;
+wire [\=wWrProt-1=\:0] write_pipe_push_data, write_pipe_pop_data;
+wire [\=wWrProt-1=\:0] write_pipe_search_mask, write_pipe_search_data;
+
+assign write_pipe_search_data = {read_prot_addr, read_prot_ns, \=wWrProt-wAddr-1=\'b0};
+assign write_pipe_search_mask = {{\=wAddr-wCacheLineOffset=\{1'b1}}, \=wCacheLineOffset=\'b0, 1'b1, {\=wWrProt-wAddr-1=\{1'b0}}};
+assign write_pipe_push_data = \=bundleFunctions.packetizeBundle('write_addr_', obj.lib.getParam('writeProtInterface'), ['valid','ready'], obj.lib.bundle)=\; 
+assign \=bundleFunctions.packetizeBundle('write_req_', obj.lib.getParam('writeProtInterface'), ['valid','ready'], obj.lib.bundle)=\ = write_pipe_pop_data;
+assign write_addr_ready = ~read_pipe_match & write_pipe_push_ready;
+assign write_pipe_push_valid = write_addr_valid & ~read_pipe_match;
+assign write_req_valid = write_pipe_pop_valid;
+assign write_pipe_pop_ready = write_req_ready;
+    \=u.instance({
+        instanceName: 'write_pipe',
+        moduleName: 'cam_fifo',
+        params : writePipeParam,
+        ports: writePipePorts
+    })=\
+\jsbegin
+} else { \jsend
+\=bundleFunctions.assignByBundle('write_req_', 'write_addr_', writeProtInterface, [], obj.lib.bundle)=\
+assign write_pipe_match = 1'b0;
+\jsbegin
+} \jsend
+
+\js if(assertOn) {
+    `ifdef OVL_ASSERT_ON
+    // coverage off
+    // synthesis off
+    // synopsys translate_off
+    // should never overflow because sized to num buffers
+    assert_implication assert_wdata_id_overflow (
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(wdata_id_valid),
+        .consequent_expr(wdata_id_ready)
+    );
+    // synopsys translate_on
+    // synthesis on
+    // coverage on
+    `endif
+\js }
+
+endmodule

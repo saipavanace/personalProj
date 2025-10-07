@@ -1,0 +1,270 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Filename: ncore3_addr_div_ifn.tachl
+// Author: Boon Chuan
+// Description: Ncore3 Address Division for Interleave Function Non-power-of-two
+//=========================================================================
+
+var u = obj.lib;
+
+var wNUnitId       = obj.lib.getParam('wNUnitId');
+var InterleaveInfo = obj.lib.getParam('InterleaveInfo');
+
+var dmiIGSV   = InterleaveInfo.dmiIGSV;
+var dmi3WIFV  = InterleaveInfo.dmi3WIFV;
+var dmi6WIFV  = InterleaveInfo.dmi6WIFV;
+var dmi12WIFV = InterleaveInfo.dmi12WIFV;
+
+//=============================================================================
+// Ports
+//=============================================================================
+obj.lib.port('input',  'my_n_unit_id',    wNUnitId);
+obj.lib.port('input',  'AMIGR_AMIGS',     4);
+obj.lib.port('input',  'AMIGR_Valid',     1);
+obj.lib.port('input',  'AMIFR_A16WIFId',  3);
+obj.lib.port('input',  'AMIFR_A12WIFId',  3);
+obj.lib.port('input',  'AMIFR_A8WIFId',   3);
+obj.lib.port('input',  'AMIFR_A6WIFId',   3);
+obj.lib.port('input',  'AMIFR_A4WIFId',   3);
+obj.lib.port('input',  'AMIFR_A3WIFId',   3);
+obj.lib.port('input',  'AMIFR_A2WIFId',   3);
+obj.lib.port('input',  'address',         52);
+obj.lib.port('output', 'address_out',     52, 'reg');
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+// =======================================================
+// Interleave Group Size (one-off encoding)
+// =======================================================
+\jsend
+
+    \js for (var s=0; s < dmiIGSV.length; s++) {
+
+reg [3:0] igs\=s=\_size_of_ig;
+reg [3:0] igs\=s=\_idv_index;
+
+always @(*) begin
+    case (my_n_unit_id)
+    \js for (var i=0; i < dmiIGSV[s].IGV.length; i++) {
+        \js for (var j=0; j < dmiIGSV[s].IGV[i].DMIIDV.length; j++) {
+    \=wNUnitId=\'d\=dmiIGSV[s].IGV[i].DMIIDV[j]=\ : begin
+            igs\=s=\_size_of_ig = 4'd\=dmiIGSV[s].IGV[i].DMIIDV.length-1=\;
+            igs\=s=\_idv_index  = 4'd\=j=\;
+        end
+        \js }
+    \js }
+    default: begin
+            igs\=s=\_size_of_ig = 4'd0;
+            igs\=s=\_idv_index  = 4'd0;
+        end
+    endcase
+end
+
+    \js }
+
+wire [3:0] size_of_ig  = ( {4{~AMIGR_Valid | (AMIGR_AMIGS[3:0] == 4'd0)}} & igs0_size_of_ig )
+                \js for (var s=1; s < dmiIGSV.length; s++) {
+                       | ( {4{AMIGR_Valid & (AMIGR_AMIGS[3:0] == 4'd\=s=\)}} & igs\=s=\_size_of_ig )
+                \js }
+                       ;
+
+wire [3:0] idv_index   = ( {4{~AMIGR_Valid | (AMIGR_AMIGS[3:0] == 4'd0)}} & igs0_idv_index )
+                \js for (var s=1; s < dmiIGSV.length; s++) {
+                       | ( {4{AMIGR_Valid & (AMIGR_AMIGS[3:0] == 4'd\=s=\)}} & igs\=s=\_idv_index )
+                \js }
+                       ;
+
+\jsbegin
+// =======================================================
+// 3-Way Interleave Address Division
+// =======================================================
+\jsend
+
+\jsbegin
+for (var k=0; k < dmi3WIFV.length; k++) {
+    if (dmi3WIFV[k].PrimaryBits.length) {
+        for (var m=0; m < 3; m++) {
+\jsend
+
+wire [51:0] dmi3wif\=k=\_sub\=m=\_div3_address;
+
+    \=u.instance({
+        instanceName: 'u'+k+'_addr_sub'+m+'_div3',
+        moduleName: 'ncore3_addr_subn_div3',
+        params : {
+            wOffset : dmi3WIFV[k].PrimaryBits[0],
+            nSubtract : m
+        },
+        ports: {
+            address          : 'address',
+            address_out      : 'dmi3wif'+k+'_sub'+m+'_div3_address'
+        }
+    })=\
+
+\jsbegin
+        }
+    }
+}
+\jsend
+
+\jsbegin
+if (dmi3WIFV.length > 0) {
+    for (var m=0; m < 3; m++) {
+\jsend
+
+wire [51:0] sub\=m=\_div3_address = (dmi3wif0_sub\=m=\_div3_address & {52{(AMIFR_A3WIFId[2:0] == 3'd0)}})
+            \js for (var k=1; k < dmi3WIFV.length; k++) {
+                                  | (dmi3wif\=k=\_sub\=m=\_div3_address & {52{(AMIFR_A3WIFId[2:0] == 3'd\=k=\)}})
+            \js }
+                                  ;
+
+\jsbegin
+    }
+}
+\jsend
+
+
+\jsbegin
+// =======================================================
+// 6-Way Interleave Address Division
+// =======================================================
+\jsend
+
+\jsbegin
+for (var k=0; k < dmi6WIFV.length; k++) {
+    if (dmi6WIFV[k].PrimaryBits.length) {
+        for (var m=0; m < 6; m++) {
+\jsend
+
+wire [51:0] dmi6wif\=k=\_sub\=m=\_div6_address;
+
+    \=u.instance({
+        instanceName: 'u'+k+'_addr_sub'+m+'_div6',
+        moduleName: 'ncore3_addr_subn_div6',
+        params : {
+            wOffset : dmi6WIFV[k].PrimaryBits[0],
+            nSubtract : m
+        },
+        ports: {
+            address          : 'address',
+            address_out      : 'dmi6wif'+k+'_sub'+m+'_div6_address'
+        }
+    })=\
+
+\jsbegin
+        }
+    }
+}
+\jsend
+
+\jsbegin
+if (dmi6WIFV.length > 0) {
+    for (var m=0; m < 6; m++) {
+\jsend
+
+wire [51:0] sub\=m=\_div6_address = (dmi6wif0_sub\=m=\_div6_address & {52{(AMIFR_A6WIFId[2:0] == 3'd0)}})
+            \js for (var k=1; k < dmi6WIFV.length; k++) {
+                                  | (dmi6wif\=k=\_sub\=m=\_div6_address & {52{(AMIFR_A6WIFId[2:0] == 3'd\=k=\)}})
+            \js }
+                                  ;
+
+\jsbegin
+    }
+}
+\jsend
+
+\jsbegin
+// =======================================================
+// 12-Way Interleave Address Division
+// =======================================================
+\jsend
+
+\jsbegin
+for (var k=0; k < dmi12WIFV.length; k++) {
+    if (dmi12WIFV[k].PrimaryBits.length) {
+        for (var m=0; m < 12; m++) {
+\jsend
+
+wire [51:0] dmi12wif\=k=\_sub\=m=\_div12_address;
+
+    \=u.instance({
+        instanceName: 'u'+k+'_addr_sub'+m+'_div12',
+        moduleName: 'ncore3_addr_subn_div12',
+        params : {
+            wOffset : dmi12WIFV[k].PrimaryBits[0],
+            nSubtract : m
+        },
+        ports: {
+            address          : 'address',
+            address_out      : 'dmi12wif'+k+'_sub'+m+'_div12_address'
+        }
+    })=\
+
+\jsbegin
+        }
+    }
+}
+\jsend
+
+\jsbegin
+if (dmi12WIFV.length > 0) {
+    for (var m=0; m < 12; m++) {
+\jsend
+
+wire [51:0] sub\=m=\_div12_address = (dmi12wif0_sub\=m=\_div12_address & {52{(AMIFR_A12WIFId[2:0] == 3'd0)}})
+            \js for (var k=1; k < dmi12WIFV.length; k++) {
+                                  | (dmi12wif\=k=\_sub\=m=\_div12_address & {52{(AMIFR_A12WIFId[2:0] == 3'd\=k=\)}})
+            \js }
+                                  ;
+
+\jsbegin
+    }
+}
+\jsend
+
+\jsbegin
+// =======================================================
+// Output
+// =======================================================
+\jsend
+
+always @(*) begin
+    case ({size_of_ig[3:0], idv_index[3:0]})
+\js if (dmi3WIFV.length > 0) {
+    8'b0010_0000 : address_out = sub0_div3_address;
+    8'b0010_0001 : address_out = sub1_div3_address;
+    8'b0010_0010 : address_out = sub2_div3_address;
+\js }
+\js if (dmi6WIFV.length > 0) {
+    8'b0101_0000 : address_out = sub0_div6_address;
+    8'b0101_0001 : address_out = sub1_div6_address;
+    8'b0101_0010 : address_out = sub2_div6_address;
+    8'b0101_0011 : address_out = sub3_div6_address;
+    8'b0101_0100 : address_out = sub4_div6_address;
+    8'b0101_0101 : address_out = sub5_div6_address;
+\js }
+\js if (dmi12WIFV.length > 0) {
+    8'b1011_0000 : address_out = sub0_div12_address;
+    8'b1011_0001 : address_out = sub1_div12_address;
+    8'b1011_0010 : address_out = sub2_div12_address;
+    8'b1011_0011 : address_out = sub3_div12_address;
+    8'b1011_0100 : address_out = sub4_div12_address;
+    8'b1011_0101 : address_out = sub5_div12_address;
+    8'b1011_0110 : address_out = sub6_div12_address;
+    8'b1011_0111 : address_out = sub7_div12_address;
+    8'b1011_1000 : address_out = sub8_div12_address;
+    8'b1011_1001 : address_out = sub9_div12_address;
+    8'b1011_1010 : address_out = sub10_div12_address;
+    8'b1011_1011 : address_out = sub11_div12_address;
+\js }
+    default      : address_out = address;
+    endcase
+end
+
+endmodule

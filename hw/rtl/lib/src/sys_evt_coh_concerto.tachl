@@ -1,0 +1,635 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2021 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// System Event and Coherency Concerto Wrapper
+//
+// Author: Boon Chuan
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+
+u.paramDefault('useSysCohEnable','int',0);
+u.paramDefault('useOldPortsForDV', 'boolean', false);
+u.paramDefault('useSysEvtBroadcaster', 'int', 0);
+
+u.paramDefault('wChipletId','int',0);
+u.paramDefault('wLinkId','int',0);
+
+var wChipletId          = u.getParam('wChipletId');
+var wLinkId             = u.getParam('wLinkId');
+
+var useSysCohEnable     = u.getParam('useSysCohEnable');
+
+var useSysEvtSender     = u.getParam('useSysEvtSender');
+var useSysEvtReceiver   = u.getParam('useSysEvtReceiver');
+var useSysCoh           = u.getParam('useSysCoh');
+var useOldPortsForDV    = u.getParam('useOldPortsForDV');
+var useSysEvtBroadcaster = u.getParam('useSysEvtBroadcaster');
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+if (useSysCoh) {
+var useSysCohSender     = u.getParam('useSysCohSender');
+}
+
+var concParams          = u.getParam('concParams');
+var cmType              = u.getParam('cmType');
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (useSysEvtSender || (useSysCoh && useSysCohSender)) {
+var sysReqTxInterface   = u.getParam('sysReqTxInterface');
+var sysRspRxInterface   = u.getParam('sysRspRxInterface');
+var wTM_sys_req         = sysReqTxInterface.tm;
+}
+/* istanbul ignore else env ncore_3p4, ncore_3p6 */
+if (useSysEvtReceiver || (useSysCoh && !useSysCohSender)) {
+var sysReqRxInterface   = u.getParam('sysReqRxInterface');
+var sysRspTxInterface   = u.getParam('sysRspTxInterface');
+var wTM_sys_rsp         = sysRspTxInterface.tm;
+}
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+if (useSysCoh) {
+    if (useSysCohSender) {
+var useSysCoHwInterface = u.getParam('useSysCoHwInterface');
+var nCoherencyAgents    = u.getParam('nCoherencyAgents');
+    } else {
+var wSnoopEnables       = u.getParam('wSnoopEnables');
+var nSnoopAgents        = u.getParam('nSnoopAgents');
+    }
+}
+if (useSysEvtSender) {
+var nEventAgentsForSender   = u.getParam('nEventAgentsForSender');
+}
+if (useSysEvtReceiver) {
+var nEventAgentsForReceiver = u.getParam('nEventAgentsForReceiver');
+}
+/* istanbul ignore else env ncore_3p7 */
+if (useSysEvtSender || useSysEvtReceiver) {
+var wEventTimeout       = u.getParam('wEventTimeout');
+}
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (useSysEvtSender || useSysCohSender) {
+var wProtocolTimeout    = u.getParam('wProtocolTimeout');
+}
+var wFUnitId            = u.getParam('wFUnitId');
+var wFPortId            = u.getParam('wFPortId');
+var wNUnitId            = u.getParam('wNUnitId');
+var wInitiatorId        = concParams.hdrParams.wInitiatorId;
+var wTargetId           = concParams.hdrParams.wTargetId;
+var wMessageId          = concParams.hdrParams.wMsgId;
+var wSysReqOp           = concParams.sysReqParams.wSysReqOp;
+
+var wHProt    = concParams.hdrParams.wHProt;
+var wTTier    = concParams.hdrParams.wTTier;
+var wSteering = concParams.hdrParams.wSteering;
+var wPriority = concParams.hdrParams.wPriority;
+var wQl       = concParams.hdrParams.wQl;
+
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (useSysEvtSender || (useSysCoh && useSysCohSender)) {
+var wMProt_sysReq = sysReqTxInterface.hasOwnProperty('m_prot') ? Math.abs(u.getParam('sysReqTxInterface', 'm_prot')) : /* istanbul ignore next env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 0;
+}
+/* istanbul ignore else env ncore_3p4, ncore_3p6 */
+if (useSysEvtReceiver || (useSysCoh && !useSysCohSender)) {
+var wMProt_sysRsp = sysRspTxInterface.hasOwnProperty('m_prot') ? Math.abs(u.getParam('sysRspTxInterface', 'm_prot')) : /* istanbul ignore next env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 0;
+}
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+u.port('input',  'clk',      1);
+u.port('input',  'reset_n',  1);
+
+        if (wChipletId > 0) {
+u.port('input',  'my_chiplet_id', wChipletId);
+        }
+
+u.port('input',  'my_f_unit_id', wFUnitId);
+u.port('output', 'busy',     1);
+
+/* istanbul ignore else env ncore_3p7 */
+if (useSysEvtSender || useSysEvtReceiver) {
+u.port('input',  'csr_event_timeout_value', wEventTimeout);
+}
+if (useSysEvtSender) {
+u.port('input',  'csr_sys_evt_protocol_timeout_value', wProtocolTimeout);
+}
+if (useSysCohSender) {
+u.port('input',  'csr_sys_coh_protocol_timeout_value', wProtocolTimeout);
+}
+if(useOldPortsForDV) {
+u.port('input',  'csr_protocol_timeout_value', wProtocolTimeout);   // Unused port, only retained because DV TB still looks for it
+}
+
+if (useSysEvtSender) {
+u.port('input',  'csr_sys_evt_sender_enable', 1);
+u.port('output', 'csr_sys_evt_sender_err_vld', 1);
+u.port('output', 'csr_sys_evt_sender_err_f_unit_id', wFUnitId);
+u.port('output', 'csr_sys_evt_sender_err_protocol_sys', 1);
+u.port('output', 'csr_sys_evt_sender_err_protocol_timeout', 1);
+u.port('output', 'csr_sys_evt_sender_err_event_timeout', 1);
+        for (var i=0; i < nEventAgentsForSender; i++) {
+u.port('input', 'event'+i+'_f_unit_id', wFUnitId);
+        }
+}
+if (useSysEvtReceiver) {
+u.port('input',  'csr_sys_evt_receiver_enable', 1);
+u.port('output', 'csr_sys_evt_receiver_err_vld', 1);
+u.port('output', 'csr_sys_evt_receiver_err_event_timeout', 1);
+u.port('output', 'csr_sys_evt_receiver_err_f_unit_id', wFUnitId);
+}
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+if (useSysCoh) {
+    if (useSysCohSender) {
+        /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+        if (useSysCohEnable) {
+u.port('input',  'csr_sys_coh_sender_enable', 1);
+        }
+u.port('input',  'csr_sys_coh_sender_activate',     1);
+u.port('output', 'csr_sys_coh_sender_connecting',   1);
+u.port('output', 'csr_sys_coh_sender_attached',     1);
+u.port('output', 'csr_sys_coh_sender_syscoerr_set', 1);
+u.port('output', 'csr_sys_coh_sender_syscoerr_clr', 1);
+u.port('output', 'csr_sys_coh_sender_err_detected', 1);
+u.port('output', 'csr_sys_coh_sender_err_f_unit_id', wFUnitId);
+u.port('output', 'csr_sys_coh_sender_err_protocol_sys', 1);
+u.port('output', 'csr_sys_coh_sender_err_protocol_timeout', 1);
+        for (var i=0; i < nCoherencyAgents; i++) {
+u.port('input', 'coherency'+i+'_f_unit_id', wFUnitId);
+        }
+    } else {
+u.port('output', 'csr_sys_coh_receiver_err_vld', 1);
+u.port('output', 'csr_sys_coh_receiver_err_f_unit_id', wFUnitId);
+u.port('output', 'snoop_enables', wSnoopEnables);
+u.port('output', 'snoop_enables_update', 1);
+u.port('input',  'csr_snoop_enables', wSnoopEnables);
+u.port('input',  'csr_snoop_enables_update', 1);
+        for (var i=0; i < nSnoopAgents; i++) {
+u.port('input', 'aiu'+i+'_f_unit_id', wFUnitId);
+u.port('input', 'aiu'+i+'_n_unit_id', wNUnitId);
+        }
+    }
+}
+
+if (useSysEvtSender) {
+u.port('input',  'event_in_req', 1);
+u.port('output', 'event_in_ack', 1);
+u.port('input',  'event_in_targets', nEventAgentsForSender);
+}
+
+if (useSysEvtReceiver) {
+u.port('output', 'event_out_req', 1);
+u.port('input',  'event_out_ack', 1);
+u.port('output', 'event_out_initiator_id', wFUnitId);
+}
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+if (useSysCoh) {
+    if (useSysCohSender) {
+         /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+        if (useSysCoHwInterface) {
+u.port('input',  'sysco_req', 1);
+u.port('output', 'sysco_ack', 1);
+        }
+    }
+}
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+if (useSysCoh) {
+    if (useSysCohSender) {
+u.port('input',  'outstanding_coherent_count_zero', 1);
+    } else {
+u.port('input',  'outstanding_snoop_count_zero', nSnoopAgents);
+    }
+}
+
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (useSysEvtSender || (useSysCoh && useSysCohSender)) {
+
+u.interface('sys_req_tx_', 'master', sysReqTxInterface);
+u.interface('sys_rsp_rx_', 'slave',  sysRspRxInterface);
+
+}
+/* istanbul ignore else env ncore_3p4, ncore_3p6 */
+if (useSysEvtReceiver || (useSysCoh && !useSysCohSender)) {
+
+u.interface('sys_req_rx_', 'slave',  sysReqRxInterface);
+u.interface('sys_rsp_tx_', 'master', sysRspTxInterface);
+
+}
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+wire dff_enable = 1'b1; \jsbegin
+
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (useSysEvtSender || (useSysCoh && useSysCohSender)) {  \jsend
+ 
+wire sender_sysreq_valid;
+wire sender_sysreq_ready;
+wire [\=wFUnitId-1=\:0] sender_sysreq_target_f_unit_id;
+wire [\=wMessageId-1=\:0] sender_sysreq_message_id;
+wire [\=wSysReqOp-1=\:0] sender_sysreq_op;
+
+wire sender_sysrsp_valid;
+wire sender_sysrsp_ready;
+wire [\=wMessageId-1=\:0] sender_sysrsp_rmessage_id;
+wire [7:0] sender_sysrsp_cmstatus;
+wire [\=wFUnitId-1=\:0] sender_sysrsp_initiator_f_unit_id;
+
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p4, ncore_3p6 */
+ if (useSysEvtReceiver || (useSysCoh && !useSysCohSender)) {
+\jsend
+
+wire receiver_sysreq_valid;
+wire receiver_sysreq_ready;
+wire [\=wFUnitId-1=\:0] receiver_sysreq_initiator_f_unit_id;
+wire [\=wMessageId-1=\:0] receiver_sysreq_message_id;
+wire [7:0] receiver_sysreq_cmstatus;
+wire [\=wSysReqOp-1=\:0] receiver_sysreq_op;
+
+wire receiver_sysrsp_valid;
+wire receiver_sysrsp_ready;
+wire [\=wFUnitId-1=\:0] receiver_sysrsp_target_f_unit_id;
+wire [\=wMessageId-1=\:0] receiver_sysrsp_rmessage_id;
+wire [7:0] receiver_sysrsp_cmstatus;
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Module instantiation
+//=============================================================================
+\jsend
+
+    \jsbegin
+        var params = {};
+
+        params['useSysEvtSender']   = useSysEvtSender;
+        params['useSysEvtReceiver'] = useSysEvtReceiver;
+        params['useSysCoh']         = useSysCoh;
+	params['useSysEvtBroadcaster'] = useSysEvtBroadcaster;
+	 
+        /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+        if (useSysCoh) {
+        params['useSysCohSender']   = useSysCohSender;
+            if (useSysCohSender) {
+        params['useSysCoHwInterface'] = useSysCoHwInterface;
+        params['nCoherencyAgents']  = nCoherencyAgents;
+            } else {
+        params['wSnoopEnables']     = wSnoopEnables;
+        params['nSnoopAgents']      = nSnoopAgents;
+            }
+        }
+        if (useSysEvtSender) {
+        params['nEventAgentsForSender'] = nEventAgentsForSender;
+        }
+        if (useSysEvtReceiver) {
+        params['nEventAgentsForReceiver'] = nEventAgentsForReceiver;
+        }
+	/* istanbul ignore else env ncore_3p7 */
+        if (useSysEvtSender || useSysEvtReceiver) {
+        params['wEventTimeout'] = wEventTimeout;
+        }
+        /* istanbul ignore else env ncore_3p6, ncore_3p7 */
+        if (useSysEvtSender || useSysCohSender) {
+        params['wProtocolTimeout'] = wProtocolTimeout;
+        }
+        params['wFUnitId']    = wFUnitId;
+        params['wNUnitId']    = wNUnitId;
+        params['wMessageId']  = wMessageId;
+        params['wSysReqOp']   = wSysReqOp;
+
+        var ports = {};
+
+        ports['clk']                        = 'clk';
+        ports['reset_n']                    = 'reset_n';
+        ports['busy']                       = 'busy';
+	/* istanbul ignore else env ncore_3p7 */
+        if (useSysEvtSender || useSysEvtReceiver) {
+        ports['csr_event_timeout_value']    = 'csr_event_timeout_value';
+        }
+        if (useSysEvtSender) {
+        ports['csr_sys_evt_protocol_timeout_value'] = 'csr_sys_evt_protocol_timeout_value';
+        }
+        if (useSysCohSender) {
+        ports['csr_sys_coh_protocol_timeout_value'] = 'csr_sys_coh_protocol_timeout_value';
+        }
+        if (useSysEvtSender) {
+        ports['csr_sys_evt_sender_enable']  = 'csr_sys_evt_sender_enable';
+        ports['csr_sys_evt_sender_err_vld'] = 'csr_sys_evt_sender_err_vld';
+        ports['csr_sys_evt_sender_err_f_unit_id']        = 'csr_sys_evt_sender_err_f_unit_id';
+        ports['csr_sys_evt_sender_err_protocol_sys']     = 'csr_sys_evt_sender_err_protocol_sys';
+        ports['csr_sys_evt_sender_err_protocol_timeout'] = 'csr_sys_evt_sender_err_protocol_timeout';
+        ports['csr_sys_evt_sender_err_event_timeout']    = 'csr_sys_evt_sender_err_event_timeout';
+            for (var i=0; i < nEventAgentsForSender; i++) {
+        ports['event'+i+'_f_unit_id'] = 'event'+i+'_f_unit_id';
+            }
+        }
+        if (useSysEvtReceiver) {
+        ports['csr_sys_evt_receiver_enable']  = 'csr_sys_evt_receiver_enable';
+        ports['csr_sys_evt_receiver_err_vld'] = 'csr_sys_evt_receiver_err_vld';
+        ports['csr_sys_evt_receiver_err_event_timeout'] = 'csr_sys_evt_receiver_err_event_timeout';
+        ports['csr_sys_evt_receiver_err_f_unit_id']     = 'csr_sys_evt_receiver_err_f_unit_id';
+        }
+
+	/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+        if (useSysCoh) {
+            if (useSysCohSender) {
+                /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+                if (useSysCohEnable) {
+        ports['csr_sys_coh_sender_enable']       = 'csr_sys_coh_sender_enable';
+                } else {
+        ports['csr_sys_coh_sender_enable']       = 'dff_enable';
+                }
+        ports['csr_sys_coh_sender_activate']     = 'csr_sys_coh_sender_activate';
+        ports['csr_sys_coh_sender_connecting']   = 'csr_sys_coh_sender_connecting';
+        ports['csr_sys_coh_sender_attached']     = 'csr_sys_coh_sender_attached';
+        ports['csr_sys_coh_sender_syscoerr_set'] = 'csr_sys_coh_sender_syscoerr_set';
+        ports['csr_sys_coh_sender_syscoerr_clr'] = 'csr_sys_coh_sender_syscoerr_clr';
+        ports['csr_sys_coh_sender_err_detected'] = 'csr_sys_coh_sender_err_detected';
+        ports['csr_sys_coh_sender_err_f_unit_id']        = 'csr_sys_coh_sender_err_f_unit_id';
+        ports['csr_sys_coh_sender_err_protocol_sys']     = 'csr_sys_coh_sender_err_protocol_sys';
+        ports['csr_sys_coh_sender_err_protocol_timeout'] = 'csr_sys_coh_sender_err_protocol_timeout';
+                for (var i=0; i < nCoherencyAgents; i++) {
+        ports['coherency'+i+'_f_unit_id'] = 'coherency'+i+'_f_unit_id';
+                }
+            } else {
+        ports['csr_sys_coh_receiver_err_vld'] = 'csr_sys_coh_receiver_err_vld';
+        ports['csr_sys_coh_receiver_err_f_unit_id'] = 'csr_sys_coh_receiver_err_f_unit_id';
+        ports['snoop_enables'] = 'snoop_enables';
+        ports['snoop_enables_update'] = 'snoop_enables_update';
+        ports['csr_snoop_enables'] = 'csr_snoop_enables';
+        ports['csr_snoop_enables_update'] = 'csr_snoop_enables_update';
+                for (var i=0; i < nSnoopAgents; i++) {
+        ports['aiu'+i+'_f_unit_id'] = 'aiu'+i+'_f_unit_id';
+        ports['aiu'+i+'_n_unit_id'] = 'aiu'+i+'_n_unit_id';
+                }
+            }
+        }
+        if (useSysEvtSender) {
+        ports['event_in_req']     = 'event_in_req';
+        ports['event_in_ack']     = 'event_in_ack';
+        ports['event_in_targets'] = 'event_in_targets';
+        }
+        if (useSysEvtReceiver) {
+        ports['event_out_req'] = 'event_out_req';
+        ports['event_out_ack'] = 'event_out_ack';
+	ports['event_out_initiator_id'] = 'event_out_initiator_id';
+        }
+	/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+        if (useSysCoh) {
+            if (useSysCohSender) {
+                /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+                if (useSysCoHwInterface) {
+        ports['sysco_req'] = 'sysco_req';
+        ports['sysco_ack'] = 'sysco_ack';
+                }
+            }
+        }
+        /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6 */
+        if (useSysCoh) {
+            if (useSysCohSender) {
+        ports['outstanding_coherent_count_zero'] = 'outstanding_coherent_count_zero';
+            } else {
+        ports['outstanding_snoop_count_zero'] = 'outstanding_snoop_count_zero';
+            }
+        }
+        /* istanbul ignore else env ncore_3p6, ncore_3p7 */
+        if (useSysEvtSender || (useSysCoh && useSysCohSender)) {
+        ports['sender_sysreq_valid'] = 'sender_sysreq_valid';
+        ports['sender_sysreq_ready'] = 'sender_sysreq_ready';
+        ports['sender_sysreq_target_f_unit_id'] = 'sender_sysreq_target_f_unit_id';
+        ports['sender_sysreq_message_id'] = 'sender_sysreq_message_id';
+        ports['sender_sysreq_op'] = 'sender_sysreq_op';
+
+        ports['sender_sysrsp_valid'] = 'sender_sysrsp_valid';
+        ports['sender_sysrsp_ready'] = 'sender_sysrsp_ready';
+        ports['sender_sysrsp_rmessage_id'] = 'sender_sysrsp_rmessage_id';
+        ports['sender_sysrsp_cmstatus'] = 'sender_sysrsp_cmstatus';
+        ports['sender_sysrsp_initiator_f_unit_id'] = 'sender_sysrsp_initiator_f_unit_id';
+        }
+	/* istanbul ignore else env ncore_3p4, ncore_3p6 */
+        if (useSysEvtReceiver || (useSysCoh && !useSysCohSender)) {
+        ports['receiver_sysreq_valid'] = 'receiver_sysreq_valid';
+        ports['receiver_sysreq_ready'] = 'receiver_sysreq_ready';
+        ports['receiver_sysreq_initiator_f_unit_id'] = 'receiver_sysreq_initiator_f_unit_id';
+        ports['receiver_sysreq_message_id'] = 'receiver_sysreq_message_id';
+        ports['receiver_sysreq_cmstatus'] = 'receiver_sysreq_cmstatus';
+        ports['receiver_sysreq_op'] = 'receiver_sysreq_op';
+
+        ports['receiver_sysrsp_valid'] = 'receiver_sysrsp_valid';
+        ports['receiver_sysrsp_ready'] = 'receiver_sysrsp_ready';
+        ports['receiver_sysrsp_target_f_unit_id'] = 'receiver_sysrsp_target_f_unit_id';
+        ports['receiver_sysrsp_rmessage_id'] = 'receiver_sysrsp_rmessage_id';
+        ports['receiver_sysrsp_cmstatus'] = 'receiver_sysrsp_cmstatus';
+        }
+    \jsend
+        \=obj.lib.instance({
+            instanceName: 'u_sys_evt_coh_wrapper',
+            moduleName: 'sys_evt_coh_wrapper',
+            params: params,
+            ports: ports
+        })=\
+
+\jsbegin
+//=============================================================================
+// Sender
+//=============================================================================
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (useSysEvtSender || (useSysCoh && useSysCohSender)) {
+\jsend
+assign sys_req_tx_cm_status  = \=sysReqTxInterface["cm_status"]=\'b0;
+assign sys_req_tx_r_message_id = \=sysReqTxInterface["r_message_id"]=\'b0;
+assign sys_req_tx_target_id  = {
+                \js if (wChipletId > 0) {
+            my_chiplet_id,
+                \js }
+                \js if (wLinkId > 0) {
+            \=wLinkId=\'d0,
+                \js }
+            sender_sysreq_target_f_unit_id,
+            \=wFPortId=\'d0 };
+assign sys_req_tx_initiator_id = {
+                \js if (wChipletId > 0) {
+            my_chiplet_id,
+                \js }
+                \js if (wLinkId > 0) {
+            \=wLinkId=\'d0,
+                \js }
+            my_f_unit_id,
+            \=wFPortId=\'d0 };
+
+\js if (sysReqTxInterface.requestor_id > 0) {
+    \js if (wChipletId > 0) {
+assign sys_req_tx_requestor_id = {my_chiplet_id, my_f_unit_id};
+    \js } else {
+assign sys_req_tx_requestor_id = my_f_unit_id;
+    \js }
+\js }
+
+assign sys_req_tx_cm_type = \=cmType.SysReq=\;
+assign sys_req_tx_message_id = sender_sysreq_message_id;
+assign sys_req_tx_sys_req_op = sender_sysreq_op;
+
+assign sys_req_tx_valid = sender_sysreq_valid;
+assign sender_sysreq_ready = sys_req_tx_ready;
+
+wire sys_rsp_rx_cm_status_transport_err = sys_rsp_rx_valid & (sys_rsp_rx_cm_status[7:6] == 2'b11);
+wire sys_rsp_rx_target_id_mismatch = sys_rsp_rx_valid
+                                   & (sys_rsp_rx_target_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\] != my_f_unit_id)
+                \js if (wChipletId > 0) {
+                                   & (sys_rsp_rx_target_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\] != my_chiplet_id)
+                \js }
+                                   ;
+
+assign sender_sysrsp_valid = sys_rsp_rx_valid & ~(sys_rsp_rx_cm_status_transport_err | sys_rsp_rx_target_id_mismatch);
+assign sys_rsp_rx_ready = sender_sysrsp_ready | (sys_rsp_rx_cm_status_transport_err | sys_rsp_rx_target_id_mismatch);
+
+assign sender_sysrsp_rmessage_id = sys_rsp_rx_r_message_id;
+assign sender_sysrsp_cmstatus = sys_rsp_rx_cm_status;
+assign sender_sysrsp_initiator_f_unit_id = sys_rsp_rx_initiator_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\];
+
+    \js if (wHProt) {
+assign sys_req_tx_h_prot = \=wHProt=\'b0;
+    \js }
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wTTier) {
+    \jsend
+assign sys_req_tx_t_tier = \=wTTier=\'b0;
+    \js }
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wSteering) {
+    \jsend
+assign sys_req_tx_steering = \=wSteering=\'b0;
+    \js }
+    \js if (wPriority) {
+assign sys_req_tx_priority = \=wPriority=\'b0;
+    \js }
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wQl) {
+    \jsend
+assign sys_req_tx_ql = \=wQl=\'b0;
+    \js }
+    \js if (wMProt_sysReq) {
+assign sys_req_tx_m_prot = \=wMProt_sysReq=\'b0;
+    \js }
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wTM_sys_req) {
+    \jsend
+assign sys_req_tx_tm = \=wTM_sys_req=\'b0;
+    \js }
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Receiver
+//=============================================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore else env ncore_3p4, ncore_3p6 */
+ if (useSysEvtReceiver || (useSysCoh && !useSysCohSender)) {
+\jsend
+
+wire sys_req_rx_cm_status_transport_err = sys_req_rx_valid & (sys_req_rx_cm_status[7:6] == 2'b11);
+wire sys_req_rx_target_id_mismatch = sys_req_rx_valid
+                                   & (sys_req_rx_target_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\] != my_f_unit_id)
+                \js if (wChipletId > 0) {
+                                   & (sys_req_rx_target_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\] != my_chiplet_id])
+                \js }
+                                   ;
+assign receiver_sysreq_valid = sys_req_rx_valid & ~(sys_req_rx_cm_status_transport_err | sys_req_rx_target_id_mismatch);
+assign sys_req_rx_ready = receiver_sysreq_ready | (sys_req_rx_cm_status_transport_err | sys_req_rx_target_id_mismatch);
+
+assign receiver_sysreq_initiator_f_unit_id = sys_req_rx_initiator_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\];
+assign receiver_sysreq_message_id = sys_req_rx_message_id;
+assign receiver_sysreq_cmstatus = sys_req_rx_cm_status;
+assign receiver_sysreq_op = sys_req_rx_sys_req_op;
+
+
+assign sys_rsp_tx_valid = receiver_sysrsp_valid;
+assign receiver_sysrsp_ready = sys_rsp_tx_ready;
+
+assign sys_rsp_tx_target_id = {
+                \js if (wChipletId > 0) {
+            my_chiplet_id,
+                \js }
+                \js if (wLinkId > 0) {
+            \=wLinkId=\'d0,
+                \js }
+            receiver_sysrsp_target_f_unit_id,
+            \=wFPortId=\'d0 };
+assign sys_rsp_tx_r_message_id = receiver_sysrsp_rmessage_id;
+assign sys_rsp_tx_cm_status = receiver_sysrsp_cmstatus;
+
+assign sys_rsp_tx_initiator_id = {
+                \js if (wChipletId > 0) {
+            my_chiplet_id,
+                \js }
+                \js if (wLinkId > 0) {
+            \=wLinkId=\'d0,
+                \js }
+            my_f_unit_id,
+            \=wFPortId=\'d0 };
+assign sys_rsp_tx_cm_type = \=cmType.SysRsp=\;
+assign sys_rsp_tx_message_id = \=sysRspTxInterface["message_id"]=\'b0;
+
+    \js if (wHProt) {
+assign sys_rsp_tx_h_prot = \=wHProt=\'b0;
+    \js }
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wTTier) {
+    \jsend
+assign sys_rsp_tx_t_tier = \=wTTier=\'b0;
+    \js }
+    \js if (wPriority) {
+assign sys_rsp_tx_priority = \=wPriority=\'b0;
+    \js }
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wQl) {
+    \jsend
+assign sys_rsp_tx_ql = \=wQl=\'b0;
+    \js }
+    \js if (wMProt_sysRsp) {
+assign sys_rsp_tx_m_prot = \=wMProt_sysRsp=\'b0;
+    \js }
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wTM_sys_rsp) {
+    \jsend
+assign sys_rsp_tx_tm = \=wTM_sys_rsp=\'b0;
+    \js }
+
+\js }
+
+endmodule

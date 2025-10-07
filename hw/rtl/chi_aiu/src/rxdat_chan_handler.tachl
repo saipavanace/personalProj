@@ -1,0 +1,262 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// CHI RX DAT channel handler
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+//=============================================================================
+// Parameters
+//=============================================================================
+
+var assertOn           = u.getParam('assertOn');
+
+var chiInterface       = u.getParam('chiInterface');
+var dat_flit_interface = u.getParam('DatInterface');
+var nCHIReqInFlight    = u.getParam('nCredits');
+var wTxnID             = u.getParam('wTxnID');
+var wBE                = u.getParam('wBE');
+var nBeats             = u.getParam('nBeats');
+var nRobEntries        = u.getParam('nRobEntries');
+
+var dat_flit_width_with_poison = bundleFunctions.getBundleWidth(dat_flit_interface, [], obj.lib.bundle);
+
+var nFifoDepth = nCHIReqInFlight;
+var wOccCnt    = log2ceil(nFifoDepth+1);
+
+var wBundle    = dat_flit_width_with_poison;
+var wBeats     = 3;
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'clk',     1);
+u.port('input',  'reset_n', 1);
+
+u.port('input',  'sync_reset_n',         1);
+u.port('input',  'rx_state_run',         1);
+u.port('input',  'rx_state_deact',       1);
+u.port('input',  'pma_asleep',           1);
+u.port('output', 'all_credits_returned', 1); 
+u.port('output', 'rob_interleaved_vec',  nRobEntries);
+
+u.interface('chi_rx_dat_', 'slave', chiInterface.rx_dat_);
+
+u.port('output', 'RXDATFLIT_pre_TxnID', wTxnID);
+u.port('input',  'ott_pre_trans_size',  3);
+
+u.port('output', 'chi_rx_dat_flit_org', dat_flit_width_with_poison);
+u.port('output', 'chi_rx_dat_flitv_org', 1);
+u.port('output', 'chi_rx_dat_valid', 1);
+u.port('input',  'chi_rx_dat_flitv_backpressure', 1);
+
+u.port('input',  'chk_err', 1);
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+//=============================================================================
+// Wires
+//=============================================================================
+
+\=bundleFunctions.wiresFromInterface('RXDATFLIT_pre_', dat_flit_interface, ['TxnID'], obj.lib.bundle)=\
+
+wire chi_rx_dat_fifo__push_valid;
+wire chi_rx_dat_fifo__push_ready;
+wire chi_rx_dat_fifo__pop_valid;
+wire chi_rx_dat_fifo__pop_ready;
+wire [\=dat_flit_width_with_poison-1=\:0] chi_rx_dat_fifo__push_data;
+wire [\=dat_flit_width_with_poison-1=\:0] chi_rx_dat_fifo__pop_data;
+wire [\=wOccCnt-1=\:0] chi_rx_dat_fifo__occupancy_cnt;
+
+wire rob_full;
+wire rob_empty;
+
+wire [\=wBeats-1=\:0] rob_data_beat_in_count;
+wire [\=wTxnID-1=\:0] rob_data_beat_in_txnid;
+wire [\=wBundle-1=\:0] rob_data_beat_in_bundle;
+wire rob_data_beat_in_valid;
+wire rob_data_beat_in_ready;
+
+wire [\=wBundle-1=\:0] rob_data_beat_out_bundle;
+wire rob_data_beat_out_last;
+wire rob_data_beat_out_valid;
+wire rob_data_beat_out_ready;
+
+wire [2:0] pkt_trans_size;
+wire [7:0] num_pkt_data_bytes;
+wire [7:0] num_pkt_beats_int;
+wire [2:0] num_pkt_beats;
+
+wire dff_enable = 1'b1;
+
+//=============================================================================
+// Unpacking CHI flit to bit fields
+//=============================================================================
+
+// reversing interfaces as CHI spec puts flit with LSB first
+\jsbegin
+var reversed_dat_intf = Object.keys(dat_flit_interface).reverse().reduce(function (acc,val){ acc[val] = dat_flit_interface[val]; return acc ; },{});
+\jsend
+
+assign \=bundleFunctions.packetizeBundle('RXDATFLIT_pre_', reversed_dat_intf, [], obj.lib.bundle)=\ = chi_rx_dat_fifo__pop_data[\=dat_flit_width_with_poison-1=\:0];
+
+//=============================================================================
+// CHI RX Data FIFO
+//=============================================================================
+
+\jsbegin
+    let chiRxDatFifoParams = {
+        width       : dat_flit_width_with_poison,
+        depth       : nFifoDepth,
+        bypass_mode : 1,
+        use_fastread: 0,
+        zerodepth   : 0,
+        output_occupancy: 1
+    };
+    let instance_ports_for_chi_rx_dat_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        occupancy_cnt       : 'chi_rx_dat_fifo__occupancy_cnt',
+        push_data           : 'chi_rx_dat_fifo__push_data',
+        push_valid          : 'chi_rx_dat_fifo__push_valid',
+        push_ready          : 'chi_rx_dat_fifo__push_ready',
+        pop_data            : 'chi_rx_dat_fifo__pop_data',
+        pop_valid           : 'chi_rx_dat_fifo__pop_valid',
+        pop_ready           : 'chi_rx_dat_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'chi_rx_dat_fifo',
+        moduleName: 'fifo',
+        params : chiRxDatFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_chi_rx_dat_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+assign chi_rx_dat_fifo__push_valid = chi_rx_dat_flitv & !chk_err;
+assign chi_rx_dat_fifo__push_data  = chi_rx_dat_flit;
+
+//=============================================================================
+// CHI RX Data Reorder Buffer
+//=============================================================================
+
+assign rob_data_beat_in_txnid = RXDATFLIT_pre_TxnID;
+
+assign rob_data_beat_in_count = (RXDATFLIT_pre_OpCode == \=dat_flit_interface.OpCode=\'h0) ? \=wBeats=\'b0 : num_pkt_beats;
+
+assign rob_data_beat_in_bundle = chi_rx_dat_fifo__pop_data;
+
+assign rob_data_beat_in_valid = chi_rx_dat_fifo__pop_valid & ~chi_rx_dat_flitv_backpressure;
+
+assign chi_rx_dat_fifo__pop_ready = rob_data_beat_in_ready & ~chi_rx_dat_flitv_backpressure;
+
+assign pkt_trans_size = RXDATFLIT_pre_TxnID[\=dat_flit_interface.TxnID-1=\] ? 3'b110 : ott_pre_trans_size;
+assign num_pkt_data_bytes = 8'b1 << pkt_trans_size;
+assign num_pkt_beats_int = num_pkt_data_bytes / 8'd\=wBE=\;
+assign num_pkt_beats = (num_pkt_beats_int[2:0] != 3'b0) ? (num_pkt_beats_int[2:0] - 3'b1) : 3'b0;
+
+assign chi_rx_dat_valid        = rob_data_beat_out_valid;
+
+assign rob_data_beat_out_ready = ~chi_rx_dat_flitv_backpressure;
+
+assign chi_rx_dat_flit_org  = rob_data_beat_out_bundle;
+
+assign chi_rx_dat_flitv_org = rob_data_beat_out_valid & rob_data_beat_out_ready;
+
+    \jsbegin
+
+var robParams = {
+    assertOn            : assertOn,
+    nBeats              : nBeats,
+    wBundle             : wBundle,
+    wTxnID              : wTxnID,
+    depth               : nRobEntries
+};
+
+var robPorts = {
+    clk                 : 'clk',
+    reset_n             : 'reset_n',
+    full                : 'rob_full',
+    empty               : 'rob_empty',
+    interleaved_vec     : 'rob_interleaved_vec',
+
+    data_beat_in_valid  : 'rob_data_beat_in_valid',
+    data_beat_in_ready  : 'rob_data_beat_in_ready',
+    data_beat_in_txnid  : 'rob_data_beat_in_txnid',
+    data_beat_in_count  : 'rob_data_beat_in_count',
+    data_beat_in_bundle : 'rob_data_beat_in_bundle',
+
+    data_beat_out_valid : 'rob_data_beat_out_valid',
+    data_beat_out_ready : 'rob_data_beat_out_ready',
+    data_beat_out_last  : 'rob_data_beat_out_last',
+    data_beat_out_bundle: 'rob_data_beat_out_bundle'
+};
+
+var robInterfaces = [];
+
+    \jsend
+
+\=obj.lib.instance({
+    instanceName :'u_chi_rob',
+    moduleName   :'chi_rob',
+    params       : robParams,
+    ports        : robPorts,
+    interfaces   : robInterfaces
+})=\
+
+//=============================================================================
+// Link Credit Counter
+//=============================================================================
+
+wire [\=wOccCnt-1=\:0] inflight_credit_count;
+
+wire inflight_credit_count_en = chi_rx_dat_lcrdv | chi_rx_dat_flitv;
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wOccCnt > 1) {
+    \jsend
+wire [\=wOccCnt-1=\:0] inflight_credit_count_in = inflight_credit_count - {\=wOccCnt-1=\'b0, chi_rx_dat_flitv} + {\=wOccCnt-1=\'b0, chi_rx_dat_lcrdv};
+    \js } else {
+wire [\=wOccCnt-1=\:0] inflight_credit_count_in = inflight_credit_count - chi_rx_dat_flitv + chi_rx_dat_lcrdv;
+    \js }
+
+\=u.dffre(wOccCnt, 'inflight_credit_count', 'inflight_credit_count_in', wOccCnt+"'b0", 'inflight_credit_count_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// Stop giving link credits when buffer space to accept incoming link flits are running out
+//=============================================================================
+
+wire [\=wOccCnt-1=\:0] num_free_entries = \=wOccCnt=\'d\=nFifoDepth=\ - chi_rx_dat_fifo__occupancy_cnt;
+
+wire num_free_entries_avail = (num_free_entries > inflight_credit_count);
+
+//=============================================================================
+// Link credits can only be issued in RUN state and PMA is not in sleep state
+//=============================================================================
+
+assign chi_rx_dat_lcrdv = (inflight_credit_count < \=wOccCnt=\'d\=nCHIReqInFlight=\) &
+                          num_free_entries_avail &
+                          sync_reset_n &
+                          rx_state_run &
+                           ~pma_asleep;
+
+//=============================================================================
+// all_credits_returned
+//=============================================================================
+
+assign all_credits_returned = rx_state_deact & (inflight_credit_count == \=wOccCnt=\'d0);
+
+endmodule

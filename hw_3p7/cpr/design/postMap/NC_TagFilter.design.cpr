@@ -1,0 +1,163 @@
+{
+  "name": "NC_TagFilter",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "strRtlNamePrefix",
+          "parameterTitle": "RTL prefix string",
+          "regex": "^[a-zA-Z](?:[a-zA-Z0-9]|_(?!_|$))*$",
+          "parameterType": "architecture",
+          "docID": 425,
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nTrackedAius",
+          "parameterTitle": "Number of caching agents assigned to this snoop filter",
+          "minimum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer",
+          "maximum": 1
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "bitEn",
+          "parameterTitle": "Bit en",
+          "minimum": 0,
+          "default": 1,
+          "parameterType": "architecture",
+          "docID": 426,
+          "type": "integer",
+          "maximum": 1
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nSnpFltrSets",
+          "parameterTitle": "Number of Sets",
+          "minimum": 16,
+          "maximum": 65536,
+          "default": 16,
+          "parameterType": "architecture",
+          "type": "integer",
+          "guiDescription": "Number of Sets/entires in the snoop filter."
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nSnpFltrWays",
+          "parameterTitle": "Number of Ways",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer",
+          "guiDescription": "Number of ways/associativity of the snoop filter."
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "TagFilterErrInfo",
+          "parameterTitle": "Protection",
+          "default": "NONE",
+          "parameterType": "architecture",
+          "docID": 427,
+          "validValues": "NONE,PARITY,SECDED",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "SetSelectPrimaryBitV",
+          "parameterTitle": "Primary set selection",
+          "parameterType": "architecture",
+          "docID": 428,
+          "type": "array",
+          "arrayType": "integer",
+          "guiDescription": "Address bits to be used as primary set selection bits"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SetSelectSecondaryBitV",
+          "parameterTitle": "Secondary set selection",
+          "parameterType": "architecture",
+          "docID": 429,
+          "type": "array",
+          "arrayType": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "ImplementationParameters",
+          "parameterTitle": "Resource Sizing",
+          "parameterType": "architecture",
+          "docID": 430,
+          "type": "object",
+          "reference": "ImplParams"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SnoopFilterAssignment",
+          "parameterTitle": "Snoop Filter Assignment",
+          "parameterType": "architecture",
+          "docID": 525,
+          "type": "array",
+          "arrayType": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "MemoryInterfaces",
+          "parameterTitle": "Memory Interfaces",
+          "parameterType": "architecture",
+          "docID": 431,
+          "type": "object",
+          "reference": "MemoryInterfaces"
+        }
+      ],
+      "baseName": "ParamBase"
+    },
+    {
+      "name": "ImplParams",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nVictimBuffers",
+          "parameterTitle": "Victim buffer entries",
+          "minimum": 0,
+          "maximum": 64,
+          "default": 0,
+          "parameterType": "architecture",
+          "docID": 432,
+          "type": "integer",
+          "guiDescription": "Number of victim buffer entries. \nRefer to TBD section of the reference manual for more details"
+        }
+      ]
+    },
+    {
+      "name": "MemoryInterfaces",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "TagMem",
+          "parameterTitle": "Tag Memory",
+          "parameterType": "architecture",
+          "docID": 433,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// This module implements request channel handler block. It manages incoming data  channel Link Credits 
+// It also converts incoming data channel into valid ready channel
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var dat_flit_interface         = u.getParam('DatInterface');
+var dat_flit_width_with_poison = bundleFunctions.getBundleWidth(dat_flit_interface, [],         obj.lib.bundle);
+var dat_flit_width             = bundleFunctions.getBundleWidth(dat_flit_interface, ['Poison'], obj.lib.bundle);
+
+var wFlit_TxnID    = u.getParam('wFlit_TxnID');
+var dtw_dwid_width = u.getParam('dtw_dwid_width');
+var wData          = u.getParam('wData');
+var wBE            = u.getParam('wDatFlit_BE');
+var poison_width   = u.getParam('DatInterface').Poison;
+var enPoison       = u.getParam('enPoison');
+
+var dtw_buf_data_width = dat_flit_width_with_poison + 1;
+
+var holding_fifo_buffer_depth = 4;
+
+var wOccCnt = log2ceil(holding_fifo_buffer_depth+1);
+
+//=============================================================================
+// Ports
+//=============================================================================
+u.port('input',  'clk',     1);
+u.port('input',  'reset_n', 1);
+
+u.port('input',  'chi_rx_dat_flit_org', dat_flit_width_with_poison);
+u.port('input',  'chi_rx_dat_flitv_org', 1);
+u.port('input',  'chi_rx_dat_valid', 1);
+u.port('output', 'chi_rx_dat_flitv_backpressure', 1);
+
+u.port('output', 'ott_chi_rx_dat_flitv_d1', 1);
+
+obj.lib.interface('RXDATFLIT_', 'master', dat_flit_interface, ['Data','BE','TraceTag','DataSource','CBusy','DataID','CCID','Resp','RespErr','Homenode_ID','TgtID','QoS','TagOp','Tag','TU']);
+
+u.port('output', 'rx_data_valid',1);
+u.port('input',  'data_ready',   1);
+u.port('output', 'RXDAT_LAST',   1);
+u.port('output', 'RXDAT_DWID',   dtw_dwid_width);
+
+obj.lib.interface('RXDAT_',  'master', dat_flit_interface, []);
+
+u.port('output','dtw_data_TxnID',wFlit_TxnID);
+u.port('input', 'ott_dtw_size', 3);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+//=============================================================================
+// Wires
+//=============================================================================
+
+wire dff_enable = 1'b1;
+
+\=bundleFunctions.wiresFromInterface('chi_rx_dat_flit_org_', dat_flit_interface, [],                                                    obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('RXDATFLIT_' ,          dat_flit_interface, ['Poison','TxnID','FwdState','DBID','OpCode','SrcID'], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('dtw_data_' ,           dat_flit_interface, ['Poison','TxnID'], obj.lib.bundle)=\
+
+wire [\=dat_flit_width_with_poison-1=\:0] chi_rx_dat_flit_full_d1;
+wire [\=dat_flit_width-1=\:0] chi_rx_dat_flit_d1;
+wire [\=dat_flit_width-1=\:0] chi_rx_dat_flit_d2;
+
+wire [\=dtw_buf_data_width-1=\:0] RXDATFLIT_out;
+wire [\=dtw_buf_data_width-1=\:0] dtw_buf_data;
+
+wire [2:0] beat_count;
+wire dtw_data_last;
+wire [\=wOccCnt-1=\:0] holding_fifo_buffer_occupancy_cnt;
+
+wire chi_rx_dat_flitv_d1;
+wire chi_rx_dat_flitv_d2;
+wire dtw_buf_write ;
+
+wire fifo_ready_UC;
+
+//=============================================================================
+// Unpacking CHI Flit to bit fields
+// reversing interfaces as CHI spec puts flit with LSB first
+//=============================================================================
+\jsbegin
+var reversed_dat_intf = Object.keys(dat_flit_interface).reverse().reduce(function (acc,val){ acc[val] = dat_flit_interface[val]; return acc ; },{});
+\jsend
+
+assign \=bundleFunctions.packetizeBundle('chi_rx_dat_flit_org_', reversed_dat_intf, [], obj.lib.bundle)=\ = chi_rx_dat_flit_org;
+
+assign \=bundleFunctions.packetizeBundle('RXDATFLIT_',           reversed_dat_intf, [], obj.lib.bundle)=\ = chi_rx_dat_flit_full_d1;
+
+assign \=bundleFunctions.packetizeBundle('dtw_data_',            reversed_dat_intf, ['Poison'], obj.lib.bundle)=\ = chi_rx_dat_flit_d2;
+
+assign \=bundleFunctions.packetizeBundle('RXDAT_',               reversed_dat_intf, [], obj.lib.bundle)=\ = RXDATFLIT_out[\=dtw_buf_data_width-2=\:0];
+
+assign RXDAT_LAST = RXDATFLIT_out[\=dtw_buf_data_width-1=\];
+
+//=============================================================================
+// Pipe input flit to generate
+//    chi_rx_dat_flitv_d1, chi_rx_dat_flit_d1
+//    chi_rx_dat_flitv_d2, chi_rx_dat_flit_d2
+//=============================================================================
+
+\=u.dffre(1,                          'chi_rx_dat_flitv_d1',     'chi_rx_dat_flitv_org', "1'b0",                           'dff_enable',          'clk', 'reset_n')=\
+\=u.dffre(1 ,                         'chi_rx_dat_flitv_d2',     'chi_rx_dat_flitv_d1',  "1'b0",                           'dff_enable',          'clk', 'reset_n')=\
+
+\=u.dffre(dat_flit_width_with_poison, 'chi_rx_dat_flit_full_d1', 'chi_rx_dat_flit_org',  dat_flit_width_with_poison+"'b0", 'chi_rx_dat_flitv_org', 'clk', 'reset_n')=\
+\=u.dffre(dat_flit_width,             'chi_rx_dat_flit_d2',      'chi_rx_dat_flit_d1',   dat_flit_width+"'b0",             'dff_enable',           'clk', 'reset_n')=\
+
+assign chi_rx_dat_flit_d1 = chi_rx_dat_flit_full_d1[\=dat_flit_width-1=\:0];
+
+\js if (enPoison == true) {
+
+wire [\=poison_width-1=\:0] dat_flit_poison_d1;
+wire [\=poison_width-1=\:0] dat_flit_poison_d2;
+
+assign dat_flit_poison_d1 = chi_rx_dat_flit_full_d1[\=dat_flit_width_with_poison=\-1:\=dat_flit_width=\];
+
+\=u.dffre(poison_width, 'dat_flit_poison_d2', 'dat_flit_poison_d1', poison_width+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\js }
+
+//=============================================================================
+// ott_chi_rx_dat_flitv_d1
+//=============================================================================
+
+assign ott_chi_rx_dat_flitv_d1 = chi_rx_dat_flitv_d1 & (RXDATFLIT_OpCode != \=dat_flit_interface.OpCode=\'b0) & (RXDATFLIT_TxnID[\=dat_flit_interface.TxnID-1=\] == 1'b0);
+
+//=============================================================================
+// holding_fifo_buffer
+//=============================================================================
+
+assign dtw_buf_write = chi_rx_dat_flitv_d2 & (dtw_data_OpCode != \=dat_flit_interface.OpCode=\'b0) & (dtw_data_TxnID[\=dat_flit_interface.TxnID-1=\] == 1'b0);
+
+\js if (enPoison == true) {
+assign dtw_buf_data = {dtw_data_last, dat_flit_poison_d2[\=poison_width-1=\:0], chi_rx_dat_flit_d2};
+\js } else {
+assign dtw_buf_data = {dtw_data_last, chi_rx_dat_flit_d2};
+\js }
+
+\=obj.lib.instance({
+    instanceName: 'holding_fifo_buffer' ,
+    moduleName: 'fifo',
+    params: {
+            width: dtw_buf_data_width,
+            depth: holding_fifo_buffer_depth ,
+            output_occupancy: 1,
+            zerodepth: 0,
+            bypass_mode: 0 
+    },
+    ports: { 
+        clk           : 'clk',
+        reset_n       : 'reset_n',
+        push_valid    : 'dtw_buf_write',
+        push_ready    : 'fifo_ready_UC',
+        push_data     : 'dtw_buf_data',
+        pop_valid     : 'rx_data_valid',
+        pop_ready     : 'data_ready',
+        pop_data      : 'RXDATFLIT_out',
+        occupancy_cnt : "holding_fifo_buffer_occupancy_cnt"
+    },
+    portsDelimiter: '\n'
+})=\
+
+//=============================================================================
+// chi_rx_dat_flitv_backpressure
+//=============================================================================
+
+assign chi_rx_dat_flitv_backpressure =
+            chi_rx_dat_valid &
+            (chi_rx_dat_flit_org_OpCode != \=dat_flit_interface.OpCode=\'b0) &
+            (RXDATFLIT_TxnID[\=dat_flit_interface.TxnID-1=\] == 1'b0) & 
+            (holding_fifo_buffer_occupancy_cnt >= \=wOccCnt=\'d\=holding_fifo_buffer_depth-2=\);
+
+//=============================================================================
+// dtw_data_last
+//=============================================================================
+
+wire RXDATV = dtw_buf_write;
+
+wire [2:0] dtw_size;
+wire [7:0] num_dtw_data_bytes;
+wire [7:0] num_dtw_beats_int;
+wire [2:0] num_dtw_beats;
+wire [2:0] q_beat_count;
+wire new_dtw;
+wire q_first_chi_data_rcvd;
+wire first_chi_data_rcvd;
+wire q_rxdat_last_beat_done;
+
+assign dtw_size = RXDATV ? ott_dtw_size : 3'b0;
+
+assign num_dtw_data_bytes = 8'b1 << dtw_size;
+assign num_dtw_beats_int = num_dtw_data_bytes / 8'd\=wBE=\;
+assign num_dtw_beats = (num_dtw_beats_int[2:0] != 3'b0) ? (num_dtw_beats_int[2:0] - 3'b1) : 3'b0;
+assign beat_count = new_dtw ? 3'b0 : (q_beat_count + 3'b1);
+
+\=u.dffre(3, 'q_beat_count', 'beat_count', "3'b0", 'RXDATV', 'clk', 'reset_n')=\
+
+assign dtw_data_last = ((beat_count == num_dtw_beats) & RXDATV) ? 1'b1 : 1'b0;
+
+
+wire first_chi_data_rcvd_set = RXDATV & ~q_first_chi_data_rcvd;
+
+assign first_chi_data_rcvd  = first_chi_data_rcvd_set | q_first_chi_data_rcvd;
+
+\=u.dffre(1, 'q_first_chi_data_rcvd', 'first_chi_data_rcvd', "1'b0", 'first_chi_data_rcvd_set', 'clk', 'reset_n')=\
+
+wire rxdat_last_beat_done_set = dtw_data_last;
+
+wire rxdat_last_beat_done = rxdat_last_beat_done_set | (q_rxdat_last_beat_done & ~RXDATV);
+
+\=u.dffre(1, 'q_rxdat_last_beat_done', 'rxdat_last_beat_done', "1'b0", 'RXDATV', 'clk', 'reset_n')=\
+
+assign new_dtw = (RXDATV & q_rxdat_last_beat_done) | ~q_first_chi_data_rcvd;
+
+//=============================================================================
+// RXDAT_DWID
+//=============================================================================
+
+    \js if(wData == 256) {
+
+wire [11:0] data_id_256;
+
+assign data_id_256 = (RXDAT_DataID[1] == 1'b0) ? 12'b011010001000 : 12'b111110101100;
+
+assign RXDAT_DWID = data_id_256;
+
+    \js } else {
+
+wire [5:0] data_id_128;
+
+assign data_id_128 = ({6{(RXDAT_DataID == 2'b00)}} & 6'b001000) |
+                     ({6{(RXDAT_DataID == 2'b01)}} & 6'b011010) |
+                     ({6{(RXDAT_DataID == 2'b10)}} & 6'b101100) |
+                     ({6{(RXDAT_DataID == 2'b11)}} & 6'b111110);
+
+assign RXDAT_DWID = data_id_128;
+
+    \js }
+
+endmodule

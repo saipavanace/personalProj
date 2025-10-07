@@ -1,0 +1,1379 @@
+{
+  "name": "dmi",
+  "version": "3.0",
+  "csr": {
+    "addressWidth": "12",
+    "width": 32,
+    "spaceBlock": [
+      {
+        "baseAddress": "0x0",
+        "registers": [
+          {
+            "name": "DMIUIDR",
+            "description": "DMIU Identification Register ",
+            "csrDescription": "DMIU Identification Register ",
+            "addressOffset": "0x0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "RPN",
+                "bitOffset": 0,
+                "bitWidth": "return derived.wRpn",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return (Array.isArray(primary.rpn) && primary.rpn.length === 1) ? primary.rpn[0] : primary.rpn",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Distributed Memory Interface Unit Register Page Number (within its NRR)",
+                "scope": "All"
+              },
+              {
+                "name": "NRRI",
+                "bitOffset": 8,
+                "bitWidth": "return derived.wNrri",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.nrri",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Identifier of the Ncore 3 Register Region in which this DMIU resides",
+                "scope": "All"
+              },
+              {
+                "name": "NUnitId",
+                "bitOffset": 12,
+                "bitWidth": "return derived.wNUnitId",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.nUnitId",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Ncore 3 Unit identifier",
+                "scope": "All"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x1",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Value of 1 validates this register. This bit is set to 1 if the DMIU is implemented",
+                "scope": "All"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUFUIDR",
+            "description": "DMIU Fabric Unit Identification Register",
+            "csrDescription": "DMIU Fabric Unit Identification Register",
+            "addressOffset": "0x4",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "FUnitId",
+                "bitOffset": 0,
+                "bitWidth": "return derived.wFUnitId",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "resetOverloadFn": "return primary.fUnitId",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Fabric Unit Identifier of the unit",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "DMIUTAR",
+            "description": "DMIU Transaction Activity Register",
+            "csrDescription": "DMIU Transaction Activity Register",
+            "addressOffset": "0x44",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "TransActv",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "This bit is set when there is one or more active transactions inside the DMIU"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUUEDR",
+            "description": "DMIU Uncorrectable Error Detect Register",
+            "csrDescription": "DMIU Uncorrectable Error Detect Register",
+            "addressOffset": "0x100",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ProtErrDetEn",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Protocol error detect enable: When set, errors will be detected from the protocol interface.",
+                "scope": "All"
+              },
+              {
+                "name": "TransErrDetEn",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+              },
+              {
+                "name": "MemErrDetEn",
+                "bitOffset": 2,
+                "bitWidth": "return ((derived.useCmc && ((derived.ccpParams.TagErrInfo != 'NONE')||(derived.ccpParams.DataErrInfo != 'NONE'))) || derived.fnErrDetectCorrect != 'NONE')? 1 : 0",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+              },
+              {
+                "name": "TimeoutErrDetEn",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Timeout protection error detection enable: When set, timeout errors will be detected."
+              },
+                            {
+                "name": "SoftwareProgConfigErrDetEn",
+                "bitOffset": 5,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Software Programming Error Enable. When set to 1, this bit enables the detection atomic operation reaching DMI while atomic operationa are not supported or the cache is disabled"
+              }
+
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUUEIR",
+            "description": "DMIU Uncorrectable Error Interrupt Register",
+            "csrDescription": "DMIU Uncorrectable Error Interrupt Register",
+            "addressOffset": "0x104",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ProtErrIntEn",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Protocol uncorrectable error interrupt enable.",
+                "scope": "All"
+              },
+              {
+                "name": "TransErrIntEn",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Concerto Transport uncorrectable error interrupt enable."
+              },
+              {
+                "name": "MemErrIntEn",
+                "bitOffset": 2,
+                "bitWidth": "return ((derived.useCmc && ((derived.ccpParams.TagErrInfo != 'NONE')||(derived.ccpParams.DataErrInfo != 'NONE'))) || derived.fnErrDetectCorrect != 'NONE')? 1 : 0",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "SRAM memory uncorrectable error interrupt enable."
+              },
+              {
+                "name": "TimeoutErrIntEn",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Timeout uncorrectable error interrupt enable."
+              },
+              {
+                "name": "SoftwareProgConfigErrIntEn",
+                "bitOffset": 5,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Software Programming Error Enable. When set to 1, this bit enables the assertion of the interupt signal caused by an atomic operation reaching DMI while there is no cache or the cache is disabled."
+              }
+              ],
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUUESR",
+            "description": "DMIU Uncorrectable Error Status Register",
+            "csrDescription": "DMIU Uncorrectable Error Status Register",
+            "addressOffset": "0x108",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Uncorrectable Error Valid bit is set.\n0x00: Data SRAM uncorrectable error\n0x01: Cache SRAM uncorrectable error\n0x02: Native interface write response error\n0x03: Native interface read response error \n0x08: Transport error \n0x09: Timeout error\nAll other encodings are reserved\n0x0c: Software Programming or Configuration Error"
+                },
+                {
+                  "name": "ErrInfo",
+                  "description": "This field indicates additional information about logged error type, if the Uncorrectable Error Valid bit is set.\nIf it is a data SRAM uncorrectable error then\nbits 1:0   2'b10 represent write buffer (2'b00, 2'b01 and 2'b11: reserved)\nbits 15:2  Reserved\n\nIf it is a cache SRAM uncorrectable error then\nbit  0     1'b0 Tag Array 1'b1 Data Array\nbits 15:1  Reserved\n\nIf it is a native interface write response error then\nbits 1:0   Response from the interface \nbit  2     Security attirbute \nbit  3     If set then it was an eviction else write\nbits 15:4  Reserved\n\nIf it is a native interface read response error then \nbits 1:0   Response from the interface \nbit  2     Security attirbute \nbit  3     If set then it was an fill else read without fill \nbits 15:4  Reserved \n\nIf it is a transport error then \nbit  0     1'b0 represents wrong target ID; 1'b1 Reserved \nbits 5:1   Reserved \nbits 15:6  Represents source ID \n\nIf it is a time out error then \nbits 1:0   Reserved \nbit  2     Represents the security bit \nbits 15:3  Reserved \n"
+                }
+              ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUUELR0",
+            "description": "DMIU Uncorrectable Error Location Registers 0",
+            "csrDescription": "DMIU Uncorrectable Error Location Registers 0",
+            "addressOffset": "0x10c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUUELR1",
+            "description": "DMIU Uncorrectable Error Location Registers 1",
+            "csrDescription": "DMIU Uncorrectable Error Location Registers 1",
+            "addressOffset": "0x110",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR1"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUUESAR",
+            "description": "DMIU Uncorrectable Error Status Alias Register",
+            "csrDescription": "DMIU Uncorrectable Error Status Alias Register",
+            "addressOffset": "0x114",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xUESAR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUCECR",
+            "description": "DMIU Correctable Error Control Register",
+            "csrDescription": "DMIU Correctable Error Control Register",
+            "addressOffset": "0x140",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCECR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUCESR",
+            "description": "DMIU Correctable Error Status Register",
+            "csrDescription": "DMIU Correctable Error Status Register",
+            "addressOffset": "0x144",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [
+                {
+                  "name": "ErrType",
+                  "description": "This field indicates the logged error type, if the Correctable Error Valid bit is set.\n0x00: Data SRAM correctable error\n0x01: Cache SRAM correctable error\nAll other encodings are reserved"
+                },
+                {
+                  "name": "ErrInfo",
+                  "description": "This field indicates additional information about logged error type, if the Correctable Error Valid bit is set.\nIf it is a data SRAM correctable error then\nbits 1:0   2'b10 represent write buffer (2'b00, 2'b01 and 2'b11: reserved)\nbits 15:2  Reserved\n\nIf it is a cache SRAM correctable error then\nbit  0     1'b0 Tag Array 1'b1 Data Array\nbits 15:1  Reserved"
+                }
+               ],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUCELR0",
+            "description": "DMIU Correctable Error Location Registers 0",
+            "csrDescription": "DMIU Correctable Error Location Registers 0",
+            "addressOffset": "0x148",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR0"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUCELR1",
+            "description": "DMIU Correctable Error Location Registers 1",
+            "csrDescription": "DMIU Correctable Error Location Registers 1",
+            "addressOffset": "0x14c",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xELR1"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUCESAR",
+            "description": "DMIU Correctable Error Status Alias Register",
+            "csrDescription": "DMIU Correctable Error Status Alias Register",
+            "addressOffset": "0x150",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/errCSR.json#xCESAR"
+            },
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUCRTR",
+            "description": "DMIU Correctable Resiliency Threshold Register",
+            "csrDescription": "DMIU Correctable Resiliency Threshold Register",
+            "addressOffset": "0x17c",
+            "condition": "return derived.useResiliency? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/errCSR.json#xCRTR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DMIUSMCTCR",
+            "description": "DMIU System Memory Cache Transaction Control Register",
+            "csrDescription": "DMIU System Memory Cache Transaction Control Register",
+            "addressOffset": "0x300",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "LookupEn",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit enables system memory cache.",
+                "scope": "All"
+              },
+              {
+                "name": "AllocEn",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit enables allocation into system memory cache.",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCTAR",
+            "description": "DMIU System Memory Cache Transaction Activity Register",
+            "csrDescription": "DMIU System Memory Cache Transaction Activity Register",
+            "addressOffset": "0x304",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EvictActive",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when the unit is performing any system memory cache eviction activity and is cleared otherwise",
+                "scope": "All"
+              },
+              {
+                "name": "AllocActive",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when the unit is performing any system memory cache allocation activity and is cleared otherwise.",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCAPR",
+            "description": "DMIU System Memory Cache Allocation Policy Register",
+            "csrDescription": "DMIU System Memory Cache Allocation Policy Register",
+            "addressOffset": "0x308",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "TOFAllocDisable",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit disables cache allocation for writeUnique from CHI/ACE processors",
+                "scope": "All"
+              },
+              {
+                "name": "ClnWrAllocDisable",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit disables cache allocation for clean writes",
+                "scope": "All"
+              },
+              {
+                "name": "DtyWrAllocDisable",
+                "bitOffset": 2,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit disables cache allocation for dirty writes",
+                "scope": "All"
+              },
+              {
+                "name": "RdAllocDisable",
+                "bitOffset": 3,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit disables cache allocation for reads",
+                "scope": "All"
+              },
+              {
+                "name": "WrAllocDisable",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit disables cache allocation for writes",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCISR",
+            "description": "DMIU System Memory Cache Initialization Status Register",
+            "csrDescription": "DMIU System Memory Cache Initializtion Status Register",
+            "addressOffset": "0x30c",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "TagInitDone",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when SMC tag initialization is done",
+                "scope": "All"
+              },
+              {
+                "name": "DataInitDone",
+                "bitOffset": 1,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RW",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This bit is set when SMC data initialization is done",
+                "scope": "All"
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCMCR",
+            "description": "DMIU System Memory Cache Maintenance Control Register",
+            "csrDescription": "DMIU System Memory Cache Maintenance Control Register. Write to this register triggers the Maintenance Operation.",
+            "addressOffset": "0x340",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMCR"
+            }
+          },
+          {
+            "name": "DMIUSMCMAR",
+            "description": "DMIU System Memory Cache Maintenance Activity Register",
+            "csrDescription": "DMIU System Memory Cache Maintenance Activity Register",
+            "addressOffset": "0x344",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMAR"
+            }
+          },
+          {
+            "name": "DMIUSMCMLR0",
+            "description": "DMIU System Memory Cache Maintenance Location Register 0",
+            "csrDescription": "DMIU System Memory Cache Maintenance Location Register 0",
+            "addressOffset": "0x348",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMLR0"
+            }
+          },
+          {
+            "name": "DMIUSMCMLR1",
+            "description": "DMIU System Memory Cache Maintenance Location Register 1",
+            "csrDescription": "DMIU System Memory Cache Maintenance Location Register 1",
+            "addressOffset": "0x34c",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMLR1"
+            }
+          },
+          {
+            "name": "DMIUSMCMDR",
+            "description": "DMIU System Memory Cache Maintenance Data Register",
+            "csrDescription": "DMIU System Memory Cache Maintenance Data Register",
+            "addressOffset": "0x350",
+            "condition": "return derived.useCmc? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/mntCSR.json#xCMDR"
+            }
+          },
+          {
+            "name": "DMIUSMCSPBR0",
+            "description": "DMIU System Memory Cache Scratchpad Base Address Register 0",
+            "csrDescription": "DMIU System Memory Cache Scratchpad Base Address Register 0",
+            "addressOffset": "0x380",
+            "condition": "return derived.ccpParams.useScratchpad?true:false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ScPadBaseAddr",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Scratchpad base address lower bits, ignoring the lowest 6 bits. This means that if this register is configured with 0x1 the scratchpad will start at 0x40, if it is configured with 0x2 it will start at 0x80 etc... "
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCSPBR1",
+            "description": "DMIU System Memory Cache Scratchpad Base Address Register 1",
+            "csrDescription": "DMIU System Memory Cache Scratchpad Base Address Register 1",
+            "addressOffset": "0x384",
+            "condition": "return derived.ccpParams.useScratchpad?true:false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ScPadBaseAddrHi",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Scratchpad base address upper bits including ns bit in MSB."
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCSPCR0",
+            "description": "DMIU System Memory Cache Scratchpad Configuration Register 0",
+            "csrDescription": "DMIU System Memory Cache Scratchpad Configuration Register 0",
+            "addressOffset": "0x388",
+            "condition": "return derived.ccpParams.useScratchpad?true:false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ScPadEn",
+                "bitOffset": 0,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Scratchpad RAM enable."
+              },
+              {
+                "name": "NumScPadWays",
+                "bitOffset": 1,
+                "bitWidth": "6",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x2",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Number of ways that are to be used as scatchpad.\nNumber of allocated ways = NumScPadWays + 1.\nMax of NumScPadWays = NumWays - 1. (see DMIUSMCIFR)\n"
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCSPCR1",
+            "description": "DMIU System Memory Cache Scratchpad Configuration Register 1",
+            "csrDescription": "DMIU System Memory Cache Scratchpad Configuration Register 1",
+            "addressOffset": "0x38c",
+            "condition": "return derived.ccpParams.useScratchpad?true:false",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ScPadSize",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Scratchpad size in number of cachelines minus 1. This size cannot be greater than the number of ways reserved times the number of sets per way."
+              }
+            ]
+          },
+          {
+            "name": "DMIAMIGR",
+            "description": "Active Memory Interleave Group Register",
+            "csrDescription": "Active Memory Interleave Group Register",
+            "addressOffset": "0x3c0",
+            "condition": "return derived.useCmc ? derived.ccpParams.useScratchpad: 0",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xAMIGR",
+              "descFields": []
+            }
+          },        
+          {
+            "name": "DMIMIFSR",
+            "description": "Memory Interleave Function Select Register",
+            "csrDescription": "Memory Interleave Function Select Register",
+            "addressOffset": "0x3c4",
+            "condition": "return derived.useCmc ? derived.ccpParams.useScratchpad: 0",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/regionCSR.json#xMIFSR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DMIUSMCWPCR0",
+            "description": "DMIU System Memory Cache Way Partitioning Control Register 0",
+            "csrDescription": "DMIU System Memory Cache Way Partitioning Control Register 0",
+            "addressOffset": "0x3d0",
+            "condition": "return derived.useWayPartitioning?derived.nWayPartitioningRegisters:0",
+            "offsetStep": 8,
+            "fields": [
+              {
+                "name": "WpAgentId",
+                "bitOffset": 0,
+                "bitWidth": "10",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Identify way partitioning agent ID."
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Way partitioning is valid"
+              }
+            ]
+          },
+          {
+            "name": "DMIUSMCWPCR1",
+            "description": "DMIU System Memory Cache Way Partitioning Control Register 1",
+            "csrDescription": "DMIU System Memory Cache Way Partitioning Control Register 1",
+            "addressOffset": "0x3d4",
+            "condition": "return derived.useWayPartitioning?derived.nWayPartitioningRegisters:0",
+            "offsetStep": 8,
+            "fields": [
+              {
+                "name": "WpWayVector",
+                "bitOffset": 0,
+                "bitWidth": "return derived.ccpParams.nWays",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "This vector specifies ways to which the source ID identified by the associated WpAgentID can allocate to."
+              }
+            ]
+          },
+          {
+            "name": "DMIUATER",
+            "description": "DMIU Address Translation Enable Register",
+            "csrDescription": "DMIU Address Translation Enable Register",
+            "addressOffset": "0x4c0",
+            "condition": "return derived.useAddrTranslation?derived.nAddrTransRegisters:0",
+            "offsetStep": 12,
+            "fields": [
+              {
+                "name": "Mask",
+                "bitOffset": 0,
+                "bitWidth": "4",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Treated as binary number from 0 to 15.\nActuall bit mast covers (Mask + 20) bits of address, with a maximum of 35 bits.\nThis enable a block of up to 2^(Mask + 20) bytes to be relocated."
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "0: Address translation triplet does not have a valid translation\n1: Address translation triplet has a valid translation and translation is enabled"
+              }
+            ]
+          },
+          {
+            "name": "DMIURFAR",
+            "description": "DMIU Reallocate From Address Register",
+            "csrDescription": "DMIU Reallocate From Address Register",
+            "addressOffset": "0x4c4",
+            "condition": "return derived.useAddrTranslation?derived.nAddrTransRegisters:0",
+            "offsetStep": 12,
+            "fields": [
+              {
+                "name": "FromAddr",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Bits 51 down to 20 of incoming address."
+              }
+            ]
+          },
+          {
+            "name": "DMIURTAR",
+            "description": "DMIU Reallocate To Address Register",
+            "csrDescription": "DMIU Reallocate To Address Register",
+            "addressOffset": "0x4c8",
+            "condition": "return derived.useAddrTranslation?derived.nAddrTransRegisters:0",
+            "offsetStep": 12,
+            "fields": [
+              {
+                "name": "ToAddr",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Bits 51 down to 20 of outgoing address."
+              }
+            ]
+          },
+          {
+            "name": "DMIUEVIDR",
+            "description": "DMIU Engineering Version Id Register",
+            "csrDescription": "DMIU Engineering Version Id Register",
+            "addressOffset": "0xFF4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EngVerId",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return derived.engVerId",
+                "description": "The Engineering Version Identifier is a concatenation of two fields: {MPFHash[18:0], CHIP_ID[12:0]}. The CHIP_ID is obtained from a license file and the MPFHash is the last 19 bits obtained from the 128bit MD5 Hash.",
+                "scope": "Engg"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUSMCIFR",
+            "description": "DMIU System Memory Cache Information Register",
+            "csrDescription": "DMIU System Memory Cache Information Register",
+            "addressOffset": "0xFF8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "NumSet",
+                "bitOffset": 0,
+                "bitWidth": "20",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return (derived.ccpParams.nSets-1)",
+                "description": "This field indicates the number of sets in the system memory cache minus one in this DMIU. To determine the total number of sets in the system memory cache, this value must be multiplied by the number of DMIUs that implement the system memory cache",
+                "scope": "All"
+              },
+              {
+                "name": "NumWay",
+                "bitOffset": 20,
+                "bitWidth": "6",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return (derived.ccpParams.nWays-1)",
+                "description": "This field indicates the number of ways(i.e. the associativity) minus one in the system memory cache",
+                "scope": "All"
+              },
+              {
+                "name": "SP",
+                "bitOffset": 26,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return (derived.ccpParams.useScratchpad)",
+                "description": "This field indicates if scratch pad feature is eanbled when set",
+                "scope": "All"
+              },
+              {
+                "name": "WP",
+                "bitOffset": 27,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return (derived.useWayPartitioning)",
+                "description": "Way Partitioning support exist",
+                "scope": "All"
+              },
+              {
+                "name": "nWP",
+                "bitOffset": 28,
+                "bitWidth": "4",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return (derived.useWayPartitioning ? (derived.nWayPartitioningRegisters-1) : 0)",
+                "description": "Number of way partitioning register pair minus one",
+                "scope": "All"
+              }
+            ],
+            "condition": "return derived.useCmc? true : false"
+          },
+          {
+            "name": "DMIUINFOR",
+            "description": "DMIU Information Register",
+            "csrDescription": "DMIU Information Register",
+            "addressOffset": "0xFFC",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "ImplVer",
+                "bitOffset": 0,
+                "bitWidth": 16,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return derived.implVerId",
+                "description": "Implementation Version",
+                "scope": "All"
+              },
+              {
+                "name": "UT",
+                "bitOffset": 16,
+                "bitWidth": 4,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "0x9",
+                "description": "Unit Type: specifies the Ncore unit type\n0x0 - CAIU\n0x1 - NCAIU\n0x2 - NCAIU with proxy cache\n0x3 - 0x7 - Reserved\n0x8 - DCE\n0x9 - DMI\n0xA - DII\n0xB - DVE \n0xC - 0xF - Reserved\n",
+                "scope": "All"
+              },
+              {
+                "name": "UST",
+                "bitOffset": 20,
+                "bitWidth": 4,
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return (derived.fnNativeInterface === 'AXI') ? 0x0 : (derived.fnNativeInterface === 'CHI-A') ? 0x8 : (derived.fnNativeInterface === 'CHI-B') ? 0x9 : 0x0 ",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Unit sub Type: specifies the Ncore unit native interface type\n0x0 - AXI\n0x1 - ACE-Lite\n0x2 - ACE-Lite E\n0x3 - ACE \n0x4 - 0x7 - Reserved \n0x8 - CHI-A\n0x9 - CHI-B\n0xA - 0xF - Reserved\n"
+              },
+              {
+                "name": "SMC",
+                "bitOffset": 24,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return derived.useCmc",
+                "description": "System Memory Cache Present",
+                "scope": "All"
+              },
+              {
+                "name": "AE",
+                "bitOffset": 25,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "return derived.useAtomic",
+                "description": "Atomic Engine Present",
+                "scope": "All"
+              },
+              {
+                "name": "Valid",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "reset": "0x1",
+                "description": "Implemented",
+                "scope": "All"
+              }
+            ],
+            "condition": "return true"
+          },
+	   {
+            "name": "DMICNTCR",
+			"description": "PMON Counter Control Register",
+			"csrDescription": "PMON Counter Control Register",
+            "addressOffset": "0xb00",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 16,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTCR"
+            }
+          },
+          {
+            "name": "DMICNTVR",
+			"description": "PMON Counter Value Register",
+			"csrDescription": "PMON Counter Value Register Register",
+            "addressOffset": "0xb04",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 16,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTVR"
+            }
+          },
+          {
+            "name": "DMICNTSR",
+			"description": "PMON Counter Saturation Register",
+			"csrDescription": "PMON Counter Saturation Register",
+            "addressOffset": "0xb08",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 16,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xCNTSR"
+            }
+          },
+	 {
+            "name": "DMIBCNTFR",
+			"description": "PMON BandWidth Counter Filter Register",
+			"csrDescription": "PMON BW Counter Filter Register",
+           "addressOffset": "0xc00",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 8,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xBCNTFR"
+            }
+          },
+	{
+            "name": "DMIBCNTMR",
+			"description": "PMON BandWidth Counter Mask Register",
+			"csrDescription": "PMON BW Counter Mask Register",
+            "addressOffset": "0xc04",
+            "condition": "return derived.nPerfCounters",
+            "offsetStep": 8,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xBCNTMR"
+            }
+          },
+	  	{
+            "name": "DMILCNTCR",
+			"description": "PMON Latency Conter Control Register",
+			"csrDescription": "PMON Latency Counter Control Register",
+            "addressOffset": "0xc80",
+            "condition": "return derived.nPerfCounters ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xLCNTCR"
+            }
+          },
+	  {
+            "name": "DMIMCNTCR",
+			"description": "PMON Main Conter Control Register",
+			"csrDescription": "PMON Main Counter Control Register",
+            "addressOffset": "0xc84",
+            "condition": "return derived.nPerfCounters ? true : false",
+            "offsetStep": 0,
+            "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/ncr_pmon_CSR.json#xMCNTCR"
+            }
+          },
+	      {
+            "name": "DMICCTRLR",
+            "description": "AIU Unit Capture Control Register",
+            "csrDescription": "AIU Unit Capture Control Register",
+            "addressOffset": "0x800",
+            "condition": "return true",
+            "offsetStep": 0,
+	        "fields": {
+              "descFields": [],
+              "reference": "$HW_NCR_CSR/trace_capture_CSR.json#xCCTRLR"
+            }
+          },
+          {
+            "name": "DMIUTOCR",
+            "description": "Timeout Control Register.\nControls timeout for transactions that are allocated in the WTT and the RTT.",
+            "csrDescription": "Timeout Control Register",
+            "addressOffset": "0x190",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+          {
+            "name": "DMIUSEPTOCR",
+            "description": "DMIU System Event Protocol Timeout Control Register.\nControls timeout for receiving responses to system event messages that are issued to the network from this DMI",
+            "csrDescription": "DMIU System Event Protocol Timeout Control Register",
+            "addressOffset": "0x194",
+            "condition": "return true",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xTOCR",
+              "descFields": []
+            }
+          },
+ {
+            "name": "DMIUTCR",
+            "description": "DMIU Transaction Control Register",
+            "csrDescription": "DMIU Transaction Control Register",
+            "addressOffset": "0x40",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EventDisable",
+                "bitOffset": 4,
+                "bitWidth": "1",
+                "access": "RW",
+                "hardware": "RO",
+                "reset": "0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Setting this disables Event handling."
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "DMIUQOSCR",
+            "description": "QoS Control Register ",
+            "csrDescription": "QoS Control Register ",
+            "addressOffset": "0x200",
+            "condition": "return derived.fnEnableQos",
+            "offsetStep": 0,
+            "fields": {
+              "reference": "$HW_NCR_CSR/miscCSR.json#xQOSCR",
+              "descFields": [
+                {"name" : "useEvictionQoS",
+                "description" : "If useEvictionQoS is set, evictions from SMC will use the QoS value from EvictionQoS. If Dmi is configured without an SMC this field is not applicable"
+              }]
+            }
+          },
+            {
+              "name": "DMIUTQOSCR",
+              "description": "QoS Control threhsold Register ",
+              "csrDescription": "QoS Control threhsold Register ",
+              "addressOffset": "0x210",
+              "condition": "return derived.fnEnableQos",
+              "offsetStep": 0,
+              "fields": [
+                {
+                  "name": "WttQoSRsv",
+                  "bitOffset": 0,
+                  "bitWidth": "8",
+                  "access": "RW",
+                  "hardware": "RO",
+                  "reset": "if( derived.nDmiWttQoSRsv > (Math.min(derived.cmpInfo.nDceRbEntries,derived.cmpInfo.nDmiRbEntries,derived.cmpInfo.nWttCtrlEntries)-1) ) { return 1;} else {return derived.nDmiWttQoSRsv;}",         
+                  "linkOp": "NULL",
+                  "opOrder": "NULL",
+                  "description": "WTT entries in DMI reserved for high priority hard real time traffic",
+                  "scope": "All",
+                  "link": ""
+                },
+                {
+                  "name": "RttQoSRsv",
+                  "bitOffset": 8,
+                  "bitWidth": "8",
+                  "access": "RW",
+                  "hardware": "RO",
+                  "reset": " if(derived.nDmiRttQoSRsv > (derived.cmpInfo.nRttCtrlEntries-1) ) {return 1;} else {return derived.nDmiRttQoSRsv;}",
+                  "linkOp": "NULL",
+                  "opOrder": "NULL",
+                  "description": "RTT entries in DMI reserved for high priority hard real time traffic",
+                  "scope": "All",
+                  "link": ""
+                },
+                {
+                  "name": "QoSThVal",
+                  "bitOffset": 28,
+                  "bitWidth": "4",
+                  "access": "RW",
+                  "hardware": "RO",
+                  "reset": " if(derived.DmiQoSThVal != null){ return derived.DmiQoSThVal} else {return 0x1}",
+                  "linkOp": "NULL",
+                  "opOrder": "NULL",
+                  "description": "DMI QoS threshold value. Traffic with QoS equal to or above this value are considered as high priority hard real time traffic",
+                  "scope": "All",
+                  "link": ""
+                }
+
+              ]
+              },
+              {
+              "name": "DMIUWRDATACLN",
+              "description": "Register that controls the behavior of a write to clean data",
+              "csrDescription": "Write clean data downstream ",
+              "addressOffset": "0x220",
+              "offsetStep": 0,
+              "fields": [
+                {
+                  "name": "EnClnDataWr",
+                  "bitOffset": 0,
+                  "bitWidth": "1",
+                  "access": "RW",
+                  "hardware": "RO",
+                  "reset": "0",         
+                  "linkOp": "NULL",
+                  "opOrder": "NULL",
+                  "description": "When set to one any clean data from a write which does not allocate/write in the cache (either because there is no cache in the DMI, or because the allocation to the cache has been disabled) will be sent downstream of DMI. If set to 0, the data will be dropped instead. ",
+                  "scope": "All",
+                  "link": ""
+                }
+              ]
+              },
+              {
+                "name": "MRDSBSIR",
+                "description": "MRD skid buffer size",
+                "csrDescription": "MRD skid buffer size",
+                "addressOffset": "0xfe0",
+                "offsetStep": 0,
+                "fields": [
+                  {
+                    "name": "SkidBufArb",
+                    "bitOffset": 0,
+                    "bitWidth": "9",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": " if(derived.nMrdSkidBufArb != null){ return derived.nMrdSkidBufArb} else {return 0x0}",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Depth of skid buffer visible to arbitration. This value determines the size of the arbitration window within which arriving requests are selected based on QoS, priority and arrival time. It is recommended to start with a reasonably value for performance analysis - the area of a skid buffer grows with the square of this number and larger options will also significantly impact timing",
+                    "scope": "All",
+                    "link": ""
+                  },
+                  {
+                    "name": "SkidBufSize",
+                    "bitOffset": 16,
+                    "bitWidth": "10",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": " if(derived.nMrdSkidBufSize != null){ return derived.nMrdSkidBufSize} else {return 0x0}",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Total depth of skid buffer for MRD commands of DMI. The skid buffer is used to stage transaction requests from initiator agents. The number of required entries may be determined by traffic requirements and analysis using performance modeling. This value sets the total budget of protocol credits available for distribution",
+                    "scope": "All",
+                    "link": ""
+                  },
+                  {
+                    "name": "Valid",
+                    "bitOffset": 31,
+                    "bitWidth": "1",
+                    "access": "RO",
+                    "hardware": "RO",
+                    "reset": "return 0x1",
+                    "linkOp": "NULL",
+                    "opOrder": "NULL",
+                    "description": "Valid bit, indicates presence of the register",
+                    "scope": "All",
+                    "link": ""
+                  }
+  
+                ]
+                },
+                {
+                  "name": "CMDSBSIR",
+                  "description": "CMD skid buffer size ",
+                  "csrDescription": "CMD skid buffer size ",
+                  "addressOffset": "0xff0",
+                  "offsetStep": 0,
+                  "fields": [
+                    {
+                      "name": "SkidBufArb",
+                      "bitOffset": 0,
+                      "bitWidth": "9",
+                      "access": "RO",
+                      "hardware": "RO",
+                      "reset": " if(derived.nCMDSkidBufArb != null){ return derived.nCMDSkidBufArb} else {return 0x0}",
+                      "linkOp": "NULL",
+                      "opOrder": "NULL",
+                      "description": "Depth of skid buffer visible to arbitration. This value determines the size of the arbitration window within which arriving requests are selected based on QoS, priority and arrival time. It is recommended to start with a reasonably value for performance analysis - the area of a skid buffer grows with the square of this number and larger options will also significantly impact timing",
+                      "scope": "All",
+                      "link": ""
+                    },
+                    {
+                      "name": "SkidBufSize",
+                      "bitOffset": 16,
+                      "bitWidth": "10",
+                      "access": "RO",
+                      "hardware": "RO",
+                      "reset": " if(derived.nCMDSkidBufSize != null){ return derived.nCMDSkidBufSize} else {return 0x0}",
+                      "linkOp": "NULL",
+                      "opOrder": "NULL",
+                      "description": "Total depth of skid buffer for non coherent commands of DMI. The skid buffer is used to stage transaction requests from initiator agents. The number of required entries may be determined by traffic requirements and analysis using performance modeling. This value sets the total budget of protocol credits available for distribution",
+                      "scope": "All",
+                      "link": ""
+                    },
+                    {
+                      "name": "Valid",
+                      "bitOffset": 31,
+                      "bitWidth": "1",
+                      "access": "RO",
+                      "hardware": "RO",
+                      "reset": "return 0x1",
+                      "linkOp": "NULL",
+                      "opOrder": "NULL",
+                      "description": "Valid bit, indicates presence of the register",
+                      "scope": "All",
+                      "link": ""
+                    }
+    
+                  ]
+                }
+        ]
+      }
+    ]
+  }
+}

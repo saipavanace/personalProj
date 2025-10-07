@@ -1,0 +1,104 @@
+<style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759725309498 {padding: 0px;}
+div.rbtoc1759725309498 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759725309498 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759725309498'>
+<ul class='toc-indentation'>
+<li><a href='#CSRConfigFile-Overview'>Overview</a></li>
+<li><a href='#CSRConfigFile-Memorymapping(MemoryMapping)'>Memory mapping (MemoryMapping)</a></li>
+<li><a href='#CSRConfigFile-Softwaredefinablecredits(SWCredits)'>Software definable credits (SWCredits)</a></li>
+<li><a href='#CSRConfigFile-OrderingModes(OrderingModes)'>Ordering Modes (OrderingModes)</a></li>
+<li><a href='#CSRConfigFile-EnableUpdtoDCE'>EnableUpdtoDCE</a></li>
+<li><a href='#CSRConfigFile-qosEventThreshold,DmiQosThValMap,nDmiWttQoSRsvMap,nDmiRttQoSRsvMap'>qosEventThreshold, DmiQosThValMap, nDmiWttQoSRsvMap, nDmiRttQoSRsvMap</a></li>
+<li><a href='#CSRConfigFile-ExampleCSRconfiguration'>Example CSR configuration</a></li>
+</ul>
+</div><h1 id="CSRConfigFile-Overview">Overview</h1><p>The CSR config JSON consists of several maps describing various aspects of the NCore3 configuration.</p><ul><li><p>MemoryMapping</p></li><li><p>SWCredits</p></li><li><p>OrderingModes</p></li><li><p>EnableUpdtoDCE (NCore version 3.4 and up)</p></li><li><p>qosEventThreshold  (NCore version 3.2 and up)</p></li><li><p>DmiQosThValMap, nDmiWttQoSRsvMap, nDmiRttQoSRsvMap (Ncore 3.4 and up)</p></li></ul><h1 id="CSRConfigFile-Memorymapping(MemoryMapping)">Memory mapping (MemoryMapping)</h1><p>This section defines the mapping from addresses to DMI/DII agents as well as properties of handling those accesses.  It supports the following settings:</p><ul><li><p>regionBaseAddr<br/>the base address of the memory reagion being mapped</p></li><li><p>regionSize<br/>the size of the meory region being mapped</p></li><li><p>regionHut<br/>the type of agent/memory. Valid values are <em>DMI </em>(system memory) or <em>DII </em>(peripheral storage)</p></li><li><p>regionHui<br/>the identifier of the MIG (if regionHut is DMI) or DII unit id (if regionHut is DII)</p></li><li><p>Order<br/>Transaction ordering in IOAIU of the region. It has the following settings</p><ul><li><p>Policy<br/>Ordering policy, valid values are: <em>StrictReq</em>, <em>RelaxedReq</em>, <em>StrictResp</em>, or <em>PCIe</em></p></li><li><p>ReadID<br/>Defines if policy applies to reads. Valid values are <em>true </em>or <em>false</em>.</p></li><li><p>WriteID<br/>Defines if policy applies to writes. Valid values are <em>true </em>or <em>false</em>.</p></li><li><p>Hazard<br/>Valid values are <em>true </em>or <em>false</em>.</p></li></ul></li><li><p>NC<br/>If AXI4 transaction shall be part of coherency. Valid valid is <em>true </em>or <em>false</em>.</p></li></ul><h1 id="CSRConfigFile-Softwaredefinablecredits(SWCredits)">Software definable credits (SWCredits)</h1><p>This section defines the credits of various agents in sending messages to other agents. It is a map of sending agent names mapping to a map of target agent names and credit counts. This might look like:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&quot;SWCredits&quot; : {
+		&quot;ncaiu0&quot; : {
+			&quot;dce0&quot; : 16,
+			&quot;dce1&quot; : 16,
+			&quot;dii0&quot; : 8,
+			&quot;dmi0&quot; : 16,
+			&quot;dmi1&quot; : 16,
+			&quot;sys_dii&quot; : 8
+		},
+		&quot;ncaiu1&quot; : {
+            &quot;dce0&quot; : 16,
+			&quot;dce1&quot; : 16,
+			&quot;dii0&quot; : 8,
+			&quot;dmi0&quot; : 16,
+			&quot;dmi1&quot; : 16,
+			&quot;sys_dii&quot; : 8
+		},
+}</pre>
+</div></div><p>The resulting credit setup is checked against the total numbers of credits being defined in Maestro.</p><h1 id="CSRConfigFile-OrderingModes(OrderingModes)">Ordering Modes (OrderingModes)</h1><p>Defines the ordering mode to operate in of an IOAIU. Valid values are <em>StrictReq</em>, <em>RelaxedReq</em>, <em>StrictResp</em>, or <em>PCIe</em></p><h1 id="CSRConfigFile-EnableUpdtoDCE">EnableUpdtoDCE</h1><p>Defines whether the named IOAIU shall send a UPDreq message to DCE.</p><h1 id="CSRConfigFile-qosEventThreshold,DmiQosThValMap,nDmiWttQoSRsvMap,nDmiRttQoSRsvMap">qosEventThreshold, DmiQosThValMap, nDmiWttQoSRsvMap, nDmiRttQoSRsvMap</h1><p>This defines the QoS setup of the units. </p><ul><li><p>qosEventThreshold<br/>Defines the QoS threshold for overflow. It maps the agent name to the respective value.</p></li><li><p>DmiQosThValMap<br/>Defines the threshold QoS value between low and high prio trafic. It maps the agent name to the respective value.</p></li><li><p>nDmiWttQoSRsvMap, nDmiRttQoSRsvMap<br/>Define the number of WTT/RTT entries reserved for high priority traffic. It maps the agent name to the respective value.</p></li></ul><h1 id="CSRConfigFile-ExampleCSRconfiguration">Example CSR configuration</h1><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;MemoryMapping&quot;: {
+    &quot;IGVId&quot;: 0,
+    &quot;CSRs&quot;: [
+      {
+        &quot;regionBaseAddr&quot;: &quot;0&quot;,
+        &quot;regionHui&quot;: 0,
+        &quot;regionSize&quot;: &quot;0x1ffffffff&quot;,
+        &quot;regionHut&quot;: &quot;DMI&quot;,
+        &quot;Order&quot;: {
+          &quot;Hazard&quot;: false,
+          &quot;ReadID&quot;: false,
+          &quot;WriteID&quot;: false,
+          &quot;Policy&quot;: &quot;StrictReq&quot;
+        }
+      }
+    ]
+  },
+  &quot;OrderingModes&quot;: {
+    &quot;ncaiu0&quot;: &quot;StrictReq&quot;
+  },
+  &quot;EnableUpdtoDCE&quot;: {
+    &quot;caiu0&quot;: false
+  },
+  &quot;SWCredits&quot; : {
+		&quot;ncaiu0&quot; : {
+			&quot;dce0&quot; : 16,
+			&quot;dce1&quot; : 16,
+			&quot;dii0&quot; : 8,
+			&quot;dmi0&quot; : 16,
+			&quot;dmi1&quot; : 16,
+			&quot;sys_dii&quot; : 8
+		},
+		&quot;ncaiu1&quot; : {
+            &quot;dce0&quot; : 16,
+			&quot;dce1&quot; : 16,
+			&quot;dii0&quot; : 8,
+			&quot;dmi0&quot; : 16,
+			&quot;dmi1&quot; : 16,
+			&quot;sys_dii&quot; : 8
+		},
+   },
+   &quot;EnableUpdtoDCE&quot; : 
+	{
+		&quot;ncaiu0&quot; : true,
+		&quot;ncaiu1&quot; : true
+	},
+	&quot;DmiQosThValMap&quot; : 
+	{
+		&quot;dmi0&quot; : 8,
+        &quot;dmi0&quot; : 8
+	},
+	&quot;nDmiRttQoSRsvMap&quot; : 
+	{
+		&quot;dmi0&quot; : 8,
+		&quot;dmi0&quot; : 8
+	},
+	&quot;nDmiWttQoSRsvMap&quot; : 
+	{
+		&quot;dmi0&quot; : 8,
+		&quot;dmi0&quot; : 8
+	},
+	&quot;qosEventThreshold&quot; : 
+	{
+		&quot;dmi0&quot; : 16,
+		&quot;dmi0&quot; : 16
+	}
+}</pre>
+</div></div>

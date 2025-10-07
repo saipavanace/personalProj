@@ -1,0 +1,384 @@
+[
+  {
+    "name": "xEVTXCR",
+    "fields": [
+      {
+        "name": "Enable",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 to this bit enables this system event sender."
+      }
+    ]
+  },
+  {
+    "name": "xEVRXCR",
+    "fields": [
+      {
+        "name": "Enable",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 to this bit enables this system event receiver."
+      }
+    ]
+  },
+
+  {
+    "name": "xEVTXSR",
+    "fields": [
+      {
+        "name": "FUnitId",
+        "bitOffset": 0,
+        "bitWidth": "16",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates the FUnitId in the received system event response has error; this field is valid when ErrVld is set."
+      },
+      {
+        "name": "SysErr",
+        "bitOffset": 28,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this system error valid bit. When this bit is set, it indicates this system event sender has detected an system error."
+      },
+      {
+        "name": "ProtocolTimeoutErr",
+        "bitOffset": 29,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this protocol timeout valid bit. When this bit is set, it indicates this system event sender has detected an protocol timeout."
+      },
+      {
+        "name": "EventTimeoutErr",
+        "bitOffset": 30,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this event timeout valid bit. When this bit is set, it indicates this system event sender has detected an event timeout."
+      },
+      {
+        "name": "ErrVld",
+        "bitOffset": 31,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this error valid bit. When this erorr valid bit is set, it indicates this system event sender has detected an error."
+      }
+    ]
+  },
+  {
+    "name": "xEVRXSR",
+    "fields": [
+      {
+        "name": "FUnitId",
+        "bitOffset": 0,
+        "bitWidth": "16",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates the FUnitId in the received system event message has error; this field is valid when ErrVld is set."
+      },
+      {
+        "name": "EventTimeoutErr",
+        "bitOffset": 30,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this event timeout valid bit. When this bit is set, it indicates this system event receiver has detected an event timeout."
+      },
+      {
+        "name": "ErrVld",
+        "bitOffset": 31,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this error valid bit. When this erorr valid bit is set, it indicates this system event receiver has detected an error."
+      }
+    ]
+  },
+  {
+    "name": "xCORXSR",
+    "fields": [
+      {
+        "name": "FUnitId",
+        "bitOffset": 0,
+        "bitWidth": "16",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates the FUnitId in the received system coherency message that has error; this field is valid when ErrVld is set."
+      },
+      {
+        "name": "ErrVld",
+        "bitOffset": 31,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this error valid bit. When this erorr valid bit is set, it indicates this system coherency receiver has detected an error."
+      }
+    ]
+  },
+  {
+    "name": "xCOTXSR",
+    "fields": [
+      {
+        "name": "FUnitId",
+        "bitOffset": 0,
+        "bitWidth": "16",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates the FUnitId in the received system coherency response has error; this field is valid when ErrVld is set."
+      },
+      {
+        "name": "SysErr",
+        "bitOffset": 28,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this system error valid bit. When this bit is set, it indicates this system event sender has detected an system error."
+      },
+      {
+        "name": "ProtocolTimeoutErr",
+        "bitOffset": 29,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this protocol timeout valid bit. When this bit is set, it indicates this system event sender has detected an protocol timeout."
+      },
+      {
+        "name": "ErrVld",
+        "bitOffset": 31,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 clears this error valid bit. When this erorr valid bit is set, it indicates this system coherency sender has detected an error."
+      }
+    ]
+  },
+
+  {
+    "name": "xPTOR",
+    "fields": [
+      {
+        "name": "ProtocolTimeOutThreshold",
+        "bitOffset": 0,
+        "bitWidth": "20",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Protocol time out threshold for System messaging; counts in increments of 1 clock cycles; a value of 0 indicates the timer is disabled."
+      }
+    ]
+  },
+  {
+    "name": "xETOR",
+    "fields": [
+      {
+        "name": "EventTimeOutThreshold",
+        "bitOffset": 0,
+        "bitWidth": "8",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Event time out threshold for System messaging; counts in increments of 1 clock cycle; a value of 0 indicates the timer is disabled."
+      }
+    ]
+  },
+
+  {
+    "name": "xCOCSR",
+    "fields": [
+      {
+        "name": "Activate",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Writing 1 to this bit activates system coherency (SysCo assertion). Writing 0 to this bit deactivates system coherency (SysCo deassertion)."
+      },
+      {
+        "name": "Connecting",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "A value of 1 indicates CONNECTING to system coherency."
+      },
+      {
+        "name": "Attached",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "A value of 1 indicates the system coherency is ATTACHED, otherwise DETACHED."
+      },
+      {
+        "name": "ErrDetected",
+        "bitOffset": 3,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "A value of 1 indicates error is detected. Writing 1 clears this bit."
+      }
+    ]
+  },
+
+  {
+    "name": "xSER0",
+    "fields": [
+      {
+        "name": "SnoopEnb",
+        "bitOffset": 0,
+        "bitWidth": "return ((derived.nAius < 32) ? (derived.nAius - 0) : 32)",
+        "access": "RW",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Snoop Enable bits for snoop agents 0..31. If a bit is set for an agent, snoop messages are enabled for that agent; otherwise, disabled."
+      }
+    ]
+  },
+  {
+    "name": "xSER1",
+    "fields": [
+      {
+        "name": "SnoopEnb",
+        "bitOffset": 0,
+        "bitWidth": "return ((derived.nAius < 64) ? (derived.nAius - 32) : 32)",
+        "access": "RW",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Snoop Enable bits for snoop agents 32..63. If a bit is set for an agent, snoop messages are enabled for that agent; otherwise, disabled."
+      }
+    ]
+  },
+  {
+    "name": "xSER2",
+    "fields": [
+      {
+        "name": "SnoopEnb",
+        "bitOffset": 0,
+        "bitWidth": "return ((derived.nAius < 96) ? (derived.nAius - 64) : 32)",
+        "access": "RW",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Snoop Enable bits for snoop agents 64..95. If a bit is set for an agent, snoop messages are enabled for that agent; otherwise, disabled."
+      }
+    ]
+  },
+  {
+    "name": "xSER3",
+    "fields": [
+      {
+        "name": "SnoopEnb",
+        "bitOffset": 0,
+        "bitWidth": "return ((derived.nAius < 128) ? (derived.nAius - 96) : 32)",
+        "access": "RW",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Snoop Enable bits for snoop agents 96..127. If a bit is set for an agent, snoop messages are enabled for that agent; otherwise, disabled."
+      }
+    ]
+  }
+
+]

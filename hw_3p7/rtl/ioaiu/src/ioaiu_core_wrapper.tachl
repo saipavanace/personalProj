@@ -1,0 +1,1279 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2022
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.4
+// Author : Eric Taylor
+// Date   : Feb 2022
+//
+// Description : IOAIU core wrapper.
+//
+//////////////////////////////////////////////////////////////////////////
+//
+var u = obj.lib;
+var m = obj.userLib;
+var utilFunctions = obj.userLib;
+var bundleFunctions			= m.bundleFunctions;
+var cloneDeep = utilFunctions.deepCopy; // Boon function
+var log2ceil           = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var assertOn = u.getParam('assertOn');
+var newToOldStyleInterface	= m.newToOldStyleInterface.bind( null, obj.userLib );
+var flattenInterface		= m.flattenInterface;
+var wTotalSmiPortsNum       = obj.lib.getParam('wTotalSmiPortsNum');
+
+// Function that returns wire declarations of an old-style interface (with properties 'name' and 'signals')
+/* istanbul ignore next */
+function declareOldStyleInterface ( oldStyleInterface ) {
+	return bundleFunctions.wiresFromInterface(oldStyleInterface.name, oldStyleInterface.signals, [], obj.lib.bundle);
+}
+
+
+// Function that returns wire declarations of a new-style interface
+/* istanbul ignore next */
+function declareNewStyleInterface ( newStyleInterface ) {
+	const oldStyleInterface		= newToOldStyleInterface( newStyleInterface );
+	const flatOldInterface		= flattenInterface ( oldStyleInterface );
+	return declareOldStyleInterface( flatOldInterface );
+}
+
+var enPoison = u.getParam('enPoison');
+var checkType = u.getParam('checkType');
+var haveMasterTriggerInterface = u.getParam('haveMasterTriggerInterface');
+var useSharerPromotion = u.getParam('useSharerPromotion');
+var useOwnerTransfer = u.getParam('useOwnerTransfer');
+var useNoAXIDinterleave = u.getParam('useNoAXIDinterleave');
+var fnDisableRdInterleave = u.getParam('fnDisableRdInterleave');
+var useConnectivity = u.getParam('useConnectivity');
+var useSoftwareCreditManagement = u.getParam('useSoftwareCreditManagement');
+var isCachingAgent = u.getParam('isCachingAgent');
+var isDvmAgent = u.getParam('isDvmAgent');
+var cfgACE = u.getParam('cfgACE');
+var useSysReqReceiver = u.getParam('useSysReqReceiver');
+var useSysReqSender   = u.getParam('useSysReqSender');
+var useSysCohSender   = u.getParam('useSysCohSender');
+var useSysCohReceiver = u.getParam('useSysCohReceiver');
+var traceDebugEnable = u.getParam('traceDebugEnable');
+var enSRAMPipe = u.getParam('enSRAMPipe');
+var nProcs = u.getParam('nProcs');
+var nSelectBits = u.getParam('nSelectBits');
+var LIDW = u.getParam('LIDW');
+var CGE = u.getParam('CGE');
+var PRIS = u.getParam('PRIS');
+var SECS = u.getParam('SECS');
+var ODEE = u.getParam('ODEE');
+var ODEW = u.getParam('ODEW');
+var QMAP = u.getParam('QMAP');
+var P0E = u.getParam('P0E');
+var DRST = u.getParam('DRST');
+var XO = u.getParam('XO');
+var CTW = u.getParam('CTW');
+var eStarve = u.getParam('eStarve');
+var COH_MSI = u.getParam('COH_MSI');
+var COH_MOESI = u.getParam('COH_MOESI');
+var QOSN = u.getParam('QOSN');
+var CTKM = u.getParam('CTKM');
+var MTKM = u.getParam('MTKM');
+var ITKM = u.getParam('ITKM');
+var VTKM = u.getParam('VTKM');
+var CTKS = u.getParam('CTKS');
+var MTKS = u.getParam('MTKS');
+var ITKS = u.getParam('ITKS');
+var VTKS = u.getParam('VTKS');
+var CWKS = u.getParam('CWKS');
+var MWKS = u.getParam('MWKS');
+var IWKS = u.getParam('IWKS');
+var VWKS = u.getParam('VWKS');
+var owo  = u.getParam('owo');
+var halfSpeedOD  = u.getParam('halfSpeedOD');
+
+var nNonDataNetworks = u.getParam('nNonDataNetworks');
+var nDataNetworks = u.getParam('nDataNetworks');
+
+// Params for the event handling
+if (useSysCohSender && isCachingAgent) {
+var dceIdInterface         = u.getParam('dceIdInterface');
+var dceIdInterfaceName     = u.getParam('dceIdInterfaceName');
+}
+if (useSysCohSender && isDvmAgent) {
+var dveIdInterface         = u.getParam('dveIdInterface');
+var dveIdInterfaceName     = u.getParam('dveIdInterfaceName');
+}
+var concParams       	   = u.getParam('concParams');
+var CONC_INTF 	           = u.getParam('CONC_INTF');
+var cm_type    		   = u.getParam('cm_type');
+var PIDW                   = u.getParam('PIDW');
+var NIDW                   = u.getParam('NIDW');
+var NRRW                   = u.getParam('NRRW');
+var RPNW                   = u.getParam('RPNW');
+var FIDW                   = u.getParam('FIDW');
+var wMsgId     		   = u.getParam('wMsgId');
+var nAiuConnectedDces      = u.getParam('nAiuConnectedDces');
+var nDCEs      		   = u.getParam('nDCEs');
+var nDMIs      		   = u.getParam('nDMIs');
+var nDIIs      		   = u.getParam('nDIIs');
+var nDVEs              	   = u.getParam('nDVEs');
+
+var noCacheLineInterleave  = u.getParam('noCacheLineInterleave');
+var useCache               = u.getParam('useCache');
+var CLO                    = u.getParam('CLO');
+var AxIdProcSelectBits     = u.getParam('AxIdProcSelectBits');
+var ODB                    = u.getParam('ODB');
+var ODN                    = u.getParam('ODN');
+var useNsx                 = u.getParam('useNsx');
+
+var pphArray               = u.getParam('pphArray');
+var pphSynArray            = u.getParam('pphSynArray');
+
+var nCores                 = u.getParam('nCores');
+var enPoison               = u.getParam('enPoison');
+var aPrimaryBits           = u.getParam('aPrimaryBits');
+
+var interfaces      	   = u.getParam('interfaces');
+var pphInterfaceDir        = interfaces.userPlaceInt.direction;
+
+var useEventOutInt         = m.ParamDefaultGet(u, 'useEventOutInt', 'boolean', false);
+var useEventInInt	   = m.ParamDefaultGet(u, 'useEventInInt', 'boolean', false);
+
+var wEventTimeout 	   = 20; //must be the same as wProtocolTimeout
+var wProtocolTimeout 	   = 20;
+
+var masterTriggerInterfaceJson    = obj.lib.getParam('masterTriggerInterfaceJson');
+
+var eventRequestInInterfaceJson   = obj.lib.getParam('eventRequestInInterfaceJson');
+
+var eventRequestOutInterfaceJson  = obj.lib.getParam('eventRequestOutInterfaceJson');
+
+/* istanbul ignore if */
+if (usePma) {
+// Q-Channel Interface
+var qcParams = interfaces.qInt.params;
+var qcInterfaceName = interfaces.qInt.name;
+var qcInterfaceDir = interfaces.qInt.direction;
+var interfaceFunc = new obj.userLib[interfaces.qInt.interface];
+var qcInterfaceBundle = interfaceFunc.getSignalsBundle(qcParams);
+var qcInterface = interfaceFunc.getSignals(qcParams);
+}
+
+// Other params
+var ODDW = u.getParam('ODDW');
+var ODAW = u.getParam('ODAW');
+var ODDRW = u.getParam('ODDRW');
+var BWL = u.getParam('BWL');
+var ccpParamsArray = u.getParam('ccpParamsArray');
+var ccp_mnames = u.getParam('ccp_mnames');
+var ccp_mports = u.getParam('ccp_mports');
+var wrapper_ccp_tinterface  = u.getParam('wrapper_ccp_tinterface');
+var wrapper_ccp_rpinterface  = u.getParam('wrapper_ccp_rpinterface');
+var wrapper_ccp_dinterface  = u.getParam('wrapper_ccp_dinterface');
+var ccp_rp_en = u.getParam('ccp_rp_en');
+var sselParams = u.getParam('sselParams');
+var amapParams = u.getParam('amapParams');
+var amc_ports = u.getParam('amc_ports');
+var cm_ports = u.getParam('cm_ports');
+var err_ports = u.getParam('err_ports');
+var REGN = u.getParam('REGN');
+var nPerfCounters 	= u.getParam('nPerfCounters');
+var nTraceRegisters	= u.getParam('nTraceRegisters');
+var nUnitTraceBufSize	= u.getParam('nUnitTraceBufSize');
+var PIDW = u.getParam('PIDW');
+var FIDW = u.getParam('FIDW');
+var STN = u.getParam('STN');
+var STP = u.getParam('STP');
+var P0E = u.getParam('P0E');
+var OCN = u.getParam('OCN');
+var CSW = u.getParam('CSW');
+var CKB = u.getParam('CKB');
+var CTB = u.getParam('CTB');
+var wOCNpOne = log2ceil(OCN) + 1;
+var axiParams = u.getParam('axiParams');
+var pmaParams = u.getParam('pmaParams');
+var usePma = u.getParam('usePma');
+var QC_INTF = u.getParam('QC_INTF');
+var PPH_INTF = u.getParam('PPH_INTF');
+var CSR_INTF = u.getParam('CSR_INTF');
+var csrHwPorts = u.getParam('csrHwPorts');
+var RESI = u.getParam('RESI');
+var CSRS = u.getParam('CSRS');
+var clkInterface = u.getParam('clkInterface');
+var clkInterfaceParams = u.getParam('clkInterfaceParams');
+var blkClkGateOn = u.getParam('blkClkGateOn');
+var extraCSRWireBundle = u.getParam('extraCSRWireBundle');
+var axiInterfaceBundle = u.getParam('axiInterfaceBundle');
+var axiInterfaceBundleNoChk = u.getParam('axiInterfaceBundleNoChk');
+var pphInterfaceBundle = u.getParam('pphInterfaceBundle');
+var pphInterfaceName = u.getParam('pphInterfaceName');
+var pphInterfaceBundleSyn = u.getParam('pphInterfaceBundleSyn');
+var qcInterfaceBundle = u.getParam('qcInterfaceBundle');
+//var nativeInterfaceBundle = u.getParam('nativeInterfaceBundle');
+var odInterfaceBundle = u.getParam('odInterfaceBundle');
+var uIdNameArray = u.getParam('uIdNameArray');
+var uIdInterfaceBundle = u.getParam('uIdInterfaceBundle');
+var CMP = u.getParam('CMP');
+var smiTxParams = u.getParam('smiTxParams');
+var smiRxParams = u.getParam('smiRxParams');
+var SMI_TX_INTF = u.getParam('SMI_TX_INTF');
+var SMI_RX_INTF = u.getParam('SMI_RX_INTF');
+var CONC_TX_INTF = u.getParam('CONC_TX_INTF');
+var CONC_RX_INTF = u.getParam('CONC_RX_INTF');
+var CONCERTO_MUX_INTF = u.getParam('CONCERTO_MUX_INTF');
+
+// that is used to specify how local interfaces are mapped to module interfaces of an instance
+/* istanbul ignore next */
+function getModuleLocalPrefixAndInterface (intrface) {
+	const modulePrefix		= intrface.name;
+	const localPrefix		= intrface.name;
+	return { modulePrefix, localPrefix, "interface": intrface.signals };
+}
+
+//=============================================================================
+// Create DTW Trace Interfaces
+//=============================================================================
+
+index                  = CONC_TX_INTF.findIndex(function(element) {return element.name === 'dtw_req_'; });
+var DTWReqInterface    = CONC_TX_INTF[index].signals;
+
+index                  = CONC_RX_INTF.findIndex(function(element) {return element.name === 'dtw_rsp_'; });
+var DTWRspInterface    = CONC_RX_INTF[index].signals;
+
+var index = CONC_RX_INTF.findIndex(function(element) {return element.name === 'dtw_dbg_rsp_'; });
+
+// If the DTW Trace Channel Exists.
+var trace_defined = (index != -1);
+
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (trace_defined){ 
+  var DTWDbgRspInterface    = CONC_RX_INTF[index].signals;
+  
+  index                     = CONC_TX_INTF.findIndex(function(element) {return element.name === 'dtw_dbg_req_'; });
+  var DTWDbgReqInterface    = CONC_TX_INTF[index].signals;
+} else {
+  index                     = CONC_TX_INTF.findIndex(function(element) {return element.name === 'dtw_req_'; });
+  var DTWDbgReqInterface    = CONC_TX_INTF[index].signals;
+
+  index                     = CONC_RX_INTF.findIndex(function(element) {return element.name === 'dtw_rsp_'; });
+  var DTWDbgRspInterface    = CONC_RX_INTF[index].signals;
+}
+
+//=============================================================================
+// Master Trigger Interface
+//=============================================================================
+/* istanbul ignore next env ncore_3p0,ncore_3p2, ncore_3p4,ncore_3p6,ncore_3p7 */
+if( haveMasterTriggerInterface) {
+  var masterTriggerInterface      = newToOldStyleInterface( masterTriggerInterfaceJson );
+  //obj.lib.interface( masterTriggerInterface.name, 'slave', masterTriggerInterface.signals);
+}
+
+//=============================================================================
+//EventRequestInterface
+//=============================================================================
+if( useEventOutInt ) {
+  var eventRequestInInterface      = newToOldStyleInterface( eventRequestInInterfaceJson );
+  //obj.lib.interface( eventRequestInInterface.name, 'slave', eventRequestInInterface.signals);
+}
+
+if (useSysReqReceiver && useEventInInt) {
+  var eventRequestOutInterface      = newToOldStyleInterface( eventRequestOutInterfaceJson);
+  //obj.lib.interface( eventRequestOutInterface.name, 'master', eventRequestOutInterface.signals);
+}
+
+
+//=============================================================================
+// Create Event Table for PMON
+//=============================================================================
+
+
+const smiTxStallEvents          = SMI_TX_INTF.map( m.genSmiStallEvent ); // Returns an array with { expr, width } objects one for each interface in SMI_TX_INTF array
+const smiRxStallEvents          = SMI_RX_INTF.map( m.genSmiStallEvent ); // Returns an array with { expr, width } objects one for each interface in SMI_RX_INTF array
+
+
+//=============================================================================
+// Trace CSR Interface
+//=============================================================================
+
+const traceCaptureRegisters		    = m.genTraceCaptureRegisters(CSRS.spaceBlock[0].registers, "XAIU");
+const traceCaptureCsrIfGenerator   	    = m.createCSRInterfaceGenerator( traceCaptureRegisters );
+
+// Define interfaces for Trace blocks and create wires that connect them
+const traceTriggerRegisters		= m.genTraceTriggerRegisters(CSRS.spaceBlock[0].registers, "XAIU", { nTraceRegisters });
+const traceTriggerCsrIfGenerator	= m.createCSRInterfaceGenerator( traceTriggerRegisters );
+const traceTrigCsrInterface	        = { name: "XAIU", signals: traceTriggerCsrIfGenerator.signalBundle("slave") };
+const nativeTrigger			= {
+	name: "native_trig_",
+	signals: {
+			trace: axiParams.eTrace ? 1 : 0,
+			addr: axiParams.wAddr,
+			dii_hit: 1,
+			dmi_hit: 1,
+			hui: 5,
+			size_of_ig: 4,
+			opcode: 15, // (AWBAR[0](1), AWDOMAIN(3), AWSNOOP(4))
+			aw: 1,
+			ar: 1,
+			memattr: 4,
+			user: axiParams.wAwUser ? 32 : 0
+	}
+};
+
+//=============================================================================
+// APB Demux Interfaces
+//=============================================================================
+
+var fullAddrMapSize = log2ceil(nCores * 4096); // Full size of the config-space address map in power of 2
+
+var apbInterface      = newToOldStyleInterface( interfaces.apbInt );  // Interface passed from top/maetro
+var wAddrApbFixed     = Math.max(fullAddrMapSize, interfaces.apbInt.params.wAddr);
+var modifiedApbParams = Object.assign({}, interfaces.apbInt.params, { wAddr: wAddrApbFixed });  // Modified interface params with address bus width fixed
+
+var modifiedApbInterfaceNewStyle = {                   // Modified interface with address bus width fixed
+	  name		: apbInterface.name+"fixed_",
+	  params	: modifiedApbParams,
+  	  direction	: interfaces.apbInt.direction,
+	  interface	: interfaces.apbInt.interface
+};
+var modifiedApbInterface        = newToOldStyleInterface( modifiedApbInterfaceNewStyle );
+
+var regionSizes                 = [];  // Size of each config-address region in powers of 2
+var coreApbSlaveInterfaces      = [];
+var coreApbInterfacesNewStyle   = [];
+
+for ( var core = 0; core < nCores; core++) {
+   var newStyleCoreApbInterface        = {
+	  name		: "apb_"+core+"_",
+	  params	: modifiedApbParams,
+  	  direction	: "master",
+	  "interface"  : interfaces.apbInt.interface
+   };
+   var oldStyleCoreApbInterface        = newToOldStyleInterface({
+	  name		: newStyleCoreApbInterface.name,
+	  params	: newStyleCoreApbInterface.params,
+  	  direction	: "slave",
+	  "interface"  : newStyleCoreApbInterface["interface"] 
+      
+   });
+
+   regionSizes.push( 12 );   // each core config space has a fixed size of 4K
+   coreApbSlaveInterfaces.push( oldStyleCoreApbInterface );
+   coreApbInterfacesNewStyle.push( newStyleCoreApbInterface );
+}
+
+var apbDemuxInterfaces		= {
+		clkInterface:					interfaces.clkInt,
+		apbInterfaces:					coreApbInterfacesNewStyle,  // Array of master APB interfaces
+		apbSlaveInterface:			    modifiedApbInterfaceNewStyle
+};
+
+// Create config-space address map
+var configAddrMap         = utilFunctions.createConfigAddressMap(fullAddrMapSize, regionSizes);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+	myid_i,
+	dce_ids_i,
+	dmi_ids_i,
+	dii_ids_i,
+	dve_ids_i,
+	external_i,
+	test_en_i,
+	clk,
+	reset_n,
+	\=useCache & ccpParamsArray[0].nBeatsPerBank > 1 ? "clkby2_en,":""=\
+
+        hexAiuDceVec,
+        hexAiuDmiVec,
+        hexAiuDiiVec,
+
+        bist_timeout_trigger,
+
+        hexAiuConnectedDceFunitId,
+
+\js for ( var core = 0; core < nCores; core++) {
+	\js for (var inner = 0; inner < wrapper_ccp_tinterface[core].length; inner++) {
+           \=obj.userLib.bundleFunctions.listFromInterface(wrapper_ccp_tinterface[core][inner].name , wrapper_ccp_tinterface[core][inner].signals, [], obj.lib.bundle, 1)=\
+        \js }
+        \js for (var inner = 0; inner < wrapper_ccp_rpinterface[core].length; inner++) {
+           \=obj.userLib.bundleFunctions.listFromInterface(wrapper_ccp_rpinterface[core][inner].name , wrapper_ccp_rpinterface[core][inner].signals, [], obj.lib.bundle, 1)=\
+        \js }
+        \js for (var inner = 0; inner < wrapper_ccp_dinterface[core].length; inner++) {
+           \=obj.userLib.bundleFunctions.listFromInterface(wrapper_ccp_dinterface[core][inner].name , wrapper_ccp_dinterface[core][inner].signals, [], obj.lib.bundle, 1)=\
+        \js }
+  
+	\=obj.userLib.bundleFunctions.listFromInterface('c'+core+'_', axiInterfaceBundle, [], obj.lib.bundle, -1)=\
+	\=obj.userLib.bundleFunctions.listFromInterface('c'+core+'_', odInterfaceBundle, [], obj.lib.bundle, -1)=\
+
+	\=obj.userLib.bundleFunctions.listFromInterface(uIdNameArray[core], uIdInterfaceBundle, [], obj.lib.bundle, -1)=\
+
+        \js if (RESI.enableNativeIntfProtection) {
+	    \=obj.userLib.bundleFunctions.listFromInterface(pphArray[core].name, pphSynArray[core].signals, [], obj.lib.bundle, -1)=\
+        \js} else {}
+\js }
+
+\js if (usePma) {
+	\=obj.userLib.bundleFunctions.listFromInterface('qc_', qcInterfaceBundle, [], obj.lib.bundle, -1)=\
+\js} else {
+	qc_REQn,
+\js}
+
+
+	\=obj.userLib.bundleFunctions.listFromInterface(apbInterface.name, apbInterface.signals, [], obj.lib.bundle, -1)=\
+
+	ioaiu_en_debug_bist,
+	trace_capture_busy,
+	pm_trace_messages_dropped,
+	pm_trace_messages_captured,
+	\=m.defineListPortsFromInterface('c0_XAIU', traceCaptureCsrIfGenerator.signalBundle('slave'), u.port)=\
+	\=m.defineListPortsFromInterface('dtw_dbg_req_', DTWDbgReqInterface, u.port)=\
+	\=m.defineListPortsFromInterface('dtw_dbg_rsp_', DTWDbgRspInterface, u.port)=\
+\js for (var i=0; i<SMI_TX_INTF.length; i++) {
+	\=m.defineListPortsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].signals, u.port)=\
+\js	if(SMI_TX_INTF[i].params.dpPresent) {
+	\=m.defineListPortsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].dpSignals, u.port)=\
+\js	}
+\js }
+\js for (var i=0; i<SMI_RX_INTF.length; i++) {
+	\=m.defineListPortsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].signals, u.port)=\
+\js	if(SMI_RX_INTF[i].params.dpPresent) {
+	\=m.defineListPortsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].dpSignals, u.port)=\
+\js	}
+\js }
+
+\jsbegin /* istanbul ignore next env ncore_3p0,ncore_3p2, ncore_3p4,ncore_3p6,ncore_3p7 */
+ if( haveMasterTriggerInterface) { \jsend
+	\=m.defineListPortsFromInterface(masterTriggerInterface.name, masterTriggerInterface.signals, u.port)=\
+\jsbegin }
+
+if( useEventOutInt ) { \jsend
+    \=m.defineListPortsFromInterface(eventRequestInInterface.name, eventRequestInInterface.signals, u.port)=\
+\jsbegin }
+
+if (useEventInInt) { \jsend
+    \=m.defineListPortsFromInterface(eventRequestOutInterface.name, eventRequestOutInterface.signals, u.port)=\
+\js } 
+
+
+	\=u.getPorts('\n\t')=\,
+	ufault_o, cfault_o,
+	threshold_o,
+	interrupt_o
+);
+
+input [\=concParams.hdrParams.wInitiatorId-1=\:0]	myid_i;
+input [\=nDCEs*FIDW-1=\:0]	dce_ids_i;
+input [\=nDMIs*FIDW-1=\:0]	dmi_ids_i;
+input [\=nDIIs*FIDW-1=\:0]	dii_ids_i;
+input [\=nDVEs*FIDW-1=\:0]	dve_ids_i;
+
+input			external_i;
+input			test_en_i;
+input			clk;
+input			reset_n;
+\jsbegin
+if (useCache & ccpParamsArray[0].nBeatsPerBank >1) {
+\jsend
+input clkby2_en;
+\jsbegin
+}
+\jsend
+input                   bist_timeout_trigger;
+
+input [\=nDCEs-1=\:0]            hexAiuDceVec;
+input [\=nDMIs-1=\:0]            hexAiuDmiVec;
+input [\=nDIIs-1=\:0]            hexAiuDiiVec;
+
+input [(\=nAiuConnectedDces*FIDW=\)-1:0]            hexAiuConnectedDceFunitId;
+
+\js for ( var core = 0; core < nCores; core++) {
+	\js for (var inner = 0; inner < wrapper_ccp_tinterface[core].length; inner++) {
+           \=obj.userLib.bundleFunctions.portsFromInterface(wrapper_ccp_tinterface[core][inner].name , wrapper_ccp_tinterface[core][inner].signals, [], obj.lib.bundle, 1)=\
+        \js }
+        \js for (var inner = 0; inner < wrapper_ccp_rpinterface[core].length; inner++) {
+           \=obj.userLib.bundleFunctions.portsFromInterface(wrapper_ccp_rpinterface[core][inner].name , wrapper_ccp_rpinterface[core][inner].signals, [], obj.lib.bundle, 1)=\
+        \js }
+        \js for (var inner = 0; inner < wrapper_ccp_dinterface[core].length; inner++) {
+           \=obj.userLib.bundleFunctions.portsFromInterface(wrapper_ccp_dinterface[core][inner].name , wrapper_ccp_dinterface[core][inner].signals, [], obj.lib.bundle, 1)=\
+        \js }
+
+        \js if (RESI.enableNativeIntfProtection) {
+           \=obj.userLib.bundleFunctions.portsFromInterface(pphArray[core].name, pphSynArray[core].signals, [], obj.lib.bundle, 1)=\
+        \js} else {}
+
+	\=obj.userLib.bundleFunctions.portsFromInterface('c'+core+'_', axiInterfaceBundle, [], obj.lib.bundle, -1)=\
+	\=obj.userLib.bundleFunctions.portsFromInterface('c'+core+'_', odInterfaceBundle, [], obj.lib.bundle, -1)=\
+
+	\=obj.userLib.bundleFunctions.portsFromInterface(uIdNameArray[core], uIdInterfaceBundle, [], obj.lib.bundle, -1)=\
+\js }
+
+\js if (usePma) {
+\=obj.userLib.bundleFunctions.portsFromInterface('qc_', qcInterfaceBundle, [], obj.lib.bundle, -1)=\
+\js} else {
+input			qc_REQn;
+\js}
+
+\=obj.userLib.bundleFunctions.portsFromInterface(apbInterface.name, apbInterface.signals, [], obj.lib.bundle, -1)=\
+
+\=ccp_mports=\
+input			ioaiu_en_debug_bist;
+input			trace_capture_busy;
+input   [\=wTotalSmiPortsNum-1=\:0] pm_trace_messages_dropped;
+input   [\=wTotalSmiPortsNum-1=\:0] pm_trace_messages_captured;
+\=m.bundleFunctions.portsFromInterface('c0_XAIU', traceCaptureCsrIfGenerator.signalBundle('slave'), [], u.bundle, 1)=\
+\=m.bundleFunctions.portsFromInterface('dtw_dbg_req_', DTWDbgReqInterface, [], u.bundle, -1)=\
+\=m.bundleFunctions.portsFromInterface('dtw_dbg_rsp_', DTWDbgRspInterface, [], u.bundle, 1)=\
+\js for (var i=0; i<SMI_TX_INTF.length; i++) {
+\=m.bundleFunctions.portsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].signals, [], u.bundle, 1)=\
+\js	if(SMI_TX_INTF[i].params.dpPresent) {
+\=m.bundleFunctions.portsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].dpSignals, [], u.bundle, 1)=\
+\js	}
+\js }
+\js for (var i=0; i<SMI_RX_INTF.length; i++) {
+\=m.bundleFunctions.portsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].signals, [], u.bundle, -1)=\
+/* istanbul ignore next env ncore_3p0,ncore_3p2, ncore_3p4,ncore_3p6,ncore_3p7 */
+\js	if(SMI_RX_INTF[i].params.dpPresent) {
+\=m.bundleFunctions.portsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].dpSignals, [], u.bundle, -1)=\
+\js	}
+\js }
+
+\jsbegin /* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7*/
+ if( haveMasterTriggerInterface) { \jsend
+\=m.bundleFunctions.portsFromInterface(masterTriggerInterface.name, masterTriggerInterface.signals,  [], u.bundle, -1)=\
+\jsbegin }
+
+if( useEventOutInt ) { \jsend
+    \=obj.userLib.bundleFunctions.portsFromInterface(eventRequestInInterface.name, eventRequestInInterface.signals, [], obj.lib.bundle, -1)=\
+\jsbegin }
+
+if (useEventInInt) { \jsend
+    \=obj.userLib.bundleFunctions.portsFromInterface(eventRequestOutInterface.name, eventRequestOutInterface.signals, [], obj.lib.bundle, 1)=\
+\js } 
+
+
+
+output [13:0]	ufault_o, cfault_o;
+output [7:0]	threshold_o;
+output [1:0]	interrupt_o;
+
+\jsbegin
+    for (var i=0; i<CONC_TX_INTF.length; i++) {
+      /* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7*/
+      if (CONC_TX_INTF[i].name != 'dtw_dbg_req_') {
+        for(var core = 0; core < nCores; core++) {
+\jsend
+          \=m.bundleFunctions.wiresFromInterface('c'+core+'_'+CONC_TX_INTF[i].name, CONC_TX_INTF[i].signals, [], obj.lib.bundle)=\
+\jsbegin    
+        }
+      } else {
+          /* istanbul ignore if env ncore_3p4,ncore_3p6,ncore_3p7*/
+          if (CONC_TX_INTF[i].name != 'dtw_dbg_req_') {
+\jsend
+            \=m.bundleFunctions.wiresFromInterface(CONC_TX_INTF[i].name, CONC_TX_INTF[i].signals, [], obj.lib.bundle)=\
+\js       }
+\js   }
+
+\=m.bundleFunctions.wiresFromInterface(CONC_TX_INTF[i].name+'rrmux_', CONC_TX_INTF[i].signals, [], obj.lib.bundle)=\
+\js };
+
+\jsbegin
+    for (let i=0; i<CONC_RX_INTF.length; i++) {
+      /* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7*/
+      if (CONC_RX_INTF[i].name != 'dtw_dbg_rsp_') {
+        for(var core = 0; core < nCores; core++) {
+\jsend
+          \=m.bundleFunctions.wiresFromInterface('c'+core+'_'+CONC_RX_INTF[i].name, CONC_RX_INTF[i].signals, [], obj.lib.bundle)=\
+\js     }
+\js   } else { 
+\js         /* istanbul ignore if env ncore_3p4,ncore_3p6,ncore_3p7 */
+\js         if (CONC_RX_INTF[i].name != 'dtw_dbg_rsp_') {
+           \=m.bundleFunctions.wiresFromInterface(CONC_RX_INTF[i].name, CONC_RX_INTF[i].signals, [], obj.lib.bundle)=\
+\js     }
+\js }
+
+\=m.bundleFunctions.wiresFromInterface(CONC_RX_INTF[i].name+'rrmux_', CONC_RX_INTF[i].signals, [], obj.lib.bundle)=\
+\js };
+
+wire		cmd_rsp_CE, cmd_rsp_header_UCE, cmd_rsp_message_UCE;
+wire		dtr_rsp_rx_CE, dtr_rsp_rx_header_UCE, dtr_rsp_rx_message_UCE;
+wire		dtw_rsp_CE, dtw_rsp_header_UCE, dtw_rsp_message_UCE;
+wire		upd_rsp_CE, upd_rsp_header_UCE, upd_rsp_message_UCE;
+wire		str_req_CE, str_req_header_UCE, str_req_message_UCE;
+wire		dtr_req_rx_CE, dtr_req_rx_header_UCE, dtr_req_rx_message_UCE,
+						      dtr_req_rx_data_UCE;
+wire		snp_req_CE, snp_req_header_UCE, snp_req_message_UCE;
+wire            dtw_dbg_rsp_CE,dtw_dbg_rsp_header_UCE, dtw_dbg_rsp_message_UCE;
+wire            sys_req_rx_CE,sys_req_rx_header_UCE, sys_req_rx_message_UCE;
+wire            sys_rsp_rx_CE,sys_rsp_rx_header_UCE, sys_rsp_rx_message_UCE;
+wire            cmp_rsp_CE,cmp_rsp_header_UCE, cmp_rsp_message_UCE;
+
+wire                  top_pma_busy;
+wire [\=nCores=\-1:0] block_busy;
+wire                  w_cm_busy;
+
+\js for ( var core = 0; core < nCores; core++ ){
+wire [13:0]		c\=core=\_ufault_o;
+wire [13:0]		c\=core=\_cfault_o;
+wire [7:0]		c\=core=\_threshold_o;
+wire [1:0]		c\=core=\_interrupt_o;
+\js }
+
+\=m.bundleFunctions.wiresFromInterface(modifiedApbInterface.name, modifiedApbInterface.signals, [], obj.lib.bundle)=\
+
+wire [13:0] ufault_o_and = {14{1'b1}}
+\js for ( var core = 0; core < nCores; core++ ){
+	& c\=core=\_ufault_o
+\js }
+;
+
+wire [13:0] ufault_o_or = 14'b0
+\js for ( var core = 0; core < nCores; core++ ){
+	| c\=core=\_ufault_o
+\js }
+;
+
+// During the timeout test all units must timeout at the same time.
+assign ufault_o = (bist_timeout_trigger) ? (ufault_o_and & ufault_o_or) : ufault_o_or;
+
+assign cfault_o = 14'b0
+\js for ( var core = 0; core < nCores; core++ ){
+	| c\=core=\_cfault_o
+\js }
+;
+
+assign threshold_o = 8'b0 // Only use Core 0 Threshold Value
+\js for ( var core = 0; core < 1; core++ ){
+	| c\=core=\_threshold_o
+\js }
+;
+
+assign interrupt_o = 2'b0
+\js for ( var core = 0; core < nCores; core++ ){
+	| c\=core=\_interrupt_o
+\js }
+;
+
+\js for ( var core = 0; core < nCores; core++ ){
+\=obj.userLib.bundleFunctions.wiresFromInterface(coreApbSlaveInterfaces[core].name, coreApbSlaveInterfaces[core].signals, [], obj.lib.bundle)=\
+\js }
+
+\js for ( var core = 1; core < nCores; core++ ){
+\js //Do not print wires for c0, they are ports from/to trace_capture
+\=obj.userLib.bundleFunctions.wiresFromInterface('c'+core+'_XAIU',traceCaptureCsrIfGenerator.signalBundle('slave'), [], u.bundle)=\
+
+  \jsbegin 
+  /* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7*/
+  if ( core != 0 ) {
+  \jsend
+    assign c\=core=\_XAIUCCTRLR_inc_in = 12'h0;
+    assign c\=core=\_XAIUCCTRLR_inc_wr = 1'h0;  
+  \js }
+\js }
+
+\jsbegin
+var RRMUX_INTF = [];
+
+var requestInterfaces = [];
+var responseInterfaces = [];
+
+for (var i=0; i<CONC_TX_INTF.length; i++) {
+  var nInterfaces = (CONC_TX_INTF[i].name == 'dtw_dbg_req_') ? 1 : nCores;
+
+  if (CONC_TX_INTF[i].name != 'dtw_dbg_req_') {
+    // RR MUX Parameters and Interfaces
+    for ( var intf = 0; intf < nInterfaces; intf++) {
+       RRMUX_INTF.push({modulePrefix: 'in_req_'+intf+'_'+CONC_TX_INTF[i].name,
+		  localPrefix: 'c'+intf+'_'+CONC_TX_INTF[i].name,
+		  interface: CONC_TX_INTF[i].signals});
+    }
+  } else {
+       RRMUX_INTF.push({modulePrefix: 'in_req_0_'+CONC_TX_INTF[i].name,
+		  localPrefix: CONC_TX_INTF[i].name,
+		  interface: CONC_TX_INTF[i].signals});  
+  }
+  
+  RRMUX_INTF.push({modulePrefix: 'out_req_'+CONC_TX_INTF[i].name,
+		  localPrefix: CONC_TX_INTF[i].name+'rrmux_',
+		  interface: CONC_TX_INTF[i].signals});
+		  
+  requestInterfaces.push(
+                         {
+			    "name" : CONC_TX_INTF[i].name,
+			    "signals" : CONC_TX_INTF[i].signals,
+			    "hasLast" : (CONC_TX_INTF[i].signals.last != 0 && CONC_TX_INTF[i].signals.last != undefined),
+			    "numInterfaces" : nInterfaces,
+			    "selectionMap" : (nCores == 1) ? "" : "message_id"
+			 }
+			);
+};
+
+for (let i=0; i<CONC_RX_INTF.length; i++) {
+  var nInterfaces = (CONC_RX_INTF[i].name == 'dtw_dbg_rsp_') ? 1 : nCores;
+
+  if (CONC_RX_INTF[i].name != 'dtw_dbg_rsp_') {
+    for ( var intf = 0; intf < nInterfaces; intf++) {
+      // RR MUX Parameters and Interfaces
+      RRMUX_INTF.push({modulePrefix: 'out_rsp_'+intf+'_'+CONC_RX_INTF[i].name,
+		  localPrefix: 'c'+intf+'_'+CONC_RX_INTF[i].name,
+		  interface: CONC_RX_INTF[i].signals});
+    }
+  } else {
+      RRMUX_INTF.push({modulePrefix: 'out_rsp_0_'+CONC_RX_INTF[i].name,
+		  localPrefix: CONC_RX_INTF[i].name,
+		  interface: CONC_RX_INTF[i].signals});  
+  }
+  
+  RRMUX_INTF.push({modulePrefix: 'in_rsp_'+CONC_RX_INTF[i].name,
+		  localPrefix: CONC_RX_INTF[i].name+'rrmux_',
+		  interface: CONC_RX_INTF[i].signals});
+
+  var is_snpReq = (CONC_RX_INTF[i].name == 'snp_req_');
+
+  var top_bit = 0;
+
+  if (nCores > 1) {
+    top_bit = Math.abs(CONC_RX_INTF[i].signals.r_message_id)-1;
+
+    var addressArray = [];
+
+    for ( var bit = aPrimaryBits.length-1; bit >= 0; bit--) {
+       addressArray.push("addr["+aPrimaryBits[bit]+"]");
+    }
+
+  }
+
+  var low_bit = top_bit - log2ceil(nCores)+1;
+  
+  responseInterfaces.push(
+                         {
+			    "name" : CONC_RX_INTF[i].name,
+			    "signals" : CONC_RX_INTF[i].signals,
+			    "hasLast" : (CONC_RX_INTF[i].signals.last > 1),
+			    "numInterfaces" : nInterfaces,
+			    "selectionMap" : (nCores == 1) ? "" : (is_snpReq) ? "" : "r_message_id",
+			    "demuxSignal" : (nCores == 1) ? "" : (is_snpReq) ? addressArray : "r_message_id["+top_bit+":"+low_bit+"]"
+			 }
+			);			
+};
+
+// ===================================================================
+// Core Loop Instances
+// ===================================================================
+
+for ( var core = 0; core < nCores; core++) {
+
+// ===================================================================
+// Check that transactions go to right core
+
+if (nCores > 1) {
+  var addressArray = [];
+
+  for ( var bit = aPrimaryBits.length-1; bit >= 0; bit--) {
+       addressArray.push("addr["+aPrimaryBits[bit]+"]");
+  }
+
+  \jsend
+  \jsbegin /* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7 */
+   if (assertOn) { \jsend
+  `ifdef OVL_ASSERT_ON
+  // pragma synthesis_off
+  // synthesis_off
+  // coverage off
+
+  wire incorrect_read_addr\=core=\  = c\=core=\_ar_ready & c\=core=\_ar_valid & (
+  { 1'b0
+    \js for ( var bit = aPrimaryBits.length-1; bit >= 0; bit--) {
+       ,c\=core=\_ar_addr[\=aPrimaryBits[bit]=\] 
+    \js }
+  }
+  != \=core=\);
+
+  wire incorrect_write_addr\=core=\ = c\=core=\_aw_ready & c\=core=\_aw_valid & (
+  { 1'b0
+    \js for ( var bit = aPrimaryBits.length-1; bit >= 0; bit--) {
+       ,c\=core=\_aw_addr[\=aPrimaryBits[bit]=\]
+    \js }
+  }
+  != \=core=\);
+
+  assert_never #(0) assert_incorrect_read_addr_c\=core=\(
+        .clk            (clk),
+        .reset_n        (reset_n),
+        .test_expr      (incorrect_read_addr\=core=\)
+  );
+
+  assert_never #(0) assert_incorrect_write_addr_c\=core=\(
+        .clk            (clk),
+        .reset_n        (reset_n),
+        .test_expr      (incorrect_write_addr\=core=\)
+  );
+
+  // coverage on
+  // pragma synthesis_on
+  // synthesis_on
+  `endif
+  \js }
+  \jsbegin
+}
+
+  var CORE_INTF = [];
+
+/* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7*/
+if (haveMasterTriggerInterface) {
+    CORE_INTF.push({
+        modulePrefix: masterTriggerInterface.name,
+        localPrefix: masterTriggerInterface.name,
+        "interface": masterTriggerInterface.signals,
+        direction: "slave"
+    });
+}
+
+if( useEventOutInt) {
+    CORE_INTF.push({
+	modulePrefix: eventRequestInInterface.name+"in__",
+        localPrefix: eventRequestInInterface.name,
+        "interface": eventRequestInInterface.signals,
+        direction: "slave"
+    });
+}
+
+  for(var inner = 0; inner < wrapper_ccp_tinterface[core].length; inner++) {
+    CORE_INTF.push({modulePrefix: "tag_bank"+inner+"_", //wrapper_ccp_tinterface[core][inner].name,
+		    localPrefix: wrapper_ccp_tinterface[core][inner].name,
+		    interface: wrapper_ccp_tinterface[core][inner].signals });
+  }
+
+  for(var inner = 0; inner < wrapper_ccp_rpinterface[core].length; inner++) {
+    CORE_INTF.push({modulePrefix: "plru_bank"+inner+"_", //wrapper_ccp_rpinterface[core][inner].name,
+                    localPrefix: wrapper_ccp_rpinterface[core][inner].name,
+                    interface: wrapper_ccp_rpinterface[core][inner].signals });
+  }
+
+  for(var inner = 0; inner < wrapper_ccp_dinterface[core].length; inner++) {
+    CORE_INTF.push({modulePrefix: "data_bank"+inner+"_",//wrapper_ccp_dinterface[core][inner].name,
+		    localPrefix: wrapper_ccp_dinterface[core][inner].name,
+		    interface: wrapper_ccp_dinterface[core][inner].signals });
+  }
+				
+  for (var i=0; i<CONC_TX_INTF.length; i++) {
+    // CMUX Interfaces
+    if (CONC_TX_INTF[i].name != 'dtw_dbg_req_') {
+	CORE_INTF.push({modulePrefix: CONC_TX_INTF[i].name,
+				localPrefix: 'c'+core+'_'+CONC_TX_INTF[i].name,
+				interface: CONC_TX_INTF[i].signals});
+    }
+  };
+
+  for (let i=0; i<CONC_RX_INTF.length; i++) {		
+    // CMUX Interfaces
+    if (CONC_RX_INTF[i].name != 'dtw_dbg_rsp_') {
+	CORE_INTF.push({modulePrefix: CONC_RX_INTF[i].name,
+				localPrefix:'c'+core+'_'+CONC_RX_INTF[i].name,
+				interface: CONC_RX_INTF[i].signals});
+    }
+  };
+
+  if (useSysReqReceiver && useEventInInt) {
+       CORE_INTF.push({
+        modulePrefix: eventRequestOutInterface.name+'out__',
+        localPrefix: eventRequestOutInterface.name,
+        interface: eventRequestOutInterface.signals,
+        direction : "master"
+    });
+}
+  CORE_INTF.push({modulePrefix: 'apb_',
+		localPrefix: coreApbSlaveInterfaces[core].name,
+		interface: coreApbSlaveInterfaces[core].signals,
+		direction: "slave"
+  });
+
+  var CORE_PPH_INTF = JSON.parse(JSON.stringify(PPH_INTF));
+
+  if (RESI.enableNativeIntfProtection) {
+   CORE_INTF.push({modulePrefix: 'pph_',
+		localPrefix: pphArray[core].name,
+		interface: pphSynArray[core].signals,
+		direction: pphInterfaceDir});
+
+   CORE_PPH_INTF.push( {modulePrefix: '',
+	               localPrefix: 'pph_',
+	               interface: pphSynArray[core].signals,
+	               direction: "slave"}
+   );
+  }
+
+  CORE_INTF.push({
+    modulePrefix: 'XAIU',
+    localPrefix: 'c'+core+'_XAIU',
+    interface: traceCaptureCsrIfGenerator.signalBundle("slave")
+  });
+
+  CORE_INTF.push({
+    modulePrefix: 'ar_',
+    localPrefix: 'c'+core+'_ar_',
+    interface: axiInterfaceBundle["ar_"]
+  });
+  CORE_INTF.push({
+    modulePrefix: 'r_',
+    localPrefix: 'c'+core+'_r_',
+    interface: axiInterfaceBundle["r_"]
+  });
+  CORE_INTF.push({
+    modulePrefix: 'aw_',
+    localPrefix: 'c'+core+'_aw_',
+    interface: axiInterfaceBundle["aw_"]
+  });
+  CORE_INTF.push({
+    modulePrefix: 'w_',
+    localPrefix: 'c'+core+'_w_',
+    interface: axiInterfaceBundle["w_"]
+  });
+  CORE_INTF.push({
+    modulePrefix: 'b_',
+    localPrefix: 'c'+core+'_b_',
+    interface: axiInterfaceBundle["b_"]
+  });
+  CORE_INTF.push({
+    modulePrefix: 'ac_',
+    localPrefix: 'c'+core+'_ac_',
+    interface: axiInterfaceBundle["ac_"]
+  });
+  CORE_INTF.push({
+    modulePrefix: 'cr_',
+    localPrefix: 'c'+core+'_cr_',
+    interface: axiInterfaceBundle["cr_"]
+  });
+  CORE_INTF.push({
+    modulePrefix: 'cd_',
+    localPrefix: 'c'+core+'_cd_',
+    interface: axiInterfaceBundle["cd_"]
+  });
+
+  var core_ports = {
+	ufault_o:	'c'+core+'_ufault_o',
+	cfault_o:	'c'+core+'_cfault_o',
+	interrupt_o:	'c'+core+'_interrupt_o',
+	threshold_o:	'c'+core+'_threshold_o',
+	myid_i:		'myid_i',
+	fu_id_i:	uIdNameArray[core]+'my_f_unit_id',
+	nu_id_i:	uIdNameArray[core]+'my_n_unit_id',
+	rpn_id_i:	uIdNameArray[core]+'my_csr_rpn',
+	nrr_id_i:	uIdNameArray[core]+'my_csr_nrri',
+	dce_ids_i:	'dce_ids_i',
+	dmi_ids_i:	'dmi_ids_i',
+	dii_ids_i:	'dii_ids_i',
+	dve_ids_i:	'dve_ids_i',
+	external_i:	'external_i',
+	test_en_i:	'test_en_i',
+	clk:		'clk',
+	reset_n:	'reset_n',
+	ioaiu_en_debug_bist:	'ioaiu_en_debug_bist',
+        hexAiuDceVec:   'hexAiuDceVec',
+        hexAiuDmiVec:   'hexAiuDmiVec',
+        hexAiuDiiVec:   'hexAiuDiiVec',
+        hexAiuConnectedDceFunitId:   'hexAiuConnectedDceFunitId',
+        w_cm_busy:      'w_cm_busy',
+	pm_trace_messages_dropped  : 'pm_trace_messages_dropped',
+	pm_trace_messages_captured : 'pm_trace_messages_captured',
+
+	od_we_o:	'c'+core+'_w_od_we',
+	od_waddr_o:	'c'+core+'_w_od_waddr',
+	od_wdata_o:	'c'+core+'_w_od_wdata',
+	od_wecc_o:	'c'+core+'_w_od_wecc',
+	od_re_o:	'c'+core+'_w_od_re',
+	od_raddr_o:	'c'+core+'_w_od_raddr',
+	od_rdata_i:	'c'+core+'_w_od_rdata',
+	od_recc_i:	'c'+core+'_w_od_recc',
+
+        pma_busy:       'block_busy['+core+']',
+	
+	bist_timeout_trigger: 'bist_timeout_trigger',
+
+        smi_tx_event_0: smiTxStallEvents[0].expr,
+        smi_tx_event_1: smiTxStallEvents[1].expr,        
+        smi_tx_event_2: smiTxStallEvents[2].expr,
+
+        smi_rx_event_0: smiRxStallEvents[0].expr,
+        smi_rx_event_1: smiRxStallEvents[1].expr,
+        smi_rx_event_2: smiRxStallEvents[2].expr
+  };
+
+  var dtw_dbg_ports = {};
+  if (useCache & ccpParamsArray[0].nBeatsPerBank > 1) {
+	core_ports["clkby2_en"] = "clkby2_en";
+}
+  if ( (core == 0) & traceDebugEnable) {
+     dtw_dbg_ports = {
+         dtw_dbg_rsp_valid :        "dtw_dbg_rsp_valid",
+	 dtw_dbg_rsp_ready :        "dtw_dbg_rsp_ready",
+	 dtw_dbg_rsp_target_id :    "dtw_dbg_rsp_target_id",
+	 dtw_dbg_rsp_initiator_id : "dtw_dbg_rsp_initiator_id"
+     };
+  } else {
+     dtw_dbg_ports = {
+         dtw_dbg_rsp_valid :        "1'b0",
+	 dtw_dbg_rsp_ready :        "1'b0",
+	 dtw_dbg_rsp_target_id :    "{"+concParams.hdrParams.wTargetId+"{1'b0}}",
+	 dtw_dbg_rsp_initiator_id : "{"+concParams.hdrParams.wInitiatorId+"{1'b0}}"
+     };  
+  }
+
+  core_ports = Object.assign(core_ports, err_ports);
+  core_ports = Object.assign(core_ports, dtw_dbg_ports);
+
+  if (nCores > 1) {
+      core_ports['multiCoreValid'] = "1'b1"
+      core_ports['multiCoreId'] = "2'd" + core            
+  } else {
+      core_ports['multiCoreValid'] = "1'b0"
+      core_ports['multiCoreId'] = "2'd0"      
+  }
+
+    var core_tparams = {
+        halfSpeedOD : halfSpeedOD,
+        owo : owo,
+        COH_MSI : COH_MSI,
+        COH_MOESI : COH_MOESI,
+        nSelectBits : nSelectBits,
+        CGE : CGE,
+        LIDW : LIDW,
+        PRIS : PRIS,
+        SECS : SECS,
+        ODEE : ODEE,
+        ODEW : ODEW,
+        QMAP : QMAP,
+        P0E : P0E,
+        DRST : DRST,
+        XO : XO,
+        CTW : CTW,
+        eStarve : eStarve,
+        QOSN : QOSN,
+        nProcs : nProcs,
+        enPoison : enPoison,
+        enSRAMPipe : enSRAMPipe,
+        useCache : useCache,
+        CLO : CLO,
+        AxIdProcSelectBits : AxIdProcSelectBits,
+        ODB : ODB,
+        ODN : ODN,
+        enPoison : enPoison,
+        checkType : checkType,
+        noCacheLineInterleave : noCacheLineInterleave,
+        useNsx : useNsx,
+        useConnectivity : useConnectivity,
+        useSoftwareCreditManagement : useSoftwareCreditManagement,	
+        useNoAXIDinterleave : useNoAXIDinterleave,
+        useSharerPromotion : useSharerPromotion,
+	useOwnerTransfer : useOwnerTransfer,
+	fnDisableRdInterleave : fnDisableRdInterleave,
+        err_ports : err_ports,
+        extraCSRWireBundle : extraCSRWireBundle,
+        ccp_tinterface : wrapper_ccp_tinterface[core],
+        ccp_rpinterface : wrapper_ccp_rpinterface[core],
+        ccp_dinterface : wrapper_ccp_dinterface[core],
+        isCachingAgent: isCachingAgent,
+        isDvmAgent: isDvmAgent,
+        cfgACE: cfgACE,
+        useSysEvtReceiver: useSysReqReceiver,
+        useSysEvtSender: useSysReqSender,
+        useSysCohSender: useSysCohSender,
+        useSysCohReceiver: useSysCohReceiver,
+        blkClkGateOn:        blkClkGateOn,
+        clkInterfaceParams:  clkInterfaceParams,
+        nPerfCounters:       nPerfCounters,
+	assertOn:            assertOn,
+        dceIdInterface:      dceIdInterface,
+        dceIdInterfaceName:  dceIdInterfaceName,
+        dveIdInterface:      dveIdInterface,
+        dveIdInterfaceName:  dveIdInterfaceName,
+    	CONC_INTF:           CONC_INTF,
+        wMsgId:            wMsgId,
+        nAiuConnectedDces : nAiuConnectedDces,
+        nDCEs : nDCEs,
+        nDMIs : nDMIs,
+        nDIIs : nDIIs,
+	nDVEs : nDVEs,
+        concParams:          concParams,
+	cm_type: cm_type,
+        BWL : BWL,
+	ODAW: ODAW,
+	ODDW: ODDW,
+	ODDRW: ODDRW,
+        CTKM:   CTKM,
+        MTKM:   MTKM,
+        ITKM:   ITKM,
+        VTKM:   VTKM,
+        CTKS:   CTKS,
+        MTKS:   MTKS,
+        ITKS:   ITKS,
+        VTKS:   VTKS,
+        CWKS:   CWKS,
+        MWKS:   MWKS,
+        IWKS:   IWKS,
+        VWKS:   VWKS,
+	ccpParams: ccpParamsArray[core],
+	ccp_mnames: ccp_mnames,
+	ccp_mports: ccp_mports,
+	ccp_rp_en: ccp_rp_en,
+	sselParams: sselParams,
+	amapParams: amapParams,
+	amc_ports: amc_ports,
+	cm_ports: cm_ports,
+	REGN: REGN,
+	PIDW: PIDW,
+	FIDW: FIDW,
+	NIDW: NIDW,
+	NRRW: NRRW,
+	RPNW: RPNW,
+	OCN: OCN,
+	STN: STN,
+	STP: STP,
+	CSW: CSW,
+	CKB: CKB,
+	CTB: CTB,
+	axiParams: axiParams,
+	pmaParams: pmaParams,
+	usePma: usePma,
+	QC_INTF: QC_INTF,
+	PPH_INTF: CORE_PPH_INTF,
+	CSR_INTF: CSR_INTF,
+	csrHwPorts: csrHwPorts,
+	nTraceRegisters: nTraceRegisters,
+	nUnitTraceBufSize: nUnitTraceBufSize,
+	wTotalSmiPortsNum: wTotalSmiPortsNum,
+	RESI: RESI,
+	CSRS: CSRS,
+	qcInterfaceBundle: qcInterfaceBundle,
+	clkInterface: clkInterface,
+	axiInterfaceBundle: axiInterfaceBundle,
+	axiInterfaceBundleNoChk: axiInterfaceBundleNoChk,
+        pphInterfaceBundle: {"name": pphArray[core].name, "signals" : pphArray[core].signals},
+        pphInterfaceBundleSyn: {"name": pphArray[core].name, "signals" : pphSynArray[core].signals},
+        pphInterfaceName: pphArray[core].name,
+	apbInterfaceBundle: modifiedApbInterface.signals,
+        masterTriggerInterfaceJson: masterTriggerInterfaceJson,
+	haveMasterTriggerInterface : haveMasterTriggerInterface,
+	CMP: CMP,
+	smiTxParams: smiTxParams,
+	smiRxParams: smiRxParams,
+	SMI_TX_INTF: SMI_TX_INTF,
+	SMI_RX_INTF: SMI_RX_INTF,
+	CONC_TX_INTF: CONC_TX_INTF,
+	CONC_RX_INTF: CONC_RX_INTF,
+	CONCERTO_MUX_INTF: CONCERTO_MUX_INTF,
+	useEventOutInt: useEventOutInt,
+	eventRequestInInterfaceJson: eventRequestInInterfaceJson,
+	useEventInInt: useEventInInt,
+	eventRequestOutInterfaceJson: eventRequestOutInterfaceJson
+  };
+
+  var core_vparams = {
+  };
+  \jsend
+
+  // ===================================================================
+  // IOAIU Core Instance
+  // ===================================================================
+
+  \=u.instance({
+	moduleName: 'ioaiu_core',
+	instanceName: 'ioaiu_core'+core,
+	params: core_tparams,
+	verilogParams: core_vparams,
+	ports: core_ports,
+	interfaces: CORE_INTF,
+	portsDelimiter: '\n\t'
+  })=\
+\js } // Core Loop
+
+// ===================================================================
+// Request Response Mux Instance
+// ===================================================================
+
+\=obj.lib.instance ({
+	moduleName: 'req_rsp_mux',
+	instanceName: 'req_rsp_mux',
+	params: {
+	        requestInterfaces: requestInterfaces,
+		responseInterfaces: responseInterfaces
+	},
+	verilogParams: {},
+	ports: {clk:		'clk',
+		reset_n:	'reset_n'},
+	interfaces: RRMUX_INTF,
+	portsDelimiter: '\n\t'
+})=\
+
+// ===================================================================
+// APB Mux Instance
+// ===================================================================
+wire test_en = test_en_i;
+
+// Assign APB interface from top to APB demux slave interface \jsbegin
+utilFunctions.assignOldStyleInterfaces( apbInterface, modifiedApbInterface ).forEach( stmt => { \jsend
+  assign \=stmt.dst=\  = \=stmt.src=\; \jsbegin
+}); \jsend
+
+// APB demux instantiation
+\=u.nInstance({
+    instanceName: 'u_apb_demux',
+    moduleName: 'apb_demux',
+    params: {
+        interfaces              : apbDemuxInterfaces,
+        baseAddresses           : configAddrMap.baseAddresses( apbDemuxInterfaces.apbSlaveInterface.params.wAddr ),
+  	    baseMasks               : configAddrMap.baseMasks( apbDemuxInterfaces.apbSlaveInterface.params.wAddr  ) 
+    },
+    interfaceObj: {
+        interfaces: apbDemuxInterfaces,
+        prefixes: apbDemuxInterfaces 
+    }
+})=\
+
+// ===================================================================
+// Concerto Mux Instance
+// ===================================================================
+
+\= u.instance ({
+	instanceName: 'concerto_mux',
+	moduleName: 'concerto_mux',
+	params : {
+		wFPortId: PIDW,
+		wFUnitId: FIDW,
+		smiTxPortInterfaces : SMI_TX_INTF,
+		smiRxPortInterfaces : SMI_RX_INTF,
+		concertoTxInterfaces : CONC_TX_INTF,
+		concertoRxInterfaces : CONC_RX_INTF
+	},
+	verilogParams : {},
+	ports : cm_ports,
+	interfaces: CONCERTO_MUX_INTF
+})=\
+
+// ===================================================================
+// PMA Instance
+// ===================================================================
+
+\js if (usePma) {
+
+assign top_pma_busy = w_cm_busy | trace_capture_busy | (|block_busy);
+
+wire asleep_nc;
+wire goto_sleep_nc;
+
+\=obj.lib.instance ({
+	moduleName: 'pma_slave',
+	instanceName: 'pma_slave',
+	params: {channel:	"Q",
+		 syncReq:	false,
+		 interfaces:	pmaParams},
+	verilogParams: {},
+	ports: {clk:		'clk',
+		reset_n:	'reset_n',
+		pma_abort:	`1'b0`,
+		pma_busy:	'top_pma_busy',
+		pma_asleep:	'asleep_nc',
+		pma_goto_sleep:	'goto_sleep_nc'},
+	interfaces: QC_INTF,
+	portsDelimiter: '\n\t'
+})=\
+\js } else {}
+
+endmodule

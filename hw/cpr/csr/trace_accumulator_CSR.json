@@ -1,0 +1,466 @@
+[
+    {
+        "name": "xTASCR",
+        "description": "Trace Accumulate and Control Register",
+        "csrDescription": "Trace Accumulate and Control Register",
+        "addressOffset": 0,
+        "fields": [
+            {
+                "name": "BufferIsEmpty",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Set when all entries in the buffer are read and the buffer is empty",
+                "reset": 1
+            },
+            {
+                "name": "BufferIsFull",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Set when the buffer is full",
+                "reset": 0
+            },
+            {
+                "name": "BufferIsCircular",
+                "bitOffset": 2,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable circular buffer. 1: buffer drops older messages. 0: buffer drops newer messages.",
+                "reset": 0
+            },
+            {
+                "name": "BufferClear",
+                "bitOffset": 3,
+                "bitWidth": 1,
+                "access": "WSC",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Write 1 to clear the complete buffer",
+                "reset": 0
+            },
+            {
+                "name": "BufferRead",
+                "bitOffset": 4,
+                "bitWidth": 1,
+                "access": "WSC",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Write one to trigger a read",
+                "reset": 0
+            },
+            {
+                "name": "Rsvd1",
+                "bitOffset":5,
+                "bitWidth": 27,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved",
+                "reset": 0
+            }
+        ]
+    },
+    {
+        "name": "xTADHR",
+        "description": "",
+        "csrDescription": "Trace Accumulate Data Header Register",
+        "addressOffset": 4,
+        "fields": [
+            {
+                "name": "fid",
+                "bitOffset": 0,
+                "bitWidth": 8,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Funit ID of the trace capture Ncore unit"
+            },
+            {
+                "name": "Rsvd",
+                "bitOffset": 8,
+                "bitWidth": 23,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved",
+                "reset": 0
+            },
+            {
+                "name": "valid",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Set when read data is valid, clears on read",
+                "reset": 0
+            }
+        ]
+    },
+    {
+        "name": "xTADTSR",
+        "description": "Trace Accumulate Data Time Stamp Register",
+        "csrDescription": "Trace Accumulate Data Time Stamp Register",
+        "addressOffset": 8,
+        "fields": [
+            {
+                "name": "timestamp",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Time stamp value from DVE free running counter"
+            }
+        ]
+    },
+    {
+        "name": "xTAD0R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD1R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD2R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD3R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD4R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD5R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD6R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD7R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD8R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD9R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD10R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD11R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD12R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD13R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD14R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    },
+    {
+        "name": "xTAD15R",
+        "description": "Trace Accumulate Data Register",
+        "csrDescription": "Trace Accumulate Data Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "data",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RO",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Capture data"
+            }
+        ]
+    }
+]

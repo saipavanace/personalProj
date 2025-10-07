@@ -1,0 +1,141 @@
+<div class="contentLayout2"><style>[data-colorid=hkiuu7pm4x]{color:#24292f} html[data-color-mode=dark] [data-colorid=hkiuu7pm4x]{color:#d0d5db}[data-colorid=agerkh02g1]{color:#24292f} html[data-color-mode=dark] [data-colorid=agerkh02g1]{color:#d0d5db}</style>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><style type="text/css">/*<![CDATA[*/
+div.rbtoc1759723943487 {padding: 0px;}
+div.rbtoc1759723943487 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759723943487 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style></p><div class="toc-macro rbtoc1759723943487">
+<ul class="toc-indentation">
+<li><a href="#MaestroBuildTimeProfiling-Summary">Summary</a></li>
+<li><a href="#MaestroBuildTimeProfiling-WaystoMeasureBuildTime">Ways to Measure Build Time</a>
+<ul class="toc-indentation">
+<li><a href="#MaestroBuildTimeProfiling-CMakeOptionstoMeasureBuildTime">CMake Options to Measure Build Time</a></li>
+<li><a href="#MaestroBuildTimeProfiling-MakeShellSubstitution">Make Shell Substitution</a></li>
+</ul>
+</li>
+<li><a href="#MaestroBuildTimeProfiling-ToolstoDetectRedundantIncludes">Tools to Detect Redundant Includes</a>
+<ul class="toc-indentation">
+<li><a href="#MaestroBuildTimeProfiling-IncludeWhatYouUse">Include What You Use</a></li>
+<li><a href="#MaestroBuildTimeProfiling-Deheader">Deheader</a></li>
+</ul>
+</li>
+<li><a href="#MaestroBuildTimeProfiling-LinkWhatYouUse">Link What You Use</a></li>
+<li><a href="#MaestroBuildTimeProfiling-AdditionalResources">Additional Resources</a></li>
+</ul>
+</div><p /></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="MaestroBuildTimeProfiling-Summary">Summary</h1><p>This page contains description of tools and methods used to profile Maestro build (compilation and linkage) time.</p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="MaestroBuildTimeProfiling-WaystoMeasureBuildTime">Ways to Measure Build Time</h1><h2 id="MaestroBuildTimeProfiling-CMakeOptionstoMeasureBuildTime">CMake Options to Measure Build Time</h2><p style="margin-left: 0.0px;text-align: left;">The following CMake properties may be used to time compiler, linker and custom targets invocations:</p><ul style="text-align: left;margin-left: 30.0px;"><li><a class="external-link" href="https://cmake.org/cmake/help/latest/prop_gbl/RULE_LAUNCH_COMPILE.html" rel="nofollow">RULE_LAUNCH_COMPILE</a></li><li><a class="external-link" href="https://cmake.org/cmake/help/latest/prop_gbl/RULE_LAUNCH_LINK.html" rel="nofollow">RULE_LAUNCH_LINK</a></li><li><a class="external-link" href="https://cmake.org/cmake/help/latest/prop_gbl/RULE_LAUNCH_CUSTOM.html" rel="nofollow">RULE_LAUNCH_CUSTOM</a></li></ul><p style="margin-left: 0.0px;text-align: left;">These properties can be set globally or per target. In the latter case, one can only have a subset of the targets to be impacted by this property.</p><p style="margin-left: 0.0px;text-align: left;"><span style="letter-spacing: 0.0px;">To time compilation of all the sources of all the targets:</span></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE &quot;time -f 'elapsed %E - %C' -ao ~/maestro/compilation.txt&quot;)</pre>
+</div></div><p style="margin-left: 0.0px;text-align: left;"><span style="letter-spacing: 0.0px;" class="auto-cursor-target">This will time every source file compilation and append the formatted results to the output file&nbsp;~/maestro/compilation.txt.</span></p><p style="margin-left: 0.0px;text-align: left;"><span style="letter-spacing: 0.0px;" class="auto-cursor-target">To time compilation of all the source files of a specific target:</span></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">set_property(TARGET dm PROPERTY RULE_LAUNCH_COMPILE &quot;time -f 'elapsed %E - %C' -ao ~/maestro/dm_compilation.txt&quot;)</pre>
+</div></div><p style="margin-left: 0.0px;text-align: left;"><span style="letter-spacing: 0.0px;" class="auto-cursor-target"><span class="auto-cursor-target">This will time compilation of every source file of libdm and append the formatted results to the output file&nbsp;~/maestro/dm_compilation.txt.</span></span></p><h2 id="MaestroBuildTimeProfiling-MakeShellSubstitution">Make Shell Substitution</h2><p>Since&nbsp;make&nbsp;executes rules by wrapping them with&nbsp;$(SHELL) -c, it's possible to substitute the SHELL used and time every make command invocation.</p><p>A sample shell substitution script (timesh.sh) may look as follows:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">#!/bin/sh
+command time -f 'elapsed %E - %C' -ao ~/maestro/timelog.txt sh &quot;$@&quot;</pre>
+</div></div><p class="auto-cursor-target">It's not possible to pass SHELL variable to CMake generators (SHELL is actually hardcoded to /bin/sh in CMake sources), however we can pass it to make command using command line. For example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ mkdir -p build_release &amp;&amp; cd build_release &amp;&amp; conan install ..
+$ cmake -DCMAKE_BUILD_TYPE=&quot;RELEASE&quot; -DCMAKE_INSTALL_PREFIX=&quot;~/maestro/install&quot; -DMAESTRO_ENABLE_COVERAGE=OFF -DMAESTRO_ENABLE_CLANG_TIDY=OFF -DMAESTRO_ENABLE_CPPLINT=OFF -DMAESTRO_ENABLE_THIRDPARTY_TESTS=OFF .. -G &quot;Unix Makefiles&quot;
+$ make SHELL=~/timesh.sh</pre>
+</div></div><p class="auto-cursor-target"><span class="auto-cursor-target">This will time invocation of every make command and append the formatted results to the output file&nbsp;~/maestro/timelog.txt.</span></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="MaestroBuildTimeProfiling-ToolstoDetectRedundantIncludes">Tools to Detect Redundant Includes</h1></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="MaestroBuildTimeProfiling-IncludeWhatYouUse">Include What You Use</h2><p>&quot;Include what you use&quot; means this: for every symbol (type, function, variable, or macro) that you use in<span>&nbsp;</span><code>foo.cc</code><span>&nbsp;</span>(or<span>&nbsp;</span><code>foo.cpp</code>), either<span>&nbsp;</span><code>foo.cc</code><span>&nbsp;</span>or<span>&nbsp;</span><code>foo.h</code><span>&nbsp;</span>should include a .h file that exports the declaration of that symbol. Obviously symbols defined in<span>&nbsp;</span><code>foo.cc</code><span>&nbsp;</span>itself are excluded from this requirement.</p><p>This puts us in a state where every file includes the headers it needs to declare the symbols that it uses. When every file includes what it uses, then it is possible to edit any file and remove unused headers, without fear of accidentally breaking the upwards dependencies of that file. It also becomes easy to automatically track and update dependencies in the source code.</p><p><a class="external-link" href="https://github.com/include-what-you-use/include-what-you-use" rel="nofollow">https://github.com/include-what-you-use/include-what-you-use</a></p><p><strong>Installation</strong></p><p>To install iwyu from CentOS repo:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">sudo yum install iwyu</pre>
+</div></div><p>IWYU can also be built manually using instructions from&nbsp;<a class="external-link" href="https://github.com/include-what-you-use/include-what-you-use" rel="nofollow">https://github.com/include-what-you-use/include-what-you-use</a>.</p><p><strong>Usage</strong></p><p>CMake has a special property that can be set for a specific target or for all the targets:&nbsp;<a class="external-link" href="https://cmake.org/cmake/help/latest/prop_tgt/LANG_INCLUDE_WHAT_YOU_USE.html" rel="nofollow">&lt;LANG&gt;_INCLUDE_WHAT_YOU_USE</a>.</p><p>&nbsp;To run iwyu on a specific target:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">set_property(
+  TARGET data${LIB_SUFFIX}
+  PROPERTY CXX_INCLUDE_WHAT_YOU_USE &quot;/usr/bin/include-what-you-use;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;args&quot;
+)</pre>
+</div></div><p class="auto-cursor-target">To run iwyu globally:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">set_property(
+  GLOBAL
+  PROPERTY CXX_INCLUDE_WHAT_YOU_USE &quot;/usr/bin/include-what-you-use;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;args&quot;
+)</pre>
+</div></div><p class="auto-cursor-target">Please note,&nbsp;<span data-colorid="agerkh02g1">include-what-you-use always exits with an error code, so the build system knows it didn't build a .o file. So one may want to add -k option to corresponding make command.</span></p><p class="auto-cursor-target"><span data-colorid="hkiuu7pm4x">Other usage scenarios can be found on&nbsp;<a class="external-link" href="https://github.com/include-what-you-use/include-what-you-use" rel="nofollow">https://github.com/include-what-you-use/include-what-you-use</a>.</span></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="MaestroBuildTimeProfiling-Deheader">Deheader</h2><p>deheader analyzes C and C++ files to determine which header inclusions can be removed while still allowing them to compile. This may result in substantial improvements in compilation time, especially on large C++ projects; it also sometimes exposes dependencies and cohesions of which developers were unaware.</p><p><a class="external-link" href="http://www.catb.org/~esr/deheader/" rel="nofollow">http://www.catb.org/~esr/deheader/</a></p><p><strong>How it Works</strong></p><p>Deheader simply removes includes one by one (starting from the last one) and tries to compile the file. If the file compiles successfully without some included header, this header is marked as &quot;can be removed&quot;. Otherwise, the include is left in the file.</p><p><strong>tInstallation</strong></p><p>Downlaod&nbsp;<em>deheader-1.7.tar.gz</em> from&nbsp;<a class="external-link" href="http://www.catb.org/~esr/deheader/" rel="nofollow">http://www.catb.org/~esr/deheader/</a>&nbsp;and unpack it.</p><p><strong>Usage</strong></p><p>Deheader assumes that there is a simple rule to compile a single source file. One of the ways to use deheader (not very elegant but working) is described below:</p><ol><li>Download deheader from<span>&nbsp;</span><a class="external-link" href="http://catb.org/~esr/deheader/" rel="nofollow" style="text-decoration: none;">http://catb.org/~esr/deheader/</a></li><li>Unpack and chmod +x deheader</li><li>Do <code>make build_release</code> or invoke CMake manually to generate Makefiles.</li><li><p class="auto-cursor-target">In build_release (or build_debug) create a Makefile (e.g. test.make) with the following contents:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Include the compile flags for this target's objects.
+include contrib/libdata/CMakeFiles/data.dir/flags.make
+
+%.o: contrib/libdata/CMakeFiles/data.dir/flags.make
+%.o: %.cc
+	/usr/lib64/ccache/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -c -o $@ $&lt;</pre>
+</div></div><p class="auto-cursor-target">(it can be in a separate folder, update paths accordingly).</p></li><li>Run<span>&nbsp;</span><code class="c-mrkdwn__code">&lt;path_to_deheader&gt;/deheader -m &quot;make -f test.make&quot; /home/nmitskevich/code/arteris/maestro/contrib/libdata/src/<a class="external-link" href="http://AdmProject.cc" rel="nofollow">AdmProject.cc<br /></a></code>We can also add -v options to see deheader progress.</li></ol><p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="MaestroBuildTimeProfiling-LinkWhatYouUse">Link What You Use</h1><p><a class="external-link" href="https://cmake.org/cmake/help/latest/prop_tgt/LINK_WHAT_YOU_USE.html" rel="nofollow">https://cmake.org/cmake/help/latest/prop_tgt/LINK_WHAT_YOU_USE.html</a></p><p>This is a built in CMake feature that uses options of ld and ldd to print out if executables link more libraries than they actually require.</p><p>Usage:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">cmake -DCMAKE_LINK_WHAT_YOU_USE=TRUE ..</pre>
+</div></div></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br /></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="MaestroBuildTimeProfiling-AdditionalResources">Additional Resources</h1><ul style="list-style-type: square;"><li><a class="external-link" href="https://blog.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/" rel="nofollow">Static checks with CMake/CDash (iwyu, clang-tidy, lwyu, cpplint and cppcheck)</a></li><li><a class="external-link" href="https://interrupt.memfault.com/blog/improving-compilation-times-c-cpp-projects" rel="nofollow">Improving Compilation Time of C/C++ Projects</a></li><li><a class="external-link" href="https://alangrow.com/blog/profiling-every-command-in-a-makefile" rel="nofollow">Profiling every command in a Makefile</a></li></ul></div>
+</div>
+</div>
+</div>

@@ -1,0 +1,242 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// LLC Linked List
+// Author: Boon Chuan
+// Filename: llc_llist_ref.tachl
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+u.paramDefault('output_dependee_id', 'int', 0);
+u.paramDefault('output_active',      'int', 1);
+u.paramDefault('assertOn',           'int', 1);
+
+var assertOn           = u.getParam('assertOn');
+var output_active      = u.getParam('output_active');
+var output_dependee_id = u.getParam('output_dependee_id');
+
+var nEntries = u.getParam('nEntries');
+
+var wEntries = log2ceil(nEntries);
+\jsend
+
+\jsbegin
+
+u.port('input', 'clk',     1);
+u.port('input', 'reset_n', 1);
+
+u.port('input', 'entry_alloc_vld',        1);
+u.port('input', 'entry_alloc_id_onehot',  nEntries);
+u.port('input', 'entry_dealloc_multihot', nEntries);
+
+u.port('input', 'entry_collision_vlds', nEntries);
+u.port('input', 'entry_collision_id',   wEntries);
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (output_active) {
+u.port('output', 'entry_active',       nEntries);
+u.port('output', 'entry_active_set',   nEntries);
+u.port('output', 'entry_active_clear', nEntries);
+    }
+u.port('output', 'entry_youngest',     nEntries);
+u.port('output', 'entry_depend',       nEntries);
+u.port('output', 'entry_depend_set',   nEntries);
+u.port('output', 'entry_depend_clear', nEntries);
+
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (output_dependee_id) {
+    for (var i = 0; i < nEntries; i++) {
+u.port('output', 'entry_dependee_id_'+i, wEntries);
+    }
+}
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+
+\jsbegin
+    //======================================================================
+    // Signals
+    //======================================================================
+\jsend
+
+\js for (var i = 0; i < nEntries; i++) {
+        wire entry\=i=\_activating;
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (output_active) {
+    \jsend
+        wire entry\=i=\_active;
+        wire entry\=i=\_active_sig;
+        wire entry\=i=\_active_clear;
+        wire entry\=i=\_active_set;
+    \js }
+        wire entry\=i=\_youngest;
+        wire entry\=i=\_youngest_sig;
+        wire entry\=i=\_youngest_clear;
+        wire entry\=i=\_got_collision;
+        wire [\=wEntries-1=\:0] entry\=i=\_dependee_id;
+        wire [\=nEntries-1=\:0] entry\=i=\_dependee_id_vec;
+        wire entry\=i=\_dependee_seen_sig;
+        wire entry\=i=\_dependee_seen_by_dealloc_sig;
+        wire entry\=i=\_depend;
+        wire entry\=i=\_depend_sig;
+        wire entry\=i=\_depend_clear;
+        wire entry\=i=\_depend_set;
+\js }
+
+    wire dff_enable;
+
+    assign dff_enable = 1'b1;
+
+\js for (var i = 0; i < nEntries; i++) {
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (output_active) {
+    \jsend
+    assign entry_active[\=i=\]       = entry\=i=\_active;
+    assign entry_active_set[\=i=\]   = entry\=i=\_active_set;
+    assign entry_active_clear[\=i=\] = entry\=i=\_active_clear;
+    \js }
+    assign entry_youngest[\=i=\]     = entry\=i=\_youngest;
+    assign entry_depend[\=i=\]       = entry\=i=\_depend;
+    assign entry_depend_set[\=i=\]   = entry\=i=\_depend_set;
+    assign entry_depend_clear[\=i=\] = entry\=i=\_depend_clear;
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (output_dependee_id) {
+    \jsend
+    assign entry_dependee_id_\=i=\   = entry\=i=\_dependee_id;
+    \js }
+\js }
+
+\jsbegin
+    //======================================================================
+    // Entries
+    //======================================================================
+\jsend
+\jsbegin
+    for (var i = 0; i < nEntries; i++) {
+\jsend
+
+\jsbegin
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Detect Activation
+        //
+\jsend
+        assign entry\=i=\_activating = entry_alloc_id_onehot[\=i=\] & entry_alloc_vld;
+
+\jsbegin
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Active
+        //
+\jsend
+
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (output_active) {
+    \jsend
+
+        \=u.dffre(1, 'entry'+i+'_active', 'entry'+i+'_active_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+        assign entry\=i=\_active_sig = entry\=i=\_activating   ? 1'b1 : 
+                                       entry\=i=\_active_clear ? 1'b0 : entry\=i=\_active;
+
+        assign entry\=i=\_active_clear = entry_dealloc_multihot[\=i=\];
+        assign entry\=i=\_active_set   = entry\=i=\_activating;
+
+    \js }
+
+\jsbegin
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Youngest
+        //
+\jsend
+
+        \=u.dffre(1, 'entry'+i+'_youngest', 'entry'+i+'_youngest_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+        assign entry\=i=\_youngest_sig = entry\=i=\_activating     ? 1'b1 : 
+                                         entry\=i=\_youngest_clear ? 1'b0 : entry\=i=\_youngest;
+
+        assign entry\=i=\_youngest_clear = (entry_collision_vlds[\=i=\] & entry_alloc_vld) | entry_dealloc_multihot[\=i=\];
+
+\jsbegin
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Dependency
+        //
+\jsend
+        assign entry\=i=\_got_collision = entry\=i=\_activating & |{entry_collision_vlds};
+
+\jsbegin
+        // Dependee ID capture
+\jsend
+
+        \=u.dffre(wEntries, 'entry'+i+'_dependee_id', 'entry_collision_id', wEntries+"'b0", 'entry'+i+'_got_collision', 'clk', 'reset_n')=\
+
+        assign entry\=i=\_dependee_id_vec = \=nEntries=\'b1 << entry\=i=\_dependee_id;
+
+\jsbegin
+        // Dependee seen event
+\jsend
+        assign entry\=i=\_dependee_seen_by_dealloc_sig = (entry\=i=\_depend & |{entry\=i=\_dependee_id_vec & entry_dealloc_multihot});
+
+        assign entry\=i=\_dependee_seen_sig = entry\=i=\_dependee_seen_by_dealloc_sig;
+
+\jsbegin
+        // Dependency bit
+\jsend
+
+        \=u.dffre(1, 'entry'+i+'_depend', 'entry'+i+'_depend_sig', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+        assign entry\=i=\_depend_sig = entry\=i=\_depend_clear ? 1'b0 :
+                                       entry\=i=\_depend_set   ? 1'b1 : entry\=i=\_depend;
+
+        assign entry\=i=\_depend_clear = entry\=i=\_dependee_seen_sig | entry_dealloc_multihot[\=i=\];
+        assign entry\=i=\_depend_set   = entry\=i=\_got_collision;
+
+\jsbegin
+    } // for nEntries
+\jsend
+
+\jsbegin
+//=============================================================================
+// Assertions
+//=============================================================================
+\jsend
+
+    \js if (assertOn) {
+`ifdef OVL_ASSERT_ON
+// synthesis_off
+// pragma synthesis_off
+// coverage off
+
+property p_entry_collision_vlds_onehot0;
+    @(posedge clk) disable iff (~reset_n)
+    entry_alloc_vld |-> $onehot0(entry_collision_vlds);
+endproperty
+
+assert_entry_collision_vlds_onehot0: assert property (p_entry_collision_vlds_onehot0)
+    else begin $error("entry_collision_vlds must be onehot0 !!"); #100 $finish; end
+
+
+property p_alloc_dealloc;
+    @(posedge clk) disable iff (~reset_n)
+    (~{|{entry_alloc_id_onehot & {\=nEntries=\{entry_alloc_vld}} & entry_dealloc_multihot}});
+endproperty
+
+assert_alloc_dealloc: assert property (p_alloc_dealloc)
+    else begin $error("alloc and dealloc must not collide !!"); #100 $finish; end
+
+// coverage on
+// pragma synthesis_on
+// synthesis_on
+`endif
+    \js }
+
+endmodule

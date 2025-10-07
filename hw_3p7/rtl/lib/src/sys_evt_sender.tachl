@@ -1,0 +1,387 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// System Event Sender
+//
+// Author: Boon Chuan
+//
+// Descriptions:
+// 
+// A sender implements event input handshake protocol over 2 pins: EventInReq, EventInAck.
+// A sender will convert the arriving event (assertion of EventInReq) into SysReq.Event messages,
+// broadcast those to all known (Active?) receivers and acknowledge the event using the above defined
+// 4-phase handshake
+// The sender will collect the responses from all receivers and shall report an error on timeout or
+// if any response indicates an error.
+//
+// The Sys.Event Sender has the following transaction flow:
+// EventIn.Req -> fork  
+//                broadcast SysReq.Event to specified targets
+//                collect SysRsp from specified targets
+//                join
+//             -> assert EventIn.Ack
+//             -> wait for EventIn.Req deassertion
+//             -> deassert EventIn.Ack
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+//=============================================================================
+// Parameters
+//=============================================================================
+
+var nEventAgentsForSender   = u.getParam('nEventAgentsForSender');
+var wFUnitId                = u.getParam('wFUnitId');
+var wSysReqOp               = u.getParam('wSysReqOp');
+var wEventTimeout           = u.getParam('wEventTimeout');
+var wProtocolTimeout        = u.getParam('wProtocolTimeout');
+
+var nTargets = nEventAgentsForSender;
+var wTargets = log2ceil(nTargets + 1);
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+// Clock interface
+u.port('input',  'clk',      1);
+u.port('input',  'reset_n',  1);
+u.port('output', 'evt_sender_busy', 1);
+
+// FUnitId interface
+for (i=0; i < nEventAgentsForSender; i++) {
+u.port('input', 'event'+i+'_f_unit_id', wFUnitId);
+}
+
+// CSR interface
+u.port('input',  'csr_event_timeout_value', wEventTimeout);
+u.port('input',  'csr_protocol_timeout_value', wProtocolTimeout);
+u.port('input',  'csr_sys_evt_sender_enable', 1);
+u.port('output', 'csr_sys_evt_sender_err_vld', 1);
+u.port('output', 'csr_sys_evt_sender_err_f_unit_id', wFUnitId);
+u.port('output', 'csr_sys_evt_sender_err_protocol_sys', 1);
+u.port('output', 'csr_sys_evt_sender_err_protocol_timeout', 1);
+u.port('output', 'csr_sys_evt_sender_err_event_timeout', 1);
+
+// Input Event interface (NOTE: Synchronizers are outside of this module)
+u.port('input',  'event_in_req', 1);
+u.port('output', 'event_in_ack', 1);
+u.port('input',  'event_in_targets', nEventAgentsForSender);
+
+// Output SysReq interface
+u.port('output', 'sysreq_valid', 1);
+u.port('input',  'sysreq_ready', 1);
+u.port('output', 'sysreq_target_f_unit_id', wFUnitId);
+u.port('output', 'sysreq_op', wSysReqOp); // 0=NOP 1=Attach 2=Detach 3=Event
+
+// Input SysRsp interface
+u.port('input',  'sysrsp_valid', 1);
+u.port('output', 'sysrsp_ready', 1);
+u.port('input',  'sysrsp_cmstatus', 8);
+u.port('input',  'sysrsp_initiator_f_unit_id', wFUnitId);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+wire dff_enable = 1'b1;
+
+wire [\=wSysReqOp-1=\:0] SYSREQ_OP_EVENT = \=wSysReqOp=\'d3;
+
+wire [2:0] ST_IDLE    = 3'b000;
+wire [2:0] ST_SEND    = 3'b001;
+wire [2:0] ST_COLLECT = 3'b010;
+wire [2:0] ST_PROTERR = 3'b011;
+wire [2:0] ST_EVTERR  = 3'b100;
+wire [2:0] ST_WAIT    = 3'b101;
+wire [2:0] ST_DELAY   = 3'b110;
+
+reg  [2:0] next_state;
+wire [2:0] state;
+
+wire state_is_IDLE;
+wire state_is_SEND;
+wire state_is_COLLECT;
+wire state_is_PROTERR;
+wire state_is_EVTERR;
+wire state_is_WAIT;
+wire state_is_DELAY;
+
+wire next_state_is_IDLE;
+wire next_state_is_SEND;
+wire next_state_is_COLLECT;
+wire next_state_is_PROTERR;
+wire next_state_is_EVTERR;
+wire next_state_is_WAIT;
+wire next_state_is_DELAY;
+
+wire sending_last_request_int;
+wire all_requests_sent_int;
+wire all_responses_received;
+wire protocol_timeout;
+wire event_timeout;
+
+wire sysreq_valid_int;
+wire sysreq_ready_int;
+
+wire event_in_ack_in;
+wire event_in_ack_en;
+wire event_in_ack_set;
+wire event_in_ack_clr;
+
+wire [\=wTargets-1=\:0] send_counter;
+wire [\=wTargets-1=\:0] send_counter_in;
+wire send_counter_en;
+
+wire [\=wTargets-1=\:0] send_counter_int;
+wire [\=wTargets-1=\:0] send_counter_int_in;
+wire send_counter_int_en;
+wire send_counter_int_is_last;
+
+wire [\=nTargets-1=\:0] send_counter_int_onehot;
+
+wire event_target_hit;
+
+wire [\=wTargets-1=\:0] receive_counter;
+wire [\=wTargets-1=\:0] receive_counter_in;
+wire receive_counter_en;
+
+wire any_sys_rsp_error;
+wire any_sys_rsp_error_in;
+wire any_sys_rsp_error_en;
+wire any_sys_rsp_error_set;
+wire any_sys_rsp_error_clr;
+
+wire [\=wFUnitId-1=\:0] sys_rsp_error_f_unit_id;
+wire [\=wFUnitId-1=\:0] sys_rsp_error_f_unit_id_in;
+
+wire [\=wEventTimeout-1=\:0] event_timeout_counter;
+wire [\=wEventTimeout-1=\:0] event_timeout_counter_in;
+wire event_timeout_counter_en;
+
+wire [\=wProtocolTimeout-1=\:0] protocol_timeout_counter;
+wire [\=wProtocolTimeout-1=\:0] protocol_timeout_counter_in;
+wire protocol_timeout_counter_en;
+
+\jsbegin
+//=============================================================================
+// State Machine
+//=============================================================================
+\jsend
+
+always @(*)
+case (state)
+    ST_IDLE    : next_state = event_in_req ? (csr_sys_evt_sender_enable ? ST_SEND : ST_WAIT) : ST_IDLE;
+
+    ST_SEND    : next_state = sending_last_request_int ? ST_COLLECT : ST_SEND;
+
+    ST_COLLECT : next_state = all_responses_received ? (any_sys_rsp_error ? ST_PROTERR : ST_WAIT) : 
+                                                       (protocol_timeout  ? ST_PROTERR : ST_COLLECT);
+
+    ST_WAIT    : next_state = ~event_in_req ? ST_DELAY : 
+                              event_timeout ? ST_EVTERR : ST_WAIT;
+
+    ST_PROTERR : next_state = ST_WAIT;
+    ST_EVTERR  : next_state = ST_DELAY;
+
+    ST_DELAY   : next_state = ST_IDLE;
+
+    default next_state = state;
+endcase
+
+\=u.dffre(3, 'state', 'next_state', "3'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign state_is_IDLE        = (state == ST_IDLE);
+assign state_is_SEND        = (state == ST_SEND);
+assign state_is_COLLECT     = (state == ST_COLLECT);
+assign state_is_PROTERR     = (state == ST_PROTERR);
+assign state_is_EVTERR      = (state == ST_EVTERR);
+assign state_is_WAIT        = (state == ST_WAIT);
+assign state_is_DELAY       = (state == ST_DELAY);
+
+assign next_state_is_IDLE        = (next_state == ST_IDLE);
+assign next_state_is_SEND        = (next_state == ST_SEND);
+assign next_state_is_COLLECT     = (next_state == ST_COLLECT);
+assign next_state_is_PROTERR     = (next_state == ST_PROTERR);
+assign next_state_is_EVTERR      = (next_state == ST_EVTERR);
+assign next_state_is_WAIT        = (next_state == ST_WAIT);
+assign next_state_is_DELAY       = (next_state == ST_DELAY);
+
+\jsbegin
+//=============================================================================
+// OUTPUT event_in_ack
+//=============================================================================
+\jsend
+
+\=u.dffre(1, 'event_in_ack', 'event_in_ack_in', "1'b0", 'event_in_ack_en', 'clk', 'reset_n')=\
+
+assign event_in_ack_set = next_state_is_WAIT;
+assign event_in_ack_clr = next_state_is_DELAY;
+assign event_in_ack_en  = event_in_ack_set | event_in_ack_clr;
+assign event_in_ack_in  = event_in_ack_set;
+
+\jsbegin
+//=============================================================================
+// OUTPUT sysreq
+//=============================================================================
+\jsend
+
+assign event_target_hit = {|{event_in_targets & send_counter_int_onehot}};
+
+assign sysreq_valid_int = state_is_SEND;
+
+assign sysreq_ready_int = sysreq_ready | (event_in_req & ~event_target_hit);
+
+
+assign sysreq_valid = state_is_SEND & (event_in_req & event_target_hit);
+
+assign sysreq_target_f_unit_id =
+
+           ({\=wFUnitId=\{send_counter_int == \=wTargets=\'d0}} & event0_f_unit_id)
+    \js for (var i=1; i < nTargets; i++) {
+         | ({\=wFUnitId=\{send_counter_int == \=wTargets=\'d\=i=\}} & event\=i=\_f_unit_id)
+    \js }
+                               ;
+
+assign sysreq_op = SYSREQ_OP_EVENT;
+
+\jsbegin
+//=============================================================================
+// send_counter
+// sending_last_request
+// receive_counter
+// all_responses_received
+//=============================================================================
+\jsend
+
+assign send_counter_int_onehot = \=nTargets=\'d1 << send_counter_int;
+
+\=u.dffre(wTargets, 'send_counter_int', 'send_counter_int_in', wTargets+"'b0", 'send_counter_int_en', 'clk', 'reset_n')=\
+
+assign send_counter_int_en = state_is_IDLE | (state_is_SEND & sysreq_valid_int & sysreq_ready_int);
+
+assign send_counter_int_in = state_is_IDLE ? \=wTargets=\'d0 : send_counter_int +  \=wTargets=\'d1;
+
+assign send_counter_int_is_last = (send_counter_int == \=wTargets=\'d\=nTargets-1=\);
+
+
+assign sending_last_request_int = sysreq_valid_int & sysreq_ready_int & send_counter_int_is_last;
+
+assign all_requests_sent_int = (send_counter_int == \=wTargets=\'d\=nTargets=\) | sending_last_request_int;
+
+
+
+\=u.dffre(wTargets, 'send_counter', 'send_counter_in', wTargets+"'b0", 'send_counter_en', 'clk', 'reset_n')=\
+
+assign send_counter_en = state_is_IDLE | (state_is_SEND & sysreq_valid & sysreq_ready);
+
+assign send_counter_in = state_is_IDLE ? \=wTargets=\'d0 : send_counter +  \=wTargets=\'d1;
+
+
+
+\=u.dffre(wTargets, 'receive_counter', 'receive_counter_in', wTargets+"'b0", 'receive_counter_en', 'clk', 'reset_n')=\
+
+assign receive_counter_en = state_is_IDLE | ((state_is_SEND | state_is_COLLECT) & sysrsp_valid & sysrsp_ready);
+
+assign receive_counter_in = state_is_IDLE ? \=wTargets=\'d0 : receive_counter +  \=wTargets=\'d1;
+
+
+assign all_responses_received = all_requests_sent_int & (receive_counter == send_counter);
+
+\jsbegin
+//=============================================================================
+// any_sys_rsp_error
+//=============================================================================
+\jsend
+
+\=u.dffre(1, 'any_sys_rsp_error', 'any_sys_rsp_error_in', "1'b0", 'any_sys_rsp_error_en', 'clk', 'reset_n')=\
+
+assign any_sys_rsp_error_set = (state_is_SEND | state_is_COLLECT) & sysrsp_valid & sysrsp_ready & (sysrsp_cmstatus[7:6] == 2'b01);
+assign any_sys_rsp_error_clr = state_is_IDLE;
+assign any_sys_rsp_error_en  = any_sys_rsp_error_set | any_sys_rsp_error_clr;
+assign any_sys_rsp_error_in  = any_sys_rsp_error_set;
+
+\=u.dffre(wFUnitId, 'sys_rsp_error_f_unit_id', 'sys_rsp_error_f_unit_id_in', wFUnitId+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign sys_rsp_error_f_unit_id_in = any_sys_rsp_error_set ? sysrsp_initiator_f_unit_id :
+                                    any_sys_rsp_error_clr ? \=wFUnitId=\'d0 :
+                                                            sys_rsp_error_f_unit_id;
+
+\jsbegin
+//=============================================================================
+// sysrsp_ready
+//=============================================================================
+\jsend
+
+assign sysrsp_ready = 1'b1;
+
+\jsbegin
+//=============================================================================
+// protocol_timeout
+//=============================================================================
+\jsend
+
+assign protocol_timeout = {|{csr_protocol_timeout_value}} ? (protocol_timeout_counter == csr_protocol_timeout_value) : 1'b0;
+
+\=u.dffre(wProtocolTimeout, 'protocol_timeout_counter', 'protocol_timeout_counter_in', wProtocolTimeout+"'b0", 'protocol_timeout_counter_en', 'clk', 'reset_n')=\
+
+assign protocol_timeout_counter_en = state_is_IDLE | state_is_SEND | state_is_COLLECT;
+
+assign protocol_timeout_counter_in = state_is_IDLE ? \=wProtocolTimeout=\'b0 : (state_is_SEND | state_is_COLLECT) & ~protocol_timeout ? protocol_timeout_counter + \=wProtocolTimeout=\'b1 : protocol_timeout_counter;
+
+\jsbegin
+//=============================================================================
+// event_timeout
+//=============================================================================
+\jsend
+
+assign event_timeout = {|{csr_event_timeout_value}} ? (event_timeout_counter == csr_event_timeout_value) : 1'b0;
+
+\=u.dffre(wEventTimeout, 'event_timeout_counter', 'event_timeout_counter_in', wEventTimeout+"'b0", 'event_timeout_counter_en', 'clk', 'reset_n')=\
+
+assign event_timeout_counter_en = state_is_IDLE | state_is_WAIT;
+
+assign event_timeout_counter_in = state_is_IDLE ? \=wEventTimeout=\'b0 : state_is_WAIT & ~event_timeout ? event_timeout_counter + \=wEventTimeout=\'b1 : event_timeout_counter;
+
+\jsbegin
+//=============================================================================
+// CSR error logging
+//=============================================================================
+\jsend
+
+assign csr_sys_evt_sender_err_vld = state_is_PROTERR | state_is_EVTERR;
+
+assign csr_sys_evt_sender_err_f_unit_id = sys_rsp_error_f_unit_id;
+
+assign csr_sys_evt_sender_err_protocol_sys     = any_sys_rsp_error;
+assign csr_sys_evt_sender_err_protocol_timeout = protocol_timeout;
+assign csr_sys_evt_sender_err_event_timeout    = event_timeout;
+
+\jsbegin
+//=============================================================================
+// Busy
+//=============================================================================
+\jsend
+
+assign evt_sender_busy = ~state_is_IDLE;
+
+endmodule

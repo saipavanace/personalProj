@@ -1,0 +1,1 @@
+gXMLBuffer ="<?xml version=\"1.0\" encoding=\"utf-8\" ?><data  src=\"toc38.js\"  name=\"5.3   Topologies\" url=\"Ncore_3_Online_Documentation/User_Guide/Structural_Design/Topologies.htm#1059898\"><item name=\"5.3.2  Mesh topology\" url=\"Ncore_3_Online_Documentation/User_Guide/Structural_Design/Topologies.htm#1059926bc-1\" /></data>";

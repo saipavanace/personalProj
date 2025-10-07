@@ -1,0 +1,196 @@
+{
+  "name": "NC_DCE",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "strRtlNamePrefix",
+          "parameterTitle": "RTL prefix string",
+          "regex": "^[a-zA-Z](?:[a-zA-Z0-9]|_(?!_|$))*$",
+          "parameterType": "architecture",
+          "docID": 171,
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "fUnitId",
+          "parameterTitle": "fUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nUnitId",
+          "parameterTitle": "nUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "ImplementationParameters",
+          "parameterTitle": "Resources",
+          "parameterType": "architecture",
+          "docID": 172,
+          "type": "object",
+          "reference": "ImplParams"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "SnoopFilters",
+          "parameterTitle": "Snoop Filters",
+          "parameterType": "architecture",
+          "docID": 173,
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_TagFilter.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Interfaces",
+          "parameterTitle": "Interfaces",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "Interfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SmiPortMsgMap",
+          "parameterTitle": "Port Message Map",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_PortMsgMap.design.cpr"
+        }
+      ],
+      "baseName": "NC_BaseNcoreUnit"
+    },
+    {
+      "name": "ImplParams",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDceRbCredits",
+          "parameterTitle": "Number of DCE Write request buffer credits",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Number of DCE write request buffer credits per DMI",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nAiuSnpCredits",
+          "parameterTitle": "Number of Snoop credits",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Number of snoop credits per AIU",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDmiMrdCredits",
+          "parameterTitle": "Number of memory read credits",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Number of memory read credits per DMI",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nAttCtrlEntries",
+          "parameterTitle": "Number of active coherent transactions",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Number of active coherent transactions",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nTaggedMonitors",
+          "parameterTitle": "Number of Tagged exclusive monitors",
+          "minimum": 0,
+          "maximum": 8,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Number of tagged exclusive monitor per DCE instance. \nNote that each DCE instance will always have one basic exclusive monitor.",
+          "docID": 174,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wLpId",
+          "parameterTitle": "Width of LpId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "docID": 175,
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "name": "Interfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "internal",
+          "parameterTitle": "Internal interfaces",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "IntInterfaces"
+        }
+      ],
+      "baseName": "ParamBase"
+    },
+    {
+      "name": "IntInterfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysCaIdInt",
+          "parameterTitle": "Interface Ca Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDmiIdInt",
+          "parameterTitle": "Interface Dmi Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        }
+      ],
+      "baseName": "NC_IntInterfaces"
+    }
+  ]
+}

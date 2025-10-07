@@ -1,0 +1,245 @@
+{
+  "name": "NC_SystemPreMapParams",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDvmCmdCredits",
+          "parameterTitle": "Number of DVM command request credits",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of DVM command requests an AIU can have in flight.",
+          "docID": 407,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDvmSnpCredits",
+          "parameterTitle": "Number of DVM snoop request credits",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of DVM snoop requests an AIU can have in flight on its native interface.\n",
+          "docID": 408,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "memoryProtectionType",
+          "parameterTitle": "Memory Protection",
+          "default": "NONE",
+          "parameterType": "architecture",
+          "guiDescription": "Protection type for all memories in the Ncore system. Available options are:\nNONE : no pretection \nPARITY : Error detection, parity protection \nSECDED : Single bit error correction and double bit error detection, ECC protection.",
+          "docID": 399,
+          "validValues": "NONE,PARITY,SECDED",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "solutionTemplate",
+          "parameterTitle": "Template",
+          "parameterType": "architecture",
+          "docID": 395,
+          "validValues": "OneCtrlOneDataTemplate,TwoCtrlOneDataTemplate,ThreeCtrlOneDataTemplate",
+          "type": "string",
+          "default": "ThreeCtrlOneDataTemplate",
+          "guiDescription": "Control and data netwrok options:\nOneCtrlOneDataTemplate: Adds support for a single control and a single data netwrok.\nTwoCtrlOneDataTemplate: Adds support for two control and a single data netwrok.\nThreeCtrlOneDataTemplate: Adds support for three control and a single data netwrok.\nRefer to the refernce manual section <TBD> for more details"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "FabricIdentifierOffset",
+          "parameterTitle": "Fabric Identifier Offset",
+          "minimum": 0,
+          "maximum": 1048576,
+          "default": 0,
+          "parameterType": "architecture",
+          "docID": 394,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "resilienceEnabled",
+          "parameterTitle": "Resilience",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "Enable resiliency related features in the Ncore system.\nRefer to the refernce manual section <TBD> for details on available fetures",
+          "docID": 391,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "duplicationEnabled",
+          "parameterTitle": "Unit duplication",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "Enable unit duplication for all Ncore units only. \nMemories and interconnect logic are not duplicated; they may be protected seperately.",
+          "docID": 392,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nativeIntfProtEnabled",
+          "parameterTitle": "Native interface protection",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "Enable capability to add protection on native Ncore interfaces like CHI/ACE/AXI4.\nThis adds an empty verilog module with specifeid signals at the interface. \nProtection logic can be added in this verilog module.",
+          "docID": 393,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "InterUnitDelay",
+          "parameterTitle": "Duplicate unit delay",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "Delay between functional unit and delay unit.\nDelay can be specified in number of clock cycles.",
+          "docID": 396,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "resiliencyProtectionType",
+          "parameterTitle": "Interconnect protection type",
+          "default": "NONE",
+          "parameterType": "architecture",
+          "guiDescription": "Inteconnect protection type. Both data and control header will be protected. Available options are:\nNONE: no pretection \nPARITY: Error detection, parity protection \nSECDED: Single bit error correction and double bit error detection, ECC protection.",
+          "docID": 398,
+          "validValues": "NONE,PARITY,SECDED",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "useFixedAddressMap",
+          "parameterTitle": "Enable fixed address map",
+          "default": false,
+          "parameterType": "architecture",
+          "docID": 388,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nGPRA",
+          "parameterTitle": "General purpose address regions",
+          "minimum": 1,
+          "maximum": 24,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "Number of general pusrpose address resgions that the system can support.\nRefer to section <TBD> of the reference manual",
+          "docID": 389,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "timeOutRefEnabled",
+          "parameterTitle": "Enable external reference for time out",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "Enables capability to provide external reference signal for timeout counter.\nThis signal is sampled at rising edge to increment the counter.",
+          "docID": 405,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "timeOutThreshold",
+          "parameterTitle": "TimeOut threshold",
+          "default": 16384,
+          "parameterType": "architecture",
+          "guiDescription": "Time out threshold value. This specifies number of clock cycles within which a transaction must complete in an NCORE system.\nThe value specified is at 4096 clock cycle granularity.",
+          "docID": 406,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "qosEnabled",
+          "parameterTitle": "Enable QoS support",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "Enable QoS capability.",
+          "docID": 367,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "qosMap",
+          "parameterTitle": "QoS value to priority map",
+          "parameterType": "architecture",
+          "guiDescription": "4 bit Native interface QoS value map to 3 bit priority.\nvalue 0 has the highest priority and value 7 has the lowest priority.",
+          "docID": 368,
+          "type": "array",
+          "arrayType": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "qosEventThreshold",
+          "parameterTitle": "QoS event threshold",
+          "default": 16,
+          "parameterType": "architecture",
+          "guiDescription": "QoS starvation threshold. Maximum number of high priority requests that can bypass a lower priority request.",
+          "docID": 371,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "dceInterleavingPrimaryBits",
+          "parameterTitle": "System Directory primary set select bits",
+          "parameterType": "architecture",
+          "guiDescription": "Address bits to be used as interleving bits for DCE selection.",
+          "docID": 241,
+          "type": "array",
+          "arrayType": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "dceInterleavingSecondaryBits",
+          "parameterTitle": "System Directory secondary set select bits",
+          "parameterType": "architecture",
+          "guiDescription": "Address bits to be used as secondary set select bits for DCE selection.",
+          "docID": 242,
+          "type": "array",
+          "arrayType": "string"
+        },
+        {
+          "guiVisibility": "engineering",
+          "readonly": false,
+          "parameterName": "AssertionEnable",
+          "parameterTitle": "Enable HW assertions (Internal Parameter)",
+          "default": false,
+          "parameterType": "architecture",
+          "docID": 387,
+          "type": "boolean"
+        }
+      ],
+      "baseName": "COMMON_ParamBase"
+    }
+  ]
+}

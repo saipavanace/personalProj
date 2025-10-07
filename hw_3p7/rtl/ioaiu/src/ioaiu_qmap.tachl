@@ -1,0 +1,100 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU qmap.
+//
+//////////////////////////////////////////////////////////////////////////
+var u = obj.lib;
+var m = obj.userLib;
+
+u.paramDefault('QOSA', 'int', 0);
+
+var QOSA = u.getParam('QOSA');
+var QMAP = u.getParam('QMAP');
+var QOSN = u.getParam('QOSN');
+var QOSW = u.getParam('QOSW');
+
+var assertOn = u.getParam('assertOn');
+
+u.paramDefault('clkAssertInterface', 'object', null);
+var clkAssertInterface     = m.hierGetParam('clkAssertInterface', u.getParam);
+u.interface(clkAssertInterface.name, 'slave', clkAssertInterface.signals);
+
+u.port('input','val_i',1);
+u.port('input','qos_i',4);
+u.port('output','qin_o',QOSW);
+u.port('output','qbv_o',QOSN);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+\=u.getPorts('\n    ')=\
+);
+
+wire [\=QOSN-1=\:0]		t_qhit;
+\js for (let i=0; i<QOSN; i=i+1) {
+	assign t_qhit[\=i=\] = (| ((16'h1 << qos_i) & \=QMAP[i]=\));
+\js }
+
+\=u.instance({
+	moduleName: 'ioaiu_ohenc',
+	instanceName: 'qhit_ohenc',
+	params: {
+		VW:		QOSN,
+		BW:		QOSW
+	},
+	ports: {
+		vec_i:		't_qhit',
+		bin_o:		'qin_o'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+assign qbv_o = t_qhit & 
+\jsbegin
+// This entire module is never currently intantiated if QOSA==0.
+/* istanbul ignore else env ncore_3p7 */
+    if (QOSA>0) { \jsend
+                       {\=QOSN=\{val_i}};
+\js } else {
+                       1'b0;
+\js }
+
+////////////////////////////////////////////////////////////////////////
+\jsbegin
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off 
+// coverage off
+assert_never_unknown #(0, 4) assert_unknown_qos(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(val_i),
+	.test_expr	(qos_i)
+);
+
+assert_never #(0) assert_qmap(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	(
+			 (val_i & (~| t_qhit)))
+);
+assert_zero_one_hot #(0, \=QOSN=\) assert_qmap_one_hot(
+        .clk            (clk_i),
+        .reset_n        (reset_ni),
+        .test_expr      (t_qhit)
+);
+// coverage on
+// synopsys translate_on 
+// pragma synthesis_on
+`endif
+\js }
+endmodule

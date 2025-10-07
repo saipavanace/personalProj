@@ -1,0 +1,116 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// GRB Unit
+// Author: Boon Chuan
+//=============================================================================
+
+// Variables
+var u = obj.lib;
+var m = obj.userLib;
+
+var bundleFunctions = obj.userLib.bundleFunctions;
+var interfaceGen    = obj.userLib.interfaceGenerators;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+//=============================================================================
+// Top Level Parameters
+//=============================================================================
+var csr                = obj.lib.getParam('csr');
+
+//=============================================================================
+// Interface Generation
+//=============================================================================
+
+var clkInterface               = obj.lib.getParam('clkInterface');
+var clkInterfaceName           = obj.lib.getParam('clkInterfaceName');
+
+var myClkInterface = {
+    clk: 1,
+    reset_n: 1
+}
+
+var regProtectionInterface     = obj.lib.getParam('regProtectionInterface');
+var regProtectionInterfaceName = obj.lib.getParam('regProtectionInterfaceName');
+var regProtectionStyle         = obj.lib.getParam('regProtectionStyle');
+
+var apbInterface       = obj.lib.getParam('apbInterface');
+var apbInterfaceName   = obj.lib.getParam('apbInterfaceName');
+
+//=============================================================================
+// Clock and Reset Interface
+//=============================================================================
+
+obj.lib.interface(clkInterfaceName, 'slave', clkInterface);
+
+//=============================================================================
+// APB Interface
+//=============================================================================
+
+obj.lib.interface(apbInterfaceName, 'slave', obj.lib.getParam('apbInterface'));
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wire Bundles
+//=============================================================================
+\jsend
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+\jsbegin
+//=============================================================================
+// Module Instances
+//=============================================================================
+\jsend
+
+\jsbegin
+//=============================================================================
+// CSR
+//=============================================================================
+\jsend
+
+\jsbegin
+    var CSR_INTF = [];
+
+    CSR_INTF.push({
+        modulePrefix: apbInterfaceName,
+        localPrefix: apbInterfaceName,
+        interface: apbInterface
+    });
+
+    var csr_params = {
+        clkInterface               : myClkInterface,
+        clkInterfaceName           : clkInterfaceName,
+        apbInterface               : apbInterface,
+        apbInterfaceName           : apbInterfaceName,
+        regProtectionInterface     : regProtectionInterface,
+        regProtectionInterfaceName : regProtectionInterfaceName,
+        regProtectionStyle         : regProtectionStyle,
+        csr: csr
+    };
+    var instance_ports_for_csr = {
+        clk                    : clkInterfaceName+'clk',
+        reset_n                : clkInterfaceName+'reset_n'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'u_csr',
+        moduleName: 'grb_csr',
+        params: csr_params,
+        verilogParams: {},
+        ports: instance_ports_for_csr,
+        interfaces: CSR_INTF,
+        portsDelimiter: '\n'
+    })=\
+
+endmodule

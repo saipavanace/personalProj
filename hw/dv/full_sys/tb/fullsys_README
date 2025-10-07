@@ -1,0 +1,55 @@
+///////////////////////////////////////////////
+// Do following steps to compile exiting fullsys Env
+///////////////////////////////////////////////
+1: get IE2 legato rtl from confluence into new dir $WORK_TOP/../ie2_legato_top
+    ungzip from tgz at https://confluence.arteris.com/pages/viewpage.action?pageId=9111241
+
+    a. edit $WORK_TOP/../ie2_legato_top/rtl/flist.v paths to point to the rtl dir in this workspace 
+
+
+2: generate all blk RTL independently using compile command, All dump will be in $WORK_TOP/debug 
+  chi_aiu:
+    node $WORK_TOP/../scripts/qrsim.js -m -q -e chi_aiu -c -n chi_aiu -d RTL_DUT,INHOUSE_AXI,DUMP_ON -s $WORK_TOP/../test_projects/fsys_v3.0_configs/simple_config1AchlParams.json -a -U $WORK_TOP/rtl/chi_aiu/bringup/new_test_params.json 
+  ioaiu:
+    node $WORK_TOP/../scripts/qrsim.js -e ioaiu -c -d DUMP_ON,ASSERT_ON -q -n config1 -s $WORK_TOP/../test_projects/fsys_v3.0_configs/simple_config1AchlParams.json -a -U $WORK_TOP/rtl/ioaiu/src/ioaiu_config1.json
+  dii:
+    node $WORK_TOP/../scripts/qrsim.js -m -q -e dii -c -n dii1 -d INHOUSE_AXI,DUMP_ON,V1,RTL_DUT,ASSERT_ON -s $WORK_TOP/../test_projects/fsys_v3.0_configs/simple_config1AchlParams.json -a -U $WORK_TOP/rtl/dii/bringup/new_bringup_params.json
+  dmi:
+    node $WORK_TOP/../scripts/qrsim.js -m -q -e dmi -c -n dmi1 -d RTL_DUT,INHOUSE_AXI,DUMP_ON -s $WORK_TOP/../test_projects/fsys_v3.0_configs/simple_config1AchlParams.json -a -U $WORK_TOP/rtl/dmi/bringup/bringup_params.json
+
+  
+3: 
+///////////////////////////
+// To avoid module duplication error issue
+// Regenerate RTL for all modules following below example
+////////////////////////////
+  a. remove all blk tb dump dir; rm -r $WORK_TOP/debug/*/*/rtl
+
+  b. update all $WORK_TOP/debug/*/*/exe/gen_rtl by comparing to below template.  use tachl version tachl_1.2.2 and add -s suffix
+    /engr/dev/tools/script/tachl_1.2.2/bin/tachl.js 
+    ... -s chiaiu
+
+  c. run all $WORK_TOP/debug/*/*/exe/gen_rtl to regenerate
+
+  d. edit each 'grep include' in $WORK_TOP/debug/*/*/rtl to add suffix to file
+     allsed -i 's/_0.v/_dii1\0/'
+  
+  e. give absolute paths in $WORK_TOP/debug/*/*/rtl/flist.f
+
+
+4: To compile fullSys
+   node $WORK_TOP/../scripts/qrsim.js -m -q -e fsys -c -n fsys1 -d INHOUSE_AXI,DUMP_ON,ASSERT_ON,NO_ADDR_MGR,RTL_DUT,FULL_SYS -s $WORK_TOP/../test_projects/fsys_v3.0_configs/simple_config1AchlParams.json
+   this is expected to fail.
+
+5: add path to flist of each rtl in this system into $WORK_TOP/debug/fsys/fsys1/dv/vcs.flist immediately prior to the '+incdir dv'
+   add after rtls:  -f $WORK_TOP/../ie2_legato_top/rtl/flist.f
+    (refer to example $WORK_TOP/dv/full_sys/tb/vcsIE2.flist)
+   add after all rtls absolute path of: $WORK_TOP/dv/full_sys/tb/fsys_configIE2.sv
+
+6: recompile fsys using edited files by running  $WORK_TOP/debug/fsys/fsys1/exe/compile_env .  this should succeed.
+
+7: for Chi NonCh txn run test as below
+   node $WORK_TOP/../scripts/qrsim.js -e fsys -n fsys1 -t concerto_fullsys_test -q -R 31858079 -p +chi_num_trans=10,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+dmi_scb_en=1,+chiaiu_scb_en=1,+dii_scb_en=0,+k_ace_slave_read_addr_chnl_burst_pct=100,+k_ace_slave_read_data_chnl_burst_pct=100,+k_ace_slave_read_data_interleave_dis=1,+k_timeout=2000000 
+   
+    
+

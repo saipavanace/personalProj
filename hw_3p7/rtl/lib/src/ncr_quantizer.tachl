@@ -1,0 +1,150 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Ncore 3 quantizer block
+// Author: Ronak Salamat
+// //=============================================================================
+\jsend
+
+\jsbegin
+
+var u						= obj.lib;
+var bundleFunctions				= obj.userLib.bundleFunctions;
+var libUtils					= obj.userLib;
+
+//=============================================================================
+// Parameters
+//=============================================================================
+var widthInput				= libUtils.hierGetParam('widthInput',u.getParam); //width of the counter
+
+var binWidths					= libUtils.hierGetParam('binWidths',u.getParam); //JS parameter for Bin Width
+
+var numBins					= binWidths.length;
+
+//============================================================================
+// Local Functions 
+//=============================================================================
+
+function computeBinBases (binWidths) {
+	var bases = [];
+	for (var i = 0; i < binWidths.length; i++){
+		if (i == 0)
+			bases.push(0);
+		else
+			bases.push(bases[i-1]+binWidths[i-1]);
+	}
+	return bases;
+}
+
+function numToVlogConstants (numarray, widthInput){
+	var vlogconstants = [];
+	for (var i = 0; i < numarray.length; i++){
+		vlogconstants.push( numToVlogConstant(numarray[i], widthInput));	
+	}
+	return vlogconstants;
+}
+
+
+// Converts a number x to a Verilog constant (string) of specified width
+function numToVlogConstant (x, width) {
+	return width + "'h" + x.toString(16);
+}
+
+
+function isPowerOf2(num){
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */ 
+	if ((num & (num-1)) == 0)
+		return true;
+	else
+		return false;
+}
+
+// Function that accepts an array of binWidths (numbers) and returns an array
+// of mask numbers
+function findMask(binWidths, widthInput){
+	var maskVec = [];
+	for (var i = 0; i < binWidths.length; i++){
+		var ones  = Math.pow(2, widthInput) - 1;
+		var x 	  = ones << Math.log2(binWidths[i]) & ones;
+	        maskVec.push( x );
+
+}
+	return maskVec;
+}
+//=============================================================================
+// Interfaces and port declarations
+//=============================================================================
+u.port('input', 'count_in', widthInput);
+u.port('input', 'valid_in', 1);
+u.port('output', 'ncr_bins', numBins);
+
+//=============================================================================
+// Instantiate Interfaces
+//=============================================================================
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+
+//=============================================================================
+// Wire declaration
+//=============================================================================
+wire [\=numBins-1=\:0] cam_qntzr_out;
+
+  
+\jsbegin
+
+	var bases 					= computeBinBases(binWidths);
+	var basesVerilog				= numToVlogConstants(bases, widthInput);
+
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */ 
+if (binWidths.every(isPowerOf2)) {
+ 
+	var maskVec 					= findMask(binWidths, widthInput);
+	var maskVecVerilog				= numToVlogConstants(maskVec, widthInput);
+
+\jsend
+\=obj.lib.instance({
+        instanceName: 'ncr_cam_quantizer',
+        moduleName: 'cam_lookup',
+        params: {
+		lookupBases : basesVerilog,
+		lookupMasks : maskVecVerilog,
+		widthInput : widthInput		
+},
+        ports: {
+            address_in      : 'count_in',
+            addr_hit        : 'cam_qntzr_out'
+        }
+    })=\
+
+\jsbegin
+}
+
+else {
+	var binWidthsVerilog = numToVlogConstants(binWidths, widthInput);
+	var tempres = []; 
+
+	for (var i = 0; i < numBins; i++){ 
+		tempres.push(bases[i] + binWidths[i]);
+}
+
+	var tempResVerilog = numToVlogConstants(tempres,widthInput);
+
+	for (var i = 0; i < numBins; i++) { \jsend
+		assign cam_qntzr_out[\=i=\] = ((count_in >= \=basesVerilog[i]=\) && (count_in < (\=tempResVerilog[i]=\)));
+
+\jsbegin 
+}
+} \jsend
+
+\jsbegin for (var i = 0; i < numBins; i++){ \jsend
+assign ncr_bins[\=i=\] = cam_qntzr_out[\=i=\] && valid_in;
+
+\jsbegin
+} \jsend
+
+
+endmodule

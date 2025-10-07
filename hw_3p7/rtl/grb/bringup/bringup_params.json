@@ -1,0 +1,456 @@
+{
+    "nAius": 1,
+    "nDces": 1,
+    "nDmis": 1,
+    "nDiis": 1,
+    "nDves": 1,
+    "wCacheLineOffset": 6,
+    "nSnoopFilters": 1,
+    "strRtlNamePrefix": "GRB",
+    "assertOn": 1,
+    "interfaces": {
+        "clkInt": {
+            "name": "",
+            "params": {},
+            "direction": "slave",
+            "interface": "InterfaceCLK"
+        },
+        "apbInt": {
+            "name": "grb_apb_slv_",
+            "params": {
+                        "wAddr"      : 12,
+                        "wData"      : 32,
+                        "wPSlverr"   : 1
+                      },
+            "direction": "slave",
+            "interface": "InterfaceAPB"
+        }
+    },
+    "csr": {
+        "addressWidth": 12,
+        "width": 32,
+        "spaceBlock": [
+            {
+                "baseAddress": 0,
+                "registers": [
+                    {
+                        "name": "GRBUCSSFIDR0",
+                        "description": "GRBU Coherent Subsystem Snoop Filter Identification Register 0",
+                        "csrDescription": "GRBU Coherent Subsystem Snoop Filter Identification Register 0",
+                        "addressOffset": 3840,
+                        "fields": [
+                            {
+                                "name": "nSets",
+                                "bitOffset": 0,
+                                "bitWidth": 20,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Sets. This field indicates the number of sets in the snoop filter minus one in each DIRU. To determine the total number of sets in the snoop filter, this value must be multiplied by the number of DIRUs. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "nWays",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Ways. This field indicates the number of ways (i.e. the associativity) in the snoop filter minus one. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "filterType",
+                                "bitOffset": 26,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Snoop Filter Type. This field indicates the type of snoop filter. The type of the snoop filter is given as follows (all other values are RESERVED): 0b000-Unimplemented filter, 0b001-Null filter, 0b010-Tag filter-presence vector, 0b011-Tag filter-owner pointer/sharer vector, 0b110-Tag filter with victim buffer-presence vector, 0b111-Tag filter with victim buffer-owner pointer/sharer vector",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 29,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GRBUCSSFIDR1",
+                        "description": "GRBU Coherent Subsystem Snoop Filter Identification Register 1",
+                        "csrDescription": "GRBU Coherent Subsystem Snoop Filter Identification Register 1",
+                        "addressOffset": 3844,
+                        "fields": [
+                            {
+                                "name": "nSets",
+                                "bitOffset": 0,
+                                "bitWidth": 20,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Sets. This field indicates the number of sets in the snoop filter minus one in each DIRU. To determine the total number of sets in the snoop filter, this value must be multiplied by the number of DIRUs. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "nWays",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Ways. This field indicates the number of ways (i.e. the associativity) in the snoop filter minus one. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "filterType",
+                                "bitOffset": 26,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Snoop Filter Type. This field indicates the type of snoop filter. The type of the snoop filter is given as follows (all other values are RESERVED): 0b000-Unimplemented filter, 0b001-Null filter, 0b010-Tag filter-presence vector, 0b011-Tag filter-owner pointer/sharer vector, 0b110-Tag filter with victim buffer-presence vector, 0b111-Tag filter with victim buffer-owner pointer/sharer vector",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 29,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GRBUCSSFIDR2",
+                        "description": "GRBU Coherent Subsystem Snoop Filter Identification Register 2",
+                        "csrDescription": "GRBU Coherent Subsystem Snoop Filter Identification Register 2",
+                        "addressOffset": 3848,
+                        "fields": [
+                            {
+                                "name": "nSets",
+                                "bitOffset": 0,
+                                "bitWidth": 20,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Sets. This field indicates the number of sets in the snoop filter minus one in each DIRU. To determine the total number of sets in the snoop filter, this value must be multiplied by the number of DIRUs. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "nWays",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Ways. This field indicates the number of ways (i.e. the associativity) in the snoop filter minus one. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "filterType",
+                                "bitOffset": 26,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Snoop Filter Type. This field indicates the type of snoop filter. The type of the snoop filter is given as follows (all other values are RESERVED): 0b000-Unimplemented filter, 0b001-Null filter, 0b010-Tag filter-presence vector, 0b011-Tag filter-owner pointer/sharer vector, 0b110-Tag filter with victim buffer-presence vector, 0b111-Tag filter with victim buffer-owner pointer/sharer vector",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 29,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GRBUCSSFIDR3",
+                        "description": "GRBU Coherent Subsystem Snoop Filter Identification Register 3",
+                        "csrDescription": "GRBU Coherent Subsystem Snoop Filter Identification Register 3",
+                        "addressOffset": 3852,
+                        "fields": [
+                            {
+                                "name": "nSets",
+                                "bitOffset": 0,
+                                "bitWidth": 20,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Sets. This field indicates the number of sets in the snoop filter minus one in each DIRU. To determine the total number of sets in the snoop filter, this value must be multiplied by the number of DIRUs. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "nWays",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of Snoop Filter Ways. This field indicates the number of ways (i.e. the associativity) in the snoop filter minus one. For an unimplemented filter or a null filter, the value of this field is zero.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "filterType",
+                                "bitOffset": 26,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Snoop Filter Type. This field indicates the type of snoop filter. The type of the snoop filter is given as follows (all other values are RESERVED): 0b000-Unimplemented filter, 0b001-Null filter, 0b010-Tag filter-presence vector, 0b011-Tag filter-owner pointer/sharer vector, 0b110-Tag filter with victim buffer-presence vector, 0b111-Tag filter with victim buffer-owner pointer/sharer vector",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 29,
+                                "bitWidth": 3,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GRBUNRRIR",
+                        "description": "GRBU NRR Identification Register",
+                        "csrDescription": "GRBU NRR Identification Register",
+                        "addressOffset": 4084,
+                        "fields": [
+                            {
+                                "name": "NRRI",
+                                "bitOffset": 0,
+                                "bitWidth": 4,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Ncore Register Region Identifier of this Global Registers block",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 4,
+                                "bitWidth": 12,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "NRRUsed",
+                                "bitOffset": 16,
+                                "bitWidth": 4,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Total number of NRRs used in this Ncore 3 instance is given by NRRUsed + 1 NRRs with indices 0 through NRRUsed are expected to be used in this instance.",
+                                "reset": 0
+                            },
+                            {
+                                "name": "Rsvd2",
+                                "bitOffset": 20,
+                                "bitWidth": 12,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GRBUNRRUCR",
+                        "description": "GRBU NRR Unit Census Register",
+                        "csrDescription": "GRBU NRR Unit Census Register",
+                        "addressOffset": 4088,
+                        "fields": [
+                            {
+                                "name": "nAIUs",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of AIUs",
+                                "reset": 8
+                            },
+                            {
+                                "name": "nDCEs",
+                                "bitOffset": 8,
+                                "bitWidth": 6,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of DCE units",
+                                "reset": 4
+                            },
+                            {
+                                "name": "nDMIs",
+                                "bitOffset": 14,
+                                "bitWidth": 6,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of DMI units",
+                                "reset": 2
+                            },
+                            {
+                                "name": "nDPIs",
+                                "bitOffset": 20,
+                                "bitWidth": 6,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of DPI units",
+                                "reset": 1
+                            },
+                            {
+                                "name": "nDVEs",
+                                "bitOffset": 26,
+                                "bitWidth": 1,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "description": "Number of DVE units",
+                                "reset": 1
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 27,
+                                "bitWidth": 5,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    },
+                    {
+                        "name": "GRBUNSIDR",
+                        "description": "Ncore Subsystem Identification Register",
+                        "csrDescription": "Ncore Subsystem Identification Register",
+                        "addressOffset": 4092,
+                        "fields": [
+                            {
+                                "name": "RelVer",
+                                "bitOffset": 0,
+                                "bitWidth": 8,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Release Version"
+                            },
+                            {
+                                "name": "CachelineOffset",
+                                "bitOffset": 8,
+                                "bitWidth": 4,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Directory Cacheline Offset. This field indicates the width of the directory cache line offset. The number of bits in the directory cache line offset equals the value of this field + 5, e.g. for a 6-bit offset the value of this field equals 1. The size in bytes of the directory cache line is equal to two to the power of the offset."
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 12,
+                                "bitWidth": 4,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            },
+                            {
+                                "name": "nSnoopFilters",
+                                "bitOffset": 16,
+                                "bitWidth": 8,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "All",
+                                "description": "Number of Snoop Filters. This field indicates the number of snoop filters in the coherent system. The value of this field equals the number of snoop filters minus one."
+                            },
+                            {
+                                "name": "Rsvd1",
+                                "bitOffset": 24,
+                                "bitWidth": 8,
+                                "access": "RO",
+                                "hardware": "RO",
+                                "reset": 0,
+                                "linkOp": "NULL",
+                                "opOrder": "NULL",
+                                "scope": "",
+                                "description": "Reserved"
+                            }
+                        ],
+                        "specialImplementation": false
+                    }
+                ]
+            }
+        ]
+    }
+}

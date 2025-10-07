@@ -1,0 +1,321 @@
+<p><style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759724637504 {padding: 0px;}
+div.rbtoc1759724637504 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759724637504 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759724637504'>
+<ul class='toc-indentation'>
+<li><a href='#DedicatedNcoreserver-Introduction'>Introduction</a></li>
+<li><a href='#DedicatedNcoreserver-Demo'>Demo</a></li>
+<li><a href='#DedicatedNcoreserver-Proposedschemeforversionmanagement'>Proposed scheme for version management</a>
+<ul class='toc-indentation'>
+<li><a href='#DedicatedNcoreserver-Howthedependencypackageownermakeshiscodechangetobevisibleforintegration'>How the dependency package owner makes his code change to be visible for integration</a></li>
+<li><a href='#DedicatedNcoreserver-HowwewillassemblenewMaestroserverwithup-to-datedependencypackages'>How we will assemble new Maestro server with up-to-date dependency packages</a></li>
+</ul>
+</li>
+<li><a href='#DedicatedNcoreserver-Implementationdetails'>Implementation details</a>
+<ul class='toc-indentation'>
+<li><a href='#DedicatedNcoreserver-Packagedependency'>Package dependency</a></li>
+<li><a href='#DedicatedNcoreserver-Functioncallhierarchy'>Function call hierarchy</a></li>
+</ul>
+</li>
+<li><a href='#DedicatedNcoreserver-Actionitems'>Action items</a></li>
+</ul>
+</div></p><h2 id="DedicatedNcoreserver-Introduction">Introduction</h2><p>Full scale server infrastructure for the <a class="external-link" href="https://maestrodev.arteris.com/sections/maestro_backend/README_v2.html" rel="nofollow">backend flow</a> requires major development and is not likely to be completed in the time frame required by Ncore release schedule. </p><p>For the upcoming release we propose a simplified version, which we call &quot;Dedicated Ncore Server&quot; which eliminates some of the most complicated components of the complete server solution. Here are the key concepts of this proposal</p><ol><li>Server will always run on the same host as a client. I.e no server on Arteris premises<br/><em>Eliminates problems with connection, authentication and potential data leaks. No data leaves customer site </em></li><li>There will be no permanent  proxy which can listen and respond to multiple client request. Server session comes up upon client request , generates RTL+ collateral and terminates. Call to server is blocking - client can't instantiate multiple simultaneous server jobs<br/><em>The complexity of m-proxy layer is eliminated</em></li><li>All backend components (RTL and collateral generation flow, hw-* packages, JS utils, etc) are packaged to binary form and shipped with Maestro. Server supports Ncore-3 flow only</li><li>Communication between client (Maestro) and dedicated server goes through un-secure grpc link</li><li>No docker is required in the first phase. Solution will only work on RH 7.  </li></ol><h2 id="DedicatedNcoreserver-Demo">Demo</h2><p>1.Setup maestro_test environment </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">module purge
+module load dev/maestro_test/bleeding_edge</pre>
+</div></div><p>2. Now latest server exec <code>/engr/dev/releases/utils/dserver/latest/maestro-server</code> will be in the search path. Running it with -i flag prints build info, which includes the table of all components packaged in the server along with their versions </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; maestro-server -i
+
+{
+  &quot;name&quot;: &quot;maestro-server&quot;,
+  &quot;version&quot;: &quot;1.18.0&quot;,
+  &quot;build_id&quot;: 98,
+  &quot;build_time&quot;: &quot;2020-04-07 22:11:04 PDT&quot;,
+  &quot;components&quot;: {
+    &quot;tachl&quot;: {
+      &quot;version&quot;: &quot;1.6.16&quot;,
+      &quot;from&quot;: &quot;@arteris/tachl@1.6.16&quot;,
+      &quot;resolved&quot;: &quot;http://repo.arteris.com/repository/npm/@arteris/tachl/-/tachl-1.6.16.tgz&quot;
+    },
+    &quot;aria&quot;: {
+      &quot;version&quot;: &quot;1.17.0&quot;,
+      &quot;from&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/services/m-phys.git#v1.17.0&quot;,
+      &quot;resolved&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/services/m-phys.git#77b657e38ab6b5b82655b68ac6d21bc40d3cd058&quot;
+    },
+    &quot;utils&quot;: {
+      &quot;version&quot;: &quot;3.4.0&quot;,
+      &quot;from&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/packages/utils.git#v3.4.0&quot;,
+      &quot;resolved&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/packages/utils.git#d28eca935c2000fd9c6332e355f498c901835e1a&quot;
+    },
+    &quot;hw-lib&quot;: {
+      &quot;version&quot;: &quot;1.5.0&quot;,
+      &quot;from&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-lib.git#v1.5.0&quot;,
+      &quot;resolved&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-lib.git#28374a197ab5c509faf4804d07f6183809b94bcc&quot;
+    },
+    &quot;hw-ccp&quot;: {
+      &quot;version&quot;: &quot;1.1.0&quot;,
+      &quot;from&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ccp.git#v1.1.0&quot;,
+      &quot;resolved&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ccp.git#4cedeb06d90aa9f6d1652b6754906441eefbd19a&quot;
+    },
+    &quot;hw-ncr&quot;: {
+      &quot;version&quot;: &quot;2.3.0&quot;,
+      &quot;from&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ncr.git#v2.3.0&quot;,
+      &quot;resolved&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ncr.git#7ecae2f9ca6af6f0aa8140e6b0d940026553a3d8&quot;
+    },
+    &quot;hw-sym&quot;: {
+      &quot;version&quot;: &quot;0.8.0&quot;,
+      &quot;from&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-sym.git#v0.8.0&quot;,
+      &quot;resolved&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-sym.git#0c17981a7608de5624c917fde46d12774305c139&quot;
+    }
+  }
+}</pre>
+</div></div><p> </p><p>3. Create fresh directory, then copy and slightly modify hw_config_07.tcl script to add <strong> gen_collateral</strong> command right before the exit. Tcl is sourced because stable Maestro may not contain the newest version of the command</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">cp $MAESTRO_EXAMPLES/hw_config_07/hw_config_07.tcl .
+sed -i &#39;$ d&#39; hw_config_07.tcl
+printf &quot;\n# Run dserver end exit \n&quot; &gt;&gt; hw_config_07.tcl
+printf &quot;source /home/bennyw/source_code/maestro/maestro_tcl/maestro_init/gen_collateral.tcl \n&quot; &gt;&gt; hw_config_07.tcl
+printf &quot;gen_collateral \nexit \n&quot; &gt;&gt; hw_config_07.tcl</pre>
+</div></div><p> </p><p>4. <strong>gen_collateral</strong> command can be run with all defaults, but here are the options</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">NAME
+      gen_collateral - Generate verilog RTL and collateral for the completed
+      network
+SYNOPSIS
+      gen_collateral
+            [-file &lt;file&gt;]
+               Path to a tarball file where all results will be held. Default:
+               &lt;date_time&gt;.tgz, ex: Mar05_2020_164847.tgz
+            [-server_exec &lt;server_exec&gt;]
+               Full path to dedicated server executable, default: maestro-server
+               found in UNIX $PATH
+            [-port_range &lt;port_range&gt;]
+               Look for available port on local host through which Maestro
+               client and server will communicate, default: &quot;50051:50099&quot;
+            [-server_run_dir &lt;server_run_dir&gt;]
+               Directory where Maestro server will run. Must be writeable,
+               default: &quot;./.maestro_server_run_dir&quot;
+            [-server_log_file &lt;server_log_file&gt;]
+               Redirect server stdout and stderr to this file for debug,
+               default: &quot;./maestro-server.log&quot;
+DESCRIPTION
+      Launch Maestro server which will generate tarball with synthesizable
+      design RTL along with collateral such as ipXact, testbench and synthesis
+      scripts</pre>
+</div></div><p> </p><p>5. Make sure to define MAESTRO_USER_TCL var, because we only copied the main file over  </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">export MAESTRO_USER_TCL=$MAESTRO_EXAMPLES/hw_config_07/default_design</pre>
+</div></div><p>6. Launch Maestro</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">rlwrap maestro -c -s hw_config_07.tcl</pre>
+</div></div><p>When server starts running very little is printed back to Maestro console (we will improve logging). For the moment the easiest way to observe server progress and debug errors is by looking at maestro-server.log where all server messages are being redirected. For ex: <code>tail -f maestro-server.log</code></p><h2 id="DedicatedNcoreserver-Proposedschemeforversionmanagement">Proposed scheme for version management</h2><h3 id="DedicatedNcoreserver-Howthedependencypackageownermakeshiscodechangetobevisibleforintegration">How the dependency package owner makes his code change to be visible for integration </h3><p>*Examples use aria, but the procedure should be the same for all other packages. There are actually just 2 commands to be added to a normal commit+push process: <code>npm version</code> and <code> git push origin --tags</code>. Everything else is just querying</p><p>1.Firstly each of our packages must have package.json with the following fields</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;name&quot;: &quot;@arteris/aria&quot;,
+  &quot;productName&quot;: &quot;aria&quot;,
+  &quot;version&quot;: &quot;1.16.3&quot;,
+  &quot;description&quot;: &quot;Genwrapper analysis utility&quot;,
+ ...</pre>
+</div></div><p>This only needs to be done once</p><p>2. Make sure that all changes are committed and all remote changes are merged. git status should show that your branch (normally master) is ahead of the remote and there are no locally modified files:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; git status
+On branch master
+Your branch is ahead of &#39;origin/master&#39; by 1 commit.
+  (use &quot;git push&quot; to publish your local commits)
+nothing to commit, working directory clean</pre>
+</div></div><p> 3. Tag the package version which you're about to push</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"> &gt; npm version major|minor|patch  </pre>
+</div></div><p>This advances the version field in package.json and does git commit - it's comment will be just the new npm version. So after <code>npm version patch</code> the version field will advance from 1.16.3 to 1.16.4 and the top of git log will look like</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; git log
+commit 68fb3d963c7f8ed823134ef28a243fa2fe98dc78
+Author: Benny Winefeld &lt;benny.winefeld@arteris.com&gt;
+Date:   Wed Mar 4 14:29:12 2020 -0800
+    1.16.4
+...</pre>
+</div></div><p><br/>4. You can compare package.json with the git remote one with:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; git diff origin/master package.json
+...
+-  &quot;version&quot;: &quot;1.16.3&quot;,
++  &quot;version&quot;: &quot;1.16.4&quot;,</pre>
+</div></div><p>Note: previous 1.16.3 comes from package.json on git remote repository.</p><p>5. If all looks good, push the new code along with the tag to git</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; git push origin master &amp;&amp; git push origin --tags
+ 
+Compressing objects: 100% (4/4), done.
+...
+To http://gitlab.arteris.com/maestro-dev/services/m-phys.git
+ * [new tag]         v1.16.3 -&gt; v1.16.4
+</pre>
+</div></div><p>* Notice that name of git repository can be different from the package dependency name. Aria's git repo is m-phys ... for historical reasons</p><h3 id="DedicatedNcoreserver-HowwewillassemblenewMaestroserverwithup-to-datedependencypackages">How we will assemble new Maestro server with up-to-date dependency packages</h3><p>1. Currently build maestro-server binary still includes aria version 1.6.3. You can see it by running </p><div class="code panel pdl" style="border-width: 1px;">
+ <div class="codeHeader panelHeader pdl hide-border-bottom">
+  <b class="code-title"></b><span class="collapse-source expand-control" style="display:none;"><span class="expand-control-icon icon">&nbsp;</span><span class="expand-control-text">Expand source</span></span><span class="collapse-spinner-wrapper"></span>
+ </div>
+ <div class="codeContent panelContent pdl hide-toolbar">
+  <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence; collapse: true" data-theme="Confluence">&gt; maestro-server -i
+*************************************************************************
+Dedicated Ncore server   Build id: 71, built at: 2020-03-11 09:44:31 PDT
+Versions of used packages:
+  m-ncore.................. 1.3.1
+  tachl.................... 1.6.15
+  hw-lib................... 1.0.9
+  hw-ccp................... 1.0.3
+  hw-ncr................... 2.0.22
+  hw-sym................... 0.1.19
+  utils.................... 2.0.21-ir.1
+  aria..................... 1.16.3
+*************************************************************************</pre>
+ </div>
+</div><p>or directly by looking at package.json of the server </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; cd /home/bennyw/source_code/m-ncore
+&gt; less package.json
+ 
+ &quot;dependencies&quot;: {
+    &quot;@arteris/utils&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/packages/utils.git#dserver&quot;,
+    &quot;@arteris/aria&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/services/m-phys.git#v1.16.3&quot;,
+    &quot;@arteris/hw-ccp&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ccp.git&quot;,
+    &quot;@arteris/hw-lib&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-lib.git&quot;,
+    &quot;@arteris/hw-ncr&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ncr.git&quot;,
+    &quot;@arteris/hw-sym&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-sym.git&quot;,
+
+</pre>
+</div></div><p>Second line is the directive for npm install to create dependency package node_modules/@arteris/aria by pulling a version tagged with v.1.16.3 from   m-phys git repository</p><p>2.  Run a script which will connect to gitlab.arteris.com and check if any dependencies have newer versions. If the local version of a dependent package, such as aria, is the same as the most recent tag aria on gitlab script says that    </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; scripts/update_dep_versions.js
+===================================================
+# m-ncore dependencies report 
+#===================================================
+...
+6) @arteris/aria
+  git repo: git+ssh://git@gitlab.arteris.com:maestro-dev/services/m-phys.git
+  Current version v1.16.3 is up to date</pre>
+</div></div><p>3. If meanwhile aria has been change and pushed to gtilab with the new tag, the same script will show that aria  dependency needs to be updated</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">#===================================================
+# m-ncore dependencies report 
+#===================================================
+...
+6) @arteris/aria
+  git repo: git+ssh://git@gitlab.arteris.com:maestro-dev/services/m-phys.git
+  advancing version v1.16.3 -&gt; v1.16.4
+  git commit: fac53c8b78a1cf13e095eccb01e8c503caaa2d4a from 2020-03-11 11:44:42</pre>
+</div></div><p>Note: only semver tags are taken into account. If for example new version of aria was pushed without any tags or with tag which is not formatted as v.&lt;num&gt;.&lt;num&gt;.&lt;num&gt;  it won't be taken for integration.</p><p> 4. Run the same script, but this time with <strong>-u</strong> flag to actually update package.json file of m-ncore. It should only change the updated packaged.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; scripts/update_dep_versions.js -u
+&gt; git diff package.json
+   &quot;dependencies&quot;: {
+-    &quot;@arteris/aria&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/services/m-phys.git#v1.16.3&quot;,
++    &quot;@arteris/aria&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/services/m-phys.git#v1.16.4&quot;,</pre>
+</div></div><p>And if you run the same script again it will tell that everything is up to date</p><p>5. Now we can commit the change</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; git commit -a -m &quot;including aria 1.16.4&quot; </pre>
+</div></div><p>6. The version of the m-ncore, i.e maestro-server itself, can also be updated </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; npm version patch
+v1.3.2</pre>
+</div></div><p>7. Finally we can push new config of maestro-server</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; git push origin master &amp;&amp; git push origin --tags</pre>
+</div></div><p>This triggers <a class="external-link" href="http://jenkins.arteris.com:8080/job/maestro_dev/job/m-ncore/" rel="nofollow">http://jenkins.arteris.com:8080/job/maestro_dev/job/m-ncore/</a> pipeline assembling new maestro-server binary</p><p>8. When new server gets deployed we can see 3 changes vs the previous one:</p><p>build: 71 =&gt; 72 , top package m-ncore:  1.3.1=&gt;1.3.2   , aria: 1.16.3 =&gt; 1.16.4  </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&gt; maestro-server -i
+*************************************************************************
+Dedicated Ncore server   Build id: 72, built at: 2020-03-11 12:10:26 PDT
+Versions of used packages:
+  m-ncore.................. 1.3.2
+  tachl.................... 1.6.15
+  hw-lib................... 1.0.9
+  hw-ccp................... 1.0.3
+  hw-ncr................... 2.0.22
+  hw-sym................... 0.1.19
+  utils.................... 2.0.21-ir.1
+  aria..................... 1.16.4
+*************************************************************************</pre>
+</div></div><p> </p><h2 id="DedicatedNcoreserver-Implementationdetails">Implementation details</h2><h3 id="DedicatedNcoreserver-Packagedependency">Package dependency </h3><p>Dserver is a self-contained software bundle, which includes everything except Maestro. The top level module (repository) is m-ncore, and its local dependencies in package.json are</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&quot;@arteris/hw-ccp&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ccp.git&quot;,
+&quot;@arteris/hw-lib&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-lib.git&quot;,
+&quot;@arteris/hw-ncr&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-ncr.git&quot;,
+&quot;@arteris/hw-sym&quot;: &quot;git+ssh://git@gitlab.arteris.com:hardware/hw-sym.git&quot;,
+&quot;@arteris/utils&quot;: &quot;git+ssh://git@gitlab.arteris.com:maestro-dev/packages/utils.git#dserver&quot;,  &lt;== pull latest code from dserver branch of utils 
+&quot;@grpc/proto-loader&quot;: &quot;^0.5.1&quot;,</pre>
+</div></div><p>The utils package itself has further dependencies:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&quot;@arteris/aria&quot;: &quot;^1.13.0&quot;,
+&quot;@arteris/tachl&quot;: &quot;1.6.15&quot;,    &lt;== pull specific published version, manually controlled</pre>
+</div></div><p><br/>All dependencies which start with &quot;@arteris/...&quot; are expected to be published at Arteris registry <a class="external-link" href="http://repo.arteris.com/#browse/browse/components:arteris-npm" rel="nofollow">repo.arteris.com</a> with command like <code>npm publish --registry=<a class="external-link" href="http://repo.arteris.com/repository/arteris-npm" rel="nofollow">http://repo.arteris.com/repository/arteris-npm</a> </code><br/>For example  for tachl package-lock.json shows:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&quot;@arteris/tachl&quot;: {
+  &quot;version&quot;: &quot;1.6.15&quot;,
+   &quot;resolved&quot;: &quot;http://repo.arteris.com/repository/npm/@arteris/tachl/-/tachl-1.6.15.tgz&quot;,</pre>
+</div></div><p>In addition there is another source directory (i.e dependency)  <code>m-ncore/src/assets</code> ,which is not pulled down from code repository, but created by <code>scripts/prepublish.js</code> . Pre-publish is automatically run by 'npm install' process  <br/>Assets directory is generated out of hw-* packages and includes: <code>csr/, interface/, lib/, map/, packet/, schema/</code>. Notice that in mClient flow assets are always re-generated in runtime, rather during the build process.  </p><p>Lastly m-ncore doesn't depend on mClient repository. RTL and collateral generation function 'generate' is taken from utils. We plan to switch mClient/run_maestro to use this function so mClient and dserver will execute the same backend flow.   </p><h3 id="DedicatedNcoreserver-Functioncallhierarchy">Function call hierarchy</h3><p> 1. At the top level there is a file <a class="external-link" href="http://gitlab.arteris.com/maestro-dev/services/m-ncore/blob/master/src/ncoreGen.v2.js" rel="nofollow">ncoreGen.v2.js</a>, which can be executed as a unix script and accepts following command line parameters </p><div class="code panel pdl" style="border-width: 1px;">
+ <div class="codeHeader panelHeader pdl hide-border-bottom">
+  <b class="code-title"></b><span class="collapse-source expand-control" style="display:none;"><span class="expand-control-icon icon">&nbsp;</span><span class="expand-control-text">Expand source</span></span><span class="collapse-spinner-wrapper"></span>
+ </div>
+ <div class="codeContent panelContent pdl hide-toolbar">
+  <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false; theme: Confluence; collapse: true" data-theme="Confluence">Options:
+  -V, --version                output the version number
+  -p, --port &lt;port&gt;            port number
+  -r, --runDir &lt;dir&gt;           directory where dserver will run and generate output
+  -d, --depDir &lt;dir&gt;           dependency directory
+  -t, --transport &lt;transport&gt;  transport communication library; default=grpc
+  -z, --proto &lt;path&gt;           path to proto file (grpc transport only)
+  -j, --json &lt;file&gt;            parameter json file (intermediate format)
+  -l, --log_level &lt;level&gt;      logger level [error|warn|info|verbose|debug|silly]; default=info
+  -e, --env &lt;p1=v1,..&gt;         set environment variables
+  -h, --help                   output usage information
+</pre>
+ </div>
+</div><p>There are two functional modes - file-based and grpc-based</p><p>2a. In a file-based mode ncoreGen.v2.js simply gets a pointer to intermediate json with --json flag and launches<br/><code> <span class="legacy-color-text-blue2">await genAll(intJson,intJsonName,logger,['MCLIENT_GENERATE_ALL=true','NCR_DEBUG_JSON=true'])</span></code></p><p>2b. In grpc mode ncoreGen.v2.js calls<code> <span class="legacy-color-text-blue2">transportGrpc(port, service, runDir, depDir, protoPath)</span> </code>first  <br/>*depDir is a legacy option, which doesn't do anything in dserver context. In full server environment it can be used to point to a particular installation of packages, like /engr/dev/releases/utils/dep/m.ncore.stable</p><p><a class="external-link" href="http://gitlab.arteris.com/maestro-dev/services/m-ncore/blob/master/src/transportGrpc.js" rel="nofollow">transportGrpc.js</a> starts grpc service and  adds getRtl service</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">await server.addService(protoDescriptor.Ncore.service, { 
+  getRtl: getRtl({ service, runDir, depDir, server }),
+  ... </pre>
+</div></div><p>getRtl is implemented in <a class="external-link" href="http://gitlab.arteris.com/maestro-dev/services/m-ncore/blob/master/src/methods/getRtlDserver.js" rel="nofollow">getRtlDserver.js</a>  (i kept original version of getRtl in src/methods/getRtl) </p><p>Essentially it's a bi-directional communication stream with the client. When it finishes receiving all the data sent by client, it  extracts intermediate json and metadata and then launches genAll similarly to how it was done in 2a<br/><span class="legacy-color-text-blue2"><code>await genAll(json,meta.projectName,logger,['MCLIENT_GENERATE_ALL=true','NCR_DEBUG_JSON=true']);</code></span></p><p> 3. genAll(intJson,intJsonName,logger,env)  in <a class="external-link" href="http://gitlab.arteris.com/maestro-dev/services/m-ncore/blob/master/src/methods/src/genAll.js" rel="nofollow">genAll.js</a></p><p>It's is a little more than a wrapper, it assembles all necessary data and finally calls utils' <br/><code><span class="legacy-color-text-blue1">await generate(jsonInfo, paths, dependencies, exportOptions); </span></code></p><p>Here is an example of what is being passed to generate() </p><div class="code panel pdl" style="border-width: 1px;">
+ <div class="codeHeader panelHeader pdl hide-border-bottom">
+  <b class="code-title"></b><span class="collapse-source expand-control" style="display:none;"><span class="expand-control-icon icon">&nbsp;</span><span class="expand-control-text">Expand source</span></span><span class="collapse-spinner-wrapper"></span>
+ </div>
+ <div class="codeContent panelContent pdl hide-toolbar">
+  <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: xml; gutter: false; theme: Confluence; collapse: true" data-theme="Confluence">{
+  "jsonInfo": {
+    "intjson": "[obj]",
+    "intJsonName": "mcl_hw_config_07"
+  },
+  "paths": {
+    "HW_NCR_PATH": "/snapshot/m-ncore/node_modules/@arteris/hw-ncr",
+    "HW_SYM_PATH": "/snapshot/m-ncore/node_modules/@arteris/hw-sym",
+    "HW_LIB_PATH": "/snapshot/m-ncore/node_modules/@arteris/hw-lib",
+    "HW_CCP_PATH": "/snapshot/m-ncore/node_modules/@arteris/hw-ccp",
+    "SW_AST_PATH": "/snapshot/m-ncore/src/assets",
+    "OUTPUT_DIR_PATH": "/home/bennyw/workspace/dserver/test/bin_grpc/my_server_run_dir/output",
+    "RTL_ASSETS": {
+      "inputDirArr": [
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/chi_aiu/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/dii/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/dce/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/dmi/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/dve/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/ioaiu/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/grb/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ncr/rtl/lib/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/apb_init/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/apb_targ/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/atui/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/atut/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/axi_init/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/axi_targ/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/clk_pwr_adapter/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/ctl_init/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/ctl_targ/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/dw_adapter/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/lib/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/pmon/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/smi_depkt/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/smi_pkt/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-sym/rtl/rob/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-lib/rtl/lib/src",
+        "/snapshot/m-ncore/node_modules/@arteris/hw-ccp/rtl/src"
+      ],
+      "jsLibObj": {
+        "smiLib": {
+          "pkt2SmiTable": {
+            "table": {
+              "H_dp_present": "ndp_dp_present",
+              "H_route": "ndp_route",
+              "H_sid": "ndp_src_id",
+   ...
+  "cprArr": [
+        "/snapshot/m-ncore/src/assets/interface",
+        "/snapshot/m-ncore/src/assets/packet",
+        "/home/bennyw/workspace/dserver/test/bin_grpc/my_server_run_dir/output/debug/hack"
+      ],
+      "topFile": "/snapshot/m-ncore/node_modules/@arteris/hw-lib/rtl/lib/src/gen_wrapper.tachl"
+    }
+  },
+  "dependencies": logger,
+
+</pre>
+ </div>
+</div><p> </p><h2 id="DedicatedNcoreserver-Actionitems">Action items</h2><p> </p><div class="table-wrap"><table class="confluenceTable"><tbody><tr><th class="confluenceTh">Id</th><th class="confluenceTh">Item</th><th class="confluenceTh">Owner</th><th class="confluenceTh">Comment</th></tr><tr><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p><span class="legacy-color-text-green2">Move RTL and collateral generation flow to utils repository</span><br/><span class="legacy-color-text-green2">and make it accessible through a single &quot;super-function&quot; <strong>generate</strong> which will be equivalent to </span><br/><span class="legacy-color-text-green2">mClient-generate</span></p></td><td class="confluenceTd"><span class="legacy-color-text-green2">Allan</span></td><td class="confluenceTd"><p><span class="legacy-color-text-green2">At this moment two independent flows exist - one under mClient and another under m-ncore repository - </span><br/><span class="legacy-color-text-green2">which was once coped from mClient and later diverged.</span></p><p><span class="legacy-color-text-green2">Instead we should have just one same main function which can be called locally (run_maestro)</span><br/><span class="legacy-color-text-green2">and through server call. We do early development in a special branch dserver of utils to prevent possible </span><br/><span class="legacy-color-text-green2">impact on other teams who use utils</span></p></td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green4">1a</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green4">Merge utils changes from dserver branch to master</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green4">Allan</span></td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">1b</span></td><td colspan="1" class="confluenceTd"><p><span class="legacy-color-text-green2">Move mClient-pregen sequence from being executed during runtime, as it's done in mClient <br/>to be done during packaging of m-ncore.</span></p></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Allan</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">pregen creates are not design specific, but need to be rerun when there iS A CHANGE IN HW* REPOSITORIES</span></td></tr><tr><td class="confluenceTd"><span class="legacy-color-text-green4">2</span></td><td class="confluenceTd"><span class="legacy-color-text-green4">Enable call to the new functionality through a new flag of run_maestro (say -new_flow)</span></td><td class="confluenceTd"><span class="legacy-color-text-green4">Benny</span></td><td class="confluenceTd"><p><span class="legacy-color-text-green4">Implemented -ums, --use_maestro_server option.</span></p></td></tr><tr><td colspan="1" class="confluenceTd">2a</td><td colspan="1" class="confluenceTd">Help to transition DV team to -ums option</td><td colspan="1" class="confluenceTd">Allan/Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td class="confluenceTd">2b</td><td class="confluenceTd">Verify that new and old run_maestro flows generate identical results</td><td class="confluenceTd">Allan</td><td class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">3</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Add pointer to latest and stable maestro-server to the search path</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">* There is no concept of &quot;stable&quot; maestro-server. For now after either module load dev/maestro_test/stable or bleeding_edge</span><br/><span class="legacy-color-text-green2"> maestro-server is found here: /engr/dev/releases/utils/dserver/latest/maestro-server </span></td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">4</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Write experimental all-file based version of m-ncore getRtl which will call 'generate' without </span><br/><span class="legacy-color-text-green2">usage of commander or anything from mClient repository.</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">5</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Redo 4 with grpc</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">*getRtl is a bit of a misnomer - we actually generate the RTL and all collateral. There is no need in </span><br/><span class="legacy-color-text-green2">optional collateral generation (except perf models only) as it's pretty fast</span></td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">6</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Build prototype functionality into Maestro to start the server instance and invoke getRtl RPC</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Dan/Benny</span></td><td colspan="1" class="confluenceTd"><p><span class="legacy-color-text-green2">Should be a single function Done first rev is called gen_collateral</span></p></td></tr><tr><td colspan="1" class="confluenceTd">6a</td><td colspan="1" class="confluenceTd">gen_collateral has to be available from the GUI</td><td colspan="1" class="confluenceTd">Federico</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">7</td><td colspan="1" class="confluenceTd">Local data cleanup and encryption</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd">It's too hard to completely eliminate generation of all intermediate files in the backend flow. Since some <br/>of them may contain sensitive information and we do not want customers tampering <br/>with them we should:<br/>a. do a cleanup upon server flow completion<br/>b. encrypt the most sensitive files, because server can be killed before the cleanup</td></tr><tr><td colspan="1" class="confluenceTd">8</td><td colspan="1" class="confluenceTd">Encrypt generated RTL</td><td colspan="1" class="confluenceTd">Dan?</td><td colspan="1" class="confluenceTd">Generated RTL verilog should have special encryption so it can be loaded to simulation/synthesis tools, <br/>but not replicated or modified manually</td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">9</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Find out how to package all backend components into a monolitic binary</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"><p><span class="legacy-color-text-green2">All hw-* packages, utils, m-ncore,aria etc from 'stable' config is to be bundled <br/>and converted to binary</span></p><p> </p></td></tr><tr><td colspan="1" class="confluenceTd">9a</td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Create Jenkins pipeline to build packaged dserver from scratch</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"><p><span class="legacy-color-text-green2">Done, <a class="external-link" href="http://jenkins.arteris.com:8080/job/maestro_dev/job/m-ncore/" rel="nofollow"><span class="legacy-color-text-green2">http://jenkins.arteris.com:8080/job/maestro_dev/job/m-ncore/<br/></span></a>but refines will be needed, there is very sparce testing testing right now </span></p></td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">9b</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Packaged dserver is too big (440M) probably some included packages are redundant</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"><p><span class="legacy-color-text-green2">Also see how much &quot;core&quot; of packaged javascript takes by packaging very small script</span><br/><span class="legacy-color-text-green2">Now down to 172M thanks to exclusion of unnecessary hw-* assets with build.json script</span></p></td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">10a</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Server to report versions of all packages being used </span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Done. Run maestro-server -i</span></td></tr><tr><td colspan="1" class="confluenceTd">10b</td><td colspan="1" class="confluenceTd">Figure out proper configuration management approach</td><td colspan="1" class="confluenceTd"><span>Dan/Benny</span></td><td colspan="1" class="confluenceTd"><span> a. transition to proper npm version management of all packages. m-ncore becomes a top package which</span><br/><span> controls version of 'subordinate' packages through package.json file</span><br/><span> b. elimination of all dynamic 'requires' in the code or their predictable handling</span></td></tr><tr><td colspan="1" class="confluenceTd">11</td><td colspan="1" class="confluenceTd"><p>Logging infrastructure. For starter we need all server messages to be written to a log file<br/>Messages written by server to console can't be seen in Maestro terminal.</p></td><td colspan="1" class="confluenceTd">Dan</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">12</td><td colspan="1" class="confluenceTd">Setup machine disconnected from Arteris network for testing</td><td colspan="1" class="confluenceTd">IT</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">12a</td><td colspan="1" class="confluenceTd">Enable server jenkins pipeline on an agent machine better than alara</td><td colspan="1" class="confluenceTd">IT</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">12b</td><td colspan="1" class="confluenceTd">Start running jenkins pipeline as jenkins rather than bennyw</td><td colspan="1" class="confluenceTd">IT/Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd"><span class="legacy-color-text-blue6">13</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-blue6">Make generation of build.json (file which specifies assets for packaging process) automatic</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-blue6">Allan</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-blue6">So we won't need to update it when a package is added for ex. Not urgent given that we managed to reduce binary file size to under 200M</span></td></tr><tr><td colspan="1" class="confluenceTd">14</td><td colspan="1" class="confluenceTd">Server sometimes doesn't terminates cleanly <br/>ps shows strange &quot;[dserver] &lt;defunct&gt;&quot; process</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">15</td><td colspan="1" class="confluenceTd">Need some grpc diagnostics if connection fails</td><td colspan="1" class="confluenceTd"> </td><td colspan="1" class="confluenceTd"><p>Here is all we see now for ex when port is busy</p><p>Info: [UNKNOWN-0] Connecting to the server...<br/>Error: [UNKNOWN-0] Error happened while generating RTL</p></td></tr><tr><td colspan="1" class="confluenceTd">16</td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">In Maestro automatically search for available port to communicate with dserver</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">Benny</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green2">ports can be take by other instances of dserver or other processes</span></td></tr><tr><td colspan="1" class="confluenceTd">17</td><td colspan="1" class="confluenceTd">Testing infrastructure to qualify packaged dserver versions</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd">Big item. Eventually we want internal users (DV mostly) to switch from run_maestro to using dserver</td></tr><tr><td colspan="1" class="confluenceTd"> </td><td colspan="1" class="confluenceTd">Figure out method to synchronize versions of Maestro and maestro-server</td><td colspan="1" class="confluenceTd">Federico/Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">18</td><td colspan="1" class="confluenceTd">Customer deployment process</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd">Maestro binary, dserver and other pieces of what we deliver to the customer must be packaged together</td></tr><tr><td colspan="1" class="confluenceTd">19</td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green4">From Dan: server should have capability to use pointers to external source code of hw-* libs</span><br/><span class="legacy-color-text-green4">(instead of packaged versions those libs) to allow debug of private HW code</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green4">Dan/Benny</span></td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">20</td><td colspan="1" class="confluenceTd">Server must have capability to return server version to client when requested</td><td colspan="1" class="confluenceTd">Dan/Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">21</td><td colspan="1" class="confluenceTd">Selective generation of collateral</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">22</td><td colspan="1" class="confluenceTd">Switch aria to use the same logger as the rest of the server</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">23</td><td colspan="1" class="confluenceTd">maestro-server should be able to run in debug and production modes</td><td colspan="1" class="confluenceTd">Benny/Dan</td><td colspan="1" class="confluenceTd">in the latter case fewer intermediate files should be created</td></tr><tr><td colspan="1" class="confluenceTd">24</td><td colspan="1" class="confluenceTd">Start adding unit test to m-ncore for quick error detection</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd">at the moment we run one full test through Jenkins pipeline, it's too slow</td></tr><tr><td colspan="1" class="confluenceTd">25</td><td colspan="1" class="confluenceTd">Make sure that none of the 3rd party packages have BSD license</td><td colspan="1" class="confluenceTd">Benny/Dan</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">26</td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green4">maestro-server -i to print git sha in addition to semver for all packages</span></td><td colspan="1" class="confluenceTd"><span class="legacy-color-text-green4">Benny</span></td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">27</td><td colspan="1" class="confluenceTd">Talk to Mokhtar about how to add Symphony tests to maestro-server</td><td colspan="1" class="confluenceTd">Benny</td><td colspan="1" class="confluenceTd"> </td></tr><tr><td colspan="1" class="confluenceTd">28</td><td colspan="1" class="confluenceTd">Remove nested hardware dependencies</td><td colspan="1" class="confluenceTd">Allan/Benny</td><td colspan="1" class="confluenceTd">Allan spoke to Robin to remove hw-lib and hw-ccp. He alsospoke to David and Khaleel, if they needed those packages and they said that they don’t use them. However, something started breaking their code when Robin removed these packages. </td></tr></tbody></table></div><p> </p><p> </p>

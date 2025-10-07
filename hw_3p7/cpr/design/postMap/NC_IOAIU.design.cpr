@@ -1,0 +1,497 @@
+{
+  "name": "NC_IOAIU",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "strRtlNamePrefix",
+          "parameterTitle": "RTL prefix string",
+          "regex": "^[a-zA-Z](?:[a-zA-Z0-9]|_(?!_|$))*$",
+          "parameterType": "architecture",
+          "docID": 209,
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "fUnitId",
+          "parameterTitle": "fUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nUnitId",
+          "parameterTitle": "nUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nativeClk",
+          "parameterTitle": "Native clock name",
+          "default": "",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wDpAux",
+          "parameterTitle": "wDpAux",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "eSkid",
+          "parameterTitle": "Enable Skid",
+          "default": true,
+          "parameterType": "architecture",
+          "docID": 210,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "eAge",
+          "parameterTitle": "Enable Age",
+          "default": false,
+          "parameterType": "architecture",
+          "docID": 211,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "eStarve",
+          "parameterTitle": "Enable Starve",
+          "default": true,
+          "parameterType": "architecture",
+          "docID": 212,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "eP0",
+          "parameterTitle": "Enable pipeline stage on native interface",
+          "minimum": 0,
+          "maximum": 32,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "This option enables a pipeline stage on the native interface.",
+          "docID": 213,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "NcMode",
+          "parameterTitle": "Non Coherent Mode",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "This option is only applicable to AXI native interface without proxy cache.\nSet if the traffic on the AXI interface is treated as non-coherent traffic, else the traffic istreated as coherent traffic. \nNote that AXI with proxy cache will always treat the traffic as coherent traffic.",
+          "docID": 214,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nEvictions",
+          "parameterTitle": "output buffer depth for rdrsp port",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 0,
+          "parameterType": "architecture",
+          "docID": 215,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "useCache",
+          "parameterTitle": "Enable Cache",
+          "default": false,
+          "parameterType": "architecture",
+          "docID": 264,
+          "type": "boolean",
+          "guiDescription": "Enable proxy cache.\nIn AXI mode this option will add a coherent proxy cache within the AIU "
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "fnNativeInterface",
+          "parameterTitle": "fnNativeInterface",
+          "default": "AXI4",
+          "parameterType": "architecture",
+          "guiDescription": "Native interface type",
+          "docID": 216,
+          "validValues": "AXI4,ACE,ACE-LITE,ACELITE-E",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "ImplementationParameters",
+          "parameterTitle": "Resources",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "ImplParams"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nProcs",
+          "parameterTitle": "Number of Processors",
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "specify the number of logical processors connected to this interface.",
+          "validValues": "0,1,2,4,8,16,32",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "AxIdProcSelectBits",
+          "parameterTitle": "Processors ID bits",
+          "parameterType": "architecture",
+          "guiDescription": "AXI ID bits that are used as processor ID bits, must be specified when configured with ACE as native interface.",
+          "type": "array",
+          "arrayType": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "OttErrInfo",
+          "parameterTitle": "OttErrInfo",
+          "default": "NONE",
+          "parameterType": "architecture",
+          "docID": 217,
+          "validValues": "NONE,PARITY,SECDED",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "Cache",
+          "parameterTitle": "Cache",
+          "parameterType": "architecture",
+          "docID": 218,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/COMMON_ParamBase.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Interfaces",
+          "parameterTitle": "Interfaces",
+          "parameterType": "architecture",
+          "docID": 219,
+          "type": "object",
+          "reference": "Interfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SmiPortMsgMap",
+          "parameterTitle": "Port Message Map",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_PortMsgMap.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "MemoryInterfaces",
+          "parameterTitle": "Memory Interfaces",
+          "parameterType": "architecture",
+          "docID": 220,
+          "type": "object",
+          "reference": "MemoryInterfaces"
+        }
+      ],
+      "baseName": "NC_BaseNcoreUnit"
+    },
+    {
+      "name": "ImplParams",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nOttCtrlEntries",
+          "parameterTitle": "Outstanding transaction table Entries",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Number of outstanding transaction table entries.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDceCmdCredits",
+          "parameterTitle": "Number of Credits per DCE",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of credits for coherent transactions with DCE. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDmiCmdCredits",
+          "parameterTitle": "Number of Credits per DMI",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of credits for non coherent transactions with DMI. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDiiCmdCredits",
+          "parameterTitle": "Number of Credits per DII",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of credits for non coherent transactions with DII. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDceWrCmdCredits",
+          "parameterTitle": "Number of Reserved Write Credits per DCE",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of reserved write credits for coherent transactions with DCE. This shoudl be smaller than the number",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDmiWrCmdCredits",
+          "parameterTitle": "Number of Reserved Write Credits per DMI",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of reserved write credits for non coherent transactions with DMI. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDiiWrCmdCredits",
+          "parameterTitle": "Number of Reserved Write Credits per DII",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of reserved write credits for non coherent transactions with DII. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "name": "MemoryInterfaces",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "OttMem",
+          "parameterTitle": "OTT Memory",
+          "parameterType": "architecture",
+          "docID": 222,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "TagMem",
+          "parameterTitle": "Tag Memory",
+          "parameterType": "architecture",
+          "docID": 223,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "DataMem",
+          "parameterTitle": "Data Memory",
+          "parameterType": "architecture",
+          "docID": 224,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "RpMem",
+          "parameterTitle": "Replacement Policy Memory",
+          "parameterType": "architecture",
+          "docID": 225,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        }
+      ]
+    },
+    {
+      "name": "Interfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "external",
+          "parameterTitle": "Native Interface",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "Interface"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "internal",
+          "parameterTitle": "Internal interfaces",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "IntInterfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "placeholders",
+          "parameterTitle": "Placeholder signals",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_LIB_DESIGN/postMap/InterfaceGeneric.design.cpr"
+        }
+      ],
+      "baseName": "ParamBase"
+    },
+    {
+      "name": "IntInterfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDceIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDmiIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDiiIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiTxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiRxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        }
+      ],
+      "baseName": "NC_IntInterfaces"
+    },
+    {
+      "name": "Interface",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "name",
+          "parameterTitle": "Name of Interface",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "params",
+          "parameterTitle": "Parmaters of the Inteface",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/COMMON_ParamBase.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "interface",
+          "parameterTitle": "Object Pointer of Interface",
+          "default": "InterfaceAXI",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "direction",
+          "parameterTitle": "Direction",
+          "default": "slave",
+          "parameterType": "architecture",
+          "validValues": "slave",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "InterfaceSMI",
+      "params": [],
+      "baseName": "InterfaceSMI"
+    }
+  ]
+}

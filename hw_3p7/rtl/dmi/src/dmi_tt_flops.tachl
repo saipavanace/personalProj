@@ -1,0 +1,43 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DMI RTT and WTT flops that are moved to the top level for protection
+//
+// Filename: dmi_tt_flops.tachl
+//=============================================================================
+
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+let ASSERT_ON    = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+
+let N_TT                      = u.getParam('N_TT');
+let tt_req_alloc_bundle_width = u.getParam('tt_req_alloc_bundle_width');
+
+u.port('input',  'tt_req_alloc_bundle_clk', 1);
+u.port('input',  'tt_req_alloc_bundle_reset_n', 1);
+u.port('input',  'en_tt_req_alloc_bundle_vec',  N_TT);
+u.port('input',  'd_tt_req_alloc_bundle_vec', tt_req_alloc_bundle_width);
+u.port('output', 'q_tt_req_alloc_bundle_vec', N_TT * tt_req_alloc_bundle_width);
+
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts()=\);
+
+  \js for (var i=0; i < N_TT; i++) {
+  
+wire [\=tt_req_alloc_bundle_width-1=\:0] q_tt_req_alloc_bundle\=i=\;
+wire en_tt_req_alloc_bundle\=i=\;
+
+assign q_tt_req_alloc_bundle_vec[\=(tt_req_alloc_bundle_width*(i+1))-1=\ : \=tt_req_alloc_bundle_width*i=\] = q_tt_req_alloc_bundle\=i=\;
+assign en_tt_req_alloc_bundle\=i=\ = en_tt_req_alloc_bundle_vec[\=i=\];
+
+\=u.dffre(tt_req_alloc_bundle_width, 'q_tt_req_alloc_bundle'+i, 'd_tt_req_alloc_bundle_vec', "{"+tt_req_alloc_bundle_width+"{1'b0}}", 'en_tt_req_alloc_bundle'+i, 'tt_req_alloc_bundle_clk', 'tt_req_alloc_bundle_reset_n')=\
+
+  \js }
+  
+endmodule

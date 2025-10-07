@@ -1,0 +1,116 @@
+{
+	"name": "",
+	"data": "",
+	"formatScript": "fsysEnv.js",
+	"includeFiles": [
+		{
+			"files": [
+				"dv/full_sys/env/legato_scb_pkg.sv",
+				"dv/full_sys/env/coverage/fsys_coverage_pkg.sv",
+				"dv/full_sys/env/concerto_env_pkg.sv",
+				"dv/ioaiu/sub_sys/io_subsys_pkg.sv"
+			],
+			"addToFlist": true
+		},
+		"dv/common/synopsys/chi_aiu/svt_chi_item_helper_pkg.sv",
+		"dv/common/synopsys/chi_aiu/svt_chi_user_defines.svi",
+		"dv/common/synopsys/chi_aiu/svt_apb_user_defines.svi",
+		"dv/common/synopsys/ioaiu/svt_axi_user_defines.svi",
+		"dv/common/synopsys/chi_aiu/snps_compile.sv",
+		"dv/common/synopsys/chi_aiu/snps_import.sv",
+		"dv/common/synopsys/chi_aiu/cust_svt_amba_system_configuration.sv",
+		"dv/common/synopsys/chi_aiu/svt_amba_env.sv",
+		"dv/common/synopsys/chi_aiu/svt_amba_seq_item_lib.sv",
+		"dv/common/synopsys/chi_aiu/svt_amba_seq_lib.sv",
+		"dv/common/synopsys/chi_aiu/connection_wrapper_to_svt_apb_if.sv",
+		"dv/common/synopsys/dmi/svt_axi_slave_seq_lib.sv",
+		"dv/common/synopsys/full_sys/seq_lib.sv",
+		"dv/full_sys/env/chi_seq/conc_svt_chi_seq_lib.sv",
+		"dv/full_sys/env/chi_seq_item/conc_svt_chi_seq_item_lib.sv",
+		"dv/full_sys/env/legato_scb.svh",
+		"dv/full_sys/env/mem_checker_cfg.svh",
+		"dv/full_sys/env/concerto_env_cfg.svh",
+		"dv/full_sys/env/fsys_scb_txn.svh",
+		"dv/full_sys/env/addr_status_types.svh",
+		"dv/full_sys/env/addr_status.svh",
+		"dv/full_sys/env/fsys_coherency_checker.svh",
+		"dv/full_sys/env/mem_consistency_checker.svh",
+		"dv/full_sys/env/fsys_scb_chi_predictor.svh",
+		"dv/full_sys/env/fsys_scb_ioaiu_predictor.svh",
+		"dv/full_sys/env/fsys_scb_ioaiup_predictor.svh",
+		"dv/full_sys/env/fsys_scb_dmi_predictor.svh",
+		"dv/full_sys/env/fsys_scb_dii_predictor.svh",
+		"dv/full_sys/env/fsys_scb_dce_predictor.svh",
+		"dv/full_sys/env/fsys_scb_dve_predictor.svh",
+		"dv/full_sys/env/coverage/fsys_txn_path_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_base_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_xxxcorr_err_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_sftcrdt_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_if_parity_chk_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_native_itf_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_aiu_qos_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_dmi_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_smi_coverage_atomic.svh",
+		"dv/full_sys/env/coverage/fsys_smi_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_sys_event_coverage.svh",
+		"dv/full_sys/env/coverage/fsys_coverage.svh",
+		"dv/full_sys/env/fsys_scoreboard.svh",
+		"dv/full_sys/env/chi_coh_bringup_virtual_seqr.sv",
+		"dv/full_sys/env/concerto_env_snps.svh",
+		"dv/full_sys/env/concerto_env_inhouse.svh",
+		"dv/full_sys/env/concerto_env.svh"
+	],
+	"pkgs": [
+		{
+			"path": "dv/full_sys/env/raldvPkg.json"
+		},
+		{
+			"path": "dv/ioaiu/env/dvPkg.json",
+			"formatScript": "ioaiuSys.js"
+		},
+		{
+			"name": "apb_debug",
+			"addNamePrefix": true,
+			"dutInfo": "DebugApbInfo",
+			"path": "dv/common/lib_tb/apb_agent_debug/dvPkg.json",
+			"formatScript": "../env/apbSys.js"
+		},
+		"dv/chi_aiu/env/dvPkg.json",
+		{
+			"path": "dv/chi_aiu/sub_sys/env/dvPkg.json",
+			"addInstancePrefix": false,
+			"dutInfo": "ChiaiuInfo"
+		},
+		"dv/chi_aiu/seq/dvPkg.json",
+		{
+			"path": "dv/chi_aiu/sub_sys/dvPkg.json",
+			"addInstancePrefix": false,
+			"dutInfo": "ChiaiuInfo"
+		},
+		{
+			"path": "dv/ioaiu/sub_sys/dvPkg.json",
+			"addInstancePrefix": false,
+			"dutInfo": "IoaiuInfo"
+		},
+		{
+			"path": "dv/dmi/env/dvPkg.json",
+			"addInstancePrefix": true,
+			"dutInfo": "DmiInfo"
+		},
+		{
+			"path": "dv/dce/env/dvPkg.json",
+			"addInstancePrefix": true,
+			"dutInfo": "DceInfo"
+		},
+		{
+			"path": "dv/dve/env/dvPkg.json",
+			"addInstancePrefix": true,
+			"dutInfo": "DveInfo"
+		},
+		{
+			"path": "dv/dii/env/dvPkg.json",
+			"addInstancePrefix": true,
+			"dutInfo": "DiiInfo"
+		}
+	]
+}

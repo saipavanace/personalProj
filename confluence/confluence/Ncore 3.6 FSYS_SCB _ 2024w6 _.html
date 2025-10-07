@@ -1,0 +1,112 @@
+<h2 id="Ncore3.6FSYS_SCB:2024w6:-BlockingProgress:"><strong>Blocking Progress:</strong></h2><ol start="1"><li><p>N/A</p></li></ol><h2 id="Ncore3.6FSYS_SCB:2024w6:-Highlights:"><strong>Highlights:</strong></h2><ol start="1"><li><p>Coherency checker is release, enabled by default for all tests that use fsys_scb. This will be used in full_sys, chi subsys &amp; ioaiu sub sys regressions.</p></li><li><p>Working with team members to skim through the list of improvements that are accumulated over years. EricS and I will finalize a couple high impact items using the information gathered from these meetings.</p></li></ol><h2 id="Ncore3.6FSYS_SCB:2024w6:-Activities:"><strong>Activities:</strong></h2><ol start="1"><li><p><strong>Memory consistency checker</strong></p><ul><li><p>Enabled in ioaiu_random_all_ops_no_dvm test.</p></li></ul></li><li><p><strong>Coherency checker</strong></p><ul><li><p>Enabled in ioaiu_random_all_ops_no_dvm test.</p></li><li><p>Ran full fsys regressions, found a couple issues with snoop cache updates and recall txn updates in CHI.</p></li><li><p>Fixed the issues and rerunning the fsys regression. Regression still is running with 5 tests left. Error analysis shows no fails from coherency checker.</p></li><li><p>Checked in code change to enable coherency checker by default.</p></li></ul></li><li><p><strong>FSYS_SCB:</strong></p><ul><li><p>Looked at a txn timeout fail for Sai and provided him updated switch to let the test run longer. The Atomic test is taking longer between DTW and DTR triggering the timeout. Reached out to Ben (DMI RTL) to look at this passing waves to research any RTL issues. He found one: 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13814" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13814?src=confmacro" class="jira-issue-key">CONC-13814</a>
+                            </span>
+  </p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13815" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13815?src=confmacro" class="jira-issue-key">CONC-13815</a>
+                            </span>
+  - IOAIU txn timeout, this also passes with higher timeout delay. a ReadNoSnp spent about 1000uSec in IOAIU queues before issuing CmdReq. Bob(IOAIU RTL) researched waves and rules out any issues. Details in JIRA.</p></li><li><p>Filed a full_sys check-in tests review JIRA: 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13823" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13823?src=confmacro" class="jira-issue-key">CONC-13823</a>
+                            </span>
+ </p></li></ul></li></ol><p />

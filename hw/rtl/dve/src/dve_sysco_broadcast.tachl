@@ -1,0 +1,583 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2025 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DVE System Coherency Broadcaster
+// Author: Boon Chuan
+// Filename: dve_sysco_broadcaster.tachl
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var assertOn           = u.getParam('assertOn');
+var wChipletId         = u.getParam('wChipletId');
+var wGlobalFUnitId     = u.getParam('wGlobalFUnitId');
+var wFUnitId           = u.getParam('wFUnitId');
+var wMessageId         = u.getParam('wMessageId');
+var wSysReqOp          = u.getParam('wSysReqOp');
+var nSnoopAgents       = u.getParam('nSnoopAgents');
+var nGlobalDVEs        = u.getParam('nGlobalDVEs');
+var nLocalDCEs         = u.getParam('nLocalDCEs');
+var nLocalCAgents      = u.getParam('nLocalCAgents');
+
+var nTargets           = nGlobalDVEs + nLocalDCEs;
+var nBufEntries        = nGlobalDVEs + nSnoopAgents;
+
+var wBufEntries        = Math.max(1, log2ceil(nBufEntries));
+var wSnpCntr           = Math.max(1, log2ceil(nTargets + 1));
+var wSrcFifo           = wSysReqOp + wGlobalFUnitId + wGlobalFUnitId + wMessageId + 8;
+var wCmpFifo           =                              wGlobalFUnitId + wMessageId + 8;
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+u.port('input',  'clk',      1);
+u.port('input',  'reset_n',  1);
+u.port('output', 'busy',     1);
+
+    if (wChipletId > 0) {
+u.port('input',  'my_chiplet_id', wChipletId);
+    }
+
+u.port('input',  'global_dve_enables', nGlobalDVEs);
+
+    for (var i=0; i < nGlobalDVEs; i++) {
+u.port('input',  'global_dve'+i+'_target_id', wGlobalFUnitId);
+    }
+
+    for (var i=0; i < nLocalCAgents; i++) {
+u.port('input',  'local_caching_agent'+i+'_target_id', wGlobalFUnitId);
+    }
+
+    for (var i=0; i < nLocalDCEs; i++) {
+u.port('input',  'local_dce'+i+'_target_id', wGlobalFUnitId);
+    }
+
+// Source request interface
+u.port('input',  'in_sysreq_valid',  1);
+u.port('output', 'in_sysreq_ready',  1);
+u.port('input',  'in_sysreq_cmstatus', 8);
+u.port('input',  'in_sysreq_initiator_id', wGlobalFUnitId);
+u.port('input',  'in_sysreq_requestor_id', wGlobalFUnitId);
+u.port('input',  'in_sysreq_msgid',  wMessageId);
+u.port('input',  'in_sysreq_op', wSysReqOp);
+
+// Broadcast request interface
+u.port('output', 'out_sysreq_valid',  1);
+u.port('input',  'out_sysreq_ready',  1);
+u.port('output', 'out_sysreq_cmstatus', 8);
+u.port('output', 'out_sysreq_target_id',  wGlobalFUnitId);
+u.port('output', 'out_sysreq_requestor_id', wGlobalFUnitId);
+u.port('output', 'out_sysreq_op', wSysReqOp);
+
+// Broadcast response interface
+u.port('input',  'out_sysrsp_valid',   1);
+u.port('output', 'out_sysrsp_ready',   1);
+u.port('input',  'out_sysrsp_initiator_id', wGlobalFUnitId);
+u.port('input',  'out_sysrsp_cmstatus', 8);
+
+// Source response interface
+u.port('output', 'in_sysrsp_valid',  1);
+u.port('input',  'in_sysrsp_ready',  1);
+u.port('output', 'in_sysrsp_target_id', wGlobalFUnitId);
+u.port('output', 'in_sysrsp_msgid',  wMessageId);
+u.port('output', 'in_sysrsp_cmstatus', 8);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+wire dff_enable = 1'b1;
+
+wire dtf_valid;
+wire dtf_ready;
+wire [\=wSysReqOp-1=\:0] dtf_op;
+wire [7:0] dtf_cmstatus;
+wire [\=wGlobalFUnitId-1=\:0] dtf_initiator_id;
+wire [\=wGlobalFUnitId-1=\:0] dtf_requestor_id;
+wire [\=wMessageId-1=\:0] dtf_msgid;
+wire dtf_cmstatus_err;
+
+
+wire stt_init;
+wire stt_deinit;
+
+wire [1:0] IDLE         = 2'b00;
+wire [1:0] SEND         = 2'b01;
+wire [1:0] WAIT         = 2'b10;
+wire [1:0] TERMINATE    = 2'b11;
+
+reg  [1:0] next_state;
+wire [1:0] state;
+
+wire state_is_IDLE;
+wire state_is_SEND;
+wire state_is_WAIT;
+wire state_is_TERMINATE;
+
+wire next_state_is_IDLE;
+wire next_state_is_SEND;
+wire next_state_is_WAIT;
+wire next_state_is_TERMINATE;
+
+wire [\=nTargets-1=\:0] dest_vec;
+wire [\=nTargets-1=\:0] dest_vec_sel;
+wire dest_vec_is_zero;
+wire dest_vec_is_last;
+wire update_dest_vec;
+wire update_req_counter;
+wire update_rsp_counter;
+
+    \js for(var i=0; i < nTargets; i++) {
+wire target_bit\=i=\;
+    \js }
+wire [\=nTargets-1=\:0] target_bitvec;
+wire [\=nTargets-1=\:0] target_bitvec_sig;
+wire [\=nTargets-1=\:0] target_bitvec_en;
+wire [\=nTargets-1=\:0] target_bitvec_set;
+wire [\=nTargets-1=\:0] target_bitvec_clr;
+
+wire [\=nTargets-1=\:0] src_requestor_id_vec;
+wire [\=nTargets-1=\:0] src_remote_vec;
+wire [\=nTargets-1=\:0] dst_remote_vec;
+
+wire rsp_all_received;
+
+wire cmp_fifo__push_valid;
+wire cmp_fifo__push_ready;
+wire [\=wCmpFifo-1=\:0] cmp_fifo__push_bundle;
+wire [\=wCmpFifo-1=\:0] cmp_fifo__pop_bundle;
+wire cmp_fifo__pop_valid;
+wire cmp_fifo__pop_ready;
+
+wire rsp_stt_entry_valid;
+wire [\=wSnpCntr-1=\:0] rsp_stt_entry_rsp_counter;
+wire [\=wSnpCntr-1=\:0] rsp_stt_entry_rsp_counter_plus1;
+wire [\=wSnpCntr-1=\:0] rsp_stt_entry_req_counter;
+wire rsp_stt_entry_req_pending;
+
+wire [\=wGlobalFUnitId-1=\:0] stt0_initiator_id;
+wire [\=wMessageId-1=\:0] stt0_msgid;
+
+
+
+wire stt0_req_pending;
+wire stt0_req_pending_in;
+wire stt0_req_pending_en, stt0_req_pending_set, stt0_req_pending_clr;
+wire [\=wSnpCntr-1=\:0] stt0_req_counter;
+wire [\=wSnpCntr-1=\:0] stt0_req_counter_in;
+wire [\=wSnpCntr-1=\:0] stt0_rsp_counter;
+wire [\=wSnpCntr-1=\:0] stt0_rsp_counter_in;
+wire [7:0] stt0_rsp_cmstatus;
+wire [7:0] stt0_rsp_cmstatus_in;
+
+wire src_fifo__push_valid;
+wire src_fifo__push_ready;
+wire src_fifo__pop_valid;
+wire src_fifo__pop_ready;
+wire [\=wSrcFifo-1=\:0] src_fifo__push_bundle;
+wire [\=wSrcFifo-1=\:0] src_fifo__pop_bundle;
+
+
+
+wire [\=nTargets-1=\:0] targetEnables;
+
+    \js for (var i=0; i < nTargets; i++) {
+wire [\=wGlobalFUnitId-1=\:0] target\=i=\_id;
+    \js }
+
+\js if (wChipletId > 0) {
+
+wire [\=wChipletId-1=\:0] dtf_requestor_chiplet_id = dtf_requestor_id[\=wGlobalFUnitId-1=\:\=wGlobalFUnitId-wChipletId=\];
+
+    \js for(var i=0; i < nTargets; i++) {
+wire [\=wChipletId-1=\:0] target\=i=\_chiplet_id = target\=i=\_id[\=wGlobalFUnitId-1=\:\=wGlobalFUnitId-wChipletId=\];
+    \js }
+
+\js }
+
+    \js for (var i=0; i < nGlobalDVEs; i++) {
+
+        \js if (nGlobalDVEs == 1) {
+assign targetEnables[\=i=\] = global_dve_enables;
+        \js } else {
+assign targetEnables[\=i=\] = global_dve_enables[\=i=\];
+        \js }
+assign target\=i=\_id = global_dve\=i=\_target_id;
+
+    \js }
+
+wire requesting_aiu_is_caching_agent;
+
+assign requesting_aiu_is_caching_agent = 1'b0
+    \js for (var i=0; i < nLocalCAgents; i++) {
+          | (dtf_requestor_id == local_caching_agent\=i=\_target_id)
+    \js }
+                                       ;
+
+    \js for (var i=0; i < nLocalDCEs; i++) {
+
+assign targetEnables[\=i+nGlobalDVEs=\] = requesting_aiu_is_caching_agent;
+assign target\=i+nGlobalDVEs=\_id = local_dce\=i=\_target_id;
+
+    \js }
+
+
+\jsbegin
+//=============================================================================
+// Input Queue
+//=============================================================================
+\jsend
+
+\jsbegin
+    var srcFifoParams = {
+        width       : wSrcFifo,
+        depth       : nBufEntries,
+        bypass_mode : 0,
+        zerodepth   : 0
+    };
+    var instance_ports_for_src_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'src_fifo__push_bundle',
+        push_valid          : 'src_fifo__push_valid',
+        push_ready          : 'src_fifo__push_ready',
+        pop_data            : 'src_fifo__pop_bundle',
+        pop_valid           : 'src_fifo__pop_valid',
+        pop_ready           : 'src_fifo__pop_ready'
+    };
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'src_fifo',
+        moduleName: 'fifo',
+        params : srcFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_src_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+assign src_fifo__push_valid = in_sysreq_valid;
+
+assign in_sysreq_ready = src_fifo__push_ready;
+
+assign src_fifo__push_bundle = { in_sysreq_op, in_sysreq_cmstatus, in_sysreq_msgid, in_sysreq_requestor_id, in_sysreq_initiator_id };
+
+
+
+assign { dtf_op, dtf_cmstatus, dtf_msgid, dtf_requestor_id, dtf_initiator_id } = src_fifo__pop_bundle;
+
+assign dtf_valid = src_fifo__pop_valid;
+
+assign src_fifo__pop_ready = dtf_ready;
+
+assign dtf_cmstatus_err = {|{dtf_cmstatus[7:6]}};
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entries init vector
+//=============================================================================
+\jsend
+
+
+
+assign stt_init = state_is_IDLE & ~next_state_is_IDLE;
+
+\jsbegin
+//=============================================================================
+// Request Broadcast State Machine
+//=============================================================================
+\jsend
+
+always @(*)
+case (state)
+    IDLE : next_state =
+        cmp_fifo__push_ready & dtf_valid & (dest_vec_is_zero | dtf_cmstatus_err) ? TERMINATE :
+        cmp_fifo__push_ready & dtf_valid & (~dest_vec_is_zero)                   ? SEND :
+                                                                                   IDLE ;
+
+    SEND : next_state = out_sysreq_ready & dest_vec_is_last ? WAIT : SEND ;
+
+    WAIT : next_state = rsp_all_received ? IDLE : WAIT;
+
+    TERMINATE : next_state = IDLE;
+
+    default next_state = state;
+endcase
+
+\=u.dffre(2, 'state', 'next_state', "2'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign state_is_IDLE        = (state == IDLE);
+assign state_is_SEND        = (state == SEND);
+assign state_is_WAIT        = (state == WAIT);
+assign state_is_TERMINATE   = (state == TERMINATE);
+
+assign next_state_is_IDLE        = (next_state == IDLE);
+assign next_state_is_SEND        = (next_state == SEND);
+assign next_state_is_WAIT        = (next_state == WAIT);
+assign next_state_is_TERMINATE   = (next_state == TERMINATE);
+
+
+assign out_sysreq_valid = state_is_SEND;
+
+assign update_dest_vec = out_sysreq_valid & out_sysreq_ready;
+
+assign update_req_counter = out_sysreq_valid & out_sysreq_ready;
+
+assign dtf_ready = (state_is_WAIT      & next_state_is_IDLE)
+                 | (state_is_TERMINATE & next_state_is_IDLE);
+
+assign out_sysreq_cmstatus = dtf_cmstatus;
+
+assign out_sysreq_op = dtf_op;
+
+assign out_sysreq_target_id = \=wGlobalFUnitId=\'d0
+            \js for (var i = 0; i < nTargets; i++) {
+                 | ({\=wGlobalFUnitId=\{dest_vec_sel[\=i=\]}} & target\=i=\_id)
+            \js }
+                 ;
+
+assign out_sysreq_requestor_id = dtf_requestor_id;
+
+\jsbegin
+//=============================================================================
+// dest_vec_is_zero
+// dest_vec_is_last
+// dest_vec_sel
+//=============================================================================
+\jsend
+
+assign dest_vec_is_zero = ~{|{dest_vec}};
+assign dest_vec_is_last = (dest_vec_sel == dest_vec) & ~dest_vec_is_zero;
+
+    \=u.instance({
+        instanceName: 'u_dest_vec_sel',
+        moduleName: 'find_first_one',
+        params: { width : nTargets },
+        verilogParams: { WIDTH : nTargets },
+        ports: {
+            invec : 'dest_vec', outvec : 'dest_vec_sel'
+        }
+    })=\
+
+\jsbegin
+//=============================================================================
+// dest_vec
+//=============================================================================
+\jsend
+
+assign dest_vec = target_bitvec & ~src_requestor_id_vec & targetEnables & ~(src_remote_vec & dst_remote_vec);
+
+    \js for(var i=0; i < nTargets; i++) {
+\=u.dffre(1, 'target_bit'+i, 'target_bitvec_sig['+i+']', "1'b1", 'target_bitvec_en['+i+']', 'clk', 'reset_n')=\
+    \js }
+
+    \js for(var i=0; i < nTargets; i++) {
+assign target_bitvec[\=i=\] = target_bit\=i=\;
+    \js }
+
+assign target_bitvec_set = {\=nTargets=\{next_state_is_IDLE}};
+
+assign target_bitvec_clr = {\=nTargets=\{update_dest_vec}} & dest_vec_sel;
+
+assign target_bitvec_en = target_bitvec_set | target_bitvec_clr;
+
+assign target_bitvec_sig = target_bitvec_set;
+
+\jsbegin
+//=============================================================================
+// src_requestor_id_vec
+//=============================================================================
+\jsend
+
+    \js for(var i=0; i < nTargets; i++) {
+assign src_requestor_id_vec[\=i=\] = (dtf_requestor_id == target\=i=\_id) ? 1'b1 : 1'b0;
+    \js }
+
+\jsbegin
+//=============================================================================
+// src_remote_vec
+//=============================================================================
+\jsend
+
+    \js if (wChipletId > 0) {
+
+assign src_remote_vec = {\=nTargets=\{(dtf_requestor_chiplet_id != my_chiplet_id)}};
+
+    \js } else {
+assign src_remote_vec = {\=nTargets=\{1'b0}};
+    \js }
+
+\jsbegin
+//=============================================================================
+// dst_remote_vec
+//=============================================================================
+\jsend
+
+    \js if (wChipletId > 0) {
+
+        \js for(var i=0; i < nTargets; i++) {
+assign dst_remote_vec[\=i=\] = (target\=i=\_chiplet_id != my_chiplet_id);
+        \js }
+
+    \js } else {
+assign dst_remote_vec = {\=nTargets=\{1'b0}};
+    \js }
+
+\jsbegin
+//=============================================================================
+// Response Processing
+//=============================================================================
+\jsend
+
+assign update_rsp_counter = out_sysrsp_valid & out_sysrsp_ready;
+
+assign rsp_all_received = update_rsp_counter
+                               & rsp_stt_entry_valid
+                               & ~rsp_stt_entry_req_pending
+                               & (rsp_stt_entry_rsp_counter_plus1 == rsp_stt_entry_req_counter);
+
+assign out_sysrsp_ready = cmp_fifo__push_ready;
+
+assign cmp_fifo__push_valid = stt_deinit;
+
+assign rsp_stt_entry_rsp_counter_plus1 = rsp_stt_entry_rsp_counter + \=wSnpCntr=\'h1;
+
+\jsbegin
+//=============================================================================
+// Completion Generation
+//=============================================================================
+\jsend
+
+\jsbegin
+    var cmpIssueFifoParams = {
+        width       : wCmpFifo,
+        depth       : nBufEntries,
+        use_fastread: 0,
+        number_of_inputs : 1
+    };
+    var instance_ports_for_cmp_fifo = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        push_data           : 'cmp_fifo__push_bundle',
+        push_valid          : 'cmp_fifo__push_valid',
+        push_ready          : 'cmp_fifo__push_ready',
+        pop_data            : 'cmp_fifo__pop_bundle',
+        pop_valid           : 'cmp_fifo__pop_valid',
+        pop_ready           : 'cmp_fifo__pop_ready'
+    };
+\jsend
+    \=u.instance({
+        instanceName: 'cmp_fifo',
+        moduleName: 'fifo',
+        params : cmpIssueFifoParams,
+        verilogParams: {},
+        ports: instance_ports_for_cmp_fifo,
+        portsDelimiter: '\n    '
+    })=\
+
+assign cmp_fifo__push_bundle = { stt0_rsp_cmstatus_in, stt0_msgid, stt0_initiator_id };
+
+assign { in_sysrsp_cmstatus, in_sysrsp_msgid, in_sysrsp_target_id } = cmp_fifo__pop_bundle;
+
+assign in_sysrsp_valid = cmp_fifo__pop_valid;
+
+assign cmp_fifo__pop_ready = in_sysrsp_ready;
+
+
+assign stt_deinit = (state_is_WAIT | state_is_TERMINATE) & next_state_is_IDLE;
+
+\jsbegin
+//=============================================================================
+// Busy status
+//=============================================================================
+\jsend
+
+assign busy = src_fifo__pop_valid
+            | cmp_fifo__pop_valid
+            | dtf_valid
+            ;
+
+\jsbegin
+//=============================================================================
+// Transaction bit fields
+//=============================================================================
+\jsend
+
+assign stt0_initiator_id = dtf_initiator_id;
+assign stt0_msgid   = dtf_msgid;
+
+\jsbegin
+// Request Pending
+\jsend
+
+\=u.dffre(1, 'stt0_req_pending', 'stt0_req_pending_in', '{'+1+"{1'b0}}", 'stt0_req_pending_en', 'clk', 'reset_n')=\
+
+assign stt0_req_pending_set = state_is_IDLE & next_state_is_SEND;
+assign stt0_req_pending_clr = state_is_SEND & next_state_is_WAIT;
+assign stt0_req_pending_en  = stt0_req_pending_set |  stt0_req_pending_clr;
+assign stt0_req_pending_in  = stt0_req_pending_set & ~stt0_req_pending_clr;
+
+\jsbegin
+// Request Counter
+\jsend
+
+\=u.dffre(wSnpCntr, 'stt0_req_counter', 'stt0_req_counter_in', '{'+wSnpCntr+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+assign stt0_req_counter_in = stt_init | stt_deinit ? \=wSnpCntr=\'b0 :
+                             update_req_counter    ? stt0_req_counter + \=wSnpCntr=\'b1 :
+                                                     stt0_req_counter;
+
+\jsbegin
+// Response Counter
+\jsend
+
+\=u.dffre(wSnpCntr, 'stt0_rsp_counter', 'stt0_rsp_counter_in',  '{'+wSnpCntr+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+assign stt0_rsp_counter_in = stt_init | stt_deinit ? \=wSnpCntr=\'b0 :
+                             update_rsp_counter    ? stt0_rsp_counter + \=wSnpCntr=\'b1 :
+                                                     stt0_rsp_counter;
+
+\jsbegin
+// Response Error Codes : any error is captured as Address Error as per Ncore3 Error Arch Spec Update
+\jsend
+
+\=u.dffre(8, 'stt0_rsp_cmstatus', 'stt0_rsp_cmstatus_in', '{'+8+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+assign stt0_rsp_cmstatus_in = stt_init           ? 8'b0 :
+                              update_rsp_counter ? (stt0_rsp_cmstatus[7] ? stt0_rsp_cmstatus : out_sysrsp_cmstatus[7] ? out_sysrsp_cmstatus : (stt0_rsp_cmstatus | out_sysrsp_cmstatus)) :
+                                                   stt0_rsp_cmstatus;
+
+\jsbegin
+//=============================================================================
+// For Response processing
+//=============================================================================
+\jsend
+
+assign rsp_stt_entry_valid = dtf_valid;
+
+assign rsp_stt_entry_rsp_counter = stt0_rsp_counter;
+
+assign rsp_stt_entry_req_counter = stt0_req_counter;
+
+assign rsp_stt_entry_req_pending = stt0_req_pending;
+
+endmodule

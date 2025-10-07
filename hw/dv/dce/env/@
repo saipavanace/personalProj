@@ -1,0 +1,561 @@
+////////////////////////////////////////////////////////////////////////////////
+// 
+// Author       : Hema Sajja 
+// Purpose      : DCE SCOREBOARD 
+// Revision     : Initial
+//
+// [ Browse code using this sections ]
+//
+// [ Notes ]
+// Section1 : SCB Top and UVM Default Methods
+// Section2 : SMI Write function
+// Section3 : SMI Cmd,Snp,Str,Mrd process functions 
+// Section4 : Utility functions 
+//
+////////////////////////////////////////////////////////////////////////////////
+
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+
+`uvm_analysis_imp_decl(_smi_port)
+`uvm_analysis_imp_decl(_dirm_port)
+
+////////////////////////////////////////////////////////////////////////////////
+// Section1:  SCB TOP and UVM Default Methods
+//
+//
+////////////////////////////////////////////////////////////////////////////////
+class dce_scb extends uvm_scoreboard;
+
+    `uvm_component_utils(dce_scb)
+
+    //SMI Analysis Port
+    uvm_analysis_imp_smi_port #(smi_seq_item, dce_scb) m_smi_port;
+    
+    //DCE inflight transactions Queue
+    dce_scb_txn m_dce_txnq[$];
+
+    //Global dynamic handle for all smi  requests/responses
+    smi_seq_item   m_smi_tx_cmdupdreq_pkt, m_smi_rx_cmdupdrsp_pkt;
+    smi_seq_item   m_smi_rx_snpreq_pkt, m_smi_tx_snprsp_pkt;
+    smi_seq_item   m_smi_rx_mrdreq_pkt, m_smi_tx_mrdrsp_pkt;
+    smi_seq_item   m_smi_rx_strreq_pkt, m_smi_tx_strrsp_pkt;
+    
+    //Global dynamic handle for all dirm requests/responses.
+    dirm_req_item m_dirm_req_pkt;
+    dirm_rsp_item m_dirm_rsp_pkt;
+    
+    //Ncore2.0 notes: Temporary storage for DIRM req coh pkts, this is because of bypass mode in DCE. Hence we need to serialize the cmdreq & dirm att activate phase since they can happen in parallel in RTL. Hence we need to store the coh req pkts in temporary storage and move them to main data structure on DIRM rsp.
+    //TODO: Do we really need this in ncore3.0?
+    dirm_req_item m_dirm_req_coh_pkts[$];
+    
+    //Ncore Credits
+    dce_credits_check m_credits;
+
+    //Enable-disable bits
+    bit m_scb_en, m_cov_en;
+    local bit m_checks_en;
+    
+    //Edge triggered Events
+    event e_smi_cmdupd_req, e_smi_cmdupd_rsp;
+    event e_smi_snp_req, e_smi_snp_rsp;
+    event e_smi_mrd_req, e_smi_mrd_rsp;
+    event e_smi_str_req, e_smi_str_rsp;
+    event e_dir_req, e_dir_rsp;
+
+
+ <% if(obj.COVER_ON) { %>
+    //Coverage collecter handle
+    dce_coverage m_cov;
+ <% } %>
+
+    //UVM default Methods
+    extern function new(string name = "dce_scb", uvm_component parent = null);
+    extern function void build_phase(uvm_phase phase);
+    extern function void report_phase(uvm_phase phase);
+    extern task run_phase(uvm_phase phase);
+
+    //Analysis Port Write Method
+    extern function void write_smi_port(const ref smi_seq_item rcvd_pkt);
+    extern function void write_dirm_port(const ref dirm_item rcvd_pkt);
+    
+    //Packet Processing Methods
+    extern task process_smi_cmdupd_req(uvm_phase phase);
+    extern function void process_smi_cmdupd_rsp();
+    extern function void process_smi_snp_req();
+    extern function void process_smi_snp_rsp();
+    extern function void process_dir_req();
+    extern function void process_dir_rsp();
+    extern function void process_mrd_req();
+    extern function void process_mrd_rsp();
+    extern function void process_str_req();
+    extern function void process_str_rsp();
+
+    //Utility Functions
+    extern function void smi_pktmatch_checks( const ref int idxq[$], const ref smi_seq_item seq_item, input string act_pkt_type, input string ref_pkt_type);
+    extern function void dirm_pktmatch_checks( const ref int idxq[$], const ref dirm_item seq_item, input string act_pkt_type, input string ref_pkt_type);
+    extern function void latch_dirm_coh_req(dirm_item seq_item);
+
+
+ endclass
+
+//constructor
+function dce_scb::new(string name = "dce_scb", uvm_component parent = null);
+    super.new(name, parent);
+
+    this.m_scb_en    = 1'b1;
+    this.m_cov_en    = 1'b0;
+    this.m_checks_en = 1'b1;
+
+    dce_goldenref_model::build();
+endfunction: new
+
+//build_phase
+function void dce_scb::build_phase(uvm_phase phase);
+    super.build_phase(phase);
+
+    //Build analysis port
+    m_smi_port  = new("m_smi_port", this);
+    m_dirm_port = new("m_dirm_port", this);
+endfunction: build_phase
+
+//run_phase 
+task dce_scb::run_phase(uvm_phase phase);
+    m_credits = dce_credits_check::type_id::create("m_credits");
+    if(!this.m_scb_en) begin
+        m_checks_en = 1'b0;
+        `uvm_info("DCE SCB", "dce scb checks are disabled", UVM_NONE)
+    end else begin
+        fork
+            begin: cmdupd_req
+                forever begin
+                    @(e_smi_cmdupd_req);
+                    process_smi_cmdupd_req(phase);
+                end
+            end: cmdupd_req
+
+            begin: cmdupd_rsp
+                forever begin
+                    @(e_smi_cmdupd_rsp);
+                    process_smi_cmdupd_rsp();
+                end
+            end: cmdupd_rsp
+
+            begin: snp_req
+                forever begin
+                    @(e_smi_snp_req);
+                    process_smi_snp_req();
+                end
+            end: snp_req	
+            
+            begin: snp_rsp
+                forever begin
+                    @(e_smi_snp_rsp);
+                    process_smi_snp_rsp();
+                end
+            end: snp_req	
+            
+            begin: mrd_req
+                forever begin
+                    @(e_smi_mrd_req);
+                    process_smi_mrd_req();
+                end
+            end: mrd_req	
+            
+            begin: mrd_rsp
+                forever begin
+                    @(e_smi_mrd_rsp);
+                    process_smi_mrd_rsp();
+                end
+            end: mrd_rsp	
+
+            begin: str_req
+                forever begin
+                    @(e_smi_str_req);
+                    process_smi_str_req();
+                end
+            end: str_req	
+            
+            begin: str_rsp
+                forever begin
+                    @(e_smi_str_rsp);
+                    process_smi_str_rsp();
+                end
+            end: str_rsp
+
+            begin: dir_req
+                forever begin
+                    @(e_dir_req);
+                    process_dir_req();
+                end
+            end: dir_req
+
+            begin: dir_rsp
+                forever begin
+                    @(e_dir_rsp);
+                    process_dir_rsp();
+                end
+            end: dir_rsp	
+        join_none
+    end
+endtask: run_phase
+
+//Report phase
+function void dce_scb::report_phase(uvm_phase phase);
+//    if(print_pend_txns()) begin
+//        `uvm_error("DCE SCB", "Pending Transactions in <%=obj.BlockId%>")
+//    end
+endfunction: report_phase
+
+//*************************************************
+// Write functions: To get all traffic
+// write_smi_port
+// write_dirm_port
+//*************************************************
+function void dce_scb::write_smi_port(const ref smi_seq_item rcvd_pkt);
+    
+    string s;
+    smi_seq_item rcvd_pkt;
+
+    $timeformat(-9, 2, " ns", 10);
+    $sformat(s, "%s\n", super.convert2string());
+    $sformat(s, "%s@ %t: ", s, $time());
+
+    $sformat(s, "%0s", rcvd_pkt.convert2string());
+    
+    `uvm_info("DCE_SCB", $psprintf("Received below SMI packet at DCE SCB: %0s", s), UVM_HIGH)
+
+    case(1)
+        (rcvd_pkt.isCmdMsg() || rcvd_pkt.isUpdMsg())         : begin
+		                                                           m_smi_tx_cmdupdreq_pkt = rcvd_pkt;
+			                                                       -> e_smi_cmdupd_req; 
+				                                               end
+        (rcvd_pkt.isCCmdRspMsg() || rcvd_pkt.isUpdRspMsg())  : begin
+		                                                           m_smi_rx_cmdupdrsp_pkt = rcvd_pkt;
+			                                                       -> e_smi_cmdupd_rsp;
+			                                                   end 
+        rcvd_pkt.isSnpMsg()                                  : begin
+		                                                           m_smi_rx_snpreq_pkt = rcvd_pkt;
+			                                                       -> e_smi_snp_req;
+			                                                   end 
+        rcvd_pkt.isSnpRspMsg()                               : begin
+		                                                           m_smi_tx_snprsp_pkt = rcvd_pkt;
+			                                                       -> e_smi_snp_rsp;
+			                                                   end 
+        rcvd_pkt.isMrdMsg()                                  : begin
+		                                                           m_smi_rx_mrdreq_pkt = rcvd_pkt;
+			                                                       -> e_smi_mrd_req;
+			                                                   end 
+        rcvd_pkt.isMrdRspMsg()                               : begin
+		                                                           m_smi_tx_mrdrsp_pkt = rcvd_pkt;
+			                                                       -> e_smi_mrd_rsp;
+			                                                   end 
+        rcvd_pkt.isStrMsg()                                  : begin
+		                                                           m_smi_rx_strreq_pkt = rcvd_pkt;
+			                                                       -> e_smi_str_req;
+			                                                   end 
+        rcvd_pkt.isStrRspMsg()                               : begin
+		                                                           m_smi_tx_strrsp_pkt = rcvd_pkt;
+			                                                       -> e_smi_str_rsp;
+			                                                   end 
+        default: 	
+        `uvm_error("DCE_SCB_ERROR", $psprintf("Received unexpected packet on SMI port"))
+    endcase
+
+endfunction: write_smi_port
+
+//**********************************************************
+function void dce_scb::write_dirm_port(const ref dirm_item rcvd_pkt);
+    dirm_req_item req;
+
+    if ($cast(req,rcvd_pkt)) begin
+        m_dirm_req_pkt = rcvd_pkt;
+		->e_dir_req;
+    end else begin
+        m_dirm_req_pkt = rcvd_pkt;
+		->e_dir_rsp;
+    end
+endfunction: write_dirm_port
+
+//*********************************************************
+// Processing task/functions 
+//*********************************************************
+task dce_scb::process_smi_cmdupd_req(uvm_phase phase);
+    dce_scb_txn scb_txn;
+    string s, msg;
+
+    $timeformat(-9, 2, " ns", 10);
+    $sformat(msg, "%s scb_txnid_0x%0h", msg, {m_smi_tx_cmdupdreq_pkt.smi_src_id, m_smi_tx_cmdupdreq_pkt.smi_msg_id});
+
+    //Constructing scb_txn with cmd_req info
+    scb_txn = new(msg);
+    scb_txn.assign_credits_check_handle(m_credits);
+    scb_txn.read_cmdupd_req(m_smi_tx_req_pkt);
+    
+    m_dce_txnq.push_back(scb_txn);
+    //Raise objection 
+    phase.raise_objection(this, {msg, " raise objection"});
+
+<% if(obj.COVER_ON) { %>
+    cover_smi_cmdupd_req();
+<% } %>
+endtask: process_smi_cmdupd_req
+
+//************************************************************
+function void dce_scb::process_smi_cmdupd_rsp();
+    int idxq[$];
+    string msg;
+
+    idxq = m_dce_txnq.find_index(item) with (
+        (item.m_cmd_req_type == IS_COH_REQ  || item.m_cmd_req_type == IS_UPD_REQ) &&
+        (item.m_expcmdupd_rsp_pkt.smi_msg_id == m_smi_rx_rsp_pkt.smi_rmsg_id) && 
+         !item.m_expcmdupd_rsp_pkt.t_smi_ndp_valid );
+    
+    //Checks for CmdUpd Rsp Pkt
+    smi_pktmatch_checks(idxq, m_smi_rx_rsp_pkt, "SMI_RX_CmdUpd_Rsp", "SMI_TX_CmdUpd_Req");
+    
+    m_dce_txnq[idxq[0]].m_expcmdupd_rsp_pkt.check_ndp_field_mismatches(m_smi_rx_rsp_pkt); //MK: Update what fields to check for CmdUpd Rsp?? 
+
+    //Update the EXP pkt
+    m_dce_txnq[idxq[0]].read_cmdupd_rsp(m_smi_rx_rsp_pkt);
+
+//<% if(obj.COVER_ON) { %>
+//    cover_smi_cmd_rsp(m_dce_txnq[foundq[0]].m_cmd_req_type);
+//<% } %>
+
+endfunction: process_smi_cmdupd_rsp
+
+//***********************************************************
+function void dce_scb::process_dir_req();
+    string s, msg;
+
+    $timeformat(-9, 2, " ns", 10);
+    $sformat(s, "%s\n", super.convert2string());
+    $sformat(s, "%s@ %t: ", s, $time());
+    //Syc between hw_status write port vs dir_req write port
+    //e_per_cycle.wait_ptrigger();
+
+    $sformat(s, "%s Received Dir Request @{ACT}: %s", s, m_dirm_req_pkt.convert2string());
+    `uvm_info("DCE SCB", s, UVM_NONE)
+    if(m_dirm_req_pkt.m_req_type == COH_REQ) begin
+        m_dirm_req_coh_pkts.push_back(m_dirm_req_pkt);
+    end else begin
+        `uvm_error("DCE SCB", "Unknown directory mgr pkt received")
+    end
+
+endfunction: process_dir_req
+
+//***********************************************************
+function void dce_scb::process_dir_rsp();
+    string s, msg;
+    int indexq[$];
+    dce_scb_txn matchq[$], tmpq[$];
+
+    $timeformat(-9, 2, " ns", 10);
+    $sformat(s, "%s\n", super.convert2string());
+    $sformat(s, "%s@ %t: ", s, $time());
+
+    case(1)
+      m_dirm_rsp_pkt.m_rsp_type inside {LKP_RSP}: 
+          begin
+              dirm_req_item pktsq[$];
+              int idxq[$];
+
+              pktsq = m_dirm_req_coh_pkts.find(item) with (item.m_attid == m_dirm_rsp_pkt.m_attid);
+              idxq  = m_dirm_req_coh_pkts.find_index(item) with (item.m_attid == m_dirm_rsp_pkt.m_attid);
+
+              if(pktsq.size() > 1) begin
+                  $sformat(s, "%s @Multiple dirm req pkts matching rsp:\n", s);
+                  foreach(pktsq[idx]) begin
+                      $sformat(s, "%s %s\n", s, pktsq[idx].convert2string());
+                  end
+                  `uvm_info("DCE SCB", s, UVM_NONE)
+                  `uvm_error("DCE SCB", "Multiple dirm req pkts matching for single rsp");
+              end else if (pktsq.size() == 0) begin
+                  //May be a recall txn
+                  indexq = m_dce_txnq.find_index(item) with (
+                     //item.get_attid() == m_dirm_rsp_pkt.m_attid   && 
+                     (item.m_dirm_req_type == DIR_RECALL_REQ || item.m_dirm_req_type == DIR_MAINT_REQ));
+
+                  if(indexq.size() > 1) begin
+                      `uvm_info("DCE SCB", $psprintf("Multiple matching attids for response\n %s", m_dirm_rsp_pkt.convert2string()), UVM_NONE)
+                      `uvm_error("DCE SCB", "Multiple recall pkts with same attid matching for single rsp")
+                  end else if(indexq.size() == 0) begin 
+                      $sformat(s, "%s No matching request's for response\n @%s", s, m_dirm_rsp_pkt.convert2string());
+                      `uvm_info("DCE SCB", s, UVM_NONE)
+                      `uvm_error("DCE SCB", "Unexpected dirm rsp pkt that does not match any requests")
+                  end
+              end else begin
+                  `uvm_info("DCE SCB", $psprintf(s, "%s Received Dir Response @{ACT}: %s", s, m_dirm_req_pkt.convert2string()), UVM_NONE);
+                  latch_dirm_coh_req(pktsq[0]);
+                  m_dirm_req_coh_pkts.delete(idxq[0]);
+              end
+          end
+      
+      m_dirm_rsp_pkt.m_rsp_type inside {CMT_RSP}:
+          begin
+
+          end
+    endcase 
+
+endfunction: process_dir_rsp
+
+//***********************************************************
+function void dce_scb::process_smi_snp_req();
+	string s, msg;
+	int idxq[$];
+
+    $timeformat(-9, 2, " ns", 10);
+    $sformat(s, "%s\n", super.convert2string());
+    $sformat(s, "%s@ %t: ", s, $time());
+
+    idxq = m_dce_txnq.find_index(item) with ( 
+        item.m_initcmdupd_req_pkt.smi_addr[ncoreConfigInfo::ADDR_WIDTH - 1 : ncoreConfigInfo::WCACHE_OFFSET] == m_smi_rx_snpreq_pkt.smi_addr[ncoreConfigInfo::ADDR_WIDTH - 1 : ncoreConfigInfo::WCACHE_OFFSET] && 
+        item.m_initcmdupd_req_pkt.smi_ns ==  m_smi_rx_snpreq_pkt.smi_ns               && 
+        item.m_attid_status              == ATTID_IS_ACTIVE                        &&
+        item.m_initcmdupd_req_pkt.smi_src_id == m_smi_rx_snpreq_pkt.smi_src_id        &&
+        item.m_initcmdupd_req_pkt.smi_msg_id == m_smi_rx_snpreq_pkt.smi_msg_id        &&
+        item.m_expsnp_req_pktq.size() != 0);
+
+    smi_pktmatch_checks(idxq, m_smi_rx_req_pkt, "SMI_RX_Snp_Req", "SMI_RX_Snp_Req" );
+    m_dce_txnq[idxq[0]].cmp_snp_req(m_smi_rx_req_pkt);
+    
+    $sformat(msg, "dce%0d_aiu%0d_nSnpInFlight", <%=obj.Id%>, m_smi_rx_snpreq_pkt.smi_dest_id); 
+    m_credits.get_credit(msg);
+endfunction: process_smi_snp_req
+
+//***********************************************************
+function void dce_scb::process_smi_snp_rsp();
+	string s, msg;
+	int idxq[$];
+
+	idxq = m_dce_txnq.find_index(item) with (item.smi_snprsp_maps_to_req(m_smi_tx_snprsp_pkt));
+    smi_pktmatch_checks(idxq, m_smi_tx_snprsp_pkt, "SMI Snoop Rsp", "SMI Snoop Req");
+    
+    m_dce_txnq[idxq[0]].save_snprsp(m_smi_tx_snprsp_pkt);
+function: process_smi_snp_rsp();
+
+//***********************************************************
+function void dce_scb::process_smi_str_req();
+    string s, msg;
+    int idxq[$];
+
+    $timeformat(-9, 2, " ns", 10);
+    $sformat(s, "%s\n", super.convert2string());
+    $sformat(s, "%s@ %t: ", s, $time());
+    
+    idxq = m_dce_txnq.find_index(item) with (
+        item.m_initcmdupd_req_pkt.smi_msg_id == m_smi_rx_strreq_pkt.smi_msg_id  &&
+        item.m_initcmdupd_req_pkt.smi_src_id == m_smi_rx_strreq_pkt.smi_dest_id &&
+        item.m_expstr_req_pkt != null                                           &&
+        item.m_states["strreq"].is_expect());
+
+    //check for rsp2req match
+    smi_pktmatch_checks(idxq, m_smi_rx_strreq_pkt, "SFI Slave STR Req", "SFI Slave STR Req");
+    
+    //Compare and check str Request
+    m_dce_txnq[idxq[0]].m_states["strreq"].set_valid();
+    m_dce_txnq[idxq[0]].cmp_str_req(m_smi_rx_strreq_pkt);
+
+endfunction: process_smi_str_req
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////
+// Section4: Utility Functions
+//
+////////////////////////////////////////////////////////////////////
+function void dce_scb::latch_dirm_coh_req(dirm_item seq_item);
+    int idxq[$];
+    smi_src_id_bit_t smi_src_id;
+    smi_msg_id_bit_t smi_msg_id;
+    dirm_req_item req_item;
+
+    if (!$cast(req_item, seq_item))
+       `uvm_fatal("DCE SCB", "Cast failed on dirm_req_item") 
+    
+    idxq = m_dce_txnq.find_index(item) with (
+                    item.m_cmd_req_type == IS_COH_REQ &&
+                    item.m_initcmdupd_req_pkt.smi_msg_id == req_item.m_attid &&
+                    item.m_initcmdupd_req_pkt.smi_src_id == req_item.m_aiuid &&
+                    item.m_initcmdupd_req_pkt.cache_addr() == req_item.m_addr && 
+                    item.m_attid_status == ATTID_IS_INACTIVE);
+
+    dirm_pktmatch_checks(idxq, seq_item, "Dirm Coh Req", "SMI TX CmdUpdReq");
+    
+    m_dce_txnq[idxq[0]].read_dirm_coh_req(req_item);
+endfunction: latch_dirm_coh_req
+
+function void dce_scb::dirm_pktmatch_checks(
+    const ref int idxq[$],
+    const ref dirm_item seq_item,
+    input string act_pkt_type,
+    input string ref_pkt_type);
+
+    string s;
+    if(idxq.size() == 0) begin
+  
+        $sformat(s, "%s @{ACT}: Received unexpected %s pkt: %s", s, act_pkt_type,
+           seq_item.convert2string());
+        `uvm_info("DCE SCB", s, UVM_NONE)
+        $stacktrace;
+        `uvm_error("DCE SCB", $psprintf("Unexpected {ACT} pkt received on %s channel",
+            act_pkt_type))
+    end else if(idxq.size() > 1) begin
+
+        $sformat(s, "%s @{ACT}: For actual %s pkt multiple %s pkt matches are observed: %s\n",
+            s, act_pkt_type, ref_pkt_type, seq_item.convert2string());
+        $sformat(s, "%s @{EXP}: Multiple %s pkts are:\n", s, ref_pkt_type);
+        foreach(idxq[idx]) begin
+            $sformat(s, "%s req_pkt%0d: %s", s, idx,
+                m_dce_txnq[idxq[idx]].convert2string());
+        end
+        `uvm_info("DCE SCB", s, UVM_NONE)
+        $stacktrace;
+        `uvm_error("DCE SCB", $psprintf("Multiple {EXP} %s matches observed for {ACT} %s pkt",
+            ref_pkt_type, act_pkt_type))
+    end
+
+endfunction: dirm_pktmatch_checks
+
+function void dce_scb::smi_pktmatch_checks(
+    const ref int           idxq[$],
+    const ref smi_seq_item  seq_item,
+    input string            act_pkt_type,
+    input string            ref_pkt_type);
+
+    string s;
+    if(idxq.size() == 0) begin
+        $stacktrace;
+        `uvm_error("DCE SCB", $psprintf("@{ACT}: Received unexpected pkt: %s on %s channel", seq_item.convert2string(), act_pkt_type));
+    end else if(idxq.size() > 1) begin
+
+        $sformat(s, "%s @{ACT}: For actual %s pkt multiple %s pkt matches are observed: %s\n",
+            s, act_pkt_type, ref_pkt_type, seq_item.convert2string());
+        $sformat(s, "%s @{EXP}: Multiple %s pkts are:\n", s, ref_pkt_type);
+        foreach(idxq[idx]) begin
+            $sformat(s, "%s req_pkt%0d: %s", s, idx, m_dce_txnq[idxq[idx]].convert2string());
+        end
+        `uvm_info("DCE SCB", s, UVM_NONE)
+        $stacktrace;
+        `uvm_error("DCE SCB", $psprintf("Multiple {EXP} %s matches observed for {ACT} %s pkt", ref_pkt_type, act_pkt_type))
+    end
+endfunction: smi_pktmatch_checks
+

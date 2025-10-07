@@ -1,0 +1,296 @@
+{
+  "name": "NC_CAIU",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "strRtlNamePrefix",
+          "parameterTitle": "RTL prefix string",
+          "regex": "^[a-zA-Z](?:[a-zA-Z0-9]|_(?!_|$))*$",
+          "parameterType": "architecture",
+          "docID": 135,
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "fUnitId",
+          "parameterTitle": "fUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nUnitId",
+          "parameterTitle": "nUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wDpAux",
+          "parameterTitle": "wDpAux",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nProcs",
+          "parameterTitle": "Number of Processors",
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "specify the number of logical processors connected to this interface.",
+          "docID": 136,
+          "validValues": "1,2,4,8,16,32",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "fnNativeInterface",
+          "parameterTitle": "Native interface",
+          "default": "CHI-A",
+          "parameterType": "architecture",
+          "guiDescription": "Native interface type",
+          "validValues": "CHI-A,CHI-B",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nativeClk",
+          "parameterTitle": "Native clock name",
+          "default": "",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "ImplementationParameters",
+          "parameterTitle": "Resources",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "ImplParams"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Interfaces",
+          "parameterTitle": "Interfaces",
+          "parameterType": "architecture",
+          "docID": 137,
+          "type": "object",
+          "reference": "Interfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SmiPortMsgMap",
+          "parameterTitle": "Port Message Map",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_PortMsgMap.design.cpr"
+        }
+      ],
+      "baseName": "NC_BaseNcoreUnit"
+    },
+    {
+      "name": "ImplParams",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nNativeCredits",
+          "parameterTitle": "Credits for Native Protocol",
+          "minimum": 1,
+          "maximum": 15,
+          "default": 2,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nOttCtrlEntries",
+          "parameterTitle": "Outstanding transaction table Entries",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Number of outstanding transaction table entries.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDceCmdCredits",
+          "parameterTitle": "Number of Credits per DCE",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of credits for coherent transactions with DCE. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDmiCmdCredits",
+          "parameterTitle": "Number of Credits per DMI",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of credits for non coherent transactions with DMI. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDiiCmdCredits",
+          "parameterTitle": "Number of Credits per DII",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies the number of credits for non coherent transactions with DII. This should be determined based on required bandwidth and netwrok round trip latency.",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nStshSnpCredits",
+          "parameterTitle": "Number of outstanding target stashes",
+          "minimum": 1,
+          "maximum": 8,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "This specifies number of outstanding stashs to this unit are supported.",
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "name": "Interfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "external",
+          "parameterTitle": "Interface CHI",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/COMMON_ParamBase.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "internal",
+          "parameterTitle": "Internal interfaces",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "IntInterfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "placeholders",
+          "parameterTitle": "Placeholder signals",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_LIB_DESIGN/postMap/InterfaceGeneric.design.cpr"
+        }
+      ],
+      "baseName": "ParamBase"
+    },
+    {
+      "name": "IntInterfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDceIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDveIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDmiIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysDiiIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysCAiuIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiTxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiRxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        }
+      ],
+      "baseName": "NC_IntInterfaces"
+    },
+    {
+      "name": "InterfaceSMI",
+      "params": [],
+      "baseName": "InterfaceSMI"
+    }
+  ]
+}

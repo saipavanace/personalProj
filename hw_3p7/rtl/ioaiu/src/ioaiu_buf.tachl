@@ -1,0 +1,1301 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU buffer.
+//
+//////////////////////////////////////////////////////////////////////////
+var u     = obj.lib;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+u.paramDefault('BYPASS', 'int', 0);
+
+var DRST  = u.getParam('DRST');
+var XO    = u.getParam('XO');
+var halfSpeed = u.getParam('halfSpeed');
+var ODDW  = u.getParam('ODDW');
+var BAW   = u.getParam('BAW');
+var DEPTH = u.getParam('DEPTH');
+var WIDTH = u.getParam('WIDTH');
+var BANKS = u.getParam('BANKS');
+var MEMORY = u.getParam('MEMORY');
+var WN    = u.getParam('WN');
+var RN    = u.getParam('RN');
+var QBE   = u.getParam('QBE');
+var QNE   = u.getParam('QNE');
+var WIE   = u.getParam('WIE');
+var OD_TIMING_FIX = u.getParam('OD_TIMING_FIX');
+var BYPASS = u.getParam('BYPASS');
+var EE = u.getParam('EE');
+var EW = u.getParam('EW');
+var EEN = u.getParam('EEN');
+var IES = u.getParam('IES');
+var IWS = u.getParam('IWS');
+var IW = u.getParam('IW');
+
+var AW = log2ceil(DEPTH);
+var BW = (BANKS>1) ? log2ceil(BANKS) : /* istanbul ignore next env ncore_3p7 */0;
+var BWX = BW + (BW==0);
+var DW = WIDTH;
+var NW = ODDW + ((EE>0) ? EW : 1);
+var RW = log2ceil(RN);
+
+// For 3.7, RQD is a minimum of 3
+var RQD = 2+QBE+OD_TIMING_FIX+halfSpeed;
+var RQT = (RQD>1) ? 3 : /* istanbul ignore next env ncore_3p7 */ 0;
+var BQD = RQD;
+var BQT = (BQD>1) ? 3 : /* istanbul ignore next env ncore_3p7 */ 0;
+var IQD = RQD+QNE+1+halfSpeed;
+var IQT = (IQD>1) ? 3 : /* istanbul ignore next env ncore_3p7 */ 0;
+
+var WPW = 1+BAW+NW;
+var WLP = 0;
+
+var assertOn = u.getParam('assertOn');
+
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) {
+var clkAssertInterface = { name : '', signals : {'clk_i' : 1,'reset_ni' : 1}};
+} else {
+var clkAssertInterface = { };
+}
+
+\jsend
+
+module \=u.getModuleName()=\ (
+	clk_i,
+	clk_i_ng,
+	reset_ni,
+	wn_ready_o,
+	wn_valid_i,
+	wn_waddr_i,
+	wn_wdata_i,
+	rn_ready_o,
+	rn_valid_i,
+	rn_raddr_i,
+	rn_info_i,
+	rn_ready_i,
+	rn_valid_o,
+	rn_rdata_o,
+	rn_info_o,
+	rn_busy_o,
+	od_sram_we_o,
+	od_sram_waddr_o,
+	od_sram_wdata_o,
+	od_sram_wecc_o,
+	od_sram_re_o,
+	od_sram_raddr_o,
+	od_sram_rdata_i,
+	od_sram_recc_i,
+	error_en_i,
+	error_o,
+	elog_o
+);
+
+input			        clk_i;
+input			        clk_i_ng;
+input			        reset_ni;
+output [\=WN-1=\:0]		        wn_ready_o;
+input [\=WN-1=\:0]		        wn_valid_i;
+input [\=(WN*AW)-1=\:0]	        wn_waddr_i;
+input [\=(WN*DW)-1=\:0]	        wn_wdata_i;
+output [\=RN-1=\:0]		        rn_ready_o;
+input [\=RN-1=\:0]		        rn_valid_i;
+input [\=(RN*AW)-1=\:0]	        rn_raddr_i;
+input [\=(RN*IW)-1=\:0]	        rn_info_i;
+input [\=RN-1=\:0]		        rn_ready_i;
+output [\=RN-1=\:0]		        rn_valid_o;
+output [\=(RN*DW)-1=\:0]	        rn_rdata_o;
+output [\=(RN*IW)-1=\:0]	        rn_info_o;
+output [\=RN-1=\:0]		        rn_busy_o;
+output [\=BANKS-1=\:0]	        od_sram_we_o;
+output [\=(BANKS*BAW)-1=\:0]        od_sram_waddr_o;
+output [\=(BANKS*ODDW)-1=\:0]	od_sram_wdata_o;
+output [\=(BANKS*EW)-1=\:0]	        od_sram_wecc_o;
+output [\=BANKS-1=\:0]	        od_sram_re_o;
+output [\=(BANKS*BAW)=\-1:0]        od_sram_raddr_o;
+input [\=(BANKS*ODDW)-1=\:0]	od_sram_rdata_i;
+input [\=(BANKS*EW)-1=\:0]	        od_sram_recc_i;
+input  [1:0]		        error_en_i;
+output [1:0]		        error_o;
+output [25:0]		        elog_o;
+
+
+wire [\=(WN*EW)-1=\:0]	n_wn_wecc;
+wire [\=WPW-1=\:0]		n_wn_wad[\=WN-1=\:0];
+wire [\=BANKS-1=\:0]				n_wn_ready[\=WN-1=\:0];
+wire [\=BANKS-1=\:0]				w_wn_valid[\=WN-1=\:0];
+wire [\=(BANKS*(WPW))-1=\:0]			w_wn_wad[\=WN-1=\:0];
+wire [\=BANKS-1=\:0]				t_wn_sel[\=WN-1=\:0];
+wire [\=(BANKS*WN)-1=\:0]	w_wb_ready;
+wire [\=(BANKS*WN)-1=\:0]	n_wb_valid, n_wb_arb;
+wire [\=(BANKS*WN*(WPW))-1=\:0] n_wb_wad;
+wire [\=WN-1=\:0]		t_wb_sel[\=BANKS-1=\:0];
+wire [\=BANKS-1=\:0]				n_wb_ready;
+wire [\=BANKS-1=\:0]				w_wb_valid, t_wb_valid;
+wire [\=BANKS-1=\:0]				w_wb_wlp;
+wire [\=(WPW)-1=\:0]				w_wb_wad[\=BANKS-1=\:0];
+wire [\=BAW-1=\:0]					w_wb_waddr[\=BANKS-1=\:0];
+wire [\=DW-1=\:0]					w_wb_wdata[\=BANKS-1=\:0];
+wire [\=EW-1=\:0]					w_wb_wecc[\=BANKS-1=\:0];
+wire [\=NW-1=\:0]					w_wb_wentry[\=BANKS-1=\:0];
+wire [\=RN-1=\:0]		w_iq_ready,		n_iq_ready;
+wire [\=RN-1=\:0]		n_iq_valid,		w_iq_valid;
+wire [\=RN-1=\:0]		w_rq_ready,		n_rq_ready;
+wire [\=RN-1=\:0]		n_rq_valid,		w_rq_valid;
+wire [\=BWX-1=\:0]		n_rq_data[\=RN-1=\:0],	w_rq_data[\=RN-1=\:0];
+wire [\=BANKS-1=\:0] 	w_bq_ready,		n_bq_ready;
+wire [\=BANKS-1=\:0] 	n_bq_valid,		w_bq_valid;
+wire [\=RW-1=\:0]	 	n_bq_port[\=BANKS-1=\:0],	w_bq_port[\=BANKS-1=\:0];
+wire			n_ri_ready[\=RN-1=\:0];
+wire			w_ri_valid[\=RN-1=\:0];
+wire [\=AW-1=\:0]		w_ri_raddr[\=RN-1=\:0];
+wire [\=IW-1=\:0]		w_ri_info[\=RN-1=\:0];
+wire                    n_wi_ready[\=WN-1=\:0];
+wire                    w_wi_valid[\=WN-1=\:0];
+wire [\=AW-1=\:0]               w_wi_waddr[\=WN-1=\:0];
+wire [\=DW-1=\:0]               w_wi_wdata[\=WN-1=\:0];
+wire [\=RN-1=\:0]		w_rn_ready;
+wire [\=RN-1=\:0]		n_rn_valid;
+wire [\=BAW-1=\:0]		n_rn_raddr[\=RN-1=\:0];
+wire [\=BANKS-1=\:0]					n_rn_ready[\=RN-1=\:0];
+wire [\=BANKS-1=\:0]				w_rn_valid[\=RN-1=\:0];
+wire [\=(BANKS*BAW)-1=\:0]				w_rn_raddr[\=RN-1=\:0];
+wire [\=BANKS-1=\:0]				t_rn_sel[\=RN-1=\:0];
+wire [\=(BANKS*RN)-1=\:0]	w_rb_ready;
+wire [\=(BANKS*RN)-1=\:0]	n_rb_valid, n_rb_arb;
+wire [\=(BANKS*RN*BAW)-1=\:0] n_rb_raddr;
+wire [\=RW-1=\:0]	 	n_rb_port[\=BANKS-1=\:0],	w_rb_port[\=BANKS-1=\:0], od_pipe_in_rb_port[\=BANKS-1=\:0], od_pipe_out_rb_port[\=BANKS-1=\:0];
+wire [\=RN-1=\:0]		t_rb_sel[\=BANKS-1=\:0];
+wire [\=BANKS-1=\:0]				n_rb_ready;
+wire [\=BANKS-1=\:0]				w_rb_valid, t_rb_valid, od_pipe_in_rb_valid;
+wire [\=BAW-1=\:0]					w_rb_raddr[\=BANKS-1=\:0];
+wire [\=BAW-1=\:0]					od_pipe_in_rb_raddr[\=BANKS-1=\:0];
+wire [\=ODDW-1=\:0]				w_rb_rdata[\=BANKS-1=\:0];
+wire [\=EW-1=\:0]					w_rb_recc[\=BANKS-1=\:0];
+wire [\=NW-1=\:0]					w_rb_rentry[\=BANKS-1=\:0];
+wire [\=BANKS-1=\:0]				w_qb_sbe, t_qb_sbe,
+						w_qb_dbe, t_qb_dbe;
+wire [\=ODDW-1=\:0]				w_qb_cdata[\=BANKS-1=\:0],t_qb_cdata[\=BANKS-1=\:0];
+wire [\=BAW-1=\:0]			   	        w_qb_caddr[\=BANKS-1=\:0];
+wire [\=BANKS-1=\:0]	w_qb_ready,		n_qb_ready;
+wire [\=BANKS-1=\:0]	n_qb_valid,		w_qb_valid;
+wire [\=BANKS-1=\:0]	           		w_qb_valid_unqual;
+wire [\=ODDW-1=\:0]	n_qb_rdata[\=BANKS-1=\:0],	w_qb_rdata[\=BANKS-1=\:0];
+wire [\=EW-1=\:0]		n_qb_recc[\=BANKS-1=\:0],	w_qb_recc[\=BANKS-1=\:0];
+wire [\=BAW-1=\:0]                                  w_qb_raddr[\=BANKS-1=\:0];
+wire [\=RN-1=\:0]					n_db_ready[\=BANKS-1=\:0];
+wire [\=RN-1=\:0]					w_db_valid[\=BANKS-1=\:0];
+wire [\=RN*DW-1=\:0]				w_db_rdata[\=BANKS-1=\:0];
+wire [\=RN-1=\:0]		t_db_sel[\=BANKS-1=\:0];
+wire [\=(RN*BANKS)-1=\:0]	w_dn_ready;
+wire [\=(RN*BANKS)-1=\:0]	n_dn_valid;
+wire [\=(RN*BANKS*DW)-1=\:0]	n_dn_rdata;
+wire [\=RN-1=\:0]					n_dn_ready;
+wire [\=RN-1=\:0]					w_dn_valid;
+wire [\=DW-1=\:0]					w_dn_rdata[\=RN-1=\:0];
+wire [\=BANKS-1=\:0]				t_dn_sel[\=RN-1=\:0];
+wire [\=RN-1=\:0]	w_qn_ready, 	    w_qn1_ready,	 n_qn_ready;
+wire [\=RN-1=\:0]	n_qn_valid,	    n_qn1_valid,	 w_qn_valid;
+wire [\=DW-1=\:0]	n_qn_rdata[\=RN-1=\:0], n_qn1_rdata[\=RN-1=\:0], w_qn_rdata[\=RN-1=\:0];
+
+wire [\=BANKS-1=\:0]	t_ebv;
+wire [\=BW-1=\:0]		w_ebank;
+
+wire [\=BANKS-1=\:0]	od_pipe_out_rb_re;
+wire [\=BANKS-1=\:0]	error_sbe, error_dbe;
+wire [\=BAW-1=\:0]		error_addr_pre, error_addr;
+
+wire [\=BAW-1=\:0]		od_pipe_out_raddr_b[\=BANKS-1=\:0];
+
+wire [\=BANKS-1=\:0]        addr_corr_mismatch;
+
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+wire clkby2_en;
+wire clkby2_b_en;
+
+\=u.dffre(1, `clkby2_en`, `~clkby2_en`, `1'b0`, `1'b1`, `clk_i_ng`, `reset_ni`)=\
+assign clkby2_b_en= ~clkby2_en;
+
+\js }
+
+\js for (let i=0; i<WN; i=i+1) {
+//	assign n_wn_wad[\=i=\] = {WLP[\=i=\], n_wn_wecc[\=(i*EW)=\ +: \=EW=\], w_wi_waddr[\=i=\][\=BW=\ +: \=BAW=\], w_wi_wdata[\=i=\][0 +: \=DW=\]}; 
+	assign n_wn_wad[\=i=\] = {1'b0,       n_wn_wecc[\=(i*EW)=\ +: \=EW=\], w_wi_waddr[\=i=\][\=BW=\ +: \=BAW=\], w_wi_wdata[\=i=\][0 +: \=DW=\]}; 
+\js }
+
+\js for (let n=0; n<WN; n=n+1) {
+
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (WIE) { \jsend
+\=u.instance({
+        moduleName: 'rdy_vld_pipe',
+        instanceName: 'wi'+n,
+        params: {
+                depth:          1,
+                width:          DW+AW,
+                pipeForward:    "no",
+                pipeBackward:   "yes",
+                simplePipe:     "no",
+                circular:       "no"
+                 },
+        verilogParams: {
+        },
+        ports: {
+        clk:            'clk_i',
+        reset_n:        'reset_ni',
+        in_ready:       'wn_ready_o['+n+']',
+        in_valid:       'wn_valid_i['+n+']',
+        in_data:        '{wn_wdata_i['+n*DW+' +: '+DW+'], wn_waddr_i['+n*AW+' +: '+AW+']}',
+        out_ready:      'n_wi_ready['+n+']',
+        out_valid:      'w_wi_valid['+n+']',
+        out_data:       '{w_wi_wdata['+n+'], w_wi_waddr['+n+']}'
+        },
+        portsDelimiter: '\n\t'
+})=\
+\js } else {
+  assign wn_ready_o[\=n=\] = n_wi_ready[\=n=\];
+  assign w_wi_valid[\=n=\] = wn_valid_i[\=n=\];
+  assign w_wi_wdata[\=n=\] = wn_wdata_i[\=n*DW=\ +: \=DW=\];
+  assign w_wi_waddr[\=n=\] = wn_waddr_i[\=n*AW=\ +: \=AW=\];
+\js }
+
+\js if ((EEN>0) && (EE==2)) {
+\=u.instance({
+	moduleName: 'ecc_enc',
+	instanceName: 'ecc_encn'+n, 
+	params: {
+		data_width: 	ODDW+BAW,
+		assertOn : assertOn
+	},
+	ports: {
+		data:		'{w_wi_waddr['+n+']['+BW+' +: '+BAW+'],w_wi_wdata['+n+'][0 +: '+DW+']}',
+		ecc:		'n_wn_wecc['+(n*EW)+' +: '+EW+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+\js } else if ((EEN>0) && (EE==1)) {
+assign n_wn_wecc[\=(n*EW)=\ +: \=EW=\] = (^ {w_wi_waddr[\=n=\][\=BW=\ +: \=BAW=\],w_wi_wdata[\=n=\][0 +: \=DW=\]});
+\js } else {
+assign n_wn_wecc[\=(n*EW)=\ +: \=EW=\] = {\=EW=\{1'b0}};
+\js }
+
+\jsbegin
+// banks always 2 or 4 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (BANKS>1) { \jsend
+\=u.instance({
+	moduleName: 'ioaiu_demux',
+	instanceName: 'wn_demux'+n,
+	params: {
+                 NUM : BANKS,
+		 DW :  WPW,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	verilogParams: {
+	},
+	ports: {
+		ready_o:	'n_wi_ready['+n+']',
+		valid_i:	'w_wi_valid['+n+']',
+		data_i:		'n_wn_wad['+n+']',
+		ready_i:	'n_wn_ready['+n+']',
+		valid_o:	'w_wn_valid['+n+']',
+		data_o:		'w_wn_wad['+n+']',
+		bvsel_i:	't_wn_sel['+n+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+wire [\=BANKS=\:0] t_wn_sel_tmp\=n=\ = ({{\=BANKS=\{1'b0}},1'b1} << w_wi_waddr[\=n=\][0 +: \=BWX=\]) & {\=BANKS+1=\{w_wi_valid[\=n=\]}};
+assign t_wn_sel[\=n=\] = t_wn_sel_tmp\=n=\[\=BANKS-1=\:0];
+\js } else {
+assign t_wn_sel[\=n=\] = w_wi_valid[\=n=\];
+assign n_wi_ready[\=n=\] = n_wn_ready[\=n=\];
+assign w_wn_valid[\=n=\] = w_wi_valid[\=n=\];
+assign w_wn_wad[\=n=\] = n_wn_wad[\=n=\];
+\js }
+\js }
+
+\js for (let i0=0; i0<BANKS; i0=i0+1) {
+\js	for (let j=0; j<WN; j=j+1) {
+		assign n_wn_ready[\=j=\][\=i0=\] = w_wb_ready[\=(i0*WN)+j=\];
+		assign n_wb_valid[\=(i0*WN)+j=\] = w_wn_valid[\=j=\][\=i0=\];
+		assign n_wb_arb[\=(i0*WN)+j=\] = t_wn_sel[\=j=\][\=i0=\];
+		assign n_wb_wad[\=(i0*WN*(WPW))+(j*(WPW))=\ +: \=(WPW)=\] = 
+					      w_wn_wad[\=j=\][\=i0*(WPW)=\ +: \=WPW=\];
+\js	}
+\js }
+
+\js for (let i1=0; i1<BANKS; i1=i1+1) {
+\js 	for (let j0=0; j0<RN; j0=j0+1) {
+		assign n_rn_ready[\=j0=\][\=i1=\] = w_rb_ready[\=(i1*RN)+j0=\] &
+				   (~w_qn_valid[\=j0=\] | rn_ready_i[\=j0=\]);
+		assign n_rb_valid[\=(i1*RN)+j0=\] = w_rn_valid[\=j0=\][\=i1=\] &
+				       (~w_qn_valid[\=j0=\] | rn_ready_i[\=j0=\]);
+		assign n_rb_arb[\=(i1*RN)+j0=\] = t_rn_sel[\=j0=\][\=i1=\] &
+				       (~w_qn_valid[\=j0=\] | rn_ready_i[\=j0=\]);
+		assign n_rb_raddr[\=(i1*RN*BAW)+(j0*BAW)=\ +: \=BAW=\] = 
+						w_rn_raddr[\=j0=\][\=i1*BAW=\ +: \=BAW=\];
+
+		assign n_db_ready[\=i1=\][\=j0=\] = w_dn_ready[\=(j0*BANKS)+i1=\];
+		assign n_dn_valid[\=(j0*BANKS)+i1=\] = w_db_valid[\=i1=\][\=j0=\];
+		assign n_dn_rdata[\=(j0*BANKS*DW)+(i1*DW)=\ +: \=DW=\] = 
+						w_db_rdata[\=i1=\][\=j0*DW=\ +: \=DW=\];
+\js	}
+\js }
+\js for (let n=0; n<RN; n=n+1) {
+wire	w_skid\=n=\;
+
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'ri'+n,
+	params: {
+                depth:          1,
+		width:		IW+AW,
+                pipeForward:    "no",
+                pipeBackward:   "yes",
+                simplePipe:     "no",
+                circular:       "no"
+		 },
+	verilogParams: {
+	},
+	ports: {
+	clk:		'clk_i',
+	reset_n:	'reset_ni',
+	in_ready:	'rn_ready_o['+n+']',
+	in_valid:	'rn_valid_i['+n+']',
+	in_data:	'{rn_info_i['+n*IW+' +: '+IW+'], rn_raddr_i['+n*AW+' +: '+AW+']}',
+	out_ready:	'n_ri_ready['+n+']',
+	out_valid:	'w_ri_valid['+n+']',
+	out_data:	'{w_ri_info['+n+'], w_ri_raddr['+n+']}'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+\=u.instance({
+	moduleName: 'ioaiu_split',
+	instanceName: 'rn_split'+n,
+	params: {
+		NUM : 4,
+                clkAssertInterface: clkAssertInterface,
+		assertOn : assertOn
+	},
+	ports: {
+		ready_o:	'n_ri_ready['+n+']',
+		valid_i:	'w_ri_valid['+n+']',
+		ready_i:	`{(rn_ready_i[`+n+`] | ~w_qn_valid[`+n+`]), 
+				  w_iq_ready[`+n+`], w_rq_ready[`+n+`], w_rn_ready[`+n+`]}`,
+		valid_o:	`{w_skid`+n+`, 
+				  n_iq_valid[`+n+`], n_rq_valid[`+n+`], n_rn_valid[`+n+`]}`
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+assign n_rq_data[\=n=\] = w_ri_raddr[\=n=\][0 +: \=BWX=\];
+assign n_rn_raddr[\=n=\] = w_ri_raddr[\=n=\][\=BW=\ +: \=BAW=\];
+
+\jsbegin
+// banks always 2 or 4 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (BANKS>1) { \jsend
+\=u.instance({
+	moduleName: 'ioaiu_demux',
+	instanceName: 'rn_demux'+n,
+	params: {
+		 NUM:	BANKS,
+		 DW:	BAW,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	verilogParams: {
+	},
+	ports: {
+		ready_o:	'w_rn_ready['+n+']',
+		valid_i:	'n_rn_valid['+n+']',
+		data_i:		'n_rn_raddr['+n+']',
+		ready_i:	'n_rn_ready['+n+']',
+		valid_o:	'w_rn_valid['+n+']',
+		data_o:		'w_rn_raddr['+n+']',
+		bvsel_i:	't_rn_sel['+n+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+wire  [\=BANKS=\:0] t_rn_sel_tmp\=n=\ = ({{\=BANKS=\{1'b0}},1'b1} << (w_ri_raddr[\=n=\][0 +: \=BWX=\])) & {\=BANKS+1=\{w_ri_valid[\=n=\]}};
+assign t_rn_sel[\=n=\] = t_rn_sel_tmp\=n=\[\=BANKS-1=\:0];
+
+assign n_dn_ready[\=n=\] = 1'b1;	//SKID must always accept data
+
+\=u.instance({
+	moduleName: 'ioaiu_mux',
+	instanceName: 'dn_mux'+n,
+	params: {
+                 NUM : BANKS,
+		 DW :  DW,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	verilogParams: {
+	},
+	ports: {
+		ready_o:	'w_dn_ready['+n*BANKS+' +: '+BANKS+']',
+		valid_i:	'n_dn_valid['+n*BANKS+' +: '+BANKS+']',
+		data_i:		'n_dn_rdata['+n*BANKS*DW+' +: '+BANKS*DW+']',
+		ready_i:	'n_dn_ready['+n+']',
+		valid_o:	'w_dn_valid['+n+']',
+		data_o:		'w_dn_rdata['+n+']',
+		bvsel_i:	't_dn_sel['+n+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+  assign t_dn_sel[\=n=\] = w_rq_valid[\=n=\] ? ({{\=BANKS-1=\{1'b0}}, 1'b1} << w_rq_data[\=n=\]) : {\=BANKS=\{1'b0}}; 
+
+\js } else {
+assign t_rn_sel[\=n=\] = w_ri_valid[\=n=\];
+assign w_rn_ready[\=n=\] = n_rn_ready[\=n=\];
+assign w_rn_valid[\=n=\] = n_rn_valid[\=n=\];
+assign w_rn_raddr[\=n=\] = n_rn_raddr[\=n=\];
+
+assign n_dn_ready[\=n=\] = w_qn_ready[\=n=\];
+assign w_dn_ready[\=n*BANKS=\ +: \=BANKS=\] = n_dn_ready[\=n=\];
+assign w_dn_valid[\=n=\] = n_dn_valid[\=n*BANKS=\ +: \=BANKS=\];
+assign w_dn_rdata[\=n=\] = n_dn_rdata[\=n*BANKS*DW=\ +: \=BANKS*DW=\];
+\js }
+
+assign n_qn_valid[\=n=\] = w_dn_valid[\=n=\];
+assign n_qn_rdata[\=n=\] = w_dn_rdata[\=n=\];
+
+\=u.instance({
+	moduleName: 'ioaiu_combine',
+	instanceName: 'rn_merge'+n,
+	params: {
+                 DW:             2,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn: assertOn
+        },
+	ports: {
+		ready_o:	'{n_iq_ready['+n+'], n_qn_ready['+n+']}',
+		valid_i:	'{w_iq_valid['+n+'], w_qn_valid['+n+']}',
+		ready_i:	'rn_ready_i['+n+']',
+		valid_o:	'rn_valid_o['+n+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+assign rn_rdata_o[\=n*DW=\ +: \=DW=\] = w_qn_rdata[\=n=\];
+assign rn_busy_o[\=n=\] = 
+\js if (IES[n]>0) {
+                          w_iq_valid[\=n=\];
+\js } else {
+                          1'b0;
+\js }
+\js }
+
+\js for (let b=0; b<BANKS; b=b+1) {
+    assign n_wb_ready[\=b=\] = 
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+\js let clkby2_en = ((b%2)==0) ? "clkby2_en" : "clkby2_b_en";
+                               \=clkby2_en=\;
+\js } else {                      
+                               1'b1;
+\js }
+\=u.instance({
+	moduleName: 'ioaiu_mux',
+	instanceName: 'wb_mux'+b,
+	params: {
+                 NUM : WN, 
+		 DW :  WPW,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	verilogParams: {
+	},
+	ports: {
+		ready_o:	'w_wb_ready['+b*WN+' +: '+WN+']',
+		valid_i:	'n_wb_valid['+b*WN+' +: '+WN+']',
+		data_i:		'n_wb_wad['+(b*WN*(WPW))+' +: '+WN*(WPW)+']',
+		ready_i:	'n_wb_ready['+b+']',
+		valid_o:	'w_wb_valid['+b+']',
+		data_o:		'w_wb_wad['+b+']',
+		bvsel_i:	't_wb_sel['+b+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+assign t_wb_valid[\=b=\] = w_wb_valid[\=b=\] & 
+                                               (~w_rb_valid[\=b=\] | ~w_wb_wlp[\=b=\]);
+assign w_wb_wlp[\=b=\] = w_wb_wad[\=b=\][\=WPW-1=\];
+assign {w_wb_waddr[\=b=\], w_wb_wdata[\=b=\]} = w_wb_wad[\=b=\][0 +: \=(BAW+DW)=\];
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'wb_arb'+b,
+	params: {
+                 DW:             WN,
+                 BE:             0,
+                 NO_VALID_OUT:   1,
+                 NO_INDEX_OUT:   1,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	ports: {
+		bv_i:		'n_wb_arb['+b*WN+' +: '+WN+']',
+		bv_o:		't_wb_sel['+b+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+assign n_rb_ready[\=b=\] = w_qb_ready[\=b=\] & 
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+      if (halfSpeed) { \jsend
+\js     let clkby2_en = ((b%2)==0) ? "clkby2_en" : "clkby2_b_en";
+                               \=clkby2_en=\ &
+\js   }
+		                               (~w_wb_valid[\=b=\] | w_wb_wlp[\=b=\]);
+\=u.instance({
+	moduleName: 'ioaiu_mux',
+	instanceName: 'rb_mux'+b,
+	params: {
+                 NUM : RN, 
+		 DW :  BAW,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	verilogParams: {
+	},
+	ports: {
+		ready_o:	'w_rb_ready['+b*RN+' +: '+RN+']',
+		valid_i:	'n_rb_valid['+b*RN+' +: '+RN+']',
+		data_i:		'n_rb_raddr['+b*RN*BAW+' +: '+RN*BAW+']',
+		ready_i:	'n_rb_ready['+b+']',
+		valid_o:	'w_rb_valid['+b+']',
+		data_o:		'w_rb_raddr['+b+']',
+		bvsel_i:	't_rb_sel['+b+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+assign t_rb_valid[\=b=\] = w_rb_valid[\=b=\] &
+                                               (~w_wb_valid[\=b=\] | w_wb_wlp[\=b=\]);
+
+\jsbegin
+// Maestro always ties to zero
+/* istanbul ignore if env ncore_3p7 */
+    if(OD_TIMING_FIX==1) { \jsend
+\js ///////////////////////////////////////////////
+\js // Start of pipeine parallel to sram access  //
+\js ///////////////////////////////////////////////
+\js let clkby2_en = halfSpeed ? /* istanbul ignore next env ncore_3p7 */ ((b%2)==0) ? "clkby2_en" : "clkby2_b_en" : "1'b1";
+        wire od_pipe_in_rb_valid\=b=\;
+        assign od_pipe_in_rb_valid[\=b=\] = od_pipe_in_rb_valid\=b=\;
+	\=u.dffre(1, `od_pipe_in_rb_valid`+b, `t_rb_valid[`+b+`]`, `1'b0`, clkby2_en, `clk_i`, `reset_ni`)=\
+        wire [\=BAW-1=\:0] od_pipe_in_rb_raddr\=b=\;
+        assign od_pipe_in_rb_raddr[\=b=\] = od_pipe_in_rb_raddr\=b=\;
+	\=u.dffre(BAW, `od_pipe_in_rb_raddr`+b, `w_rb_raddr[`+b+`]`, `{`+BAW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+        wire [\=RW-1=\:0] od_pipe_in_rb_port\=b=\;
+        assign od_pipe_in_rb_port[\=b=\] = od_pipe_in_rb_port\=b=\;
+	\=u.dffre(RW, `od_pipe_in_rb_port`+b, `w_rb_port[`+b+`]`, `{`+RW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+\js } else {
+	assign od_pipe_in_rb_valid[\=b=\] = t_rb_valid[\=b=\];
+	assign od_pipe_in_rb_raddr[\=b=\] = w_rb_raddr[\=b=\];
+	assign od_pipe_in_rb_port[\=b=\] = w_rb_port[\=b=\];
+\js }
+
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'rb_arb'+b,
+	params: {
+                 DW:             RN,
+                 BE:             0,
+                 NO_VALID_OUT:   1,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	ports: {
+		bv_i:		'n_rb_arb['+b*RN+' +: '+RN+']',
+		index_o:	'n_rb_port['+b+']',
+		bv_o:		't_rb_sel['+b+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+wire [\=BAW-1=\:0] od_pipe_out_raddr_b\=b=\;
+assign od_pipe_out_raddr_b[\=b=\] = od_pipe_out_raddr_b\=b=\;
+\js let clkby2_en = halfSpeed ? /* istanbul ignore next env ncore_3p7 */ ((b%2)==0) ? "clkby2_en" : "clkby2_b_en" : "1'b1";
+\=u.dffre(BAW, `od_pipe_out_raddr_b`+b, `od_pipe_in_rb_raddr[`+b+`]`, `{`+BAW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+wire [\=RW-1=\:0] od_pipe_out_rb_port\=b=\;
+assign od_pipe_out_rb_port[\=b=\] = od_pipe_out_rb_port\=b=\;
+\js let clkby2_en = halfSpeed ? /* istanbul ignore next env ncore_3p7 */ ((b%2)==0) ? "clkby2_en" : "clkby2_b_en" : "1'b1";
+\=u.dffre(RW, `od_pipe_out_rb_port`+b, `od_pipe_in_rb_port[`+b+`]`, `{`+RW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+\js }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+// The OD
+////////////////////////////////////////////////////////////////////////////////////////////
+wire [\=BAW-1=\:0] w_wb_waddr_rf\=b=\[\=BANKS-1=\:0];
+wire [\=BANKS-1=\:0] t_wb_valid_rf\=b=\;
+
+\jsbegin
+// Maestro always ties to zero
+/* istanbul ignore if env ncore_3p7 */
+   	if(OD_TIMING_FIX==1) { \jsend
+\js //////////////////////////////////////
+\js // Pipe stage that launches to SRAM //
+\js //////////////////////////////////////
+\js let clkby2_en = halfSpeed ? /* istanbul ignore next env ncore_3p7 */ ((b%2)==0) ? "clkby2_en" : "clkby2_b_en" : "1'b1";
+                wire od_sram_we_o\=b=\;
+                assign od_sram_we_o[\=b=\] = od_sram_we_o\=b=\;
+                wire od_sram_re_o\=b=\;
+                assign od_sram_re_o[\=b=\] = od_sram_re_o\=b=\;
+                wire [\=BAW-1=\:0] od_sram_waddr_o\=b=\;
+                assign od_sram_waddr_o[\=b*BAW=\ +: \=BAW=\] = od_sram_waddr_o\=b=\;
+                wire [\=ODDW-1=\:0] od_sram_wdata_o\=b=\;
+                assign od_sram_wdata_o[\=b*ODDW=\ +: \=ODDW=\] = od_sram_wdata_o\=b=\;
+                wire [\=EW-1=\:0] od_sram_wecc_o\=b=\;
+                assign od_sram_wecc_o[\=b*EW=\ +: \=EW=\] = od_sram_wecc_o\=b=\;
+//              wire [\=BAW-1=\:0] od_sram_raddr_o\=b=\;
+//              assign od_sram_raddr_o[\=b*BAW=\ +: \=BAW=\] = od_sram_raddr_o\=b=\;
+
+  		\=u.dffre(1, `od_sram_we_o`+b, `t_wb_valid[`+b+`]`, `1'b0`, clkby2_en, `clk_i`, `reset_ni`)=\
+  		wire [\=BAW=\-1:0] od_sram_waddr_o_\=b=\_ns = t_wb_valid[\=b=\] ? w_wb_waddr[\=b=\] : w_rb_raddr[\=b=\];
+  		\=u.dffre(BAW, `od_sram_waddr_o`+b, `od_sram_waddr_o_`+b+`_ns`, `{`+BAW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+  		\=u.dffre(ODDW, `od_sram_wdata_o`+b, `w_wb_wdata[`+b+`]`, `{`+ODDW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+  		\=u.dffre(EW, `od_sram_wecc_o`+b, `w_wb_wecc[`+b+`]`, `{`+EW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+  		wire od_sram_re_o\=b=\_ns = t_wb_valid[\=b=\] | w_rb_valid[\=b=\];
+  		\=u.dffre(1, `od_sram_re_o`+b, `od_sram_re_o`+b+`_ns`, `1'b0`, clkby2_en, `clk_i`, `reset_ni`)=\
+\js	} else {
+		assign od_sram_we_o[\=b=\] = t_wb_valid[\=b=\];
+		assign od_sram_waddr_o[\=b*BAW=\ +: \=BAW=\] = t_wb_valid[\=b=\] ? w_wb_waddr[\=b=\] : w_rb_raddr[\=b=\];
+		assign od_sram_wdata_o[\=b*ODDW=\ +: \=ODDW=\] = w_wb_wdata[\=b=\];
+		assign od_sram_wecc_o[\=b*EW=\ +: \=EW=\] = w_wb_wecc[\=b=\];
+		assign od_sram_re_o[\=b=\] = t_wb_valid[\=b=\] | w_rb_valid[\=b=\];
+\js     }
+  assign od_sram_raddr_o[\=b*BAW=\ +: \=BAW=\] = {\=BAW=\{1'b0}};
+  assign w_rb_rdata[\=b=\] = od_sram_rdata_i[\=b*ODDW=\ +: \=ODDW=\];
+  assign w_rb_recc[\=b=\] = od_sram_recc_i[\=b*EW=\ +: \=EW=\];
+
+\js // Ecc/parity generation is now done on the input port, not down here
+\js if (EEN) {
+assign w_wb_wecc[\=b=\] = w_wb_wad[\=b=\][\=(BAW+DW)=\ +: \=EW=\];
+\js } else {
+assign w_wb_wecc[\=b=\] = 1'b0;
+\js }
+
+\js //////////////////////////////////////////////////////////
+\js // Error checking and correction logic in the QB stage. //
+\js //////////////////////////////////////////////////////////
+\js if (EE==2) {
+wire [\=EW-1=\:0]		w_qb_syn\=b=\;
+
+\=u.instance({
+	moduleName: 'ecc_dec',
+	instanceName: 'ecc_dec'+b, 
+	params: {
+		data_width: 	ODDW+BAW,
+		assertOn : assertOn
+	},
+	ports: {
+		data:		'{w_qb_raddr['+b+'],w_qb_rdata['+b+']}',
+		ecc:		'w_qb_recc['+b+']',
+		syndrome:	'w_qb_syn'+b,
+		err_sb:		'w_qb_sbe['+b+']',
+		err_db:		'w_qb_dbe['+b+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+assign t_qb_sbe[\=b=\] = error_en_i[0] & (w_qb_sbe[\=b=\] & !addr_corr_mismatch[\=b=\]);
+assign t_qb_dbe[\=b=\] = error_en_i[1] & (w_qb_dbe[\=b=\] |  addr_corr_mismatch[\=b=\]);
+
+\=u.instance({
+	moduleName: 'ecc_cor',
+	instanceName: 'ecc_cor'+b,
+	params: {
+		data_width:	ODDW+BAW,
+		assertOn : assertOn
+	},
+	ports: {
+		data_in:	'{w_qb_raddr['+b+'],w_qb_rdata['+b+']}',
+		ecc_in:		'w_qb_recc['+b+']',
+		syndrome:	'w_qb_syn'+b,
+		data_out:	'{w_qb_caddr['+b+'],w_qb_cdata['+b+']}',
+		ecc_out:	''
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+assign addr_corr_mismatch[\=b=\] = (w_qb_raddr[\=b=\] != w_qb_caddr[\=b=\]);
+
+\js } else if (EE==1) {
+  assign w_qb_sbe[\=b=\] = 1'b0;
+  assign t_qb_sbe[\=b=\] = 1'b0; 
+  assign w_qb_dbe[\=b=\] = (^ {w_qb_recc[\=b=\], w_qb_raddr[\=b=\], w_qb_rdata[\=b=\]});
+  assign t_qb_dbe[\=b=\] = error_en_i[1] & w_qb_dbe[\=b=\];
+  assign w_qb_cdata[\=b=\] = w_qb_rdata[\=b=\];
+\js } else {
+  assign w_qb_sbe[\=b=\] = 1'b0;
+  assign t_qb_sbe[\=b=\] = 1'b0;
+  assign w_qb_dbe[\=b=\] = 1'b0;
+  assign t_qb_dbe[\=b=\] = 1'b0;
+  assign w_qb_cdata[\=b=\] = w_qb_rdata[\=b=\];
+\js }
+
+assign n_qb_valid[\=b=\] = 
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+\js let clkby2_en = ((b%2)==0) ? "clkby2_en" : "clkby2_b_en";
+                               \=clkby2_en=\ &
+\js }
+                           od_pipe_out_rb_re[\=b=\];
+assign n_qb_rdata[\=b=\] = w_rb_rdata[\=b=\];
+assign n_qb_recc[\=b=\] = w_rb_recc[\=b=\];
+
+\js ////////////////////////////////////////////////
+\js // Local per bank error capture registers.    //
+\js // Sent to the global error collection logic. //
+\js ////////////////////////////////////////////////
+
+wire od_pipe_out_rb_re\=b=\, error_sbe\=b=\, error_dbe\=b=\;
+assign od_pipe_out_rb_re[\=b=\] = od_pipe_out_rb_re\=b=\;
+assign error_sbe[\=b=\] = error_sbe\=b=\;
+assign error_dbe[\=b=\] = error_dbe\=b=\;
+wire od_pipe_out_rb_re_\=b=\_ns = ~w_qb_ready[\=b=\] ? od_pipe_out_rb_re[\=b=\] : od_pipe_in_rb_valid[\=b=\];
+\=u.dffre(1, `od_pipe_out_rb_re`+b, `od_pipe_out_rb_re_`+b+`_ns`, `1'b0`, clkby2_en, `clk_i`, `reset_ni`)=\
+wire error_sbe_\=b=\_ns = (w_qb_valid[\=b=\] & n_qb_ready[\=b=\]) ? t_qb_sbe[\=b=\] : error_sbe[\=b=\] ? 1'b0 : error_sbe[\=b=\];
+\=u.dffre(1, `error_sbe`+b, `error_sbe_`+b+`_ns`, `1'b0`, `1'b1`, `clk_i`, `reset_ni`)=\
+wire error_dbe_\=b=\_ns = (w_qb_valid[\=b=\] & n_qb_ready[\=b=\]) ? t_qb_dbe[\=b=\] : error_dbe[\=b=\] ? 1'b0 : error_dbe[\=b=\];
+\=u.dffre(1, `error_dbe`+b, `error_dbe_`+b+`_ns`, `1'b0`, `1'b1`, `clk_i`, `reset_ni`)=\
+wire [\=BAW-1=\:0] error_addr\=b=\;
+wire [\=BAW-1=\:0] error_addr_\=b=\_ns = (w_qb_valid[\=b=\] & n_qb_ready[\=b=\]) ? w_qb_raddr[\=b=\] : (|error_addr\=b=\) ? \=BAW=\'b0 : error_addr\=b=\;
+\=u.dffre(BAW, `error_addr`+b, `error_addr_`+b+`_ns`, BAW+`'b0`, `1'b1`, `clk_i`, `reset_ni`)=\
+
+\js ///////////////////////////////////////////////////////////////////////
+\js // QB stage demux that expands returning SRAM data into 'port' times //
+\js ///////////////////////////////////////////////////////////////////////
+\jsbegin
+// RN always > 1 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (RN>1) { \jsend
+assign t_qb_cdata[\=b=\] = w_qb_cdata[\=b=\] | {t_qb_dbe[\=b=\], {\=DW-1=\{1'b0}}};
+assign n_qb_ready[\=b=\] = 1'b1;	//must have SKID
+\=u.instance({
+	moduleName: 'ioaiu_demux',
+	instanceName: 'db_demux'+b,
+	params: {
+                 NUM:       RN,
+		 DW:	    DW,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	verilogParams: {
+	},
+	ports: {
+		ready_o:	'',
+		valid_i:	'w_qb_valid['+b+']',
+		data_i:		't_qb_cdata['+b+']['+DW+'-1:0]',
+		ready_i:	'n_db_ready['+b+']',
+		valid_o:	'w_db_valid['+b+']',
+		data_o:		'w_db_rdata['+b+']',
+		bvsel_i:	't_db_sel['+b+']'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+\js } else {
+  assign n_qb_ready[\=b=\] = n_db_ready[\=b=\];
+  assign w_db_valid[\=b=\] = w_qb_valid[\=b=\];
+  assign w_db_rdata[\=b=\] = t_qb_cdata[\=b=\][\=DW-1=\:0];
+\js }
+\js }
+
+\js //////////////////////////////////////////////////////////////////////////
+\js // BQ stage, parallel to QB stage, that contains port demuxing controls //
+\js //////////////////////////////////////////////////////////////////////////
+\jsbegin
+// RN always > 1 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (RN>1) { \jsend
+\js for (let b=0; b<BANKS; b=b+1) {
+    assign n_bq_valid[\=b=\] = 
+\jsbegin
+// QBE always set in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (QBE>0) { \jsend
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+\js let clkby2_en = ((b%2)==0) ? "clkby2_en" : "clkby2_b_en";
+                               \=clkby2_en=\ &
+\js }
+                               od_pipe_out_rb_re[\=b=\];
+\js } else {
+                               od_pipe_in_rb_valid[\=b=\];
+\js }
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+    assign n_bq_port[\=b=\] = od_pipe_out_rb_port[\=b=\];
+\js } else {
+    assign n_bq_port[\=b=\] = od_pipe_in_rb_port[\=b=\];
+\js }
+    assign n_bq_ready[\=b=\] = n_qb_ready[\=b=\];
+
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'bq'+b,
+	params: {
+                depth:          BQD,
+		width:		RW,
+                pipeForward:    (BQT==1)?/* istanbul ignore next env ncore_3p7 */"no":"yes",
+                pipeBackward:   (BQT==0)?/* istanbul ignore next env ncore_3p7 */"no":"yes",
+                simplePipe:     "no",
+                circular:       "no"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		in_ready:	'w_bq_ready['+b+']',
+		in_valid:	'n_bq_valid['+b+']',
+		in_data:	'n_bq_port['+b+']',
+		out_ready:	'n_bq_ready['+b+']',
+		out_valid:	'w_bq_valid['+b+']',
+		out_data:	'w_bq_port['+b+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+  assign t_db_sel[\=b=\] = w_bq_valid[\=b=\] ? ({{\=RN-1=\{1'b0}}, 1'b1} << w_bq_port[\=b=\]) : {\=RN=\{1'b1}}; 
+\js }
+\js } else {
+\js for (let b=0; b<BANKS; b=b+1) {
+    assign w_bq_ready[\=b=\] = 1'b1;
+    assign w_bq_valid[\=b=\] = 1'b1;
+    assign w_bq_port[\=b=\] = {BQD{1'b0}};
+    assign t_db_sel[\=b=\] = {\=RN=\{1'b1}};
+\js } 
+\js }
+
+\jsbegin
+// banks always 2 or 4 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (BANKS>1) { \jsend
+\js for (let n=0; n<RN; n=n+1) {
+      assign n_rq_ready[\=n=\] = w_dn_valid[\=n=\] & n_dn_ready[\=n=\];
+
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'rq'+n,
+	params: {
+                depth:          RQD,
+		width:		BWX,
+                pipeForward:    (RQT==1)?/* istanbul ignore next env ncore_3p7 */"no":"yes",
+                pipeBackward:   (RQT==0)?/* istanbul ignore next env ncore_3p7 */"no":"yes",
+                simplePipe:     "no",
+                circular:       "no"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		in_ready:	'w_rq_ready['+n+']',
+		in_valid:	'n_rq_valid['+n+']',
+		in_data:	'n_rq_data['+n+']',
+		out_ready:	'n_rq_ready['+n+']',
+		out_valid:	'w_rq_valid['+n+']',
+		out_data:	'w_rq_data['+n+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+\js }
+\js } else {
+\js for (let n=0; n<RN; n=n+1) {
+assign w_rq_ready[\=n=\] = 1'b1;
+assign w_rq_valid[\=n=\] = 1'b1;
+assign w_rq_data[\=n=\] = 1'b0;
+\js }
+\js }
+
+\js ////////////////////////////////////////////////////////////////////////////////
+\js // IQ (Info Queue) that hold onto port information received with read request //
+\js // so that it can be combined with the read data during the QN stage          //
+\js ////////////////////////////////////////////////////////////////////////////////
+
+\js for (let n=0; n<RN; n=n+1) {
+    wire [\=IWS[n]-1=\:0]	w_iq_data_\=n=\;
+\js if (IES[n]>0) {
+    wire [\=IWS[n]-1=\:0]	n_iq_data_\=n=\;
+      assign n_iq_data_\=n=\ = w_ri_info[\=n=\][0 +: \=IWS[n]=\];
+
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'iq'+n,
+	params: {
+                depth:          IQD,
+		width:		IWS[n],
+                pipeForward:    (IQT==1)?/* istanbul ignore next env ncore_3p7 */"no":"yes",
+                pipeBackward:   (IQT==0)?/* istanbul ignore next env ncore_3p7 */"no":"yes",
+                simplePipe:     "no",
+                circular:       "no"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		in_ready:	'w_iq_ready['+n+']',
+		in_valid:	'n_iq_valid['+n+']',
+		in_data:	'n_iq_data_'+n,
+		out_ready:	'n_iq_ready['+n+']',
+		out_valid:	'w_iq_valid['+n+']',
+		out_data:	'w_iq_data_'+n
+	},
+	portsDelimiter: '\n\t'
+})=\
+\js } else {
+      assign w_iq_ready[\=n=\] = 1'b1;
+      assign w_iq_valid[\=n=\] = 1'b1;
+      assign w_iq_data_\=n=\ = {\=IWS[n]=\{1'b0}};
+\js }
+\jsbegin
+// externally to ioaiu_buf, IW is always 1 greater than any IWS array entry 
+/* istanbul ignore else env ncore_3p7 */
+      if (IW>IWS[n]) { \jsend
+    assign rn_info_o[\=n*IW=\ +: \=IW=\] = {{\=IW-IWS[n]=\{1'b0}},w_iq_data_\=n=\};
+\js   } else {
+    assign rn_info_o[\=n*IW=\ +: \=IW=\] = w_iq_data_\=n=\;
+\js   }
+\js }
+
+\js /////////////////////////////////////////////////////////////////////////////////
+\js // QBE main pipe stage, per bank, that receives read data from the SRAM.       //
+\js // Also captures the piped SRAM address so it can be used for error detection. //
+\js /////////////////////////////////////////////////////////////////////////////////
+\jsbegin
+// QBE always set in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (QBE) { \jsend
+    wire [\=NW+BAW-1=\:0]	n_qb_rentry[\=BANKS-1=\:0],	w_qb_rentry[\=BANKS-1=\:0];
+    wire [\=RW-1=\:0]	q_rb_port[\=BANKS-1=\:0];
+
+\js for (let b=0; b<BANKS; b=b+1) {
+\js let clkby2_en = halfSpeed ? /* istanbul ignore next env ncore_3p7 */ ((b%2)==0) ? "clkby2_en" : "clkby2_b_en" : "1'b1";
+      wire [\=RW-1=\:0] q_rb_port\=b=\;
+      assign q_rb_port[\=b=\] = q_rb_port\=b=\;
+      wire [\=RW=\-1:0] q_rb_port_\=b=\_ns = ~w_qb_ready[\=b=\] ? q_rb_port[\=b=\] : n_rb_port[\=b=\];
+      \=u.dffre(RW, `q_rb_port`+b, `q_rb_port_`+b+`_ns`, `{`+RW+`{1'b0}}`, clkby2_en, `clk_i`, `reset_ni`)=\
+
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+      assign w_rb_port[\=b=\] = n_rb_port[\=b=\];
+\js } else {
+      assign w_rb_port[\=b=\] = q_rb_port[\=b=\];
+\js }
+      assign n_qb_rentry[\=b=\] = {n_qb_recc[\=b=\], n_qb_rdata[\=b=\],od_pipe_out_raddr_b[\=b=\]}; 
+
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'qb'+b,
+	params: {
+                depth:          1+halfSpeed,
+		width:		NW+BAW,
+                pipeForward:    "yes",
+                pipeBackward:   halfSpeed?/* istanbul ignore next env ncore_3p7 */"yes":"no",
+                simplePipe:     "no",
+                circular:       "no"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		in_ready:	'w_qb_ready['+b+']',
+		in_valid:	'n_qb_valid['+b+']',
+		in_data:	'n_qb_rentry['+b+']',
+		out_ready:	'n_qb_ready['+b+']',
+		out_valid:	'w_qb_valid_unqual['+b+']',
+		out_data:	'w_qb_rentry['+b+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+assign w_qb_valid[\=b=\] = w_qb_valid_unqual[\=b=\] &
+\jsbegin
+// owo disabled for 3.7.0
+/* istanbul ignore if env ncore_3p7 */
+    if (halfSpeed) { \jsend
+\js let clkby2_en = ((b%2)==0) ? "clkby2_en" : "clkby2_b_en";
+//                             \=clkby2_en=\;
+                               1'b1;
+\js } else {
+                               1'b1;
+\js }
+
+     assign {w_qb_recc[\=b=\], w_qb_rdata[\=b=\],w_qb_raddr[\=b=\]} = w_qb_rentry[\=b=\]; 
+\js }
+\js } else {
+\js for (let b=0; b<BANKS; b=b+1) {
+      assign w_rb_port[\=b=\] = n_rb_port[\=b=\];
+\js }
+    assign w_qb_ready = n_qb_ready;
+    assign w_qb_valid = n_qb_valid;
+\js for (let b=0; b<BANKS; b=b+1) {
+      assign w_qb_rdata[\=b=\] = n_qb_rdata[\=b=\];
+      assign w_qb_recc[\=b=\] = n_qb_recc[\=b=\];
+      assign w_qb_raddr[\=b=\] = od_pipe_out_raddr_b[\=b=\];
+\js }
+\js }
+
+\js ////////////////////////////////////////////////////////////////////////////
+\js // QNE stage fifo, per port, that receives the routed data from the bank. //
+\js ////////////////////////////////////////////////////////////////////////////
+\jsbegin
+// QNE always always set in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (QNE) { \jsend
+\js   for (let n=0; n<RN; n=n+1) {
+
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'qn'+n,
+	params: {
+                depth:          RQD,
+		width:		DW,
+                pipeForward:    "yes",
+                pipeBackward:   "yes",
+                simplePipe:     "no",
+                circular:       "no"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		in_ready:	'w_qn_ready['+n+']',
+		in_valid:	'n_qn_valid['+n+']',
+		in_data:	'n_qn_rdata['+n+']',
+		out_ready:	'w_qn1_ready['+n+']',
+		out_valid:	'n_qn1_valid['+n+']',
+		out_data:	'n_qn1_rdata['+n+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+\jsbegin
+// BYPASS not used in 3.7
+/* istanbul ignore if env ncore_3p7 */
+    if (BYPASS) { \jsend
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'qn1'+n,
+	params: {
+                depth:          1,
+		width:		DW,
+                pipeForward:    "no",
+                pipeBackward:   "yes",
+                simplePipe:     "no",
+                circular:       "no"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		in_ready:	'w_qn1_ready['+n+']',
+		in_valid:	'n_qn1_valid['+n+']',
+		in_data:	'n_qn1_rdata['+n+']',
+		out_ready:	'n_qn_ready['+n+']',
+		out_valid:	'w_qn_valid['+n+']',
+		out_data:	'w_qn_rdata['+n+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+\js } else { // BYPASS
+  assign w_qn1_ready[\=n=\] = n_qn_ready[\=n=\];
+  assign w_qn_valid[\=n=\] = n_qn1_valid[\=n=\];
+  assign w_qn_rdata[\=n=\] = n_qn1_rdata[\=n=\];
+\js } // BYPASS
+\js } // (let n=0; n<RN; n=n+1)
+\js } else { // QNE
+\js for (let n=0; n<RN; n=n+1) {
+    assign w_qn_ready[\=n=\] = n_qn_ready[\=n=\];
+    assign w_qn_valid[\=n=\] = n_qn_valid[\=n=\];
+    assign w_qn_rdata[\=n=\] = n_qn_rdata[\=n=\];
+\js }
+\js } // QNE
+
+\js /////////////////////////////////////////////////////////////////////////////////////
+\js // Error collection logic that collects error information to send out for logging. //
+\js /////////////////////////////////////////////////////////////////////////////////
+
+//wire [\=BAW=\-1:0] error_addr_pre_ns = ~w_qb_ready[0] ? error_addr_pre : od_pipe_in_rb_raddr[0];
+//\=u.dffre(BAW, `error_addr_pre`, `error_addr_pre_ns`, `{`+BAW+`{1'b0}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+
+//wire [\=BAW=\-1:0] error_addr_ns = (od_pipe_out_rb_re[0] & ((| t_qb_sbe) | (| t_qb_dbe))) ? error_addr_pre : error_addr;
+//\=u.dffre(BAW, `error_addr`, `error_addr_ns`, `{`+BAW+`{1'b0}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+
+assign t_ebv = (| error_dbe) ? error_dbe : error_sbe;
+
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'ebank',
+	params: {
+                 DW:             BANKS,
+                 BE:             0,
+                 NO_VALID_OUT:   1,
+                 NO_BV_OUT:      1,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn: assertOn
+        },
+	ports: {
+		bv_i:		't_ebv',
+		index_o:	'w_ebank'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+assign error_addr = 
+\js for (let b=0;b<BANKS;b++) {
+\js   if (b<BANKS-1) {
+                    t_ebv[\=b=\] ? error_addr\=b=\ :
+\js } else {
+                                   error_addr\=b=\ ;
+\js }
+\js }
+                    
+assign error_o = {(| error_dbe), (| error_sbe)};
+\jsbegin
+// There are never 64 or greater banks
+/* istanbul ignore else env ncore_3p7 */
+    if (BW<6) { \jsend
+wire [5:0] ebank_tmp = {\=6-BW=\'b0,w_ebank};
+\js } else {
+wire [5:0] ebank_tmp = w_ebank;
+\js }
+\jsbegin
+// BAW maxes out somewhere around 10
+/* istanbul ignore else env ncore_3p7 */
+    if (BAW<20) { \jsend
+wire [19:0] eaddr_tmp = {\=20-BAW=\'b0,error_addr};
+\js } else {
+wire [19:0] eaddr_tmp = error_addr;
+\js }
+assign elog_o = {ebank_tmp, eaddr_tmp};
+
+\jsbegin
+///////////////////////////////////////////////////////////////////////////////////
+// ASSERTS                                                                       //
+///////////////////////////////////////////////////////////////////////////////////
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (assertOn) { 
+var ioaiu_power2        = function(n) { return ((n & (n-1)) == 0) ? 1 : /* istanbul ignore next env ncore_3p7 */0; };
+\jsend
+`ifdef OVL_ASSERT_ON
+// synthesis_off
+// pragma synthesis_off
+// coverage off
+
+reg a_error_test;
+initial begin
+	if ($test$plusargs("error_test")) begin
+		a_error_test = 1'b1;
+	end else begin
+		a_error_test = 1'b0;
+	end
+end
+
+assert_never #(0) assert_param(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	(!\=ioaiu_power2(BANKS)=\ | (\=RN=\<1) | (\=WN=\<1) | (\=DEPTH=\<1) | 
+			 (\=BAW=\>20) | (\=BANKS=\>64) |
+			 (\=WIDTH=\<1) | (!\=QNE=\ & (~& rn_ready_i)))
+);
+assert_never_unknown #(0, \=(2*WN)+(4*RN)=\) assert_control(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(reset_ni),
+	.test_expr	({\=((2*WN)+(4*RN))=\{reset_ni}} &
+			 {wn_ready_o, wn_valid_i,
+			  rn_ready_o, rn_valid_i, rn_ready_i, rn_valid_o})
+);
+
+\js for (let n=0; n<WN; n=n+1) {
+assert_never_unknown #(0, \=AW+DW=\) assert_wn\=n=\(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(wn_valid_i[\=n=\]),
+	.test_expr	({wn_waddr_i[\=(n*AW)=\ +: \=AW=\], wn_wdata_i[\=(n*DW)=\ +: \=DW=\]})
+);
+\js }
+
+\js for (let n=0; n<RN; n=n+1) {
+assert_never_unknown #(0, \=AW=\) assert_raddr\=n=\(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(rn_valid_i[\=n=\]),
+	.test_expr	(rn_raddr_i[\=(n*AW)=\ +: \=AW=\])
+);
+assert_never_unknown #(0, \=DW=\) assert_rdata\=n=\(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(rn_valid_o[\=n=\]),
+	.test_expr	(rn_rdata_o[\=(n*DW)=\ +: \=DW=\])
+);
+\js }
+
+\js for (let b=0; b<BANKS; b=b+1) {
+assert_never_unknown #(0, 2) assert_ecc\=b=\(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(od_pipe_out_rb_re[\=b=\]),
+	.test_expr	({w_qb_sbe[\=b=\], w_qb_dbe[\=b=\]})
+);
+\js }
+ 
+assert_never #(0) assert_error(
+	.clk		(clk_i),
+	.reset_n	(reset_ni & ~a_error_test),
+	.test_expr	((| (w_qb_valid & w_qb_sbe & od_pipe_out_rb_re)) | (| (w_qb_valid & w_qb_dbe & od_pipe_out_rb_re)))
+);
+
+// coverage on
+// pragma synthesis_on
+// synthesis_on
+`endif
+
+\js }
+
+endmodule

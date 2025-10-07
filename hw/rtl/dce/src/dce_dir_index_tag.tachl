@@ -1,0 +1,81 @@
+\jsbegin
+var u = obj.lib;
+
+// Parameters
+
+var AW  = u.getParam('AW');  // address width
+var KW  = u.getParam('KW');  // tag width
+var SW  = u.getParam('SW');  // set width
+var CLO = u.getParam('CLO'); // cache line offset
+var PriSubDiagAddrBits = u.getParam('PriSubDiagAddrBits');
+var SecSubRows         = u.getParam('SecSubRows');
+
+// Ports
+
+u.port('input',  'lu_addr_i',     AW);
+u.port('output', 'lu_addr_index', SW);
+u.port('output', 'lu_addr_tag',   KW);
+
+u.port('input',  'wr_addr_i',     AW);
+u.port('output', 'wr_addr_index', SW);
+u.port('output', 'wr_addr_tag',   KW);
+
+u.port('input',  'w_rc_tag',   KW);
+u.port('input',  'w_rc_index', SW);
+u.port('output', 'w_rc_addr',  AW, 'reg');
+
+\jsend
+
+module \=u.getModuleName()=\
+        (\=u.getPorts('\n\t')=\
+);
+
+localparam AW = \=AW=\;
+localparam SW = \=SW=\;
+localparam KW = \=KW=\;
+
+
+\js for (var i=0; i<SW; i=i+1) {
+assign lu_addr_index[\=i=\] = (^ {lu_addr_i[\=PriSubDiagAddrBits[i]=\], (lu_addr_i & \=SecSubRows[i]=\) });
+\js }
+
+\js for (var i=0; i<SW; i=i+1) {
+assign wr_addr_index[\=i=\] = (^ {wr_addr_i[\=PriSubDiagAddrBits[i]=\], (wr_addr_i & \=SecSubRows[i]=\) });
+\js }
+
+\jsbegin
+        var tagBits = [];
+        var found = 0;
+        for (var j=CLO; j<AW; j++) {
+                found = 0;
+                for (var k=0; k<PriSubDiagAddrBits.length; k++) {
+                        if ((PriSubDiagAddrBits[k]==j)) {
+                                found = 1;
+                        }
+                }
+                if (found==0) {
+                        tagBits.push(j);
+                }
+        }
+\jsend
+
+\js for (var i=0; i<KW; i=i+1) {
+assign lu_addr_tag[\=i=\] = lu_addr_i[\=tagBits[i]=\];
+\js }
+
+\js for (var i=0; i<KW; i=i+1) {
+assign wr_addr_tag[\=i=\] = wr_addr_i[\=tagBits[i]=\];
+\js }
+
+
+always @ (*) begin
+	w_rc_addr = {AW{1'b0}};
+\js for (var i=0; i<KW; i=i+1) {
+	w_rc_addr[\=tagBits[i]=\] = w_rc_tag[\=i=\];
+\js }
+\js for (var i=0; i<SW; i=i+1) {
+	w_rc_addr[\=PriSubDiagAddrBits[i]=\] = (^{w_rc_index[\=i=\], (w_rc_addr & \=SecSubRows[i]=\)});
+\js }
+end
+
+endmodule

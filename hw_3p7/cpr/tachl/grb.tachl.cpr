@@ -1,0 +1,117 @@
+{
+  "name": "grb",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "",
+      "params": [
+        {
+          "parameterName": "nAius",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "1",
+          "formula": "return system.nAius"
+        },{
+          "parameterName": "nDces",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "1",
+          "formula": "return system.nDces"
+        },
+        {
+          "parameterName": "nDmis",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "1",
+          "formula": "return system.nDmis"
+        },
+        {
+          "parameterName": "nDiis",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "1",
+          "formula": "return system.nDiis"
+        },
+        {
+          "parameterName": "nDves",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "1",
+          "formula": "return system.nDves"
+        },
+        {
+          "parameterName": "engVerId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "noConstraints" : true,
+          "formula": "return system.engVerId"
+        },
+        {
+          "parameterName": "implVerId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return system.implVerId"
+        },
+        {
+          "parameterName": "SnoopFilters",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "rm:reference": "SnoopFiltersParam",
+          "covReference": "SnoopFiltersParam",
+          "formula": "return Object.keys(root.units).reduce((r, v) => root.units[v].module === 'dce' && root.units[v].params.SnoopFilters ? root.units[v].params.SnoopFilters : r, []);"
+        },
+        {
+          "parameterName": "wCacheLineOffset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "6",
+          "formula": "return system.concertocparams.wCacheLine;"
+        },
+        {
+          "parameterName": "nSnoopFilters",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "1",
+          "formula": "const dce = Object.keys(root.units).find(v => root.units[v].module === 'dce'); return dce ? root.units[dce].params.SnoopFilters.length : 0;"
+        },
+        {
+          "parameterName": "assertOn",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "validValues": "0,1",
+          "formula": "return system.AssertionEnable ? 1 : 0;"
+        },
+        {
+          "parameterName": "interfaces",
+          "type": "object",
+          "reference": "InterfacesParam",
+          "parameterType": "architecture",
+          "description": "Interface parameters"
+        }
+      ]
+    },
+    {
+      "name": "InterfacesParam",
+      "params": [
+        {
+          "parameterName": "clkInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.clkInt",
+          "parameterType": "architecture",
+          "description": ""
+        },
+        {
+          "parameterName": "apbInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.apbInt",
+          "parameterType": "architecture",
+          "description": ""
+        }
+      ]
+    }
+  ]
+}

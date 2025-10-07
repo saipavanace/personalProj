@@ -1,0 +1,30 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU_current_beat
+//This module calculate the current beat within the container
+//It takes the vald of the CXS as an interface and output the current beat 
+//encoded in decimal format.
+// NumberOfBeatPerContainer is the number of beat in a container
+//=============================================================================
+
+var m = obj.userLib;
+var u=obj.lib;
+
+var p =u.getParam();
+
+u.nInterfaces(p.interfaces);
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+
+wire [\=m.log2ceil(p.NumberOfBeatPerContainer)-1=\:0] next_current_beat_in;
+\=u.dffre(m.log2ceil(p.NumberOfBeatPerContainer),"current_beat_in","next_current_beat_in",m.log2ceil(p.NumberOfBeatPerContainer)+"'d0",p.interfaces ["cxs_out_deframer_in_"]["name"]+"valid",p.interfaces ["clkInt"].name+"clk",p.interfaces ["clkInt"].name+"reset_n")=\
+
+
+
+assign next_current_beat_in = \=m.log2ceil(p.NumberOfBeatPerContainer)=\'d\=p.NumberOfBeatPerContainer-1=\ == current_beat_in ?  \=m.log2ceil(p.NumberOfBeatPerContainer)=\'d0 :  current_beat_in + 1'b1;
+
+endmodule

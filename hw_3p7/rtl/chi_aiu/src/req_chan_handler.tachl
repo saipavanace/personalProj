@@ -1,0 +1,153 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Request channel handler. It manages link credits for the CHI REQ channel.
+//
+// It implements a link credit inflight counter that has a reset value of zero
+// and increments when a link credit is issued, and decrements when a flit
+// arrives.
+// A link credit is issued (via the CHI LCRDV signal) when:
+//   the link credit inflight counter is less than nCHIReqInFlight AND
+//   the OTT free entriess is greater than the link credit inflight counter AND
+//   the RX link is in RUN state AND
+//   the PMA is not in SLEEP state.
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+//=============================================================================
+// Parameters
+//=============================================================================
+
+var chiInterface           = u.getParam('chiInterface');
+var req_flit_interface     = u.getParam('ReqInterface');
+var nCHIReqInFlight        = u.getParam('nCHIReqInFlight'); //Number of credits with CHI
+var nOttEntries            = u.getParam('nOttCtrlEntries');
+var nArbFifoEntries        = u.getParam('nArbFifoEntries');
+
+var opcode_width           = req_flit_interface.Opcode;
+
+var wOttEntries            = Math.max(log2ceil(nOttEntries), 1);
+var wOttEntriesplusone     = wOttEntries + 1;
+
+var wCHIReqInFlight        = Math.max(log2ceil(nCHIReqInFlight), 1) ;
+var wCHIReqInFlightplusone = wCHIReqInFlight + 1;
+
+var wArbFifoEntries        = Math.max(log2ceil(nArbFifoEntries), 1) ;
+var wArbFifoEntriesplusone = wArbFifoEntries + 1;
+
+var ott_extra_buffer_width = wOttEntriesplusone     - wCHIReqInFlightplusone;
+var arb_extra_buffer_width = wArbFifoEntriesplusone - wCHIReqInFlightplusone;
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'clk',     1);
+u.port('input',  'reset_n', 1);
+
+u.port('input',  'sync_reset_n',         1);
+u.port('input',  'rx_state_run',         1);
+u.port('input',  'rx_state_deact',       1);
+u.port('input',  'pma_asleep',           1);
+u.port('output', 'all_credits_returned', 1); 
+
+obj.lib.interface('chi_rx_req_', 'slave',  chiInterface.rx_req_);
+
+obj.lib.interface('RXREQFLIT_',  'master', req_flit_interface);
+
+u.port('output', 'req_valid', 1);
+
+u.port('input',  'num_free_entries',     wOttEntriesplusone);
+u.port('input',  'num_free_entries_arb', wArbFifoEntriesplusone);
+
+u.port('input',  'chk_err', 1);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+//=============================================================================
+// Link credit counter
+//=============================================================================
+
+wire [\=wCHIReqInFlight=\:0] inflight_current_credit_count;
+
+wire inflight_credit_counter_en = chi_rx_req_lcrdv | chi_rx_req_flitv;
+
+    \jsbegin
+    /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wCHIReqInFlight < 2) {
+    \jsend
+wire [\=wCHIReqInFlight=\:0] inflight_credit_counter_in = inflight_current_credit_count - chi_rx_req_flitv + chi_rx_req_lcrdv;
+    \js } else {
+wire [\=wCHIReqInFlight=\:0] inflight_credit_counter_in = inflight_current_credit_count - {\=wCHIReqInFlight-1=\'b0, chi_rx_req_flitv} + {\=wCHIReqInFlight-1=\'b0, chi_rx_req_lcrdv};
+    \js }
+
+\=u.dffre(wCHIReqInFlightplusone, 'inflight_current_credit_count', 'inflight_credit_counter_in', wCHIReqInFlightplusone+"'b0",                'inflight_credit_counter_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// Stop giving link credits when buffer space to accept incoming link flits are running out
+//=============================================================================
+
+wire num_free_entries_avail = 
+            \jsbegin
+            /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+            if(ott_extra_buffer_width > 0) {
+            \jsend
+                          (num_free_entries > {\=ott_extra_buffer_width=\'b0, inflight_current_credit_count})
+            \js } else {
+                          (num_free_entries > inflight_current_credit_count)
+            \js }
+                            ;
+
+wire num_free_entries_arb_avail =
+            \jsbegin
+            /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+            if(arb_extra_buffer_width > 0) {
+            \jsend
+                          (num_free_entries_arb > {\=arb_extra_buffer_width=\'b0, inflight_current_credit_count})
+            \js } else {
+                          (num_free_entries_arb > inflight_current_credit_count)
+            \js }
+                                ;
+
+//=============================================================================
+// Link credits can only be issued in RUN state and PMA is not in sleep state
+//=============================================================================
+
+assign chi_rx_req_lcrdv = (inflight_current_credit_count < \=wCHIReqInFlightplusone=\'d\=nCHIReqInFlight=\) &
+                          (num_free_entries_avail & num_free_entries_arb_avail) &
+                          sync_reset_n & 
+                          rx_state_run &
+                           ~pma_asleep;
+
+//=============================================================================
+// Unpacking CHI flit to bit fields
+//=============================================================================
+
+// reversing interfaces as CHI spec puts flit with LSB first
+\jsbegin
+var reversed_req_intf = Object.keys(req_flit_interface).reverse().reduce(function (acc,val){ acc[val] = req_flit_interface[val]; return acc ; },{});
+\jsend
+
+assign \=bundleFunctions.packetizeBundle('RXREQFLIT_', reversed_req_intf, [], obj.lib.bundle)=\ = chi_rx_req_flit;
+
+assign req_valid = chi_rx_req_flitv & (RXREQFLIT_Opcode != \=opcode_width=\'b0) & !chk_err;
+
+//=============================================================================
+// all_credits_returned
+//=============================================================================
+
+assign all_credits_returned = rx_state_deact & (inflight_current_credit_count == \=wCHIReqInFlightplusone=\'d0);
+
+endmodule
+

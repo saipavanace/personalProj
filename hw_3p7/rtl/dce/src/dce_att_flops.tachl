@@ -1,0 +1,151 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE ATT flops that are moved to the top level for protection
+//
+// Filename: dce_att_flops.tachl
+//=============================================================================
+
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+let ASSERT_ON    = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+
+var protectionInterface = m.ParamDefaultGet(u, 'protectionInterface', 'object', null); 
+
+let N_ATT                      = u.getParam('N_ATT');
+let att_req_alloc_bundle_width = u.getParam('att_req_alloc_bundle_width');
+let att_alloc_bundle_width     = u.getParam('att_alloc_bundle_width');
+
+var att_alloc_bundle_protectionStyle = {};
+    att_alloc_bundle_protectionStyle.protection = 'parity';
+    att_alloc_bundle_protectionStyle.protWidth  = 16; //att_alloc_bundle_width;
+
+var att_alloc_bundle_protectionInterface = {};
+    att_alloc_bundle_protectionInterface.name = 'att_alloc_bundle_';
+    att_alloc_bundle_protectionInterface.signals = protectionInterface.signals;
+
+var att_req_alloc_bundle_protectionStyle = {};
+    att_req_alloc_bundle_protectionStyle.protection = 'parity';
+    att_req_alloc_bundle_protectionStyle.protWidth  = att_req_alloc_bundle_width;
+
+var att_req_alloc_bundle_protectionInterface = {};
+    att_req_alloc_bundle_protectionInterface.name = 'att_req_alloc_bundle_';
+    att_req_alloc_bundle_protectionInterface.signals = protectionInterface.signals;
+
+u.port('input',  'att_req_alloc_bundle_clk', 1);
+u.port('input',  'att_req_alloc_bundle_reset_n', 1);
+u.port('input',  'en_att_req_alloc_bundle_vec',  N_ATT);
+u.port('input',  'in_att_req_alloc_bundle_vec',  N_ATT * att_req_alloc_bundle_width);
+u.port('output', 'out_att_req_alloc_bundle_vec', N_ATT * att_req_alloc_bundle_width);
+
+u.port('input',  'att_alloc_bundle_clk', 1);
+u.port('input',  'att_alloc_bundle_reset_n', 1);
+u.port('input',  'en_att_alloc_bundle_vec',  N_ATT);
+u.port('input',  'in_att_alloc_bundle_vec',  N_ATT * att_alloc_bundle_width);
+u.port('output', 'out_att_alloc_bundle_vec', N_ATT * att_alloc_bundle_width);
+
+u.interface(protectionInterface.name, 'master', protectionInterface.signals);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts()=\);
+
+  \js for (var i=0; i < N_ATT; i++) {
+  
+wire [\=att_req_alloc_bundle_width-1=\:0] in_att_req_alloc_bundle\=i=\;
+wire [\=att_req_alloc_bundle_width-1=\:0] out_att_req_alloc_bundle\=i=\;
+wire en_att_req_alloc_bundle\=i=\;
+\=bundleFunctions.wiresFromInterface(att_req_alloc_bundle_protectionInterface.name+i+'_', att_req_alloc_bundle_protectionInterface.signals, [], u.bundle)=\
+
+assign in_att_req_alloc_bundle\=i=\ = in_att_req_alloc_bundle_vec[\=(att_req_alloc_bundle_width*(i+1))-1=\ : \=att_req_alloc_bundle_width*i=\];
+assign out_att_req_alloc_bundle_vec[\=(att_req_alloc_bundle_width*(i+1))-1=\ : \=att_req_alloc_bundle_width*i=\] = out_att_req_alloc_bundle\=i=\;
+assign en_att_req_alloc_bundle\=i=\ = en_att_req_alloc_bundle_vec[\=i=\];
+
+  \=u.instance({
+    'instanceName': 'u_att_req_alloc_bundle'+i,
+    'moduleName':   'prot_reg',
+    'params': {
+      'width'               : att_req_alloc_bundle_width,
+      'protectionStyle'     : att_req_alloc_bundle_protectionStyle,
+      'protectionInterface' : att_req_alloc_bundle_protectionInterface },
+    'interfaces': [{
+      'interface'    : att_req_alloc_bundle_protectionInterface.signals,
+      'localPrefix'  : att_req_alloc_bundle_protectionInterface.name+i+'_',
+      'modulePrefix' : att_req_alloc_bundle_protectionInterface.name}],
+    'ports': {
+      'clk'     : 'att_req_alloc_bundle_clk',
+      'reset_n' : 'att_req_alloc_bundle_reset_n',
+      'en'      : 'en_att_req_alloc_bundle'+i,
+      'd'       : 'in_att_req_alloc_bundle'+i,
+      'q'       : 'out_att_req_alloc_bundle'+i } })=\
+
+  \js }
+  
+  \js for (var i=0; i < N_ATT; i++) {
+
+wire [\=att_alloc_bundle_width-1=\:0] in_att_alloc_bundle\=i=\;
+wire [\=att_alloc_bundle_width-1=\:0] out_att_alloc_bundle\=i=\;
+wire en_att_alloc_bundle\=i=\;
+\=bundleFunctions.wiresFromInterface(att_alloc_bundle_protectionInterface.name+i+'_', att_alloc_bundle_protectionInterface.signals, [], u.bundle)=\
+
+assign in_att_alloc_bundle\=i=\ = in_att_alloc_bundle_vec[\=(att_alloc_bundle_width*(i+1))-1=\ : \=att_alloc_bundle_width*i=\];
+assign out_att_alloc_bundle_vec[\=(att_alloc_bundle_width*(i+1))-1=\ : \=att_alloc_bundle_width*i=\] = out_att_alloc_bundle\=i=\;
+assign en_att_alloc_bundle\=i=\ = en_att_alloc_bundle_vec[\=i=\];
+
+  \=u.instance({
+    'instanceName': 'u_att_alloc_bundle'+i,
+    'moduleName':   'prot_reg',
+    'params': {
+      'width'               : att_alloc_bundle_width,
+      'protectionStyle'     : att_alloc_bundle_protectionStyle,
+      'protectionInterface' : att_alloc_bundle_protectionInterface },
+    'interfaces': [{
+      'interface'    : att_alloc_bundle_protectionInterface.signals,
+      'localPrefix'  : att_alloc_bundle_protectionInterface.name+i+'_',
+      'modulePrefix' : att_alloc_bundle_protectionInterface.name}],
+    'ports': {
+      'clk'     : 'att_alloc_bundle_clk',
+      'reset_n' : 'att_alloc_bundle_reset_n',
+      'en'      : 'en_att_alloc_bundle'+i,
+      'd'       : 'in_att_alloc_bundle'+i,
+      'q'       : 'out_att_alloc_bundle'+i } })=\
+
+  \js }
+
+
+\jsbegin
+// Function to convert an interface {{name, signals}) to a { modulePrefix, localPrefix, interface} object
+// that is used to specify how local interfaces are mapped to module interfaces of an instance
+
+function getModuleLocalInterfacePrefixMap(intrface) {
+    const modulePrefix  = intrface.name;
+    const localPrefix   = intrface.name;
+    return { modulePrefix, localPrefix, "interface": intrface.signals };
+}
+
+var local_prot_intf_array = [];
+
+for (var i=0; i < N_ATT; i++) {
+    local_prot_intf_array.push( {name: att_req_alloc_bundle_protectionInterface.name+i+'_', signals: att_req_alloc_bundle_protectionInterface.signals} );
+}
+for (var i=0; i < N_ATT; i++) {
+    local_prot_intf_array.push( {name: att_alloc_bundle_protectionInterface.name+i+'_', signals: att_alloc_bundle_protectionInterface.signals} );
+}
+
+\jsend
+
+
+\=u.instance({
+    instanceName: 'u_prot_mux',
+    moduleName:   'prot_mux',
+    params: {'outInterface' : protectionInterface,
+             'inInterfaces' : local_prot_intf_array},
+    interfaces: local_prot_intf_array.concat( protectionInterface ).map( getModuleLocalInterfacePrefixMap )
+})=\ 
+
+
+endmodule

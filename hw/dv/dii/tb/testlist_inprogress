@@ -1,0 +1,97 @@
+# ACHL/VCS Compile
+
+
+#main compile command
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e dii -c -n 128b -d INHOUSE_AXI,DUMP_ON,V1,RTL_DUT,ASSERT_ON -s $WORK_TOP/../test_projects/fsys_v3.0_configs/config_dv_128b.json -a -U $WORK_TOP/rtl/dii/bringup/config_rtl_128b.json
+
+#without rtl
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e dii -c -n 128b -d INHOUSE_AXI,DUMP_ON,V1 -s $WORK_TOP/../test_projects/fsys_v3.0_configs/config_dv_128b.json -a -U $WORK_TOP/rtl/dii/bringup/config_rtl_128b.json
+
+#use local rtl
+#node $WORK_TOP/../scripts/qrsim.js -m -q -e dii -c -n 128b -d INHOUSE_AXI,DUMP_ON,V1,RTL_DUT -s $WORK_TOP/../test_projects/fsys_v3.0_configs/config_dv_128b.json
+
+
+
+#---------------------------------------------------------------------------
+#rw single
+
+#single read nc
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1,+wt_cmd_rd_nc=100,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#single write nc partial
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1,+wt_cmd_wr_nc_ptl=100,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#single write nc full 
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1,+wt_cmd_wr_nc_full=100,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+
+
+#---------------------------------------------------------------------------
+#simple rw back to back to unique adresses
+#axi interleave disabled
+
+
+#1000 rd
+runsim -e dii -c 128b -t rd -v UVM_HIGH -w -i 1
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_HIGH,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=100,+wt_reuse_addr=10,+wt_order_request=0,+wt_order_endpoint=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 wr
+#runsim -e dii -c 128b -t wr -v UVM_HIGH -w -i 1
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_reuse_addr=10,+wt_order_request=0,+wt_order_endpoint=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 mixed rd and wr
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_reuse_addr=10,+wt_order_request=0,+wt_order_endpoint=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+
+
+#---------------------------------------------------------------------------
+#ordering
+#rw back to back
+#axi interleave disabled
+
+
+#bringup cases
+
+#1000 rd, all endpoint order no reuse
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_HIGH,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=100,+wt_reuse_addr=0,+wt_order_request=0,+wt_order_endpoint=100,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 wr all endpoint no reuse
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_reuse_addr=0,+wt_order_request=0,+wt_order_endpoint=100,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 mixed rd and wr all endpoint no reuse
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_reuse_addr=0,+wt_order_request=0,+wt_order_endpoint=100,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1k rw endpoint + unordered 
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_reuse_addr=0,+wt_order_request=0,+wt_order_endpoint=50,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+
+#1000 rd, all request order 
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_HIGH,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=100,+wt_reuse_addr=50,+wt_order_request=100,+wt_order_endpoint=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 wr all request order 
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_reuse_addr=50,+wt_order_request=100,+wt_order_endpoint=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 mixed rd and wr all request order 
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_reuse_addr=50,+wt_order_request=100,+wt_order_endpoint=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1k rw all request order + unordered 
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_reuse_addr=50,+wt_order_request=50,+wt_order_endpoint=0,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+
+
+#stress cases
+
+#1000 rd
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_HIGH,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=100,+wt_reuse_addr=20,+wt_order_request=30,+wt_order_endpoint=30,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 wr
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_wr_nc_full=50,+wt_cmd_wr_nc_ptl=50,+wt_reuse_addr=20,+wt_order_request=30,+wt_order_endpoint=30,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+#1000 mixed rd and wr
+#node $WORK_TOP/../scripts/qrsim.js -e dii -n 128b -t dii_test -q -p +UVM_OBJECTION_TRACE,+UVM_VERBOSITY=UVM_MEDIUM,+UVM_MAX_QUIT_COUNT=1,+k_num_addr=10,+k_num_cmd=1000,+wt_cmd_rd_nc=50,+wt_cmd_wr_nc_full=25,+wt_cmd_wr_nc_ptl=25,+wt_reuse_addr=30,+wt_order_request=30,+wt_order_endpoint=30,+k_ace_slave_read_data_interleave_dis=1,+dii_scb_en=1,+k_back_to_back_types=999,+k_timeout=2000000,+en_dump -r '-qwavedb=+signal+class=foo+transaction'
+
+
+
+#---------------------------------------------------------------------------
+
+

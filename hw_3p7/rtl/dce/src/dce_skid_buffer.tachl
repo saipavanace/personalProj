@@ -1,0 +1,536 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+//
+// NAME: Concerto Mux
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+//
+//=============================================================================
+
+
+//      
+// Variables
+// 
+   
+var u = obj.lib;
+var m = obj.userLib;
+
+//
+// Params
+//
+
+let assertOn              = m.ParamDefaultGet(u, 'assertOn', 'object', {});
+let CMD_REQ_INTF          = m.ParamDefaultGet(u, 'cmdReqInterface', 'object', {});
+let UPD_REQ_INTF          = m.ParamDefaultGet(u, 'updReqInterface', 'object', {});
+let CMD_RSP_INTF          = m.ParamDefaultGet(u, 'cmdRspInterface', 'object', {});
+let UPD_RSP_INTF          = m.ParamDefaultGet(u, 'updRspInterface', 'object', {});
+let CMD_SB_DEPTH          = m.ParamDefaultGet(u, 'cmdSkidBufferDepth', 'int', 4);
+let CMD_SB_TOTAL_DEPTH    = m.ParamDefaultGet(u, 'nSkidBufSize', 'int', 4);
+let UPD_SB_DEPTH          = m.ParamDefaultGet(u, 'updSkidBufferDepth', 'int', 4);
+let CM_TYPE               = m.ParamDefaultGet(u, 'cmType', 'object', {});
+let W_FUNIT_ID            = m.ParamDefaultGet(u, 'wFUnitId', 'int', 4);
+let W_FPORT_ID            = m.ParamDefaultGet(u, 'wFPortId', 'int', 4);
+let W_ADDR                = CMD_REQ_INTF.addr;
+let W_INIT_ID             = CMD_REQ_INTF.initiator_id;
+let W_PRI                 = CMD_REQ_INTF.priority;
+let W_QOS                 = CMD_REQ_INTF.qos;
+let N_QOS                 = Math.pow(2, W_QOS);
+let nPriority             = Math.pow(2, W_PRI);
+
+let CLK_INTF        = m.ParamDefaultGet(u, 'clkInterface',      'object',  {clk: 1, reset_n:1});
+let useQos          = m.ParamDefaultGet(u, 'fnEnableQos',       'int',     0);
+let QosInfo         = m.ParamDefaultGet(u, 'QosInfo',           'object',  {qosMap:[]});
+let wStarvThreshold = m.ParamDefaultGet(u, 'wStarvThreshold',   'int',     16);
+let useSmallArea = 1;
+
+var protectionStyle = m.ParamDefaultGet(u, 'protectionStyle', 'object', {protection: "none", protWidth: 0});
+
+var protectionInterface = m.ParamDefaultGet(u, 'protectionInterface', 'object', {name: "", signals: {}});
+
+var useSramFifo           = u.getParam('useSramFifo');
+var sb_width              = u.getParam('sb_width');
+var sb_depth              = u.getParam('sb_depth');
+var sb_memoryType         = u.getParam('sb_memoryType');
+var sb_fnErrDetectCorrect = u.getParam('sb_fnErrDetectCorrect');
+var sb_mem_addr_width     = u.getParam('sb_mem_addr_width');
+var sb_mem_data_width     = u.getParam('sb_mem_data_width');
+
+//
+// ports
+//
+u.port('input',  'clk', 1);
+u.port('input',  'reset_n', 1);
+u.port('input',  'my_f_unit_id',  W_FUNIT_ID);
+u.port('input',  'cmux_cmd_req_UCE', 1);
+u.port('input',  'cmux_upd_req_UCE', 1);
+u.port('output', 'csr_sb_ce_valid', 1);
+u.port('output', 'csr_sb_ue_valid', 1);
+u.port('output', 'csr_sb_err_index', 20);
+u.port('output', 'busy', 1);
+u.port('output', 'csr_target_ue_valid', 1);
+u.port('output', 'csr_target_ue_init_id', W_FUNIT_ID);
+u.port('output', 'pmon_starvation_event', 1);
+
+if (useQos) {
+u.port('input',  'csr_starv_count_threshold', wStarvThreshold);
+}
+
+if (useSramFifo && (sb_memoryType === 'SYNOPSYS')) {
+
+u.port('output', 'sb_mem_write_en', 1);
+u.port('output', 'sb_mem_write_addr', sb_mem_addr_width);
+u.port('output', 'sb_mem_write_data', sb_mem_data_width);
+u.port('output', 'sb_mem_read_en', 1);
+u.port('output', 'sb_mem_read_addr', sb_mem_addr_width);
+u.port('input',  'sb_mem_read_data', sb_mem_data_width);
+
+}
+
+//
+// Interfaces
+//
+
+m.defineSlavePortsFromInterface('cmd_req_in_', CMD_REQ_INTF, u.port);
+m.defineSlavePortsFromInterface('upd_req_in_', UPD_REQ_INTF, u.port);
+m.defineMasterPortsFromInterface('cmd_req_out_', CMD_REQ_INTF, u.port);
+m.defineMasterPortsFromInterface('upd_req_out_', UPD_REQ_INTF, u.port);
+m.defineMasterPortsFromInterface('cmd_rsp_out_', CMD_RSP_INTF, u.port);
+m.defineMasterPortsFromInterface('upd_rsp_out_', UPD_RSP_INTF, u.port);
+
+u.interface(protectionInterface.name, 'master', protectionInterface.signals);
+
+// 
+// Module
+//
+
+\jsend
+module \=u.getModuleName()=\
+         (\=u.getPorts('\n    ')=\
+          );
+
+localparam
+  W_ADDR = \=W_ADDR=\,
+  W_PRI = \=W_PRI=\,
+  W_INIT_ID = \=W_INIT_ID=\,
+  W_FPORT_ID = \=W_FPORT_ID=\,
+  W_FUNIT_ID = \=W_FUNIT_ID=\;
+
+\js if ( W_PRI ) {
+function automatic [\=W_PRI-1=\:0] pri_gen;
+    input [\=W_QOS-1=\:0] qos;
+    reg   [\=N_QOS-1=\:0] qos_one_hot;
+    begin
+        qos_one_hot = \=N_QOS=\'b1 << qos;
+        pri_gen     = 
+\js for (var bucket_vec of QosInfo.qosMap) {
+        |(qos_one_hot & \=bucket_vec=\)? \=W_PRI=\'d\=QosInfo.qosMap.indexOf(bucket_vec)=\ : 
+\js }
+        \=W_PRI=\'d0;
+    end
+endfunction
+\js }
+
+
+wire dff_enable = 1'b1;
+
+// Command skid buffer
+
+\=m.bundleFunctions.wiresFromInterface('f0_cmd_req_out_', CMD_REQ_INTF, [], u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('cmd_req_over_', CMD_REQ_INTF, [], u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('f0_cmd_rsp_', CMD_RSP_INTF, [], u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('f0_upd_req_out_', UPD_REQ_INTF, [], u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('f0_upd_rsp_', UPD_RSP_INTF, [], u.bundle)=\                            
+wire cmd_skid_buffer_empty;
+assign busy = f0_cmd_req_out_valid | f0_upd_req_out_valid | cmd_rsp_out_valid | upd_rsp_out_valid;
+
+\js if (useQos) {
+wire qos_disable = 1'b0;
+wire cmd_skid_starv_en = 1'b1;
+wire [\=wStarvThreshold-1=\:0] starv_threshold = csr_starv_count_threshold;
+wire cmd_starv_overflow_event;
+wire cmd_starv_mode;
+wire cmd_starv_mode_q;
+\js }
+wire cmd_req_over_uerr;
+wire cmd_req_over_cerr;
+\js if (useSramFifo) {
+wire [\=sb_mem_addr_width-1=\:0] cmd_req_over_err_index;
+\js }
+wire cmd_ue_valid;
+wire [W_FUNIT_ID-1:0] cmd_ue_init_id;
+wire cmd_req_in_valid_qual;
+wire cmd_req_over_valid_qual;
+wire cmd_req_over_ready_qual;
+
+assign cmd_req_in_valid_qual = cmd_req_in_valid & ~cmd_ue_valid & ~cmux_cmd_req_UCE;
+assign cmd_req_over_valid_qual = cmd_req_over_valid & ~cmd_req_over_uerr;
+assign cmd_req_over_ready_qual = cmd_req_over_ready | (cmd_req_over_valid & cmd_req_over_uerr);
+
+\jsbegin
+
+    var com_fifo_mem_params = {
+        width: sb_width,
+        depth: sb_depth,
+        memoryType: sb_memoryType,
+        fnErrDetectCorrect: sb_fnErrDetectCorrect
+        };
+
+    var com_fifo_mem_ports = {
+        clk:            'clk',
+        reset_n:        'reset_n',
+        in_valid:       'cmd_req_in_valid_qual',
+        in_ready:       'cmd_req_in_ready',
+        in_data:        'cmd_req_in_data',
+        out_valid:      'cmd_req_over_valid',
+        out_ready:      'cmd_req_over_ready_qual',
+        out_data:       'cmd_req_over_data',
+        out_uerr:       'cmd_req_over_uerr',
+        out_cerr:       'cmd_req_over_cerr',
+        out_err_index:  'cmd_req_over_err_index'
+        };
+
+	/* istanbul ignore else env ncore_3p7 */
+    if (sb_memoryType === 'SYNOPSYS') {
+        com_fifo_mem_ports['wt_sel']  = 'sb_mem_write_en';
+        com_fifo_mem_ports['wt_addr'] = 'sb_mem_write_addr';
+        com_fifo_mem_ports['wt_data'] = 'sb_mem_write_data';
+        com_fifo_mem_ports['rd_sel']  = 'sb_mem_read_en';
+        com_fifo_mem_ports['rd_addr'] = 'sb_mem_read_addr';
+        com_fifo_mem_ports['rd_data'] = 'sb_mem_read_data';
+    }
+
+\jsend
+
+\js if (useSramFifo) {
+
+wire q_cmd_req_over_cerr_detect;
+wire q_cmd_req_over_uerr_detect;
+wire [\=sb_mem_addr_width-1=\:0] q_cmd_req_over_err_index;
+\=u.dffre(1, 'q_cmd_req_over_cerr_detect', 'cmd_req_over_cerr & cmd_req_over_valid & cmd_req_over_ready_qual', "1'b0", "1'b1", 'clk', 'reset_n')=\
+\=u.dffre(1, 'q_cmd_req_over_uerr_detect', 'cmd_req_over_uerr & cmd_req_over_valid & cmd_req_over_ready_qual', "1'b0", "1'b1", 'clk', 'reset_n')=\
+\=u.dffre(sb_mem_addr_width, 'q_cmd_req_over_err_index',  'cmd_req_over_err_index',  sb_mem_addr_width+"'b0", "1'b1", 'clk', 'reset_n')=\
+
+assign csr_sb_ce_valid = q_cmd_req_over_cerr_detect;
+assign csr_sb_ue_valid = q_cmd_req_over_uerr_detect;
+    \jsbegin
+    /* istanbul ignore else env ncore_3p7 */
+    if (sb_mem_addr_width < 20) {
+    \jsend
+assign csr_sb_err_index = { \=20-sb_mem_addr_width=\'h0, q_cmd_req_over_err_index };
+    \js } else {
+assign csr_sb_err_index = q_cmd_req_over_err_index[19:0];
+    \js }
+
+\js } else {
+
+    assign csr_sb_ce_valid  = 1'b0;
+    assign csr_sb_ue_valid  = 1'b0;
+    assign csr_sb_err_index = 20'b0;
+
+\js }
+
+\js if (useSramFifo) {
+
+    wire [\=sb_width-1=\:0] cmd_req_in_data, cmd_req_over_data;
+
+        \=u.instance({
+            instanceName: 'u_com_fifo_mem',
+            moduleName: 'com_fifo_mem',
+            params: com_fifo_mem_params,
+            ports: com_fifo_mem_ports,
+            interfaces: []
+        })=\
+
+assign cmd_req_in_data = \=m.bundleFunctions.packetizeBundle('cmd_req_in_', CMD_REQ_INTF, ['valid', 'ready'], obj.lib.bundle)=\ ;
+
+assign \=m.bundleFunctions.packetizeBundle('cmd_req_over_', CMD_REQ_INTF, ['valid', 'ready'], obj.lib.bundle)=\ = cmd_req_over_data;
+
+\js } else {
+
+    assign cmd_req_over_cerr = 1'b0;
+    assign cmd_req_over_uerr = 1'b0;
+
+    \=u.instance ({
+               instanceName: 'cmd_req_overflow_fifo',
+               moduleName: 'fifo_bundle',
+               params: {
+                        width: m.bundleFunctions.getBundleWidth(CMD_REQ_INTF, ['valid', 'ready'],  u.bundle),
+                        depth: (CMD_SB_TOTAL_DEPTH - CMD_SB_DEPTH),
+                        zerodepth: CMD_SB_TOTAL_DEPTH == CMD_SB_DEPTH,
+                        bypass_mode: 1,
+                        interface: CMD_REQ_INTF
+                        },
+               ports: {
+                       'clk' : 'clk',
+                       'reset_n' : 'reset_n',
+                       'push_valid' : 'cmd_req_in_valid_qual'
+                       },
+               interfaces: [
+                            {modulePrefix: 'push_', localPrefix: 'cmd_req_in_', interface: CMD_REQ_INTF,    exclude: ['valid']},
+                            {modulePrefix: 'pop_', localPrefix: 'cmd_req_over_', interface: CMD_REQ_INTF}]
+               })=\
+
+\js }
+
+\jsbegin
+var cmdSkidBufferInterfaces = [];
+cmdSkidBufferInterfaces.push({modulePrefix: '',          localPrefix: '',                       interface: CLK_INTF,        exclude: []     });
+cmdSkidBufferInterfaces.push({modulePrefix: 'req_in_',   localPrefix: 'cmd_req_over_',          interface: CMD_REQ_INTF,    exclude: ['priority', 'valid']});
+cmdSkidBufferInterfaces.push({modulePrefix: 'req_out_',  localPrefix: 'f0_cmd_req_out_',        interface: CMD_REQ_INTF,    exclude: []     });
+cmdSkidBufferInterfaces.push({modulePrefix: protectionInterface.name, localPrefix: protectionInterface.name, interface: protectionInterface.signals, exclude: []});
+
+var cmdSkidBufferParams = {
+    protectionStyle     : protectionStyle,
+    protectionInterface : protectionInterface,
+    assertOn            : assertOn,
+    useSmallArea        : useSmallArea,
+    depth               : CMD_SB_DEPTH,
+    bypass              : 0,
+    useQos              : useQos,
+    useAge              : 1,
+    wStarvThreshold     : useQos*wStarvThreshold,
+    reqInterface        : CMD_REQ_INTF,
+    clkInterface        : CLK_INTF
+};
+
+var cmdSkidBufferPorts = {
+    empty               : 'cmd_skid_buffer_empty',
+    req_in_valid        : 'cmd_req_over_valid_qual'
+};
+
+if (useQos) {
+    cmdSkidBufferPorts['starv_en']          = 'cmd_skid_starv_en';
+    cmdSkidBufferPorts['starv_threshold']   = 'starv_threshold';
+    cmdSkidBufferPorts['qos_disable']       = 'qos_disable';
+    cmdSkidBufferPorts['req_in_priority']   = 'cmd_req_over_priority';
+    cmdSkidBufferPorts['starv_overflow_event']       = 'cmd_starv_overflow_event';
+    cmdSkidBufferPorts['starv_mode']        = 'cmd_starv_mode';
+
+};
+
+if(W_PRI) { \jsend
+wire [W_PRI-1:0] cmd_req_fixed_priority = \=W_PRI=\'b0; \jsbegin
+
+} \jsend
+
+\=u.instance({
+    instanceName        : 'cmd_skid_buffer',
+    moduleName          : 'pri_age_buffer_arbiter',
+    params              : cmdSkidBufferParams,
+    ports               : cmdSkidBufferPorts,
+    interfaces          : cmdSkidBufferInterfaces
+})=\
+   
+//==============================================================================
+// PMON Starv event
+//==============================================================================
+\js if (useQos) {
+  assign pmon_starvation_event = cmd_starv_mode & ~cmd_starv_mode_q;
+  \=u.dffre(1, 'cmd_starv_mode_q', 'cmd_starv_mode', "1'd0",  'dff_enable', 'clk', 'reset_n')=\
+\js } else {
+  assign pmon_starvation_event = 1'b0;
+\js }
+
+
+// Target ID error logic
+
+assign cmd_ue_valid = cmd_req_in_valid & cmd_req_in_ready & (cmd_req_in_target_id[W_INIT_ID-1 : W_FPORT_ID] != my_f_unit_id);
+assign cmd_ue_init_id = cmd_req_in_initiator_id[W_INIT_ID-1 : W_FPORT_ID];   
+  
+assign cmd_req_out_valid = f0_cmd_req_out_valid & f0_cmd_rsp_ready;
+\=m.bundleFunctions.assignByBundle('cmd_req_out_', 'f0_cmd_req_out_', CMD_REQ_INTF, ['valid'], u.bundle)=\  
+
+// command rsp logic
+wire f0_cmd_rsp_last;
+assign f0_cmd_rsp_valid = f0_cmd_req_out_valid & f0_cmd_req_out_ready;  
+assign f0_cmd_rsp_last = 1'b1;
+assign f0_cmd_rsp_target_id = f0_cmd_req_out_initiator_id;
+assign f0_cmd_rsp_initiator_id = f0_cmd_req_out_target_id;
+assign f0_cmd_rsp_cm_type = \=CM_TYPE.CCmdRsp=\;
+assign f0_cmd_rsp_message_id = {\=CMD_RSP_INTF.message_id=\{1'b0}};
+\js if (CMD_RSP_INTF.m_prot > 0) {
+assign f0_cmd_rsp_m_prot = {\=CMD_RSP_INTF.m_prot=\{1'b0}};
+\js }
+\js if (CMD_RSP_INTF.h_prot > 0) {
+assign f0_cmd_rsp_h_prot = {\=CMD_RSP_INTF.h_prot=\{1'b0}};
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (CMD_RSP_INTF.t_tier > 0) {
+\jsend
+assign f0_cmd_rsp_t_tier = {\=CMD_RSP_INTF.t_tier=\{1'b0}}; 
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (CMD_RSP_INTF.steering > 0) {
+\jsend
+assign f0_cmd_rsp_steering = {\=CMD_RSP_INTF.steering=\{1'b0}}; 
+\js }
+\js if (CMD_RSP_INTF.priority > 0) {
+assign f0_cmd_rsp_priority = pri_gen(f0_cmd_req_out_qos);
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (CMD_RSP_INTF.ql > 0) {
+\jsend
+assign f0_cmd_rsp_ql = {\=CMD_RSP_INTF.ql=\{1'b0}};   
+\js }     
+assign f0_cmd_rsp_r_message_id = f0_cmd_req_out_message_id;  
+assign f0_cmd_rsp_cm_status = {\=CMD_RSP_INTF.cm_status=\{1'b0}};
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (CMD_RSP_INTF.tm > 0) { \jsend
+assign f0_cmd_rsp_tm	= f0_cmd_req_out_tm; \jsbegin
+} \jsend
+
+\=u.instance ({
+               instanceName: 'cmd_rsp_fifo',
+               moduleName: 'fifo_bundle',
+               params: {
+                        width: m.bundleFunctions.getBundleWidth(CMD_RSP_INTF, ['valid', 'ready'],  u.bundle),
+                        depth: 4,
+                        zerodepth: 0,
+                        bypass_mode: 0,
+                        interface: CMD_RSP_INTF
+                        },
+               ports: {
+                       'clk' : 'clk',
+                       'reset_n' : 'reset_n'
+                       },
+               interfaces: [
+                            {modulePrefix: 'push_', localPrefix: 'f0_cmd_rsp_', interface: CMD_RSP_INTF},
+                            {modulePrefix: 'pop_', localPrefix: 'cmd_rsp_out_', interface: CMD_RSP_INTF}]
+               })=\ 
+   
+  
+// update buffer
+
+  
+wire upd_req_in_valid_qual;
+wire upd_ue_valid;
+wire [W_FUNIT_ID-1:0] upd_ue_init_id;
+assign upd_req_in_valid_qual = upd_req_in_valid & ~upd_ue_valid & ~cmux_upd_req_UCE;
+ 
+\=u.instance ({
+               instanceName: 'upd_req_skid_fifo',
+               moduleName: 'fifo_bundle',
+               params: {
+                        width: m.bundleFunctions.getBundleWidth(UPD_REQ_INTF, ['valid', 'ready'],  u.bundle),
+                        depth: UPD_SB_DEPTH,
+                        zerodepth: 0,
+                        bypass_mode: 0,
+                        interface: UPD_REQ_INTF
+                        },
+               ports: {
+                       'clk' : 'clk',
+                       'reset_n' : 'reset_n',
+                       'push_valid' : 'upd_req_in_valid_qual'
+                       },
+               interfaces: [
+                            {modulePrefix: 'push_', localPrefix: 'upd_req_in_',     interface: UPD_REQ_INTF, exclude: ['valid']},
+                            {modulePrefix: 'pop_',  localPrefix: 'f0_upd_req_out_', interface: UPD_REQ_INTF}]
+               })=\
+
+// Target ID error logic
+
+  
+assign upd_ue_valid = upd_req_in_valid & upd_req_in_ready & (upd_req_in_target_id[W_INIT_ID-1 : W_FPORT_ID] != my_f_unit_id);
+assign upd_ue_init_id = upd_req_in_initiator_id[W_INIT_ID-1 : W_FPORT_ID];   
+
+assign upd_req_out_valid = f0_upd_req_out_valid & f0_upd_rsp_ready;
+\=m.bundleFunctions.assignByBundle('upd_req_out_', 'f0_upd_req_out_', UPD_REQ_INTF, ['valid'], u.bundle)=\ 
+                              
+// update rsp
+//                               
+wire f0_upd_rsp_last;
+
+assign f0_upd_rsp_valid = f0_upd_req_out_valid & f0_upd_req_out_ready;
+assign f0_upd_rsp_last = 1'b1;
+assign f0_upd_rsp_target_id =  f0_upd_req_out_initiator_id;
+assign f0_upd_rsp_initiator_id = f0_upd_req_out_target_id;
+assign f0_upd_rsp_cm_type = \=CM_TYPE.UpdRsp=\;
+assign f0_upd_rsp_message_id = {\=UPD_RSP_INTF.message_id=\{1'b0}};
+\js if (UPD_RSP_INTF.m_prot > 0) {
+assign f0_upd_rsp_m_prot = {\=UPD_RSP_INTF.m_prot=\{1'b0}};
+\js }
+\js if (UPD_RSP_INTF.h_prot > 0) {
+assign f0_upd_rsp_h_prot = {\=UPD_RSP_INTF.h_prot=\{1'b0}};
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (UPD_RSP_INTF.t_tier > 0) {
+\jsend
+assign f0_upd_rsp_t_tier = {\=UPD_RSP_INTF.t_tier=\{1'b0}};   
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (UPD_RSP_INTF.steering > 0) {
+\jsend
+assign f0_upd_rsp_steering = {\=UPD_RSP_INTF.steering=\{1'b0}}; 
+\js }
+\js if (UPD_RSP_INTF.priority > 0) {     
+assign f0_upd_rsp_priority = pri_gen(f0_upd_req_out_qos);
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (UPD_RSP_INTF.ql > 0) {
+\jsend
+assign f0_upd_rsp_ql = {\=UPD_RSP_INTF.ql=\{1'b0}};   
+\js } 
+assign f0_upd_rsp_cm_status = {\=CMD_RSP_INTF.cm_status=\{1'b0}};
+assign f0_upd_rsp_r_message_id = f0_upd_req_out_message_id;  
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (UPD_RSP_INTF.tm > 0) { \jsend
+assign f0_upd_rsp_tm	= f0_upd_req_out_tm; \jsbegin
+} \jsend
+
+ 
+\=u.instance ({
+               instanceName: 'upd_rsp_fifo',
+               moduleName: 'fifo_bundle',
+               params: {
+                        width: m.bundleFunctions.getBundleWidth(UPD_RSP_INTF, ['valid', 'ready'],  u.bundle),
+                        depth: 4,
+                        zerodepth: 0,
+                        bypass_mode: 0,
+                        interface: UPD_RSP_INTF
+                        },
+               ports: {
+                       'clk' : 'clk',
+                       'reset_n' : 'reset_n'
+                       },
+               interfaces: [
+                            {modulePrefix: 'push_', localPrefix: 'f0_upd_rsp_', interface: UPD_RSP_INTF},
+                            {modulePrefix: 'pop_', localPrefix: 'upd_rsp_out_', interface: UPD_RSP_INTF}]
+               })=\  
+
+// Error signalling
+assign csr_target_ue_valid = upd_ue_valid | cmd_ue_valid;
+assign csr_target_ue_init_id = (cmd_ue_valid) ? cmd_ue_init_id : upd_ue_init_id;
+
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) { \jsend
+    `ifdef OVL_ASSERT_ON
+    //synopsys translate_off
+    //coverage off
+    //pragma synthesis_off
+    assert_never #(0) assert_cmd_req_overflow(
+        .clk(clk),
+        .reset_n(reset_n),
+        .test_expr(cmd_req_in_valid_qual & ~cmd_req_in_ready)
+    );
+    //pragma synthesis_on
+    //coverage on
+    //synopsys translate_on
+    `endif
+\js }
+                           
+endmodule

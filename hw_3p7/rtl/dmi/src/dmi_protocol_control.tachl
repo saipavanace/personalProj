@@ -1,0 +1,2689 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DMI Protocol Control Block
+// Author: Tso-Wei Chang
+//=============================================================================
+
+//
+// Variables
+//
+var bundleFunctions             = obj.userLib.bundleFunctions;
+var u = obj.lib;
+var clkInterface                = obj.lib.getParam('clkInterface');
+let useSmallArea        =1;
+
+var CMDReqInterface             = obj.lib.getParam('CMDReqInterface');
+var CMDReqInterface_exPass      = obj.userLib.deepCopy(CMDReqInterface); 
+
+if(obj.lib.getParam("nExclusiveEntries") > 0){
+    Object.assign(CMDReqInterface_exPass,{"ex_pass":1});
+}
+var ASILB                       = obj.lib.getParam("ASILB");
+
+var c_rbidBuffer                = obj.lib.getParam("c_rbidBuffer");
+var nc_rbidBuffer                = obj.lib.getParam("nc_rbidBuffer");
+var nc_dataBuffer                = obj.lib.getParam("nc_dataBuffer");
+
+var CMDReqSkidInterface =obj.lib.getParam("CMDReqSkidInterface")
+var MRDReqSkidInterface =obj.lib.getParam("MRDReqSkidInterface")
+//ASILB always 0 in 3.7
+/* istanbul ignore if env ncore_3p7 */
+if(ASILB){
+    var c_rb_buffer_flop_bundle                = obj.lib.getParam("c_rb_buffer_flop_bundle");
+    var nc_rb_buffer_flop_bundle                = obj.lib.getParam("nc_rb_buffer_flop_bundle");
+    var nc_data_buffer_flop_bundle                = obj.lib.getParam("nc_data_buffer_flop_bundle");
+    
+
+    obj.lib.interface('cmd_req_skid_buffer_push_',          'master', CMDReqSkidInterface);
+    obj.lib.interface('cmd_skid_buffer_pop_',          'slave', CMDReqSkidInterface);
+
+    if(obj.lib.getParam("fnEnableQos")){
+        obj.lib.port("output",  "cmd_skid_buffer_starv_en",              1);
+        obj.lib.port("output",  "cmd_skid_buffer_starv_threshold",       obj.lib.getParam("wStarvThreshold"));
+        obj.lib.port("output",  "cmd_skid_buffer_qos_disable",           1);
+        obj.lib.port("input", "cmd_skid_buffer_starv_overflow_event", 1);
+        obj.lib.port("input", "cmd_skid_buffer_starv_mode",          1);
+        obj.lib.port("output",  "cmd_skid_buffer_threshold_reached",     1);
+        obj.lib.port("output",  "cmd_skid_buffer_DmiPriorityThVal",      4);
+        obj.lib.port("input", "cmd_skid_buffer_full",                 1);
+        
+        obj.lib.port("output",  "mrd_skid_buffer_starv_en",              1);
+        obj.lib.port("output",  "mrd_skid_buffer_starv_threshold",       obj.lib.getParam("wStarvThreshold"));
+        obj.lib.port("output",  "mrd_skid_buffer_qos_disable",           1);
+        obj.lib.port("input", "mrd_skid_buffer_starv_overflow_event", 1);
+        obj.lib.port("input", "mrd_skid_buffer_starv_mode",          1);
+        obj.lib.port("output",  "mrd_skid_buffer_threshold_reached",     1);
+        obj.lib.port("output",  "mrd_skid_buffer_DmiPriorityThVal",      4);
+        obj.lib.port("input", "mrd_skid_buffer_full",                 1);   
+    
+    }
+    
+    obj.lib.port("input","cmd_skid_buffer_empty",1);
+    obj.lib.port("input","mrd_skid_buffer_empty",1);
+
+    obj.lib.interface('mrd_req_skid_buffer_push_',          'master', MRDReqSkidInterface);
+    obj.lib.interface('mrd_skid_buffer_pop_',          'slave', MRDReqSkidInterface);
+     
+
+
+
+
+} else {
+
+        var cmdSkidBufferPorts =  obj.lib.getParam("cmdSkidBufferPorts")
+        var cmdSkidBufferInterfaces =  obj.lib.getParam("cmdSkidBufferInterfaces")
+        cmdSkidBufferInterfaces[0].localPrefix=""
+        var cmdSkidBufferParams =  obj.lib.getParam("cmdSkidBufferParams")
+        
+        var mrdSkidBufferPorts =  obj.lib.getParam("mrdSkidBufferPorts")
+        var mrdSkidBufferInterfaces = obj.lib.getParam( "mrdSkidBufferInterfaces")
+        var mrdSkidBufferParams =  obj.lib.getParam("mrdSkidBufferParams")
+        mrdSkidBufferInterfaces[0].localPrefix=""
+
+}
+
+
+var MRDRespInterface            = obj.lib.getParam("MRDRespInterface");
+var RBReqInterface              = obj.lib.getParam('RBReqInterface');
+var DTWDBGRespInterface         = obj.lib.getParam('DTWDBGRespInterface');
+var CONC_RX_INTF                = obj.lib.getParam('CONC_RX_INTF');
+var returnDataInterface         = obj.lib.getParam('returnDataInterface');
+var writeDataInterface          = obj.lib.getParam('writeProtDataInterface');
+var respInterface               = obj.lib.getParam('respInterface');
+var writeProtInterface          = obj.lib.getParam('writeProtInterface');
+var wSteering                   = obj.lib.getParam('wSteering');
+var wTTier                      = obj.lib.getParam('wTTier');
+var wPriority                   = obj.lib.getParam('wPriority');
+var wQl                         = obj.lib.getParam('wQl');
+var wHProt                      = obj.lib.getParam('wHProt');
+var useAtomic                   = obj.lib.getParam('useAtomic');
+var useResiliency               = obj.lib.getParam('useResiliency');
+var cmType                      = obj.lib.getParam('cmType');
+var wAddr                       = obj.lib.getParam('wAddr');
+var useCmc                      = obj.lib.getParam('useCmc');
+var wInitiatorId                = obj.lib.getParam('wInitiatorId');
+var wTargetId                   = wInitiatorId;
+var wMsgId                      = obj.lib.getParam('wMessageId');
+var wAddrCAM                    = obj.lib.getParam('wAddrCAM');
+var wFPortId                    = obj.lib.getParam('wFPortId');
+var wFUnitId                    = obj.lib.getParam('wFUnitId');
+var wData                       = obj.lib.getParam('wData');
+var nMrdSkidBufArb = obj.lib.getParam("nMrdSkidBufArb");
+var nMrdSkidBufSize = obj.lib.getParam("nMrdSkidBufSize");
+var nCMDSkidBufArb = obj.lib.getParam("nCMDSkidBufArb");
+var nCMDSkidBufSize = obj.lib.getParam("nCMDSkidBufSize");
+var wDwid                       = returnDataInterface.dwid;
+var wIntfSize                   = returnDataInterface.intf_size;
+var wSize                       = returnDataInterface.size;
+var wRbid                       = RBReqInterface.rb_id;
+var nRbid                       = Math.pow(2, wRbid);
+var wRl                         = CMDReqInterface.rl;
+var wMpf1                       = CMDReqInterface.mpf1;
+var wMpf2                       = CMDReqInterface.mpf2;
+var wQos                        = CMDReqInterface.qos;
+var nQos                        = Math.pow(2, wQos);
+var wCmType                     = CMDReqInterface.cm_type;
+var wAiuTransId                 = CMDReqInterface.message_id;
+var useQos                      = obj.lib.getParam('fnEnableQos');
+var priorityThreshold           = obj.userLib.ParamDefaultGet(obj.lib,'priorityThreshold','int',useQos);
+var QosInfo                     = obj.lib.getParam('QosInfo');
+var fnEnableTimeOutRef          = obj.lib.getParam('fnEnableTimeOutRef'); 
+var useHint                     = obj.userLib.ParamDefaultGet(obj.lib, 'useHint',               'int',       0);
+var nDceRbEntries               = obj.lib.getParam('cmpInfo', 'nDceRbEntries');
+var nDmiRbEntries               = obj.lib.getParam('cmpInfo', 'nDmiRbEntries');
+var nDWsPerBeat                 = wData/64;
+var sameWidthSystem             = obj.lib.getParam('sameWidthSystem');
+var assertOn                    = obj.lib.getParam('assertOn');
+var DTRReqInterface             = obj.lib.getParam('DTRReqInterface');
+var wCMStatus                   = DTRReqInterface.cm_status;
+var NCCMDRespInterface          = obj.lib.getParam('NCCMDRespInterface');
+// dtwmergemrd late response buffer: this is only needed for late response dtwmergemrd and does not impact size of wtt or rtt
+// this might be the same as cRbids?
+var nDtwMergeMrdLate            = obj.lib.getParam('nDtwMergeMrdLateInFlight');
+var nMrdLateInFlight            = obj.lib.getParam('nMrdLateInFlight');
+var wTransId                    = Math.max(Math.ceil(Math.log2(nDtwMergeMrdLate)), Math.ceil(Math.log2(nMrdLateInFlight)));
+var wrBufferProtType            = obj.lib.getParam('wrBufferProtType');
+var cWrDataGen                  = obj.lib.getParam('cWrDataGen');
+var cWrDataParam                = obj.lib.getParam('cWrDataParam');
+var wrDataBufferMemoryInterface = obj.lib.getParam('wrDataBufferMemoryInterface');
+var useExWrDataMem              = obj.lib.getParam('useExWrDataMem');
+// NCRd Queue Depth
+var rdQDepth                    = obj.userLib.ParamDefaultGet(obj.lib, 'rdQDepth',  'int',  8);
+var nBeats                      = obj.lib.getParam('nBeats')
+var wBeats                      = Math.log2(nBeats);
+var wCmstatus                   = CMDReqInterface.cm_status;
+var useSysReqSender		= obj.lib.getParam('useSysReqSender');
+var SYS_RSP_RX_INTF		= obj.lib.getParam('SYS_RSP_RX_INTF');
+let clkInterfaceEvtBuf 		= {name: "", signals: clkInterface};
+let bufferSize = obj.lib.getParam("bufferSize");
+var wStarvThreshold = obj.lib.getParam("wStarvThreshold");
+// DTR MsgId Number
+/* istanbul ignore next env ncore_3p0 */
+var dtrIdNum = bufferSize.DTRReqBuffer > Math.pow(2, wMsgId)? Math.pow(2, wMsgId) : bufferSize.DTRReqBuffer;
+
+var dtr_resp_interface = {
+    r_message_id: obj.lib.getParam('DTRRespInterface')["r_message_id"],
+    target_id : obj.lib.getParam('DTRRespInterface')["target_id"],
+    valid: obj.lib.getParam('DTRRespInterface')["valid"],
+    ready: obj.lib.getParam('DTRRespInterface')["ready"] }
+
+var dtrReturnInfo = {
+    trans_id        : returnDataInterface.trans_id,
+    target_id       : returnDataInterface.target_id,
+    r_message_id    : returnDataInterface.r_message_id,
+    cm_type         : returnDataInterface.cm_type,
+    vz              : returnDataInterface.vz,
+    tm              : returnDataInterface.tm,
+    rd_type         : returnDataInterface.rd_type,
+    qos             : returnDataInterface.qos,
+    exokay          : returnDataInterface.exokay
+};
+
+var wTm = (NCCMDRespInterface.tm != undefined) ? 1 : /* istanbul ignore next env ncore_3p2,ncore_3p4 ,ncore_3p6, ncore_3p7*/ 0; 
+
+const excludes			= ['valid','ready'];
+//Set keys to only those not excluded & non-zero widths
+const dtw_dbg_rsp_keys		= Object.keys(DTWDBGRespInterface).filter(signal => !excludes.includes(signal) && DTWDBGRespInterface[signal]);
+
+//Set keys for sys_rsp_rx 
+const sys_rsp_keys		= Object.keys(SYS_RSP_RX_INTF).filter(signal => !excludes.includes(signal) && SYS_RSP_RX_INTF[signal]);
+
+// Function to convert an interface {{name, signals}) to a { modulePrefix, localPrefix, interface} object
+// that is used to specify how local interfaces are mapped to module interfaces of an instance
+function getModuleLocalPrefixAndInterface (intrface) {
+	const modulePrefix		= intrface.name;
+	const localPrefix		= intrface.name;
+	return { modulePrefix, localPrefix, "interface": intrface.signals };
+}
+ /* istanbul ignore else env ncore_3p6, ncore_3p7*/
+if (useSysReqSender) {
+var reqAckEventInterface = obj.userLib.ParamDefaultGet(obj.lib, 'reqAckEventInterface', 'object', {});
+}
+//==============================================================================
+// Interfaces & Ports
+//==============================================================================
+
+// Input Ports
+obj.lib.port('input', 'MyId',                                   wFUnitId);
+obj.lib.port('input', 'write_prot_error',                              1);
+
+//ASILB always 0 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+ if ( assertOn & useResiliency & !ASILB) {
+obj.lib.port('input', 'dmi_cmux_dtw_req_header_UCE',                              1);
+obj.lib.port('input', 'dmi_cmux_dtw_req_message_UCE',                              1);
+obj.lib.port('input', 'dmi_cmux_dtw_req_data_UCE',                              1);
+}
+
+// Slave Interfaces 
+// CLK Interface
+obj.lib.interface('', 'slave',              obj.lib.getParam('clkInterface'));
+
+// Concerto Request Interfaces
+obj.lib.interface('cmd_req_',       'slave',    obj.lib.getParam('CMDReqInterface'));
+obj.lib.interface('mrd_req_',       'slave',    obj.lib.getParam('MRDReqInterface'));
+obj.lib.interface('rbr_req_',       'slave',    obj.lib.getParam('RBReqInterface'));
+obj.lib.interface('dtw_req_',       'slave',    obj.lib.getParam('DTWReqInterface'));
+// Concerto Response Interfaces
+obj.lib.interface('dtr_rsp_',       'slave',    obj.lib.getParam('DTRRespInterface'));
+obj.lib.interface('str_rsp_',       'slave',    obj.lib.getParam('STRRespInterface'));
+obj.lib.interface('dtw_dbg_rsp_',   'slave',    obj.lib.getParam('DTWDBGRespInterface'));
+// Internal Interfaces
+obj.lib.interface('return_data_',   'slave',    obj.lib.getParam('returnDataInterface'));
+obj.lib.interface('read_resp_',     'slave',    obj.lib.getParam('writeResponseInterface'));
+obj.lib.interface('return_resp_',   'slave',    obj.lib.getParam('respInterface'));
+
+if(useExWrDataMem) {
+    obj.lib.interface('', 'master', wrDataBufferMemoryInterface);
+}
+ /* istanbul ignore else env ncore_3p6, ncore_3p7*/
+if (useSysReqSender) {
+    obj.lib.interface('sys_rsp_rx_', 'slave', SYS_RSP_RX_INTF);
+    obj.lib.interface('sys_rsp_rx_out_', 'master', SYS_RSP_RX_INTF);
+    obj.lib.interface(reqAckEventInterface.name, 'master', reqAckEventInterface.signals);
+} 
+
+// Output Ports
+obj.lib.port('output',  'target_id_error',                   1,         'reg', true);
+obj.lib.port('output',  'target_id_error_source_id',         wFUnitId,  'reg', true);
+obj.lib.port('output',  'target_id_error_addr',              wAddr,     'reg', true);
+obj.lib.port('output',  'nc_data_sel',                       1);
+obj.lib.port('output', 'pmon_num_dtwmrgmrd', 1);
+obj.lib.port('output', 'pmon_num_vz', 1);
+obj.lib.port('output', 'pmon_starvation_event', 1);
+obj.lib.port('output', 'nc_read_cam_match_pmon', 1);
+obj.lib.port('output', 'nc_write_cam_match_pmon', 1);
+
+obj.lib.port("input","DMIUWRDATACLN_EnClnDataWr",1);
+
+if (useQos){
+obj.lib.port('input','RTT_threshold_reached',1)
+obj.lib.port('input','WTT_threshold_reached',1)
+obj.lib.port('input','QoSThVal',4)
+obj.lib.port('input','WttQoSRsv',8)
+}
+
+// Master Interface
+// Concerto Request Interfaces
+obj.lib.interface('dtr_req_',           'master', obj.lib.getParam('DTRReqInterface'));
+obj.lib.interface('str_req_',           'master', obj.lib.getParam('STRReqInterface'));
+// Concerto Response Interfaces
+obj.lib.interface('nc_cmd_resp_',       'master', obj.lib.getParam('NCCMDRespInterface'));
+obj.lib.interface('dtw_resp_',          'master', obj.lib.getParam('DTWRespInterface'));
+obj.lib.interface('mrd_resp_',          'master', MRDRespInterface);
+obj.lib.interface('rbr_resp_',          'master', obj.lib.getParam('RBRRespInterface'));
+obj.lib.interface('dtw_dbg_rsp_out_',   'master', obj.lib.getParam('DTWDBGRespInterface'));
+// Internal
+obj.lib.interface('read_prot_',         'master', obj.lib.getParam('readProtInterface'));
+obj.lib.interface('write_prot_',        'master', obj.lib.getParam('writeProtInterface'));
+obj.lib.interface('write_prot_data_',   'master', writeDataInterface);
+obj.lib.interface('',                   'master', obj.lib.getParam('protCsrInterface'), ['target_id_error', 'target_id_error_source_id', 'target_id_error_addr']);
+//ASILB always 0 in 3.7
+/* istanbul ignore if env ncore_3p7 */
+if (ASILB){
+    obj.lib.interface('c_'    ,          'master', c_rb_buffer_flop_bundle);
+    obj.lib.interface('nc_'    ,          'master', nc_rb_buffer_flop_bundle);
+    obj.lib.interface('nc_'    ,          'master', nc_data_buffer_flop_bundle);
+
+} else {
+
+    if (u.getParam("cmdSkidBufferParams","useSramFifo")) {
+        obj.lib.interface( ''         , "slave",u.getParam("CmdReq_sb_mem_interface"));
+    }
+
+    if (u.getParam("mrdSkidBufferParams","useSramFifo")) {
+        obj.lib.interface( ''         , "slave",u.getParam("MrdReq_sb_mem_interface"));
+    }
+}
+
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+localparam RD_PREF  = \=cmType['MrdPref']=\;
+localparam RD_CLEAN = \=cmType['MrdCln']=\;
+localparam RD_INV   = \=cmType['MrdInv']=\;
+localparam RD_FLUSH = \=cmType['MrdFlush']=\;
+
+localparam NC_CMDRD = \=cmType['CmdRdNC']=\;
+localparam NC_CLEAN = \=cmType['CmdClnVld']=\;
+localparam NC_PRSST = \=cmType['CmdClnShPsist']=\;
+localparam NC_FLUSH = \=cmType['CmdClnInv']=\;
+localparam NC_MKINV = \=cmType['CmdMkInv']=\;
+localparam NC_PREF  = \=cmType['CmdPref']=\;
+
+localparam NC_CMDWRPTL = \=cmType['CmdWrNCPtl']=\;
+localparam NC_CMDWR = \=cmType['CmdWrNCFull']=\;
+
+localparam WR_NDATA = \=cmType['DtwNullData']=\;
+localparam WR_CLEAN = \=cmType['DtwDataFullCln']=\;
+localparam WR_PARTL = \=cmType['DtwDataPtlDty']=\;
+localparam WR_DIRTY = \=cmType['DtwDataFullDty']=\;
+
+localparam WM_INV   = \=cmType['DtwMrgMrdInv']=\;
+localparam WM_RSCLN = \=cmType['DtwMrgMrdSCln']=\;
+localparam WM_RSDTY = \=cmType['DtwMrgMrdSDty']=\;
+localparam WM_RUCLN = \=cmType['DtwMrgMrdUCln']=\;
+localparam WM_RUDTY = \=cmType['DtwMrgMrdUDty']=\;
+
+
+localparam CMD_REQ = 3'd0;
+localparam DTR_RSP = 3'd1;
+localparam STR_RSP = 3'd2;
+localparam MRD_REQ = 3'd3;
+localparam RBR_REQ = 3'd4;
+localparam RBU_RSP = 3'd5;
+localparam DTW_REQ = 3'd6;
+
+localparam ADDR_ERROR = \=wCMStatus=\'b10000100;
+localparam DATA_ERROR = \=wCMStatus=\'b10000011;
+
+\jsbegin
+//==============================================================================
+// Functions
+//==============================================================================
+\jsend
+
+
+localparam ATM_LD  = \=cmType['CmdRdAtm']=\,
+ATM_STR = \=cmType['CmdWrAtm']=\,
+ATM_COMP= \=cmType['CmdCompAtm']=\,
+ATM_SWAP= \=cmType['CmdSwapAtm']=\;
+
+function automatic is_atomic;
+input [\=wCmType-1=\:0] cm_type;
+begin
+    is_atomic = (cm_type == ATM_STR)|
+                (cm_type == ATM_LD)|
+                (cm_type == ATM_SWAP)|
+                (cm_type == ATM_COMP);
+end
+endfunction
+
+\js if(wPriority != 0) {
+function automatic [\=wPriority-1=\:0] pri_gen;
+    input [\=wQos-1=\:0] qos;
+    reg   [\=nQos-1=\:0] qos_one_hot;
+    begin
+        qos_one_hot = \=nQos=\'b1 << qos;
+        pri_gen     = 
+\js for (let bucket_vec of QosInfo.qosMap) {
+        |(qos_one_hot & \=bucket_vec=\)? \=wPriority=\'d\=QosInfo.qosMap.indexOf(bucket_vec)=\ : 
+\js }
+        \=wPriority=\'d0;
+    end
+endfunction
+\js }
+
+function automatic is_ncrd;
+  input [\=obj.lib.getParam('CMDReqInterface','cm_type')-1=\:0] cm_type;
+  begin
+      is_ncrd = (cm_type == NC_CMDRD) | (cm_type == NC_CLEAN) | (cm_type == NC_PRSST) |
+                (cm_type == NC_FLUSH) | (cm_type == NC_MKINV) | (cm_type == NC_PREF);
+  end
+endfunction
+
+function automatic is_dtwmergemrd;
+  input [\=obj.lib.getParam('writeProtInterface','cm_type')-1=\:0] cm_type;
+  begin
+      is_dtwmergemrd = (cm_type == WM_INV)   |
+                       (cm_type == WM_RUCLN) | (cm_type == WM_RUDTY);
+  end
+endfunction
+
+function automatic is_mrdcacheop;
+  input [\=obj.lib.getParam('CMDReqInterface','cm_type')-1=\:0] cm_type;
+  begin
+      is_mrdcacheop = (cm_type == RD_PREF)  | 
+                      (cm_type == RD_FLUSH) | 
+                      (cm_type == RD_CLEAN) | 
+                      (cm_type == RD_INV);
+  end
+endfunction
+
+function automatic is_cmdcacheop;
+  input [\=obj.lib.getParam('CMDReqInterface','cm_type')-1=\:0] cm_type;
+  begin
+      is_cmdcacheop = (cm_type == NC_FLUSH) |
+                      (cm_type == NC_CLEAN) | (cm_type == NC_PRSST) | 
+                      (cm_type == NC_MKINV) | (cm_type == NC_PREF);
+  end
+endfunction
+
+
+\jsbegin
+//==============================================================================
+// Wires
+//==============================================================================
+
+
+//==============================================================================
+//CMD/MRD req Wires
+//==============================================================================
+\jsend
+\=bundleFunctions.wiresFromInterface('mrd_pop_',    MRDReqSkidInterface,    [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('cmd_pop_',        CMDReqSkidInterface,    [], obj.lib.bundle)=\
+wire     cmd_skid_buffer_pop_noqual_ready;
+wire cmd_skid_buffer_pop_wr;
+wire cmd_pop_wr_valid;
+wire cmd_skid_buffer_pop_qual_valid;
+\jsbegin
+//ASILB always 0 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+if(!ASILB){
+\jsend
+    \=bundleFunctions.wiresFromInterface('cmd_skid_buffer_pop_',        CMDReqSkidInterface,    [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('cmd_req_skid_buffer_push_',        CMDReqSkidInterface,    [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('mrd_req_skid_buffer_push_',       MRDReqSkidInterface,    [], obj.lib.bundle)=\
+    \=bundleFunctions.wiresFromInterface('mrd_skid_buffer_pop_',    MRDReqSkidInterface,    [], obj.lib.bundle)=\
+
+    wire                            cmd_skid_buffer_empty;
+    wire                            mrd_skid_buffer_empty;
+
+
+
+\jsbegin
+    if (useQos) {
+\jsend
+
+wire mrd_skid_buffer_starv_en;
+wire [\=wStarvThreshold-1=\ :0] mrd_skid_buffer_starv_threshold;
+wire mrd_skid_buffer_qos_disable;
+wire mrd_skid_buffer_starv_overflow_event;
+wire mrd_skid_buffer_starv_mode;
+wire mrd_skid_buffer_threshold_reached;
+wire [3:0] mrd_skid_buffer_DmiPriorityThVal;
+wire mrd_skid_buffer_full;
+wire LP_mrd_req;
+
+wire cmd_skid_buffer_starv_en;
+wire [\=wStarvThreshold-1=\ :0] cmd_skid_buffer_starv_threshold;
+wire cmd_skid_buffer_qos_disable;
+wire cmd_skid_buffer_starv_overflow_event;
+wire cmd_skid_buffer_starv_mode;
+wire cmd_skid_buffer_threshold_reached;
+wire [3:0] cmd_skid_buffer_DmiPriorityThVal;
+wire cmd_skid_buffer_full;
+wire LP_cmd_req;
+
+\jsbegin
+    }
+\jsend    
+
+\js }
+
+assign cmd_req_skid_buffer_push_es = ~is_atomic(cmd_req_cm_type) & cmd_req_es & (cmd_req_cm_type == NC_CMDRD | cmd_req_cm_type == NC_CMDWRPTL | cmd_req_cm_type == NC_CMDWR) ;
+
+\jsbegin
+      if (useQos){
+
+
+    var prioChech_in_params = {'width' : wQos}
+    var prioChech_in_ports = {  'a':'QoSThVal',
+                                'b': 'cmd_req_skid_buffer_push_qos',
+                                'gt':'LP_cmd_req'}
+    var prioChech_in_interfaces = []
+\jsend
+    \=u.instance({
+        instanceName: 'prioChech_in',
+        moduleName: 'greater_than',
+        params: prioChech_in_params,
+        interfaces: prioChech_in_interfaces,
+        ports:  prioChech_in_ports,
+        portsDelimiter: '\n'
+    })=\
+
+    assign cmd_req_skid_buffer_push_h_priority = ~LP_cmd_req;
+\jsbegin
+    var mrd_prioChech_in_ports = {'a':'QoSThVal',
+                            'b': 'mrd_req_skid_buffer_push_qos',
+                              'gt':'LP_mrd_req'}
+    var mrd_prioChech_in_interfaces = []
+\jsend
+    \=u.instance({
+        instanceName: 'prioChech_in_mrd',
+        moduleName: 'greater_than',
+        params: prioChech_in_params,
+        interfaces: mrd_prioChech_in_interfaces,
+        ports:  mrd_prioChech_in_ports,
+        portsDelimiter: '\n'
+    })=\
+
+    assign mrd_req_skid_buffer_push_h_priority = ~LP_mrd_req;
+
+\js }
+
+
+wire                            cmd_skid_buffer_pop_rdwr_valid;
+wire                            cmd_skid_buffer_pop_rdwr_ready;
+wire                            cmd_pop_rdwr_valid;
+wire                            cmd_pop_rdwr_ready;
+wire                            cmd_pop_wr_ready;
+
+\js if (obj.lib.getParam("nExclusiveEntries") > 0){
+wire cmd_skid_buffer_pop_ex_pass;
+wire cmd_pop_ex_pass;
+\js }
+
+wire cmd_resp_mux_ready;
+wire cmd_resp_mux_valid;
+
+//==============================================================================
+//End CMD req Wires
+//==============================================================================
+
+
+\=bundleFunctions.wiresFromInterface('dtr_rsp_pop_',                dtr_resp_interface, [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('dtr_rsp_pop_no_match_',      dtr_resp_interface, [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('dtr_rsp_pop_match_',          dtr_resp_interface, [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('dtr_rsp_pop_mrd_match_',          dtr_resp_interface, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('nc_cmd_resp_buffer_push_',    obj.lib.getParam('NCCMDRespInterface'), [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('str_req_buffer_push_',        obj.lib.getParam('STRReqInterface'),    ["rb_id","cm_status","intf_size","mpf1","mpf2","initiator_id","cm_type","message_id"], obj.lib.bundle)=\
+wire mrd_skid_buffer_pop_qual_valid;
+wire mrd_skid_buffer_pop_noqual_ready;
+\=bundleFunctions.wiresFromInterface('rb_rsp_',                     obj.lib.getParam('RBRRespInterface'),     [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('read_prot_muxarb_sink0_',     obj.lib.getParam('readProtInterface'),  [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('read_prot_muxarb_sink1_',     obj.lib.getParam('readProtInterface'),  [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('nc_read_buffer_',             obj.lib.getParam('readProtInterface'),  [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('nc_write_prot_',              obj.lib.getParam('writeProtInterface'), [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('nc_write_protd_',             writeDataInterface,                     [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('c_write_prot_',               obj.lib.getParam('writeProtInterface'), [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('c_write_protd_',              writeDataInterface,                     [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('write_prot_muxarb_sink0_',    obj.lib.getParam('writeProtInterface'), [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('write_prot_muxarb_source_',   obj.lib.getParam('writeProtInterface'), [], obj.lib.bundle)=\
+
+
+wire logic_one = 1'b1;
+wire [1:0] dtr_drb_data_err_type;
+\jsbegin
+// tied to 0 in ncore for DMI
+/* istanbul ignore else env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if ( !sameWidthSystem ) {
+\jsend
+\=bundleFunctions.wiresFromInterface('dtr_drb_data_',               dtrReturnInfo,                          [], obj.lib.bundle)=\
+wire                            dtr_drb_data_valid;
+wire                            dtr_drb_data_last;
+wire dff_enable = 1'b1;
+wire pmon_num_vz_in;
+wire pmon_num_dtwmrgmrd_in;
+wire dtwmrgmrd_in;
+
+
+wire [\=nDWsPerBeat-1=\:0]      dtr_drb_data_dbad;
+wire [\=wData-1=\: 0]           dtr_drb_data;
+wire [\=wData-1=\: 0]           dtr_drb_data_in;
+wire [\=wData/8-1=\: 0]         dtr_drb_data_be;    
+wire [\=wDwid-1=\: 0]           dtr_drb_data_dwid;
+\js }
+wire c_rb_req_ready;
+wire [1:0]                      mrd_resp_error;
+wire [1:0]                      str_req_buffer_push_error;
+wire [\=wTransId-1=\: 0]        dtr_req_trans_id;
+wire                            dtr_req_late;
+wire                            dtr_req_rd_type;
+wire                            mrd_vlate_dtr_rsp_ready;
+wire                            dtw_vlate_dtr_rsp_ready;
+wire                            dtr_rsp_match_mrd_vlate;
+wire                            dtr_rsp_match_dtw_vlate;
+wire dtr_rsp_no_match_vlate_valid;
+wire dtr_rsp_match_vlate_valid;
+wire dtr_rsp_mrd_match_vlate_valid;
+wire dtr_rsp_pop_push_valid;
+wire dtr_rsp_match_vlate_ready;
+wire dtr_rsp_mrd_match_vlate_ready;
+wire dtr_rsp_no_match_vlate_ready;
+wire dtr_rsp_pop_match_valid_int;
+wire dtr_rsp_pop_mrd_match_valid_int;
+
+\js // not used
+wire                            cmd_vlate_dtr_rsp_ready;
+wire                            dtr_rsp_match_cmd_vlate;
+
+wire                            nc_wr_dealloc_en;
+wire [\=nDmiRbEntries-1=\:0]    nc_wr_dealloc_idx;
+wire [\=nDmiRbEntries-1=\:0]    nc_wr_cam_match_vec;
+wire [\=nDmiRbEntries-1=\:0]    pmon_nc_wr_cam_match_vec;
+wire [\=rdQDepth-1=\:0]         nc_rd_cam_match_vec;
+wire [\=rdQDepth-1=\:0] 	pmon_nc_rd_cam_match_vec;
+wire [\=rdQDepth-1=\:0]         nc_rd_dealloc_idx;
+wire                            nc_rd_dealloc_en; 
+wire                            nc_rd_ready;
+wire                            nc_rd_vz;
+wire [\=wInitiatorId-1=\:0]     myid_shift;
+wire                            cmd_skid_buffer_pop_rd_valid;
+wire                            cmd_skid_buffer_pop_wr_valid;
+wire                            cmd_pop_rd;
+wire                            cmd_pop_rd_valid;
+wire                            cmd_pop_wr;
+
+wire                            cmd_skid_buffer_pop_rd;
+wire                            cmd_valid;
+wire                            cmd_ready;
+wire                            cmd_addr_match;
+wire                            cmd_enable;
+wire                            cmd_skid_buffer_push_rd;
+wire [\=wAddr-1=\:0]            cmd_addr;
+wire				cmd_ns;
+wire                            rb_req_valid;
+wire [\=wInitiatorId-1=\:0]     write_data_initiator_id;
+wire [\=wInitiatorId-1=\:0]     nc_write_prot_initiator_id;
+wire [\=wInitiatorId-1=\:0]     nc_write_data_initiator_id;
+wire [\=wRbid-1=\:0]            nc_write_prot_rb_id;
+wire                            nc_write_prot_rb_done;
+wire                            nc_dtw_req_valid;
+wire                            nc_dtw_req_ready;
+wire [\=wRbid-1=\:0]            nc_dtw_req_rb_id;
+wire [\=wRbid-1=\:0]            nc_alloc_rb_id;
+wire                            nc_alloc_valid;
+wire                            nc_alloc_ready;
+wire [\=wRbid-1=\:0]            nc_dealloc_rb_id;
+wire                            nc_dealloc_valid;
+wire                            c_dtw_req_valid;
+wire                            c_dtw_req_ready;
+
+
+
+wire [\=wInitiatorId-1=\:0]     c_write_prot_initiator_id;
+wire [\=wInitiatorId-1=\:0]     c_write_data_initiator_id;
+wire [\=wTransId-1=\:0]         write_prot_data_trans_id;
+wire                            nc_cmop_resp_valid;
+wire                            nc_cmop_resp_ready;
+wire [\=wTransId-1=\: 0]        nc_cmd_trans_id;
+wire                            c_cmop_resp_valid;
+wire                            c_cmop_resp_ready;
+wire [\=wInitiatorId-1=\:0]     write_protd_aiu_id;
+wire [\=wMsgId-1=\:0]           write_protd_aiu_trans_id;
+wire [\=wMsgId-1=\:0]           c_write_protd_aiu_trans_id;
+wire [\=wMsgId-1=\:0]           nc_write_protd_aiu_trans_id;
+wire                            write_prot_drop;
+wire                            write_protd_valid;
+wire                            write_protd_ready;
+wire                            write_protd_vz;
+wire                            dtw_req_c;  
+wire                            wdata_sel_push_valid;
+wire                            wdata_sel_push_ready;
+wire                            wdata_sel_pop_valid;
+wire                            wdata_sel_pop_ready;
+wire                            write_prot_data_sel;
+wire                            dtr_flm_ready;
+wire                            q_reset_delay0;
+wire                            q_reset_delay1;
+wire                            rbr_req_push_valid;
+wire                            dtr_rsp_push_valid;
+wire                            str_rsp_push_valid;
+wire                            write_protd_drop;
+wire                            write_protd_late;
+wire                            nc_read_prot_ready;
+wire                            write_prot_late; 
+wire                            dtr_rsp_vldrdy;
+wire                            dtr_rsp_pending;
+wire                            str_rsp_pending;
+wire                            nc_write_active;
+wire                            c_write_active;
+wire                            nc_read_active;
+wire                            dtw_resp_mux_active;
+wire [\=nDmiRbEntries-1=\:0]    nc_rb_id_retire;
+wire                            nc_rb_id_retire_valid;
+
+\js // from CSR
+\js if (useQos) {
+
+wire rbr_skid_full;
+wire cmd_skid_full;
+wire mrd_skid_full;
+
+wire cmd_skid_buffer_pop_ready_rd ;
+wire cmd_skid_buffer_pop_ready_wr;
+
+wire rbr_starv_mode;
+wire rbr_starv_overflow_event;
+wire starv_mode;
+wire                            c_wDataBuffer_threshold_reached;
+wire                            nc_wDataBuffer_threshold_reached;
+wire                            cmd_skid_starv_en   = 1'b1;
+wire                            mrd_skid_starv_en   = 1'b1;
+wire                            rbr_skid_starv_en   = 1'b1;
+wire [\=wStarvThreshold-1=\:0]  starv_threshold     = csr_starv_count_threshold;
+wire                            qos_disable         = 1'b0;
+wire [\=wPriority-1=\:0]        cmd_req_pri_fixed   = \=wPriority=\'d0;
+wire [\=wPriority-1=\:0]        mrd_req_pri_fixed   = \=wPriority=\'d0;
+wire [\=wQos-1=\:0]             mrd_resp_qos;
+wire [\=wQos-1=\:0]             str_req_buffer_push_qos;
+wire [\=wQos-1=\:0]             rb_id_retire_qos;
+wire [\=wQos-1=\:0]             write_protd_qos;
+wire cmd_starv_overflow_event;
+wire mrd_starv_overflow_event;
+wire cmd_starv_mode;
+wire mrd_starv_mode;
+wire cmd_starv_mode_q;
+wire mrd_starv_mode_q;
+\js }
+
+\js if ( assertOn & ~useResiliency) {
+wire dmi_cmux_dtw_req_header_UCE = 1'b0;
+wire dmi_cmux_dtw_req_message_UCE = 1'b0;
+wire dmi_cmux_dtw_req_data_UCE = 1'b0;
+\js }
+
+\jsbegin  /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */  if (wTm) { \jsend
+wire                            write_protd_tm;
+\js }
+wire [\=wMpf1-1=\:0]            write_protd_mpf1;
+
+wire exmon_event;
+wire evt_buffer_busy; 
+
+\jsbegin
+//=============================================================================
+// Target ID Errors
+//=============================================================================
+\jsend
+
+always @ (*) begin
+\js for (let i=0; i<CONC_RX_INTF.length; i++) {
+\js     if(i == 0) {
+    if ((\=CONC_RX_INTF[i].name=\target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId) & \=CONC_RX_INTF[i].name=\valid & \=CONC_RX_INTF[i].name=\ready ) begin
+\js     } else {
+    else if ((\=CONC_RX_INTF[i].name=\target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId) & \=CONC_RX_INTF[i].name=\valid & \=CONC_RX_INTF[i].name=\ready ) begin
+\js     }
+         target_id_error           = csr_UEDR_TransErrDetEn;
+         target_id_error_source_id = \=CONC_RX_INTF[i].name=\initiator_id[\=wTargetId-1=\:\=wFPortId=\];  
+\js     if(CONC_RX_INTF[i].signals.addr != null & CONC_RX_INTF[i].signals.addr != 0) {
+         target_id_error_addr      = \=CONC_RX_INTF[i].name=\addr;
+\js     } else {
+         target_id_error_addr      = \=wAddr=\'h0;
+\js     }
+    end
+\js }
+    else begin
+         target_id_error           = 1'h0;
+         target_id_error_source_id = \=wFUnitId=\'h0;
+         target_id_error_addr      = \=wAddr=\'h0;
+    end
+end
+assign myid_shift                   = {MyId, {\=wFPortId=\{1'b0}}} ;
+
+
+
+
+\jsbegin
+//=============================================================================
+// Unsuported atomic error
+//=============================================================================
+if(!useCmc | useCmc & !useAtomic){
+\jsend
+
+assign atomic_programming_error = is_atomic(cmd_req_cm_type) & cmd_req_valid & cmd_req_ready;
+assign atomic_programming_addr = cmd_req_addr;
+
+\jsbegin
+} 
+
+//ASILB always 0 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+if(!ASILB){
+//=============================================================================
+// CmdReq skid buffer 
+//=============================================================================
+\jsend
+    \=obj.lib.instance({
+        instanceName        : 'cmd_skid_buffer',
+        moduleName          : 'dmi_skid_buffer',
+        params              : cmdSkidBufferParams,
+        verilogParams       : {},
+        ports               : cmdSkidBufferPorts,
+        interfaces          : cmdSkidBufferInterfaces
+    })=\
+
+\jsbegin    
+//=============================================================================
+// End CmdReq skid buffer 
+//=============================================================================
+} 
+
+if(useQos){
+\jsend
+    assign cmd_skid_buffer_starv_en = cmd_skid_starv_en;
+    assign cmd_skid_buffer_starv_threshold = starv_threshold ;
+    assign cmd_skid_buffer_qos_disable = qos_disable ;
+    assign cmd_starv_overflow_event = cmd_skid_buffer_starv_overflow_event;
+    assign cmd_starv_mode = cmd_skid_buffer_starv_mode;
+    assign cmd_skid_full = cmd_skid_buffer_full ;   
+
+\jsbegin
+    }
+
+\jsend 
+
+\=bundleFunctions.assignByBundle('cmd_req_skid_buffer_push_', 'cmd_req_', CMDReqInterface, ["valid","ready","es"], obj.lib.bundle)=\
+
+assign cmd_req_skid_buffer_push_valid               = cmd_req_valid & ~(cmd_req_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);
+assign cmd_addr                         = cmd_pop_addr;
+assign cmd_ns 				            = cmd_pop_ns;
+assign cmd_skid_buffer_pop_rd           = is_ncrd(cmd_skid_buffer_pop_cm_type);
+assign cmd_skid_buffer_pop_wr    =   ~cmd_skid_buffer_pop_rd;
+
+assign cmd_pop_rd           = is_ncrd(cmd_pop_cm_type);
+assign cmd_pop_rd_valid     =  cmd_resp_mux_valid &  cmd_pop_ready & cmd_resp_mux_ready & cmd_pop_rd;
+assign cmd_pop_wr_valid     =  cmd_resp_mux_valid &  cmd_pop_ready & cmd_resp_mux_ready & ~cmd_pop_rd;
+
+assign cmd_resp_mux_ready   =           cmd_pop_rd    ?  nc_rd_ready 
+                                                    : cmd_pop_wr_ready;   
+
+\jsbegin
+if (useQos){
+\jsend
+
+
+    assign cmd_skid_buffer_pop_qual_valid = cmd_skid_buffer_pop_valid & nc_cmd_resp_buffer_push_ready & ( (cmd_skid_buffer_pop_rd & ~RTT_threshold_reached) | (cmd_skid_buffer_pop_wr & ~nc_wDataBuffer_threshold_reached) | cmd_skid_buffer_pop_h_priority | cmd_skid_full| cmd_skid_buffer_starv_mode );
+    assign cmd_skid_buffer_pop_ready = cmd_skid_buffer_pop_noqual_ready & nc_cmd_resp_buffer_push_ready &  ((cmd_skid_buffer_pop_rd & ~RTT_threshold_reached) | (cmd_skid_buffer_pop_wr & ~nc_wDataBuffer_threshold_reached) | cmd_skid_buffer_pop_h_priority | cmd_skid_full| cmd_skid_buffer_starv_mode);
+    
+    \jsbegin
+    //=================================================================================================
+    //Cmd output fifo
+    //=================================================================================================
+    
+    var cmdSkidBufferOutputFifoInterfaces = [];
+    cmdSkidBufferOutputFifoInterfaces.push({modulePrefix: '',         localPrefix: '',            interface: clkInterface,  exclude: []               });
+    cmdSkidBufferOutputFifoInterfaces.push({modulePrefix: 'push_',  localPrefix: 'cmd_skid_buffer_pop_',    interface: CMDReqSkidInterface,     exclude: ["valid","ready"]              });
+    cmdSkidBufferOutputFifoInterfaces.push({modulePrefix: 'pop_',  localPrefix: 'cmd_pop_',    interface: CMDReqSkidInterface,     exclude: []              });
+    
+    
+    var cmdSkidBufferOutputFifoParams = {
+        width           : bundleFunctions.getBundleWidth(CMDReqSkidInterface, ['valid', 'ready'], obj.lib.bundle),
+        depth           : 2  ,
+        zerodepth       : 0,
+        bypass_mode     : 0,
+        interface       : CMDReqSkidInterface
+    }
+    \jsend
+    
+    \=obj.lib.instance({
+        instanceName    : 'cmd_skid_output_fifo',
+        moduleName      : 'fifo_bundle',
+        params          : cmdSkidBufferOutputFifoParams,
+        verilogParams   : {},
+        ports           : {push_valid : "cmd_skid_buffer_pop_qual_valid",
+                           push_ready : "cmd_skid_buffer_pop_noqual_ready"},
+        interfaces      : cmdSkidBufferOutputFifoInterfaces,
+    })=\
+    
+                                                                        
+\jsbegin
+} else {
+\jsend
+assign cmd_pop_valid = cmd_skid_buffer_pop_valid & nc_cmd_resp_buffer_push_ready ;
+assign cmd_skid_buffer_pop_ready = cmd_pop_ready & nc_cmd_resp_buffer_push_ready;
+\=bundleFunctions.assignByBundle('cmd_pop_', 'cmd_skid_buffer_pop_', CMDReqSkidInterface, ["ready","valid"], obj.lib.bundle)=\
+\jsbegin
+}
+\jsend
+
+//============================================================================
+// Exclusive monitor instanciation
+//============================================================================
+\jsbegin
+if (obj.lib.getParam("nExclusiveEntries")>0){
+\jsend  
+\=obj.lib.instance({
+    instanceName        : 'dmi_exclusive_monitor',
+    moduleName          : 'ncore_exclusive_monitor',
+    params              : { nExclusiveEntries  : obj.lib.getParam("nExclusiveEntries"),
+                            wAddr            : wAddr,
+                            wmpf2            : wMpf2,
+                            wInitiatorId     : wFUnitId,
+                            wSecurity        : 1,
+                            wCacheLineOffset : obj.lib.getParam("wCacheLineOffset"),
+                            assertOn         : assertOn
+                        },
+    verilogParams       : {},
+    ports               : { clk : "clk",
+                            reset_n:"reset_n",
+                            valid: "cmd_pop_valid & cmd_pop_ready",
+                            lock_op:"cmd_pop_es",
+                            msg_type_load : "cmd_pop_rd",
+                            msg_type_store: "~cmd_pop_rd",
+                            address :"cmd_pop_addr",
+                            mpf2 : "cmd_pop_mpf2",
+                            initiator_id : "cmd_pop_initiator_id["+(wTargetId-1)+":"+wFPortId+"]",
+                            security : "cmd_pop_ns",
+                            ex_pass : "cmd_pop_ex_pass",
+			    exmon_event : "exmon_event"
+                        }
+})=\ \jsbegin
+} else { \jsend
+assign exmon_event = 1'b0; \jsbegin
+} 
+
+//============================================================================
+//Evt buffer instance for exmon event
+//============================================================================
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (useSysReqSender) { \jsend
+  \=obj.lib.instance({
+    instanceName: 'dmi_exmon_evt_buffer',
+    moduleName: 'dce_evt_buffer',
+    params: { clkInterface: clkInterfaceEvtBuf, reqAckEventInterface },
+    interfaces: [clkInterfaceEvtBuf, reqAckEventInterface].map( getModuleLocalPrefixAndInterface ), // Array of interfaces is converted to array of {modulePrefix, localPrefix, interface} objects 
+    ports: {
+          en		: 'exmon_event',
+	  busy		: 'evt_buffer_busy'
+    }
+  })=\
+
+\jsbegin
+} \jsend
+
+//============================================================================
+// Perf Monitor number of vz transactions
+//============================================================================
+assign pmon_num_vz_in = cmd_req_vz & cmd_req_valid;
+\=obj.lib.dffre(1, 'pmon_num_vz', 'pmon_num_vz_in', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+
+//==============================================================================
+// PMON Starv event
+//==============================================================================
+\js if (useQos) {
+\=obj.lib.dffre(1, 'cmd_starv_mode_q', 'cmd_starv_mode', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+\=obj.lib.dffre(1, 'mrd_starv_mode_q', 'mrd_starv_mode', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+
+assign pmon_starvation_event = (cmd_starv_mode & ~cmd_starv_mode_q) | (mrd_starv_mode & ~mrd_starv_mode_q);
+
+\js } else {
+assign pmon_starvation_event = 1'b0;
+\js }
+
+
+\=bundleFunctions.assignByBundle('nc_cmd_resp_', 'nc_cmd_resp_buffer_push_', NCCMDRespInterface, [], obj.lib.bundle)=\
+
+assign nc_cmd_resp_buffer_push_valid        = cmd_skid_buffer_pop_valid & cmd_skid_buffer_pop_ready;
+assign nc_cmd_resp_buffer_push_target_id    = cmd_skid_buffer_pop_initiator_id;
+assign nc_cmd_resp_buffer_push_r_message_id = cmd_skid_buffer_pop_message_id;
+assign nc_cmd_resp_buffer_push_initiator_id = myid_shift;
+assign nc_cmd_resp_buffer_push_cm_type      = \=cmType['NCCmdRsp']=\;
+assign nc_cmd_resp_buffer_push_message_id   = \=NCCMDRespInterface.message_id=\'d0;
+assign nc_cmd_resp_buffer_push_cm_status    = \=NCCMDRespInterface.cm_status=\'d0;
+
+\jsbegin  /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ if (NCCMDRespInterface.tm != undefined) {  \jsend
+assign nc_cmd_resp_buffer_push_tm       = cmd_skid_buffer_pop_tm;
+\js }
+
+
+\js if (NCCMDRespInterface.m_prot != 0) {
+assign nc_cmd_resp_buffer_push_m_prot       = \=NCCMDRespInterface.m_prot=\'d0;
+\js }
+
+\js if(wHProt != 0) {
+assign nc_cmd_resp_buffer_push_h_prot       = \=NCCMDRespInterface.h_prot=\'d0;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wTTier != 0) {
+\jsend
+assign nc_cmd_resp_buffer_push_t_tier       = \=NCCMDRespInterface.t_tier=\'d0;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wSteering != 0) {
+\jsend
+assign nc_cmd_resp_buffer_push_steering     = \=NCCMDRespInterface.steering=\'d0;
+\js }
+\js if(wPriority != 0) {
+assign nc_cmd_resp_buffer_push_priority     = pri_gen(cmd_skid_buffer_pop_qos);
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wQl != 0) {
+\jsend
+assign nc_cmd_resp_buffer_push_ql           = \=NCCMDRespInterface.ql=\'d0;
+\js }
+
+\jsbegin    
+//===============================================================================
+// STR Req Buffer
+//===============================================================================
+\jsend
+\jsbegin
+var STRReqInterface         = obj.lib.getParam('STRReqInterface');
+\jsend
+\=bundleFunctions.assignByBundle('str_req_', 'str_req_buffer_push_', STRReqInterface, ["message_id","initiator_id","cm_type","cm_status","rb_id","mpf1","mpf2","intf_size","m_prot","h_prot","priority","valid","ready"], obj.lib.bundle)=\
+
+assign str_req_initiator_id = myid_shift;
+assign str_req_cm_type      = \=cmType['StrReq']=\;
+assign str_req_cm_status    = \=STRReqInterface.cm_status=\'d0;
+assign str_req_rb_id        = nc_alloc_rb_id + \=wRbid=\'d\=obj.lib.getParam('nDceRbEntries')=\;
+assign str_req_mpf1         = \=STRReqInterface.mpf1=\'d0;
+assign str_req_mpf2         = \=STRReqInterface.mpf2=\'d0;
+assign str_req_intf_size    = \=STRReqInterface.intf_size=\'d0;
+
+\js if ( STRReqInterface.m_prot != 0 ) {
+assign str_req_m_prot       = \=STRReqInterface.m_prot=\'d0;
+\js }
+
+\js if(wHProt != 0) {
+assign str_req_h_prot       = \=STRReqInterface.h_prot=\'d0;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wTTier != 0) {
+\jsend
+assign str_req_t_tier       = \=STRReqInterface.t_tier=\'d0;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wSteering != 0) {
+\jsend
+assign str_req_steering     = \=STRReqInterface.steering=\'d0;
+\js }
+\js if(wPriority != 0) {
+assign str_req_priority     = pri_gen(str_req_buffer_push_qos);
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wQl != 0) {
+\jsend
+
+assign str_req_ql           = \=STRReqInterface.ql=\'d0;
+\js }
+
+\jsbegin    
+//=================================================================================================
+// MRD Skid Buffer
+//=================================================================================================
+\jsend
+
+assign mrd_req_skid_buffer_push_valid = mrd_req_valid & ~(mrd_req_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);     
+\=bundleFunctions.assignByBundle('mrd_req_skid_buffer_push_', 'mrd_req_', obj.lib.getParam('MRDReqInterface'), ["valid"], obj.lib.bundle)=\
+
+\jsbegin
+
+//ASILB always 0 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+if (!ASILB){
+\jsend
+    \=obj.lib.instance({
+        instanceName    : 'mrd_skid_buffer',
+        moduleName      : 'dmi_skid_buffer',
+        params          : mrdSkidBufferParams,
+        verilogParams   : {},
+        ports           : mrdSkidBufferPorts,
+        interfaces      : mrdSkidBufferInterfaces
+    })=\
+\jsbegin
+}
+
+if(useQos){
+    \jsend
+        assign mrd_skid_buffer_starv_en = mrd_skid_starv_en;
+        assign mrd_skid_buffer_starv_threshold = starv_threshold ;
+        assign mrd_skid_buffer_qos_disable = qos_disable ;
+        assign mrd_starv_overflow_event = mrd_skid_buffer_starv_overflow_event;
+        assign mrd_starv_mode = mrd_skid_buffer_starv_mode;
+        assign mrd_skid_full = mrd_skid_buffer_full ;   
+
+    \jsbegin
+        }
+    \jsend 
+
+\jsbegin
+if (useQos) {
+\jsend
+assign mrd_skid_buffer_pop_qual_valid = mrd_skid_buffer_pop_valid & (~RTT_threshold_reached | mrd_skid_buffer_pop_h_priority | mrd_skid_full| mrd_skid_buffer_starv_mode);
+assign mrd_skid_buffer_pop_ready =  mrd_skid_buffer_pop_noqual_ready &  (~RTT_threshold_reached | mrd_skid_buffer_pop_h_priority | mrd_skid_full|mrd_skid_buffer_starv_mode);
+
+\jsbegin
+//=================================================================================================
+// MRD output fifo
+//=================================================================================================
+
+var mrdSkidBufferOutputFifoInterfaces = [];
+mrdSkidBufferOutputFifoInterfaces.push({modulePrefix: '',         localPrefix: '',            interface: clkInterface,  exclude: []               });
+mrdSkidBufferOutputFifoInterfaces.push({modulePrefix: 'push_',  localPrefix: 'mrd_skid_buffer_pop_',    interface: MRDReqSkidInterface,     exclude: ["valid","ready"]              });
+mrdSkidBufferOutputFifoInterfaces.push({modulePrefix: 'pop_',  localPrefix: 'mrd_pop_',    interface: MRDReqSkidInterface,     exclude: []              });
+
+
+var mrdSkidBufferOutputFifoParams = {
+    width           : bundleFunctions.getBundleWidth(MRDReqSkidInterface, ['valid', 'ready'], obj.lib.bundle),
+    depth           : 2  ,
+    zerodepth       : 0 ,
+    bypass_mode     : 0,
+    interface       : MRDReqSkidInterface
+}
+\jsend
+
+\=obj.lib.instance({
+    instanceName    : 'mrd_skid_output_fifo',
+    moduleName      : 'fifo_bundle',
+    params          : mrdSkidBufferOutputFifoParams,
+    verilogParams   : {},
+    ports           : {push_valid : "mrd_skid_buffer_pop_qual_valid",
+                       push_ready : "mrd_skid_buffer_pop_noqual_ready"},
+    interfaces      : mrdSkidBufferOutputFifoInterfaces,
+})=\
+
+
+
+\jsbegin
+}
+else {
+\jsend
+
+    \=bundleFunctions.assignByBundle('mrd_pop_', 'mrd_skid_buffer_pop_', MRDReqSkidInterface, [], obj.lib.bundle)=\
+
+\jsbegin
+}
+
+
+//=================================================================================================
+// MRD Resp Mux
+//=================================================================================================
+\jsend
+\jsbegin
+var mrdRespMuxInterfaces = []
+mrdRespMuxInterfaces.push({modulePrefix: '',         localPrefix: '',            interface: clkInterface,  exclude: []               });
+mrdRespMuxInterfaces.push({modulePrefix: 'resp_',    localPrefix: 'read_resp_',  interface: respInterface, exclude: ['valid','ready']});
+
+var mrdRespMuxParams = {
+    clkInterface    : clkInterface,
+    respInterface   : respInterface,
+    useCmc          : useCmc,
+    wRl             : wRl,
+    cmType          : cmType,
+    wCmType         : obj.lib.getParam('MRDReqInterface','cm_type'),
+    wData           : wTm + wInitiatorId + obj.lib.getParam('wMessageId') + wQos + 2,
+    cmd             : 0,
+    assertOn        : assertOn,
+    wTransId        : wTransId,
+    depth           : nMrdLateInFlight,
+    wMessageId      : wMsgId,
+    assertOn        : assertOn
+};
+var mrdRespMuxPorts = {
+    msg_valid            : 'mrd_pop_valid',
+    msg_ready            : 'mrd_pop_ready',
+    msg_cm_type          : 'mrd_pop_cm_type',
+    msg_rl               : 'mrd_pop_rl',
+    msg_data             : '{mrd_pop_initiator_id, mrd_pop_message_id,'+ "2'b0}",
+    req_valid            : 'read_prot_muxarb_sink1_valid',
+    req_ready            : 'read_prot_muxarb_sink1_ready',
+    req_vz               : 'read_prot_muxarb_sink1_vz',
+    req_late_resp_id     : 'read_prot_muxarb_sink1_late_resp_id',
+    resp_valid           : 'c_cmop_resp_valid',
+    resp_ready           : 'c_cmop_resp_ready',
+    rmsg_valid           : 'mrd_resp_valid',
+    rmsg_ready           : 'mrd_resp_ready',
+    dtr_req_valid        : 'dtr_req_valid',
+    dtr_req_ready        : 'dtr_req_ready',
+    dtr_req_last         : 'dtr_req_last',
+    dtr_req_rd_type      : 'dtr_req_rd_type', 
+    dtr_req_message_id   : 'dtr_req_message_id',
+    dtr_req_late         : 'dtr_req_late',
+    dtr_req_trans_id     : 'dtr_req_trans_id',
+    dtr_resp_valid       : 'dtr_rsp_vldrdy',
+    dtr_resp_ready       : 'mrd_vlate_dtr_rsp_ready',
+    dtr_resp_r_message_id: 'dtr_rsp_pop_r_message_id',
+    pre_dtr_resp_vlate_match : 'dtr_rsp_match_mrd_vlate',
+    pre_dtr_resp_r_message_id : "dtr_rsp_r_message_id",
+};
+
+if (useQos) {
+
+mrdRespMuxPorts['rmsg_data']    = '{mrd_resp_tm, mrd_resp_target_id,     mrd_resp_r_message_id,  mrd_resp_qos, mrd_resp_error}';
+mrdRespMuxPorts['msg_data']     = '{mrd_pop_tm, mrd_pop_initiator_id,   mrd_pop_message_id,     mrd_pop_qos,'+"2'b0}";
+
+} else {
+
+mrdRespMuxPorts['rmsg_data']    = '{mrd_resp_tm, mrd_resp_target_id,     mrd_resp_r_message_id, mrd_resp_error}';
+mrdRespMuxPorts['msg_data']     = '{mrd_pop_tm, mrd_pop_initiator_id,   mrd_pop_message_id,'+"2'b0}";
+
+}
+
+
+\jsend
+\=obj.lib.instance({
+    instanceName    : 'mrd_resp_mux',
+    moduleName      : 'dmi_read_resp',
+    params          : mrdRespMuxParams,
+    verilogParams   : {},
+    ports           : mrdRespMuxPorts, 
+    interfaces      : mrdRespMuxInterfaces
+})=\
+
+assign  c_cmop_resp_valid = read_resp_valid & is_mrdcacheop(read_resp_cm_type);
+
+\jsbegin    
+//=================================================================================================
+// MRD Resp Buffer
+//=================================================================================================
+\jsend
+
+assign mrd_resp_initiator_id    = myid_shift;
+assign mrd_resp_cm_type         = \=cmType['MrdRsp']=\;
+assign mrd_resp_message_id      = \=MRDRespInterface.message_id=\'d0;
+assign mrd_resp_cm_status       = mrd_resp_error[0] ? \=wCmstatus=\'b10000011 :
+                                              mrd_resp_error[1] ? \=wCmstatus=\'b10000100 : \=wCmstatus=\'d0;
+\js if (MRDRespInterface.m_prot != 0) {
+assign mrd_resp_m_prot      =    \=MRDRespInterface.m_prot=\'d0;
+\js }
+
+\js if(wHProt != 0) {
+    assign mrd_resp_h_prot      = \=MRDRespInterface.h_prot=\'d0;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wTTier != 0) {
+\jsend
+    assign mrd_resp_t_tier      = \=MRDRespInterface.t_tier=\'d0;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wSteering != 0) {
+\jsend
+    assign mrd_resp_steering    = \=MRDRespInterface.steering=\'d0;
+\js }
+\js if(wPriority != 0) {
+    assign mrd_resp_priority    = pri_gen(mrd_resp_qos);
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(wQl != 0) {
+\jsend
+    assign mrd_resp_ql          = \=MRDRespInterface.ql=\'d0;
+\js }
+
+
+\jsbegin    
+//=================================================================================================
+// DTW Resp Mux
+//=================================================================================================
+\jsend
+\jsbegin
+var dtwRespMuxInterfaces = [];
+dtwRespMuxInterfaces.push({modulePrefix: '',             localPrefix: '',            interface: obj.lib.getParam('clkInterface')})
+dtwRespMuxInterfaces.push({modulePrefix: 'dtw_resp_',    localPrefix: 'dtw_resp_',   interface: obj.lib.getParam('DTWRespInterface'), exclude: ['initiator_id']})
+
+var dtwRespMuxParams = {
+    wTransId             : wTransId,
+    clkInterface         : obj.lib.getParam('clkInterface'),
+    respInterface        : obj.lib.getParam('writeResponseInterface'),
+    wData                : wTm + wInitiatorId + wMsgId + wQos,
+    depth                : nDtwMergeMrdLate,
+    wMessageId           : wMsgId,
+    DTWRsp               : cmType['DtwRsp'],
+    DTWRespInterface     : obj.lib.getParam('DTWRespInterface'),
+    respBufferSize       : bufferSize.DTWRspBuffer,
+    QosInfo              : QosInfo,
+    assertOn             : assertOn
+};
+
+var dtwRespMuxPorts = {
+    msg_valid            : 'write_protd_valid',
+    msg_ready            : 'write_protd_ready',
+    msg_last             : 'write_prot_data_last',
+    msg_drop             : 'write_protd_drop',
+    msg_error            : '2\'b0',
+    msg_vz               : 'write_protd_vz',
+    msg_late             : 'write_protd_late',
+    req_valid            : 'write_prot_data_valid',
+    req_ready            : 'write_prot_data_ready',
+    req_trans_id         : 'write_prot_data_trans_id',
+    resp_valid           : 'return_resp_valid',
+    resp_ready           : 'return_resp_ready',
+    resp_vz              : 'return_resp_vz',
+    resp_resp            : 'return_resp_resp',
+    dtr_req_valid        : 'dtr_req_valid',
+    dtr_req_ready        : 'dtr_req_ready',
+    dtr_req_last         : 'dtr_req_last',
+    dtr_req_rd_type      : 'dtr_req_rd_type',
+    dtr_req_message_id   : 'dtr_req_message_id',
+    dtr_req_late         : 'dtr_req_late',
+    dtr_req_trans_id     : 'dtr_req_trans_id',
+    dtr_resp_valid       : 'dtr_rsp_vldrdy',
+    dtr_resp_ready       : 'dtw_vlate_dtr_rsp_ready',
+    dtr_resp_r_message_id: 'dtr_rsp_pop_r_message_id',
+    pre_dtr_resp_vlate_match : 'dtr_rsp_match_dtw_vlate',
+    pre_dtr_resp_r_message_id : "dtr_rsp_r_message_id",
+    active               : 'dtw_resp_mux_active'
+};
+
+if ( useQos ) {
+ /* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wTm) { 
+dtwRespMuxPorts['msg_data'] = '{write_protd_tm, write_protd_aiu_id, write_protd_aiu_trans_id, write_protd_qos}';
+dtwRespMuxPorts['resp_data'] = '{return_resp_tm, return_resp_aiu_id, return_resp_aiu_trans_id, return_resp_qos}';
+    } else {
+dtwRespMuxPorts['msg_data'] = '{write_protd_aiu_id, write_protd_aiu_trans_id, write_protd_qos}';
+dtwRespMuxPorts['resp_data'] = '{return_resp_aiu_id, return_resp_aiu_trans_id, return_resp_qos}';
+    }
+} else {
+ /* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wTm) { 
+dtwRespMuxPorts['msg_data'] = '{write_protd_tm, write_protd_aiu_id, write_protd_aiu_trans_id}';
+dtwRespMuxPorts['resp_data'] = '{return_resp_tm, return_resp_aiu_id, return_resp_aiu_trans_id}'
+    } else {
+dtwRespMuxPorts['msg_data'] = '{write_protd_aiu_id, write_protd_aiu_trans_id}';
+dtwRespMuxPorts['resp_data'] = '{return_resp_aiu_id, return_resp_aiu_trans_id}'
+    }
+}
+
+\jsend
+
+
+\=obj.lib.instance({
+    instanceName    : 'dtw_resp_mux',
+    moduleName      : 'dmi_write_resp',
+    params          : dtwRespMuxParams,
+    ports           : dtwRespMuxPorts,
+    interfaces      : dtwRespMuxInterfaces,
+})=\
+
+assign dtw_resp_initiator_id = myid_shift;
+assign write_protd_aiu_trans_id = ~write_prot_data_sel? c_write_protd_aiu_trans_id : nc_write_protd_aiu_trans_id;
+
+\jsbegin    
+//=================================================================================================
+// RBU Skid Buffer
+//=================================================================================================
+\jsend
+
+
+\jsbegin    
+//=================================================================================================
+// Read Prot Mux
+//=================================================================================================
+\jsend
+
+\jsbegin
+var readProtInterface = obj.lib.getParam('readProtInterface');
+var readProtMuxInterfaces = [];
+readProtMuxInterfaces.push({modulePrefix: '',       localPrefix: '',                        interface: clkInterface     });
+readProtMuxInterfaces.push({modulePrefix: 'sink0_', localPrefix: 'read_prot_muxarb_sink0_', interface: readProtInterface});
+readProtMuxInterfaces.push({modulePrefix: 'sink1_', localPrefix: 'read_prot_muxarb_sink1_', interface: readProtInterface});
+readProtMuxInterfaces.push({modulePrefix: 'source_',localPrefix: 'read_prot_',              interface: readProtInterface});
+
+var readProtMuxParams = {
+    number_of_inputs    : 2,
+    width               : bundleFunctions.getBundleWidth(readProtInterface, ['valid', 'ready'], obj.lib.bundle),
+    sink_type           : 'RdyVld',
+    pipeline            : 0,
+    arb_priority        : 'RoundRobin',
+    sfi_compliant       : 0,
+    output_grant        : 0,
+    interface           : readProtInterface,
+    noLastSignal        : 1
+};
+\jsend
+\=obj.lib.instance({
+    instanceName        : 'read_prot_muxarb',
+    moduleName          : 'muxarb_bundle',
+    params              : readProtMuxParams,
+    verilogParams       : {},
+    ports               : {},
+    interfaces          : readProtMuxInterfaces
+})=\
+
+\jsbegin    
+//=================================================================================================
+// CMD Resp Mux (handles STRReq)
+//=================================================================================================
+\jsend
+\jsbegin
+var cmdRespMuxInterfaces = [];
+cmdRespMuxInterfaces.push({modulePrefix: '',        localPrefix: '',            interface: clkInterface                              });
+cmdRespMuxInterfaces.push({modulePrefix: 'resp_',   localPrefix: 'read_resp_',  interface: respInterface, exclude: ['valid', 'ready']});
+
+var cmdRespMuxPorts = {
+    msg_valid            : 'cmd_pop_valid',
+    msg_ready            : 'cmd_pop_ready',
+    msg_cm_type          : 'cmd_pop_cm_type',
+    msg_rl               : 'cmd_pop_rl',
+    req_valid            : 'cmd_resp_mux_valid', 
+    req_ready            : 'cmd_resp_mux_ready', 
+    req_vz               : 'nc_rd_vz',
+    req_late_resp_id     : 'nc_cmd_trans_id',
+    resp_valid           : 'nc_cmop_resp_valid',
+    resp_ready           : 'nc_cmop_resp_ready',
+    rmsg_valid           : 'str_req_buffer_push_valid',
+    rmsg_ready           : 'str_req_buffer_push_ready',
+    dtr_req_valid        : 'dtr_req_valid',
+    dtr_req_ready        : 'dtr_req_ready',
+    dtr_req_last         : 'dtr_req_last',
+    dtr_req_rd_type      : 'dtr_req_rd_type',
+    dtr_req_message_id   : 'dtr_req_message_id',
+    dtr_req_late         : 'dtr_req_late',
+    dtr_req_trans_id     : 'dtr_req_trans_id',
+    dtr_resp_valid       : 'dtr_rsp_pop_valid',
+    dtr_resp_ready       : 'cmd_vlate_dtr_rsp_ready',
+    dtr_resp_r_message_id: 'dtr_rsp_pop_r_message_id',
+};
+
+if( useQos ) {
+/* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7*/
+    if (wTm) {
+cmdRespMuxPorts['msg_data']  = '{cmd_pop_tm, cmd_pop_initiator_id,  cmd_pop_message_id,     cmd_pop_qos,'+ "2'b0}"; 
+cmdRespMuxPorts['rmsg_data'] = '{str_req_buffer_push_tm, str_req_buffer_push_target_id,     str_req_buffer_push_r_message_id,   str_req_buffer_push_qos, str_req_buffer_push_error}';
+    } else {
+cmdRespMuxPorts['msg_data']  = '{cmd_pop_initiator_id,  cmd_pop_message_id,     cmd_pop_qos,'+ "2'b0}"; 
+cmdRespMuxPorts['rmsg_data'] = '{str_req_buffer_push_target_id,     str_req_buffer_push_r_message_id,   str_req_buffer_push_qos, str_req_buffer_push_error}';
+    }
+} else {
+/* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wTm) {
+cmdRespMuxPorts['msg_data']  = '{cmd_pop_tm, cmd_pop_initiator_id,  cmd_pop_message_id,'+" 2'b0}";
+cmdRespMuxPorts['rmsg_data'] = '{str_req_buffer_push_tm, str_req_buffer_push_target_id,     str_req_buffer_push_r_message_id, str_req_buffer_push_error}';
+    } else {
+cmdRespMuxPorts['msg_data']  = '{cmd_pop_initiator_id,  cmd_pop_message_id,'+" 2'b0}";
+cmdRespMuxPorts['rmsg_data'] = '{str_req_buffer_push_target_id,     str_req_buffer_push_r_message_id, str_req_buffer_push_error}';
+    }
+}
+
+var cmdRespMuxParams = {
+    clkInterface        : clkInterface,
+    respInterface       : respInterface,
+    useCmc              : useCmc,
+    wRl                 : wRl,
+    cmType              : cmType,
+    wCmType             : wCmType,
+    wData               : wTm + wInitiatorId + wMsgId + wQos + 2,
+    cmd                 : 1,
+    assertOn            : assertOn,
+    wMessageId          : wMsgId,
+    wTransId            : wTransId,
+    depth               : nMrdLateInFlight
+};
+
+\jsend
+\=obj.lib.instance({
+    instanceName        : 'cmd_resp_mux',
+    moduleName          : 'dmi_read_resp',
+    params              : cmdRespMuxParams,
+    verilogParams       : {},
+    ports               : cmdRespMuxPorts,
+    interfaces          : cmdRespMuxInterfaces
+})=\
+
+assign nc_cmop_resp_valid   = read_resp_valid & is_cmdcacheop(read_resp_cm_type);
+assign read_resp_ready      = is_cmdcacheop(read_resp_cm_type) ? nc_cmop_resp_ready
+                                                               : c_cmop_resp_ready;
+\jsbegin    
+//=================================================================================================
+// STR Req FLM
+//=================================================================================================
+\jsend
+\jsbegin
+var strReqFlmInterfaces = [];
+strReqFlmInterfaces.push({modulePrefix: '', localPrefix: '', interface: clkInterface});
+/* istanbul ignore next env ncore_3p0 */
+var strIdNum = Math.pow(2,wMsgId);
+var strReqFlmParams = { 
+    clkInterface        : clkInterface,
+    idNum               : strIdNum,
+    idWidth             : wMsgId,
+    busy_sig            : 1
+};
+var strReqFlmPorts = {  
+    pre_alloc_valid     : 'str_req_buffer_push_valid',
+    pre_alloc_ready     : 'str_req_buffer_push_ready',
+    pre_alloc_last      : '1\'b1',
+    alloc_valid         : 'str_req_valid',
+    alloc_ready         : 'str_req_ready',
+    alloc_id            : 'str_req_message_id',
+    dealloc_valid       : 'str_rsp_push_valid',
+    dealloc_id          : 'str_rsp_r_message_id',
+    pending_dealloc     : 'str_rsp_pending'
+};
+\jsend
+\=obj.lib.instance({
+    instanceName        : 'str_req_flm',
+    moduleName          : 'dmi_flm',
+    params              : strReqFlmParams,
+    verilogParams       : {},
+    ports               : strReqFlmPorts,
+    interfaces          : strReqFlmInterfaces
+})=\
+
+\js // always can accept resp
+assign str_rsp_ready = 1'b1;
+assign str_rsp_push_valid = str_rsp_valid & ~(str_rsp_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);
+
+
+assign rb_req_valid = rbr_req_valid & ~(rbr_req_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);
+
+\jsbegin 
+
+//=================================================================================================
+// END STR Req FLM
+//=================================================================================================
+
+var cWriteBufferInterfaces = [];
+cWriteBufferInterfaces.push({modulePrefix: '',              localPrefix: '',                interface: clkInterface});
+cWriteBufferInterfaces.push({modulePrefix: 'rb_req_',       localPrefix: "rbr_req_",        interface: obj.lib.getParam('RBReqInterface'), exclude: ['m_prot',"valid"]});
+cWriteBufferInterfaces.push({modulePrefix: 'rb_rsp_',       localPrefix: "rbr_resp_",       interface: obj.lib.getParam('RBRRespInterface'),exclude :[]});
+cWriteBufferInterfaces.push({modulePrefix: 'dtw_req_',      localPrefix: 'dtw_req_',        interface: obj.lib.getParam('DTWReqInterface'), exclude: ['valid','ready']});
+cWriteBufferInterfaces.push({modulePrefix: 'write_prot_',   localPrefix: 'c_write_prot_',   interface: writeProtInterface});
+cWriteBufferInterfaces.push({modulePrefix: 'write_protd_',  localPrefix: 'c_write_protd_',  interface: writeDataInterface});
+
+//ASILB always 0 in 3.7
+/* istanbul ignore if env ncore_3p7 */
+if(ASILB){
+cWriteBufferInterfaces.push({modulePrefix: '',              localPrefix: 'c_',                interface: c_rb_buffer_flop_bundle});
+}
+if ( useExWrDataMem ) {
+cWriteBufferInterfaces.push({modulePrefix: '',  localPrefix: '',  interface: wrDataBufferMemoryInterface});
+}
+
+var cWriteBufferParams = {
+    clkInterface            : obj.lib.getParam('clkInterface'),
+    cmType                  : cmType,
+    wMpf2                   : wMpf2,
+    RBReqInterface          : RBReqInterface,
+    RBRRespInterface        : obj.lib.getParam('RBRRespInterface'),
+    DTWReqInterface         : obj.lib.getParam('DTWReqInterface'),
+    writeProtInterface      : writeProtInterface,
+    writeDataInterface      : writeDataInterface,
+    nDmiRbEntries           : obj.lib.getParam("nDceRbEntries"),
+    wCacheLineOffset        : obj.lib.getParam('wCacheLineOffset'),
+    assertOn                : assertOn,
+    useQos                  : useQos,
+    priorityThreshold       :priorityThreshold,
+    wFUnitId                    : wFUnitId,
+    wFPortId                    :wFPortId,
+    wrBufferProtType            : wrBufferProtType,
+    cWrDataGen                  : cWrDataGen,
+    cWrDataParam                : cWrDataParam,
+    useExWrDataMem              : useExWrDataMem,
+    wrDataBufferMemoryInterface : wrDataBufferMemoryInterface,
+    wStarvThreshold             : wStarvThreshold*useQos,
+    wPriority                   : wPriority,
+    nExclusiveEntries           : obj.lib.getParam("nExclusiveEntries"),
+    rbidBuffer                : c_rbidBuffer,
+    ASILB                       : ASILB
+};
+//ASILB always 0 in 3.7
+/* istanbul ignore if env ncore_3p7 */
+if(ASILB){
+    cWriteBufferParams["rb_buffer_flop_bundle"]=c_rb_buffer_flop_bundle;
+}
+
+if (useQos){
+    cWriteBufferParams["QosInfo"] = QosInfo;
+}
+var cWriteBufferPorts = {
+    MyId                        :"MyId",
+    rb_req_cm_type              : '8\'h7C',
+    rb_req_mpf1                 : wMpf1+'\'b0',
+    write_data_initiator_id     : 'c_write_data_initiator_id',
+    write_prot_initiator_id     : 'c_write_prot_initiator_id',
+    write_protd_orig_trans_id   : 'c_write_protd_aiu_trans_id',
+    dtw_req_ready               : 'c_dtw_req_ready',
+    dtw_req_valid               : 'c_dtw_req_valid',
+    dtw_req_rb_id               : 'c_dtw_req_rb_id',
+    active                      : 'c_write_active',
+    csr_UEDR_MemErrDetEn        : 'csr_UEDR_MemErrDetEn', 
+    csr_CECR_ErrDetEn           : 'csr_CECR_ErrDetEn',
+    rb_req_valid                : "rb_req_valid"
+};
+if (useQos & priorityThreshold) {
+        cWriteBufferPorts["WTT_threshold_reached"] =  'WTT_threshold_reached';
+        cWriteBufferPorts["QoSThVal"]=  "QoSThVal"
+        cWriteBufferPorts["WttQoSRsv"] =  'WttQoSRsv';
+        cWriteBufferPorts["starv_en"   ]       ="1'b1";
+        cWriteBufferPorts["starv_threshold"  ] =  "starv_threshold";
+}
+
+if ( wrBufferProtType !== 'NONE' ) {
+cWriteBufferPorts['mem_uce']        = 'c_wr_data_mem_uce';
+cWriteBufferPorts['mem_uce_index']  = 'c_wr_data_mem_uce_index';
+} else {
+
+}
+
+if ( wrBufferProtType === 'SECDED' ) {
+cWriteBufferPorts['mem_ce']         = 'c_wr_data_mem_ce';
+cWriteBufferPorts['mem_ce_index']   = 'c_wr_data_mem_ce_index';
+}
+\jsend
+
+\js if ( wrBufferProtType === 'NONE' ) {
+assign c_wr_data_mem_uce = 1'b0;
+assign c_wr_data_mem_uce_index = \=Math.abs(obj.lib.getParam("protCsrInterface").c_wr_data_mem_uce_index)=\'d0;
+\js }
+
+\js if ( wrBufferProtType !== 'SECDED' ) {
+assign c_wr_data_mem_ce = 1'b0;
+assign c_wr_data_mem_ce_index = \=Math.abs(obj.lib.getParam("protCsrInterface").c_wr_data_mem_ce_index)=\'d0;
+\js }
+
+
+\=obj.lib.instance({
+    instanceName                : 'c_write_buffer',
+    moduleName                  : 'dmi_c_write_buffer',
+    params                      : cWriteBufferParams,
+    verilogParams               : {},
+    ports                       : cWriteBufferPorts ,
+    interfaces                  : cWriteBufferInterfaces
+})=\
+
+
+
+\jsbegin    
+//=================================================================================================
+// NC Read Buffer
+//=================================================================================================
+//note rd queue depth is defaulted to 0 in the parameter fetch
+\jsend
+
+\=obj.lib.instance({
+    instanceName: 'dmi_nc_read_buffer',
+    moduleName: 'dmi_nc_read_buffer',
+    params: {
+        clkInterface        : obj.lib.getParam('clkInterface'),
+        cmType              :       cmType,
+        CMDReqInterface     : CMDReqInterface_exPass,
+        readProtInterface   : obj.lib.getParam('readProtInterface'),
+        depth               : rdQDepth,
+        wrQDepth            : obj.lib.getParam('nDmiRbEntries'),
+        wCacheLineOffset    : obj.lib.getParam('wCacheLineOffset'),
+        wAddrCAM            : wAddrCAM
+    },
+    verilogParams: {},
+    ports: {
+        cam_addr            : 'cmd_addr',
+	cam_ns		    : 'cmd_ns',
+        cam_match_vec       : 'nc_rd_cam_match_vec',
+ 	cam_match_vec_pmon  : 'pmon_nc_rd_cam_match_vec',
+        wr_dealloc_idx      : 'nc_wr_dealloc_idx',
+        wr_dealloc_en       : 'nc_wr_dealloc_en',
+        wr_cam_match_vec    : 'nc_wr_cam_match_vec',
+        rd_dealloc_idx      : 'nc_rd_dealloc_idx',
+        rd_dealloc_en       : 'nc_rd_dealloc_en',
+        cmd_req_valid       : 'cmd_pop_rd_valid',
+        cmd_req_ready       : 'nc_rd_ready',
+        cmd_req_vz          : 'nc_rd_vz',
+        active              : 'nc_read_active'
+    },
+    interfaces: [
+        {modulePrefix: '',          localPrefix: '',                     interface: obj.lib.getParam('clkInterface')},
+        {modulePrefix: 'read_prot_',localPrefix: 'nc_read_buffer_',      interface: obj.lib.getParam('readProtInterface'), exclude:[]},
+        {modulePrefix: 'cmd_req_',  localPrefix: 'cmd_pop_', interface: CMDReqInterface_exPass, exclude: ['ready','valid','vz']}
+    ],
+    portsDelimiter: '\n        '
+})=\
+assign nc_read_prot_ready = read_prot_muxarb_sink0_ready;
+
+\jsbegin
+//assign nc_read_cam_match_pmon = |pmon_nc_rd_cam_match_vec && cmd_skid_buffer_pop_valid  && cmd_skid_buffer_pop_ready;
+\jsend
+wire nc_read_cam_match_pmon_set_ready, nc_read_cam_match_pmon_not_ready, nc_read_cam_match_pmon_not_ready_out, nc_read_cam_match_not_ready_capture;
+assign nc_read_cam_match_pmon_set_ready = |pmon_nc_rd_cam_match_vec && cmd_pop_valid && cmd_pop_ready;
+assign nc_read_cam_match_pmon_not_ready = |pmon_nc_rd_cam_match_vec && cmd_pop_valid && ~cmd_pop_ready;
+\=obj.lib.dffre(1, 'nc_read_cam_match_pmon_not_ready_out', 'nc_read_cam_match_pmon_not_ready', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+assign nc_read_cam_match_not_ready_capture = nc_read_cam_match_pmon_not_ready & ~nc_read_cam_match_pmon_not_ready_out;
+
+
+assign nc_read_cam_match_pmon = (nc_read_cam_match_pmon_set_ready && ~nc_read_cam_match_pmon_not_ready_out) | nc_read_cam_match_not_ready_capture;
+
+
+\jsbegin
+//=================================================================================================
+// Non-Coherent Write Buffer
+//=================================================================================================
+\jsend
+\jsbegin
+var ncWriteBufferInterfaces = [];
+ncWriteBufferInterfaces.push({modulePrefix: '',              localPrefix: '',                        interface: clkInterface});
+ncWriteBufferInterfaces.push({modulePrefix: 'rb_req_',       localPrefix: 'cmd_pop_',    interface: obj.lib.getParam('RBReqInterface'), exclude: ['valid','ready','rb_id','rtype', 'mw', 'r_type', 'm_prot']});
+ncWriteBufferInterfaces.push({modulePrefix: 'dtw_req_',      localPrefix: 'dtw_req_',                interface: obj.lib.getParam('DTWReqInterface'), exclude: ['valid','ready','rb_id']});
+ncWriteBufferInterfaces.push({modulePrefix: 'write_prot_',   localPrefix: 'nc_write_prot_',          interface: writeProtInterface});
+ncWriteBufferInterfaces.push({modulePrefix: 'write_protd_',  localPrefix: 'nc_write_protd_',         interface: writeDataInterface});
+
+
+var ncWriteBufferParams = {
+    sameWidthSystem         : sameWidthSystem,
+    clkInterface            : obj.lib.getParam('clkInterface'),
+    cmType                  : cmType,
+    wMpf2                   : wMpf2,
+    RBReqInterface          : RBReqInterface,
+    DTWReqInterface         : obj.lib.getParam('DTWReqInterface'),
+    writeProtInterface      : writeProtInterface,
+    writeDataInterface      : writeDataInterface,
+    nDmiRbEntries           : obj.lib.getParam('nDmiRbEntries'),
+    wCacheLineOffset        : obj.lib.getParam('wCacheLineOffset'),
+    atomic_op               : useAtomic,
+    address_match           : 1,
+    coherent                : 0,
+    wAddrCAM                : wAddrCAM,
+    rdQDepth                : rdQDepth,
+    assertOn                : assertOn,
+    useQos                  : useQos,
+    priorityThreshold       :priorityThreshold,
+    wStarvThreshold             : wStarvThreshold*useQos,
+    nExclusiveEntries             : obj.lib.getParam("nExclusiveEntries"),
+    rbidBuffer                : nc_rbidBuffer,
+    dataBuffer                : nc_dataBuffer,
+    ASILB                      :ASILB
+
+
+};
+//ASILB always 0 in 3.7
+/* istanbul ignore if env ncore_3p7 */
+if(ASILB){
+    ncWriteBufferParams["rb_buffer_flop_bundle"]=nc_rb_buffer_flop_bundle;
+    ncWriteBufferInterfaces.push({modulePrefix: '',              localPrefix: 'nc_',                interface: nc_rb_buffer_flop_bundle});
+    ncWriteBufferParams["data_buffer_flop_bundle"] = nc_data_buffer_flop_bundle;
+    ncWriteBufferInterfaces.push({modulePrefix: '',              localPrefix: 'nc_',                interface: nc_data_buffer_flop_bundle});
+
+}
+
+var ncWriteBufferPorts = {
+    rb_req_valid                : 'nc_alloc_valid',
+    rb_req_ready                : 'nc_alloc_ready',
+    rb_req_rb_id                : 'nc_alloc_rb_id',
+    rb_req_es                   : 'cmd_pop_es',
+    rb_req_r_type               : '1\'b1',
+    rb_req_mw                   : '1\'b0',
+    rb_req_intf_size            : 'cmd_pop_intf_size',
+    rb_req_cm_type              : 'cmd_pop_cm_type',
+    rb_req_mpf1                 : 'cmd_pop_mpf1',
+    rb_req_mpf2                 : 'cmd_pop_mpf2',
+    write_data_initiator_id     : 'nc_write_data_initiator_id',
+    write_prot_initiator_id     : 'nc_write_prot_initiator_id',
+    write_protd_orig_trans_id   : 'nc_write_protd_aiu_trans_id',
+    write_prot_rb_id            : 'nc_write_prot_rb_id',
+    write_prot_rb_done          : 'nc_write_prot_rb_done',
+    cam_addr                    : 'cmd_addr',
+    cam_ns			: 'cmd_ns',
+    cam_match_vec               : 'nc_wr_cam_match_vec',
+    cam_match_vec_pmon		: 'pmon_nc_wr_cam_match_vec',
+    rdq_dealloc_idx             : 'nc_rd_dealloc_idx',
+    rdq_dealloc_en              : 'nc_rd_dealloc_en',
+    rdq_cam_match_vec           : 'nc_rd_cam_match_vec',
+    rb_id_dealloc_idx           : 'nc_wr_dealloc_idx',
+    rb_id_dealloc_en            : 'nc_wr_dealloc_en',
+    dtw_req_ready               : 'nc_dtw_req_ready',
+    dtw_req_valid               : 'nc_dtw_req_valid',
+    dtw_req_rb_id               : 'nc_dtw_req_rb_id',
+    active                      : 'nc_write_active',
+    rb_id_retire                : 'nc_rb_id_retire',
+    rb_id_retire_valid          : 'nc_rb_id_retire_valid'
+};
+if (obj.lib.getParam("nExclusiveEntries")>0){
+    ncWriteBufferPorts["rb_req_ex_pass"]=  "cmd_pop_ex_pass";
+}
+if (useQos & priorityThreshold) {
+    ncWriteBufferPorts["rb_req_h_priority"] = "cmd_pop_h_priority"
+    ncWriteBufferPorts["WTT_threshold_reached"] =  'WTT_threshold_reached';
+    ncWriteBufferPorts["WttQoSRsv"] =  'WttQoSRsv';
+    ncWriteBufferPorts["wDataBuffer_threshold_reached"] =  'nc_wDataBuffer_threshold_reached';
+    ncWriteBufferPorts["starv_en"   ]       ="1'b1";
+    ncWriteBufferPorts["starv_threshold"  ] =  "starv_threshold";
+}
+\jsend
+
+\=obj.lib.instance({
+    instanceName                : 'nc_write_buffer',
+    moduleName                  : 'dmi_nc_write_buffer',
+    params                      : ncWriteBufferParams,
+    verilogParams               : {},
+    ports                       : ncWriteBufferPorts ,
+    interfaces                  : ncWriteBufferInterfaces
+})=\
+
+wire [\=nRbid-1=\:0] nc_rb_id_retire_in;
+assign nc_rb_id_retire_in = {\=nRbid-nDmiRbEntries=\'b0, nc_rb_id_retire};
+
+wire nc_write_cam_match_set_ready, nc_write_cam_match_not_ready, nc_write_cam_match_not_ready_out, nc_write_cam_match_not_ready_capture;
+
+assign nc_write_cam_match_set_ready = |pmon_nc_wr_cam_match_vec && cmd_pop_valid && cmd_pop_ready;
+assign nc_write_cam_match_not_ready = |pmon_nc_wr_cam_match_vec && cmd_pop_valid && ~cmd_pop_ready;
+\=obj.lib.dffre(1, 'nc_write_cam_match_not_ready_out', 'nc_write_cam_match_not_ready', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+assign nc_write_cam_match_not_ready_capture = nc_write_cam_match_not_ready & ~nc_write_cam_match_not_ready_out;
+
+
+assign nc_write_cam_match_pmon = (nc_write_cam_match_set_ready && ~nc_write_cam_match_not_ready_out) | nc_write_cam_match_not_ready_capture;
+
+\=obj.lib.instance({
+    instanceName: 'nc_rb_id_retire_encode',
+    moduleName: 'encoder',
+    params: {
+        width: nRbid,
+    },
+    verilogParams: {},
+    ports: {
+        invector:   'nc_rb_id_retire_in',
+        outdecode:  'nc_dealloc_rb_id',
+    },
+    interfaces: [],
+    portsDelimiter: '\n        '
+})=\
+
+assign dtw_req_c                = (dtw_req_rb_id[\=wRbid-2=\:0] >= \=obj.lib.getParam('nDceRbEntries')=\) ? 1'b0 : 1'b1;
+assign dtw_req_ready            =  dtw_req_c ? c_dtw_req_ready : nc_dtw_req_ready;
+assign nc_dtw_req_valid         = ~dtw_req_c & dtw_req_valid & ~(dtw_req_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);
+assign c_dtw_req_valid          =  dtw_req_c & dtw_req_valid & ~(dtw_req_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);
+assign nc_dtw_req_rb_id         = {1'b0,dtw_req_rb_id[\=wRbid-2=\:0] - \=wRbid-1=\'d\=obj.lib.getParam('nDceRbEntries')=\};
+
+\jsbegin    
+//=================================================================================================
+// NC RBID FLM
+//=================================================================================================
+\jsend
+\jsbegin
+var ncRbidFlmInterfaces = [];
+ncRbidFlmInterfaces.push({modulePrefix: '', localPrefix: '', interface: clkInterface});
+
+var ncRbidFlmParams = { 
+    clkInterface    : clkInterface,
+    idNum           : nDmiRbEntries,
+    idWidth         : wRbid
+};
+
+var ncRbidFlmPorts = {  
+    pre_alloc_valid : 'cmd_pop_wr_valid',
+    pre_alloc_ready : 'cmd_pop_wr_ready',
+    pre_alloc_last  : '1\'b1',
+    alloc_valid     : 'nc_alloc_valid',
+    alloc_ready     : 'nc_alloc_ready',
+    alloc_id        : 'nc_alloc_rb_id',
+    dealloc_valid   : 'nc_dealloc_valid',
+    dealloc_id      : 'nc_dealloc_rb_id'
+};
+\jsend
+\=obj.lib.instance({
+    instanceName    : 'nc_rb_id_flm',
+    moduleName      : 'dmi_flm',
+    params          : ncRbidFlmParams,
+    verilogParams   : {},
+    ports           : ncRbidFlmPorts,
+    interfaces      : ncRbidFlmInterfaces
+})=\
+assign nc_dealloc_valid = nc_rb_id_retire_valid; 
+
+
+\jsbegin    
+//=================================================================================================
+// Write Prot Mux
+//=================================================================================================
+\jsend
+\jsbegin
+var writeProtMuxInterfaces = [];
+writeProtMuxInterfaces.push({
+    modulePrefix        : '',
+    localPrefix         : '',
+    interface           : clkInterface
+});
+writeProtMuxInterfaces.push({
+    modulePrefix        : 'sink0_',
+    localPrefix         : 'write_prot_muxarb_sink0_',
+    interface           : writeProtInterface
+});
+writeProtMuxInterfaces.push({
+    modulePrefix: 'sink1_',
+    localPrefix: 'nc_write_prot_',
+    interface: writeProtInterface
+});
+writeProtMuxInterfaces.push({
+    modulePrefix: 'source_',
+    localPrefix: 'write_prot_muxarb_source_',
+    interface: writeProtInterface
+});
+
+var writePortMuxParams = {
+    number_of_inputs: 2,
+    width: bundleFunctions.getBundleWidth( obj.lib.getParam('writeProtInterface'), ['valid', 'ready'], obj.lib.bundle),
+    sink_type: 'RdyVld',
+    pipeline: 0,
+    arb_priority: 'RoundRobin',
+    sfi_compliant: 1,
+    output_grant: 0,
+    interface: obj.lib.getParam('writeProtInterface'),
+    noLastSignal: 1
+};
+\jsend
+\=obj.lib.instance({
+    instanceName    : 'write_prot_muxarb',
+    moduleName      : 'muxarb_bundle',
+    params          : writePortMuxParams,
+    verilogParams   : {},
+    ports           : {},
+    interfaces      : writeProtMuxInterfaces
+})=\
+
+\jsbegin    
+//=================================================================================================
+// Write Data Select FIFO
+//=================================================================================================
+\jsend
+\jsbegin
+
+var wDataSelFifoInterfaces = [];
+wDataSelFifoInterfaces.push({modulePrefix: '',     localPrefix: '',    interface: clkInterface});
+
+var wDataSelInterface = {
+    nc_data_sel  : 1,
+    drop         : 1,
+    vz           : 1,
+    late         : 1,
+    initiator_id : wInitiatorId ,
+    mpf1         : wMpf1,
+    tm           : wTm,
+    qos          : wQos
+};
+
+
+var wDataSelFifoParams = {
+    width           : bundleFunctions.getBundleWidth(wDataSelInterface, [], obj.lib.bundle),
+    depth           : 6,
+    zerodepth       : 0,
+    bypass_mode     : 0
+};
+
+var wDataSelFifoPorts = {
+    push_valid      : 'wdata_sel_push_valid',
+    push_ready      : 'wdata_sel_push_ready',
+    push_data       : bundleFunctions.packetizeBundle('write_prot_sel_', wDataSelInterface, [], obj.lib.bundle),
+    pop_valid       : 'wdata_sel_pop_valid',
+    pop_ready       : 'wdata_sel_pop_ready',
+    pop_data        : bundleFunctions.packetizeBundle('write_prot_data_sel_', wDataSelInterface, [], obj.lib.bundle)
+};
+\jsend
+\=bundleFunctions.wiresFromInterface('write_prot_sel_',        wDataSelInterface,    [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('write_prot_data_sel_',   wDataSelInterface,    [], obj.lib.bundle)=\
+
+assign \=bundleFunctions.packetizeBundle('write_prot_sel_', wDataSelInterface, [], obj.lib.bundle)=\ = { 
+    nc_data_sel, 
+    write_prot_drop, 
+    write_prot_vz, 
+    write_prot_late, 
+    write_data_initiator_id, 
+    write_prot_mpf1
+\jsbegin  /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ if ( wTm != 0 ) { \jsend
+   ,write_prot_tm
+\js } 
+\js if ( wQos != 0 ) {
+   ,write_prot_qos
+\js } 
+};
+
+assign {    
+    write_prot_data_sel, 
+    write_protd_drop, 
+    write_protd_vz, 
+    write_protd_late, 
+    write_protd_aiu_id, 
+    write_protd_mpf1
+\jsbegin  /* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */ if  ( wTm != 0 ) { \jsend
+   ,write_protd_tm
+\js }
+\js if ( wQos != 0 ) {
+   ,write_protd_qos
+\js }
+} = \=bundleFunctions.packetizeBundle('write_prot_data_sel_', wDataSelInterface, [], obj.lib.bundle)=\;
+
+\=obj.lib.instance({
+    instanceName    : 'wdata_sel_fifo',
+    moduleName      : 'fifo',
+    params          : wDataSelFifoParams,
+    interfaces      : wDataSelFifoInterfaces,
+    ports           : wDataSelFifoPorts
+})=\
+//============================================================================
+// Perf Monitor number of dtwmrgmrd
+//============================================================================
+assign dtwmrgmrd_in = is_dtwmergemrd(dtw_req_cm_type) & dtw_req_valid & dtw_req_last;
+
+assign pmon_num_dtwmrgmrd_in = dtwmrgmrd_in;
+\=obj.lib.dffre(1, 'pmon_num_dtwmrgmrd', 'pmon_num_dtwmrgmrd_in', "1'b0",  'dff_enable', 'clk', 'reset_n')=\
+
+
+assign wdata_sel_push_valid  = (nc_write_prot_valid & nc_write_prot_ready) |
+                               ( c_write_prot_valid &  c_write_prot_ready);
+assign write_prot_late       = write_prot_vz & is_dtwmergemrd(write_prot_cm_type);
+assign nc_data_sel           =  (nc_write_prot_valid & nc_write_prot_ready);
+assign write_data_initiator_id = nc_data_sel ? nc_write_data_initiator_id : c_write_data_initiator_id;
+
+assign wdata_sel_pop_ready   = write_protd_valid & write_protd_ready & write_prot_data_last;
+
+assign write_prot_data_last  =  write_prot_data_sel ? nc_write_protd_last  : c_write_protd_last;
+assign write_prot_data_data  =  write_prot_data_sel ? nc_write_protd_data  : c_write_protd_data;
+assign write_prot_data_be    =  write_prot_data_sel ? nc_write_protd_be    : c_write_protd_be;
+assign write_prot_data_poison=  write_prot_data_sel ? nc_write_protd_poison: c_write_protd_poison;
+\jsbegin
+    /* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if ( writeDataInterface.user != 0 ) {
+\jsend
+assign write_prot_data_user  =  write_prot_data_sel ? nc_write_protd_user  : c_write_protd_user;
+\js }
+
+
+\jsbegin
+// mpf1 special use for 2 cases
+// for atomics, send exact opcode with data, the conc cm_type is sent with address
+// for dtwmergemrd late resp, send resp_mux id with data, the aiu_id is sent with addr
+\jsend
+
+\jsbegin 
+//this became unreachable because of the decrease of latemrdreqinflight
+/* istanbul ignore if env  ncore_3p7 */
+if(wMpf1 == wTransId){
+\jsend
+    assign write_prot_data_mpf1  =  write_prot_data_sel ? write_protd_mpf1  : write_prot_data_trans_id;
+\jsbegin
+    }
+//this became unreachable because of the decrease of latemrdreqinflight
+else /* istanbul ignore next env ncore_3p7 */ if (wMpf1 < wTransId){
+\jsend 
+
+    assign write_prot_data_mpf1  =  write_prot_data_sel ? write_protd_mpf1  : write_prot_data_trans_id[\=wMpf1-1=\ : 0];
+
+\jsbegin
+}
+else {
+\jsend
+    assign write_prot_data_mpf1  =  write_prot_data_sel ? write_protd_mpf1  : {\=wMpf1-wTransId=\'d0, write_prot_data_trans_id};
+\jsbegin
+}
+\jsend
+
+assign write_protd_valid     = wdata_sel_pop_valid & (write_prot_data_sel ? nc_write_protd_valid : c_write_protd_valid );
+assign c_write_protd_ready   = wdata_sel_pop_valid & ~write_prot_data_sel & write_protd_ready;
+assign nc_write_protd_ready  = wdata_sel_pop_valid & write_prot_data_sel & write_protd_ready;
+
+\jsbegin    
+//=================================================================================================
+// Reset Flops
+//=================================================================================================
+// TODO: not sure if this is strictly necessary, but the SMI protocol suggests all
+// valid and ready to be held low during reset. Concerto mux isn't doing this,
+// but maybe it should since it's an SMI issue and everyone needs to do this.
+\jsend
+
+\=obj.lib.dffre(1, 'q_reset_delay0', 'logic_one',       "1'd0", 'logic_one', 'clk', 'reset_n')=\
+\=obj.lib.dffre(1, 'q_reset_delay1', 'q_reset_delay0',  "1'd0", 'logic_one', 'clk', 'reset_n')=\
+
+assign cmd_req_ready = cmd_req_skid_buffer_push_ready;// & q_reset_delay1;
+
+
+\jsbegin
+//=================================================================================================
+// Drive read_prot Interface
+// Simple Round Robin MUX between CMD and MRD interfaces
+//=================================================================================================
+// sink0: Mapping from CMDInterface to readProtInterface
+//
+\jsend
+\=bundleFunctions.assignByBundle('read_prot_muxarb_sink0_', 'nc_read_buffer_', obj.lib.getParam('readProtInterface'), [], obj.lib.bundle)=\
+
+\js // sink1: Mapping from MRDInterface to readProtInterface
+
+\=bundleFunctions.assignByBundle('read_prot_muxarb_sink1_', 'mrd_pop_', obj.lib.getParam('readProtInterface'),
+        [
+            'valid',
+            'ready',
+            'ca',
+            'vz',
+            'trans_id',
+            'aiu_id',
+            'aiu_trans_id',
+            'user',
+            'late_resp_id',
+            'es',
+            'mpf2',
+            "ex_pass"
+        ],
+obj.lib.bundle)=\
+assign read_prot_muxarb_sink1_ca            = 1'b1;
+assign read_prot_muxarb_sink1_trans_id      = \=readProtInterface.trans_id=\'d0;
+assign read_prot_muxarb_sink1_es            = \=readProtInterface.es=\'d0;
+assign read_prot_muxarb_sink1_mpf2          = \=readProtInterface.mpf2=\'d0;  
+\jsbegin
+if (obj.lib.getParam("nExclusiveEntries")>0){
+\jsend
+
+    assign read_prot_muxarb_sink1_ex_pass       = 1'b1;
+
+\jsbegin
+}
+\jsend
+
+\jsbegin
+    /* istanbul ignore if env ncore_3p0, ncore_3p2 */
+    if (readProtInterface.user != 0) {
+\jsend
+assign read_prot_muxarb_sink1_user          = mrd_pop_aux;
+\js }
+assign read_prot_muxarb_sink1_aiu_id        = is_mrdcacheop(mrd_pop_cm_type) ? mrd_pop_initiator_id
+                                                                                         : {mrd_pop_mpf1[\=wFUnitId-1=\:0], \=wFPortId=\'d0};
+assign read_prot_muxarb_sink1_aiu_trans_id  = is_mrdcacheop(mrd_pop_cm_type) ? mrd_pop_message_id 
+                                                                                         : mrd_pop_mpf2[\=wMsgId-1=\:0];
+\js // Write Prot Path
+
+assign write_prot_muxarb_sink0_valid        = c_write_prot_valid;
+assign c_write_prot_ready                   = write_prot_muxarb_sink0_ready;
+
+
+\=bundleFunctions.assignByBundle('write_prot_muxarb_sink0_', 'c_write_prot_', obj.lib.getParam('writeProtInterface'),
+    [
+        'valid',
+        'ready'
+    ],
+obj.lib.bundle)=\
+
+\=bundleFunctions.assignByBundle('write_prot_', 'write_prot_muxarb_source_', obj.lib.getParam('writeProtInterface'), ['valid','ready'], obj.lib.bundle)=\
+
+assign write_prot_valid                     = write_prot_muxarb_source_valid & ~write_prot_drop;
+assign write_prot_muxarb_source_ready       = write_prot_ready |  write_prot_drop;
+
+\jsbegin
+// DtwNoData means always drop
+// When there is no cache, DtwDataCln always means always drop.
+// This drop is done here by blocking the valid, but giving a ready 
+// and forcing DTW response down the EWA path.
+\jsend
+assign write_prot_drop = (write_prot_cm_type == WR_NDATA) |
+\js if (useCmc) {
+                         ((write_prot_cm_type == WR_CLEAN) & ~write_prot_ac & ~DMIUWRDATACLN_EnClnDataWr)
+\js } else {
+                         (write_prot_cm_type == WR_CLEAN)  & ~DMIUWRDATACLN_EnClnDataWr
+\js } 
+\js if(obj.lib.getParam("nExclusiveEntries")>0){
+| ~write_prot_ex_pass ;
+\js } else{ 
+    ;
+\js}
+
+
+
+
+\jsbegin
+/* istanbul ignore else env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if ( sameWidthSystem == 0 ) {
+\jsend
+assign dtr_req_last         = dtr_drb_data_last;
+assign dtr_req_target_id    = dtr_drb_data_target_id;
+assign dtr_req_r_message_id = dtr_drb_data_r_message_id;
+assign dtr_req_initiator_id = myid_shift;
+assign dtr_req_cm_status    = dtr_drb_data_err_type[1] ? ADDR_ERROR : 
+                              dtr_drb_data_err_type[0] ? DATA_ERROR : {\=wCMStatus-1=\'b0, dtr_drb_data_exokay};
+assign dtr_req_mpf1         = \=DTRReqInterface.mpf1=\'d0;
+assign dtr_req_dbad         = dtr_drb_data_dbad;
+assign dtr_req_tm           = dtr_drb_data_tm;
+\js // vz bit for dtr only used for special dtwmergemrd WriteUniquePtlStash & StashOnce MRD
+assign dtr_req_rl           = dtr_drb_data_vz ? \=wRl=\'b11 : \=wRl=\'b01;
+\jsbegin
+    /* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7*/
+    if (DTRReqInterface.aux  != 0) {
+\jsend
+assign dtr_req_aux          = \=DTRReqInterface.aux=\'d0;
+\js }
+\jsbegin
+    /* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (DTRReqInterface.user != 0) {
+\jsend
+assign dtr_req_user         = \=DTRReqInterface.user=\'d0;
+\js }
+assign dtr_req_cm_type      = dtr_drb_data_cm_type;
+assign dtr_req_data         = dtr_drb_data;
+\js for ( var i = 0 ; i < nDWsPerBeat ; i++ ) {
+assign dtr_req_be[\=8*(i+1)-1=\:\=8*i=\] = {8{~dtr_drb_data_dbad[\=i=\]}};
+\js }
+assign dtr_req_dwid         = dtr_drb_data_dwid;
+assign dtr_req_rd_type      = dtr_drb_data_rd_type;
+assign dtr_req_late         = dtr_drb_data_vz;
+assign dtr_req_trans_id     = dtr_drb_data_trans_id;
+\jsbegin
+} else { \jsend
+assign dtr_req_last         = return_data_last;
+assign dtr_req_target_id    = return_data_target_id;
+assign dtr_req_r_message_id = return_data_r_message_id;
+assign dtr_req_initiator_id = myid_shift;
+assign dtr_req_cm_status    =(ADDR_ERROR        & {\=wCMStatus=\{(return_data_err_type == 2'b10)}}) |
+                             (DATA_ERROR        & {\=wCMStatus=\{(return_data_err_type == 2'b01)}}) |
+                             (\=wCMStatus=\'b0  & {\=wCMStatus=\{~(^return_data_err_type)}});
+assign dtr_req_mpf1         = 'b0;
+assign dtr_req_dbad         = return_data_poison ? {\=nDWsPerBeat=\{1'b1}} : 'b0;
+assign dtr_req_tm           = return_data_tm;
+\js // vz bit for dtr only used for special dtwmergemrd WriteUniquePtlStash
+assign dtr_req_rl           = return_data_vz ? \=wRl=\'b11 : \=wRl=\'b10;
+\jsbegin
+    /* istanbul ignore next env ncore_3p0, ncore_3p2 */
+   if (DTRReqInterface.aux  != 0) {
+\jsend
+assign dtr_req_aux          = \=DTRReqInterface.aux=\'d0;
+\js     }
+\jsbegin
+    /* istanbul ignore next env ncore_3p0, ncore_3p2 */
+    if (DTRReqInterface.user != 0) {
+\jsend
+assign dtr_req_user         = \=DTRReqInterface.user=\'d0;
+\js     }
+assign dtr_req_cm_type      = return_data_cm_type;
+assign dtr_req_data         = return_data_data;
+assign dtr_req_be           = return_data_poison? \=wData/8=\'b0 : {\=wData/8=\{1'b1}};
+assign dtr_req_dwid         = return_data_dwid;
+assign dtr_req_rd_type      = return_data_rd_type;
+assign dtr_req_late         = return_data_vz;
+assign dtr_req_trans_id     = return_data_trans_id;
+
+\jsbegin
+} \jsend
+
+\js if(DTRReqInterface.dprot != 0) {
+assign dtr_req_dprot        = \=DTRReqInterface.dprot=\'d0;
+\js }
+
+\js if(DTRReqInterface.m_prot != 0) {
+assign dtr_req_m_prot       = \=DTRReqInterface.m_prot=\'d0;
+\js }
+
+\js if(wHProt != 0) {
+assign dtr_req_h_prot       = \=DTRReqInterface.h_prot=\'d0;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if(wTTier != 0) {
+\jsend
+assign dtr_req_t_tier       = \=DTRReqInterface.t_tier=\'d0;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if(wSteering != 0) {
+\jsend
+assign dtr_req_steering     = \=DTRReqInterface.steering=\'d0;
+\js }
+\js if(wPriority != 0) {
+assign dtr_req_priority     = pri_gen(dtr_drb_data_qos);
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if(wQl != 0) {
+\jsend
+assign dtr_req_ql           = \=DTRReqInterface.ql=\'d0;
+\js }
+
+\jsbegin    
+//=================================================================================================
+// DTR Req FLM
+//=================================================================================================
+\jsend
+\jsbegin
+var dtrReqFlmInterfaces = [];
+dtrReqFlmInterfaces.push({modulePrefix: '', localPrefix: '', interface: clkInterface});
+
+var dtrReqFlmParams = { 
+    clkInterface    : clkInterface,
+    idNum           : dtrIdNum,
+    idWidth         : wMsgId,
+    busy_sig        : 1,
+    wUser           : 0
+}
+
+var dtrReqFlmPorts = {  
+    pre_alloc_ready : 'dtr_flm_ready',
+    alloc_valid     : 'dtr_req_valid',
+    alloc_ready     : 'dtr_req_ready',
+    alloc_id        : 'dtr_req_message_id',
+    dealloc_valid   : 'dtr_rsp_vldrdy',
+    dealloc_id      : 'dtr_rsp_pop_r_message_id',
+    pending_dealloc : 'dtr_rsp_pending'
+}
+/* istanbul ignore else env ncore_3p0 */
+//if ( !sameWidthSystem ) {
+dtrReqFlmPorts['pre_alloc_valid']   = 'dtr_drb_data_valid';
+dtrReqFlmPorts['pre_alloc_last']    = 'dtr_drb_data_last';
+//} else {
+//dtrReqFlmPorts['pre_alloc_valid']   = 'return_data_valid';
+//dtrReqFlmPorts['pre_alloc_last']    = 'return_data_last';
+//}
+
+\jsend
+
+\=obj.lib.instance({
+    instanceName    : 'dtr_req_flm',
+    moduleName      : 'dmi_flm',
+    params          : dtrReqFlmParams,
+    verilogParams   : {},
+    ports           : dtrReqFlmPorts,
+    interfaces      : dtrReqFlmInterfaces
+})=\
+
+\jsbegin
+
+// Sends the request with a match to the correct fifo.
+
+
+\jsend
+
+assign dtr_rsp_match_vlate_valid = dtr_rsp_valid & dtr_rsp_match_dtw_vlate;
+assign dtr_rsp_no_match_vlate_valid = dtr_rsp_valid & ~dtr_rsp_match_dtw_vlate & ~dtr_rsp_match_mrd_vlate;
+assign dtr_rsp_mrd_match_vlate_valid = dtr_rsp_valid & dtr_rsp_match_mrd_vlate;
+assign dtr_rsp_ready =  (dtr_rsp_match_vlate_ready & dtr_rsp_match_dtw_vlate & ~dtr_rsp_match_mrd_vlate) | 
+                        (dtr_rsp_no_match_vlate_ready & ~dtr_rsp_match_dtw_vlate& ~dtr_rsp_match_mrd_vlate) |
+                        (dtr_rsp_mrd_match_vlate_ready & ~dtr_rsp_match_dtw_vlate & dtr_rsp_match_mrd_vlate);
+
+
+\jsbegin
+//Instanciation of a fifo with dtr_rsp match for vlate. This is sized to be able to get any pending dtr associated with a vlate response.
+
+var dtr_rsp_match_FifoInterfaces = [];
+dtr_rsp_match_FifoInterfaces.push({modulePrefix: '', localPrefix: '',            interface: clkInterface,  exclude: []               });
+dtr_rsp_match_FifoInterfaces.push({modulePrefix: 'push_',  localPrefix: 'dtr_rsp_',    interface: dtr_resp_interface, exclude:["valid","ready"] });
+dtr_rsp_match_FifoInterfaces.push({modulePrefix: 'pop_',  localPrefix: 'dtr_rsp_pop_match_',    interface: dtr_resp_interface, exclude: ["valid","ready"] });
+
+var dtr_rsp_match_FifoPorts ={ push_valid : "dtr_rsp_match_vlate_valid",
+                                push_ready : "dtr_rsp_match_vlate_ready",
+                                pop_valid : "dtr_rsp_pop_match_valid_int",
+                                pop_ready : "dtr_rsp_pop_match_ready"
+}
+
+var dtr_rsp_match_FifoParams = {
+    width           : bundleFunctions.getBundleWidth(dtr_resp_interface, ['valid', 'ready'], obj.lib.bundle),
+    depth           : nDtwMergeMrdLate,
+    zerodepth       : 0,
+    bypass_mode     : 1,
+    interface       : dtr_resp_interface
+}
+\jsend
+
+\=obj.lib.instance({
+    instanceName    : 'dtr_rsp_match_fifo',
+    moduleName      : 'fifo_bundle',
+    params          : dtr_rsp_match_FifoParams,
+    verilogParams   : {},
+    ports           : dtr_rsp_match_FifoPorts,
+    interfaces      : dtr_rsp_match_FifoInterfaces,
+ })=\
+
+\jsbegin
+ var dtr_rsp_mrd_match_FifoInterfaces = [];
+ dtr_rsp_mrd_match_FifoInterfaces.push({modulePrefix: '', localPrefix: '',            interface: clkInterface,  exclude: []               });
+ dtr_rsp_mrd_match_FifoInterfaces.push({modulePrefix: 'push_',  localPrefix: 'dtr_rsp_',    interface: dtr_resp_interface, exclude:["valid","ready"] });
+ dtr_rsp_mrd_match_FifoInterfaces.push({modulePrefix: 'pop_',  localPrefix: 'dtr_rsp_pop_mrd_match_',    interface: dtr_resp_interface, exclude: ["valid","ready"] });
+
+var dtr_rsp_mrd_match_FifoPorts ={ push_valid : "dtr_rsp_mrd_match_vlate_valid",
+                                push_ready : "dtr_rsp_mrd_match_vlate_ready",
+                                pop_valid : "dtr_rsp_pop_mrd_match_valid_int",
+                                pop_ready : "dtr_rsp_pop_mrd_match_ready"
+}
+
+var dtr_rsp_mrd_match_FifoParams = {
+    width           : bundleFunctions.getBundleWidth(dtr_resp_interface, ['valid', 'ready'], obj.lib.bundle),
+    depth           : nMrdLateInFlight,
+    zerodepth       : 0,
+    bypass_mode     : 1,
+    interface       : dtr_resp_interface
+}
+\jsend
+
+\=obj.lib.instance({
+    instanceName    : 'dtr_mrd_rsp_match_fifo',
+    moduleName      : 'fifo_bundle',
+    params          : dtr_rsp_mrd_match_FifoParams,
+    verilogParams   : {},
+    ports           : dtr_rsp_mrd_match_FifoPorts,
+    interfaces      : dtr_rsp_mrd_match_FifoInterfaces,
+ })=\
+
+
+
+
+\jsbegin
+//Instanciation of a fifo with dtr_rsp no match
+
+var dtr_rsp_no_match_FifoInterfaces = [];
+dtr_rsp_no_match_FifoInterfaces.push({modulePrefix: '', localPrefix: '',            interface: clkInterface,  exclude: []               });
+dtr_rsp_no_match_FifoInterfaces.push({modulePrefix: 'push_',  localPrefix: 'dtr_rsp_',    interface: dtr_resp_interface, exclude:["valid","ready"] });
+dtr_rsp_no_match_FifoInterfaces.push({modulePrefix: 'pop_',  localPrefix: 'dtr_rsp_pop_no_match_',    interface: dtr_resp_interface, exclude: ["valid","ready"] });
+
+var dtr_rsp_no_match_FifoPorts ={push_valid : "dtr_rsp_no_match_vlate_valid",
+                                push_ready : "dtr_rsp_no_match_vlate_ready",
+                                pop_valid : "dtr_rsp_pop_no_match_valid",
+                                pop_ready : "dtr_rsp_pop_no_match_ready"
+}
+
+var dtr_rsp_no_match_FifoParams = {
+    width           : bundleFunctions.getBundleWidth(dtr_resp_interface, ['valid', 'ready'], obj.lib.bundle),
+    depth           : 2,
+    zerodepth       : 0,
+    bypass_mode     : 1,
+    interface       : dtr_resp_interface
+}
+\jsend
+
+\=obj.lib.instance({
+    instanceName    : 'dtr_rsp_no_match_fifo',
+    moduleName      : 'fifo_bundle',
+    params          : dtr_rsp_no_match_FifoParams,
+    verilogParams   : {},
+    ports           : dtr_rsp_no_match_FifoPorts,
+    interfaces      : dtr_rsp_no_match_FifoInterfaces,
+ })=\
+
+ \jsbegin
+ var dtr_rsp_rr_MuxInterfaces = [];
+ dtr_rsp_rr_MuxInterfaces.push({modulePrefix: '',       localPrefix: '',                        interface: clkInterface     });
+ dtr_rsp_rr_MuxInterfaces.push({modulePrefix: 'sink0_', localPrefix: 'dtr_rsp_pop_no_match_', interface: dtr_resp_interface});
+ dtr_rsp_rr_MuxInterfaces.push({modulePrefix: 'sink1_', localPrefix: 'dtr_rsp_pop_match_', interface: dtr_resp_interface});
+ dtr_rsp_rr_MuxInterfaces.push({modulePrefix: 'sink2_', localPrefix: 'dtr_rsp_pop_mrd_match_', interface: dtr_resp_interface});
+ dtr_rsp_rr_MuxInterfaces.push({modulePrefix: 'source_',localPrefix: 'dtr_rsp_pop_',              interface: dtr_resp_interface});
+ 
+ var dtr_rsp_rr_MuxParam = {
+     number_of_inputs    : 3,
+     width               : bundleFunctions.getBundleWidth(dtr_resp_interface, ['valid', 'ready'], obj.lib.bundle),
+     sink_type           : 'RdyVld',
+     pipeline            : 0,
+     arb_priority        : 'RoundRobin',
+     sfi_compliant       : 0,
+     output_grant        : 0,
+     interface           : dtr_resp_interface,
+     noLastSignal        : 1
+ };
+ \jsend
+
+ \=obj.lib.instance({
+     instanceName        : 'dtr_rsp_rr_muxarb',
+     moduleName          : 'muxarb_bundle',
+     params              : dtr_rsp_rr_MuxParam,
+     verilogParams       : {},
+     ports               : {},
+     interfaces          : dtr_rsp_rr_MuxInterfaces
+ })=\
+
+
+assign dtr_rsp_pop_match_valid = dtr_rsp_pop_match_valid_int & dtw_vlate_dtr_rsp_ready;
+assign dtr_rsp_pop_mrd_match_valid = dtr_rsp_pop_mrd_match_valid_int & mrd_vlate_dtr_rsp_ready;
+assign dtr_rsp_pop_ready        = 1'b1;
+assign dtr_rsp_vldrdy       = dtr_rsp_pop_push_valid & dtr_rsp_pop_ready;
+assign dtr_rsp_pop_push_valid   = dtr_rsp_pop_valid & ~(dtr_rsp_pop_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);
+
+\jsbegin
+/* istanbul ignore else env ncore_3p0, ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if ( !sameWidthSystem ) {
+\jsend
+\jsbegin
+var dtrDrbParam = { 
+    clkInterface        : clkInterface,
+    width               : wData,
+    wDwid               : wDwid/nDWsPerBeat,
+    wIntfSize           : wIntfSize,
+    wTransSize          : returnDataInterface.size,
+    dataInfoInterface   : dtrReturnInfo,
+    nBeats              : nBeats,
+    bypassable          : 0,
+    assertOn            : assertOn
+};
+
+var dtrDrbPorts = {  
+    intf_size               : 'return_data_intf_size',
+    data_beat_in            : 'dtr_drb_data_in',
+    data_beat_in_valid      : 'return_data_valid',
+    data_beat_in_last       : 'return_data_last',
+    data_beat_in_dwid       : 'return_data_dwid',
+    critical_dw             : 'return_data_cdw',
+    data_beat_in_dbad       : '{'+nDWsPerBeat+'{return_data_poison}}',
+    data_beat_in_err_type   : 'return_data_err_type',
+    trans_size              : 'return_data_size',
+    data_beat_out_ready     : 'dtr_flm_ready',
+    data_beat_out           : 'dtr_drb_data',
+    data_beat_out_dbad      : 'dtr_drb_data_dbad',
+    data_beat_out_valid     : 'dtr_drb_data_valid',
+    data_beat_out_last      : 'dtr_drb_data_last',
+    data_beat_out_dwid      : 'dtr_drb_data_dwid',
+    data_beat_out_err_type  : 'dtr_drb_data_err_type',
+    data_beat_in_ready      : 'return_data_ready'
+};
+
+
+var dtrDrbInterfaces = [];
+
+dtrDrbInterfaces.push({modulePrefix: '',         localPrefix: '',             interface: obj.lib.getParam('clkInterface')});
+dtrDrbInterfaces.push({modulePrefix: 'alloc_',   localPrefix: 'return_data_', interface: dtrReturnInfo                   });
+dtrDrbInterfaces.push({modulePrefix: 'lookup_',  localPrefix: 'dtr_drb_data_',interface: dtrReturnInfo                   });
+\jsend
+
+assign dtr_drb_data_in = return_data_data;
+
+\=obj.lib.instance({
+    instanceName: 'dtr_drb',
+    moduleName  : 'dmi_drb',
+    params      : dtrDrbParam,
+    ports       : dtrDrbPorts,
+    interfaces  : dtrDrbInterfaces
+})=\
+
+\js } else {
+assign return_data_ready = dtr_flm_ready;
+\js }
+
+assign active =~cmd_skid_buffer_empty           |
+               ~mrd_skid_buffer_empty           |
+                cmd_skid_buffer_pop_valid       |
+                mrd_skid_buffer_pop_valid       |
+                cmd_pop_valid       |
+                mrd_pop_valid       |
+                mrd_resp_valid                  |
+                nc_cmd_resp_valid               |
+                str_req_valid                   |
+                dtw_resp_mux_active             |
+                rbr_resp_valid                  |
+                str_rsp_pending                 |
+                dtr_rsp_pending                 |
+                nc_write_active                 |
+                c_write_active                  |
+                nc_read_active                  |
+                dtr_drb_data_valid              |
+                read_resp_valid                 |
+                return_data_valid		|
+		evt_buffer_busy
+                ;
+\=obj.lib.dffre(1, 'active_4clkGate', 'active', "1'b0", "1'b1", 'clk', 'reset_n')=\ 
+ 
+//=============================================================================
+// DTW DBg Response Gating
+//=============================================================================
+// Gate off valid in case where targetId mismatches
+assign dtw_dbg_rsp_out_valid = dtw_dbg_rsp_valid && ~(dtw_dbg_rsp_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId); 
+assign dtw_dbg_rsp_ready = dtw_dbg_rsp_out_ready; 
+
+//Pass through DTW DBG Response fields
+\jsbegin
+for (let key = 0; key < dtw_dbg_rsp_keys.length; key++) { \jsend
+assign dtw_dbg_rsp_out_\=dtw_dbg_rsp_keys[key]=\ = dtw_dbg_rsp_\=dtw_dbg_rsp_keys[key]=\;
+\jsbegin
+} \jsend
+
+
+//Pass through sys rsp fields
+\jsbegin 
+ /* istanbul ignore else env ncore_3p6, ncore_3p7*/
+if (useSysReqSender){ \jsend
+  assign sys_rsp_rx_out_valid = sys_rsp_rx_valid && ~(sys_rsp_rx_target_id[\=wTargetId-1=\:\=wFPortId=\] != MyId);
+  assign sys_rsp_rx_ready = sys_rsp_rx_out_ready;
+  \jsbegin 
+  for (let key = 0; key < sys_rsp_keys.length; key++) { \jsend
+    assign sys_rsp_rx_out_\=sys_rsp_keys[key]=\ = sys_rsp_rx_\=sys_rsp_keys[key]=\; \jsbegin
+  } 
+} \jsend
+
+\js if ( assertOn ) {
+    `ifdef OVL_ASSERT_ON
+    // coverage off
+    // synthesis off
+    reg [\=wData/8-1=\:0] bbad;
+    always@(*) begin
+\js     for ( var i = 0; i < nDWsPerBeat; i++ ) { 
+            bbad[\=(i+1)*8-1=\:\=i*8=\] = {8{dtw_req_dbad[\=i=\]}};
+\js     }        
+    end   
+     
+    // synopsys translate_off
+    //
+
+    // should never overflow wdata_sel (means fifo undersized)
+    assert_implication #(0) assert_wdata_sel_overflow(
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(wdata_sel_push_valid),
+        .consequent_expr(wdata_sel_push_ready)
+    );
+    // should never underflow wdata_sel
+    assert_implication #(0) assert_wdata_sel_underflow(
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(wdata_sel_pop_ready),
+        .consequent_expr(wdata_sel_pop_valid)
+    );
+    // these should never overflow if credits are properly assigned
+    assert_implication #(0) assert_cmd_overflow (
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(cmd_req_valid),
+        .consequent_expr(cmd_req_ready)
+    );
+
+    assert_implication #(0) assert_mrd_overflow (
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(mrd_req_valid),
+        .consequent_expr(mrd_req_ready)
+    );
+
+
+\jsbegin
+    // FULL type DTWs (DTWFullDty, DTWFullCln) shouldn't come with all byte enables zero.
+//  1. maybe this should come with all ones. 2. check for PTL DTWs
+// *** ncore3 does not have a byte enable requirement for DTWfullCln/Dty or DTWPtlDty, however, 
+//     leaving this assertion in place to catch any illegal stimulus.
+\jsend
+
+\jsbegin
+//ASILB always 0 in 3.7
+/* istanbul ignore else env ncore_3p7 */
+if(~ASILB){
+\jsend
+    assert_implication #(0) assert_full_dtw_zero_byte_enables (
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(dtw_req_valid & dtw_req_ready & (dtw_req_cm_type == WR_CLEAN | dtw_req_cm_type == WR_DIRTY)& ~(dmi_cmux_dtw_req_header_UCE | dmi_cmux_dtw_req_message_UCE | dmi_cmux_dtw_req_data_UCE)),
+        .consequent_expr(|(dtw_req_be | bbad))
+    );
+ \js    }
+    assert_implication #(0) assert_dtr_rsp_valid_ready (
+        .clk(clk),
+        .reset_n(reset_n),
+        .antecedent_expr(dtr_rsp_valid & dtr_rsp_ready),
+        .consequent_expr((dtr_rsp_no_match_vlate_valid & dtr_rsp_no_match_vlate_ready) | (dtr_rsp_match_vlate_valid & dtr_rsp_match_vlate_ready)| (dtr_rsp_mrd_match_vlate_valid & dtr_rsp_mrd_match_vlate_ready))
+        );
+        \jsbegin
+        if (useQos){
+        \jsend
+        
+        assert_never #(0) assert_cmd_qos_while_threshold (
+            .clk(clk),
+            .reset_n(reset_n),
+            .test_expr(((RTT_threshold_reached & is_ncrd(cmd_skid_buffer_pop_cm_type) & (~cmd_skid_buffer_pop_h_priority)& ~(cmd_skid_buffer_starv_mode) & cmd_skid_buffer_pop_valid & cmd_skid_buffer_pop_ready ) & ~cmd_skid_full))
+            );
+    
+        assert_never #(0) assert_mrd_qos_while_threshold (
+                .clk(clk),
+                .reset_n(reset_n),
+                .test_expr(((RTT_threshold_reached &  (~mrd_skid_buffer_pop_h_priority) & ~(mrd_skid_buffer_starv_mode) & mrd_skid_buffer_pop_valid & mrd_skid_buffer_pop_ready )  & ~mrd_skid_full))
+                );
+
+
+        assert_never #(0) assert_rbrcmd_qos_while_threshold (
+                        .clk(clk),
+                        .reset_n(reset_n),
+                        .test_expr(((nc_wDataBuffer_threshold_reached &  ~is_ncrd(cmd_skid_buffer_pop_cm_type) & (~cmd_skid_buffer_pop_h_priority)& ~(cmd_skid_buffer_starv_mode) & cmd_skid_buffer_pop_valid & cmd_skid_buffer_pop_ready )  & ~cmd_skid_full))
+                        );
+
+        assert_implication #(0) assert_mrd_skid_valid_ready (
+                            .clk(clk),
+                            .reset_n(reset_n),
+                            .antecedent_expr(mrd_skid_buffer_pop_valid & mrd_skid_buffer_pop_ready),
+                            .consequent_expr(mrd_skid_buffer_pop_qual_valid & mrd_skid_buffer_pop_noqual_ready)
+                            );               
+        \jsbegin
+        }
+        \jsend
+
+
+
+
+
+    // synopsys translate_on
+    // synthesis on
+    // coverage on
+    `endif
+\js }
+
+
+
+endmodule

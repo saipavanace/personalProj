@@ -1,0 +1,260 @@
+<h2 id="Ncore3.6DMI:2024w20:05/13/24-05/17/24-Highlights:">Highlights:</h2><ul><li><p /></li></ul><h2 id="Ncore3.6DMI:2024w20:05/13/24-05/17/24-Activities:">Activities:</h2><ul><li><p>3.7 | ASIL-B:</p><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14431" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14431?src=confmacro" class="jira-issue-key">CONC-14431</a>
+                            </span>
+</p></li><li><p>Ben alerted me that ASIL-B is shelved for 3.7 and it’s consuming a lot of my time to clean this up. Not sure how long i’ll sustain this effort, considering spending the time on revamping the main DMI sequence instead. Will try and push whatever changes i have so more signals are being covered for fault injection.</p></li><li><p>TBD:</p><ul><li><p><del>Understand fault injector methodology. </del> DONE</p></li><li><p><del>Differentiate the intent between every unit. </del>DONE</p><ul><li><p>There’s a BIST sequence and a BIST reset sequence and fault injection sequence between checker + functional unit. Different combinations of error injection are being tested and expected fault propagation is being checked through assertions. The problem is how every unit has specified every signal by hand which is making this file unreadable/controllable. Also, very badly indented and maintained. Due to the nature of how JS unwraps the code, in the past they resorted to not using modular function/task calls which makes the sequence look huge.</p></li></ul></li><li><p><del>Scope removing manual signal specification by using Bens technique and JS functions to automatically pick up data from .attr files.</del> DONE (observations below next point)</p></li><li><p><del>Explore if it makes sense to incorporate these functions in a common file so fault injector elaborates per block automatically removing any need for manual specification</del>. DONE (observations below)</p><ul><li><p>Even with using the .attr file from RTL we need to add additional JS filters and replace commands to achieve this. </p></li><li><p>If we use the JS approach, it makes sense to design a new file and the rest of the units pick up the new way coding and move from there. Trying to rework the existing file is proving to be very error prone and time consuming in my attempts so far.</p></li></ul></li></ul></li></ul></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13849" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13849?src=confmacro" class="jira-issue-key">CONC-13849</a>
+                            </span>
+</p><ul><li><p>Indentation fix, done. Readability of the file has massively improved.</p></li><li><p>Added line separators for transaction table elements to print entries in a more cleaner fashion.</p></li><li><p>Will be adding more debug friendly changes over time.</p></li></ul></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14502" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14502?src=confmacro" class="jira-issue-key">CONC-14502</a>
+                            </span>
+ </p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-13739" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-13739?src=confmacro" class="jira-issue-key">CONC-13739</a>
+                            </span>
+  </p><ul><li><p>Tried to re-compile and hit some synopsys env errors, created a sub-task for aatman to help resolve this.</p></li></ul></li></ul><h2 id="Ncore3.6DMI:2024w20:05/13/24-05/17/24-Aatman:">Aatman:</h2><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14498" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14498?src=confmacro" class="jira-issue-key">CONC-14498</a>
+                            </span>
+ </p><ul><li><p>Synopsys environment compile time error debug. WIP</p></li></ul></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14497" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14497?src=confmacro" class="jira-issue-key">CONC-14497</a>
+                            </span>
+ </p><ul><li><p>Weekly regression failure, went over the error scenario and also pointed out what’s causing it. Aatman will review it and update the jira. Might need comment/opinion from design.</p></li></ul></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14383" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14383?src=confmacro" class="jira-issue-key">CONC-14383</a>
+                            </span>
+</p><ul><li><p>Reviewed all changes from Aatman, suggested some edits to maintain the intent of the test and keep the fixes isolated to this corner case. All changes are in.</p></li></ul></li></ul>

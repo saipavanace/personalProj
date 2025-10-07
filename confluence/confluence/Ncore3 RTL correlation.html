@@ -1,0 +1,52 @@
+<h1 id="Ncore3RTLcorrelation-Correlationsetup">Correlation setup</h1><h2 id="Ncore3RTLcorrelation-BuildtheRTLlibraryforncore3_casim">Build the RTL library for ncore3_casim</h2><p>Prerequisite is to generate the Ncore3 design using maestro and having an output.tgz file.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">python3 nore3/contrib/scripts/build_rtl_lib.py --output-dir maestro_rtl_build -f &lt;PATH to MAESTRO output.tgz&gt; --archsim-builddir build</pre>
+</div></div><p>For complex designs flat verilation is not practical. In this case the transport networks can be verilated as subblocks:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">python3 nore3/contrib/scripts/build_rtl_lib.py --hierarchical --output-dir maestro_rtl_build -f &lt;PATH to MAESTRO output.tgz&gt; --archsim-builddir build</pre>
+</div></div><h2 id="Ncore3RTLcorrelation-Runthecasim">Run the casim</h2><p>In the previous step a .so file has been generated containing the verilated RTL.<br/>This can now be used with ncore3_casim.<br/>If ncore3_archsim simulation uses a csr config file one need to generate an init sequence. This can be done using the gen_init_seq.py script.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">python3 nore3/contrib/scripts/gen_init_seq.py -f maestro_rtl_build/output/IPXACT/native_flow_chi_2014.xml \
+    -g maestro_rtl_build/output/models/standalone/TLM/top.level.rtl.csr.json
+    -c &lt;csr config file&gt; -o init_seqence.stl</pre>
+</div></div><p>An initial version of the CSR config file can be generated using ncore3_archsim:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">build/NCORE3/simulator/archsim/ncore3_archsim -m maestro_rtl_build/native_flow_ace/output/models/standalone/TLM/top.level.rtl.csr.json --dump-csr maestro_rtl_build/native_flow_ace_csr.json</pre>
+</div></div><p>Except of the <code>--design</code> switch ncore3_casim understands the same option as ncroe3_archsim.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">build/NCORE3/simulator/casim/ncore3_casim --design maestro_rtl_build/build/&lt;Design Name&gt;.so --scenario-file &lt;path to scenario&gt; -t</pre>
+</div></div><h2 id="Ncore3RTLcorrelation-Example:buildandrunthenative_flow_chimodel">Example: build and run the native_flow_chi model</h2><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># build performance model and CA sim driver
+cmake -S . -B build 
+cmake --build build -j30
+# build RTL design lib
+python3 nore3/contrib/scripts/build_rtl_lib.py --output-dir build/native_flow_chi \
+    -f /scratch/perfmodel/correleation_testcases/native_flow_chi/output.tgz --archsim-builddir build
+# generate CSR config default file
+build/NCORE3/simulator/archsim/ncore3_archsim \
+    -m build/native_flow_chi/native_flow_ace/output/models/standalone/TLM/top.level.rtl.csr.json \
+    --dump-csr build/native_flow_chi/native_flow_ace_csr.json
+# adapt values to desired ones
+vi build/native_flow_chi/native_flow_ace_csr.json
+# generate RTL CSR init sequence
+python3 nore3/contrib/scripts/gen_init_seq.py -f build/native_flow_chi/output/IPXACT/native_flow_chi_2014.xml \
+    -g build/native_flow_chi/output/models/standalone/TLM/top.level.rtl.csr.json
+    -c build/native_flow_chi/native_flow_ace_csr.json -o init_seqence.stl
+# setup scenario file, add also CSR config file setting and maestro file location
+vi native_flow_chi_01.scn
+mkdir native_flow_chi_01_at
+cd native_flow_chi_01_at
+../build/NCORE3/simulator/archsim/ncore3_archsim --scenario-file native_flow_chi_01.scn -t 
+cd ..
+mkdir native_flow_chi_01_ca
+cd native_flow_chi_01_ca
+../build/NCORE3/simulator/casim/ncore3_casim --design build/native_flow_chi/build/native_flow_chi.so \
+    --scenario-file native_flow_chi_01.scn -t
+cd ..
+# analyze the trace files and generate summary
+python3 perf-vc/correlation//scripts/analyze.py -s native_flow_chi_01.scn -t native_flow_chi_01_at
+python3 perf-vc/correlation//scripts/analyze.py -s native_flow_chi_01.scn -t native_flow_chi_01_ca</pre>
+</div></div><h2 id="Ncore3RTLcorrelation-Runacorrelationtestsuite">Run a correlation test suite</h2><p>The correlation test suite can be executed using the run_correlation.py script in the perf-vc/correlation/scripts directory.<br/>It automates all steps from scenario generation, CSR init seqence generation, simulation execution, until results collection.</p><p>Assuming the correlation testing of the NXP_Luxor_cis design.<br/>NCore perfomance model is being built in build/Debug, while the RTL library is being built in build/luxor_cis_ncore:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">cmake -S . -B build/Debug 
+cmake --build build/Debug -j30
+python3 nore3/contrib/scripts/build_rtl_lib.py --output-dir build/luxor_cis_ncore \
+    -f /scratch/perfmodel/correleation_testcases/luxor_cis_ncore/output.tgz --archsim-builddir build/Debug</pre>
+</div></div><p>The correlation test based on the test suite described in test_setup.yaml can then be executed using:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">cd perf-vc/correlation/NXP_Luxor_cis
+python3 ../scripts/run_correlation.py -f test_config.yaml --test-dir tests</pre>
+</div></div><p>The file test_config.yaml contains all CLI parameter to generate, execute, and check the tests defined in test_setup.yaml.<br/>The files (scenario definitions, traffic profiles, CSR init sequence files, etc.) will be generated below the directory specivied using the --test-dir switch.<br/>Once the correlation is ran, the results can be found in respective subdirectories of the tests directroy.<br/>The generation is done in a way that they can be easily re-executed to debug or with an updated model. </p>

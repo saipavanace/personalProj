@@ -1,0 +1,80 @@
+<ol><li><p>Go to or create a <em>git </em>workspace containing 'client' and 'bundler' for the branch that you want to release.<br/>Example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">git clone -b Ncore-1.6 ssh://git@stash.arteris.com:7999/con/client.git
+git clone -b Ncore-1.6 ssh://git@stash.arteris.com:7999/con/bundler.git</pre>
+</div></div></li><li><p>Update the client/cpanel/package.json with the version numbers of any changed dependency modules, E.g.:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">&quot;@arteris/codegen&quot;: &quot;1.6.45&quot;,</pre>
+</div></div></li><li><p><span>Update the client/package.json with the release version string for the release (or release candidate),  E.g.</span></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&quot;version&quot;: &quot;1.6.0-rc.17&quot;,</pre>
+</div></div><p><span> </span></p></li><li><p>Commit and push the client changes:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">git commit -a
+git push</pre>
+</div></div></li><li>Wait for the client <a class="external-link" href="https://bamboo.arteris.com/browse/CON-CLIEN" rel="nofollow">Bamboo </a>build for that branch to finish.</li><li>If the Bamboo build was successful, it should now allow you to 'Deploy' the results of that build.  If you have adequate permissions to deploy the build, the right side of the build page will look like:<br/><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image confluence-thumbnail" height="150" src="https://arterisip.atlassian.net/wiki/download/attachments/16167647/image2016-9-30%2017:2:20.png?api=v2"></span><br/><em><strong><img class="emoticon emoticon-light-on" data-emoji-id="atlassian-light_bulb_on" data-emoji-shortname=":light_bulb_on:" data-emoji-fallback=":light_bulb_on:" src="https://arterisip.atlassian.net/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/_/images/icons/emoticons/lightbulb_on.png" width="16" height="16" data-emoticon-name="light-on" alt="(lightbulb)" />If the 'Create release' button isn't showing, check to make sure that you are logged in to Bamboo.</strong></em><br/><br/></li><li>Click on the <strong>Create release </strong>button.  You will be redirected to a <strong>Create new release</strong> page:<br/><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" width="500" src="https://arterisip.atlassian.net/wiki/download/attachments/16167647/image2016-9-30%2017:7:33.png?api=v2"></span><br/><br/></li><li><p>Change the <strong>This version</strong> field to a name in the form &lt;releaseName&gt;-&lt;buildNumber&gt;, e.g.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">1.6.0-rc.18-70</pre>
+</div></div></li><li><p>Click on <strong>Create release</strong>.  That will bring you to a Release page, e.g.:<br/><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" height="250" src="https://arterisip.atlassian.net/wiki/download/attachments/16167647/image2016-9-30%2017:22:40.png?api=v2"></span></p></li><li><p> Click on the <strong>Deploy</strong> button.  There will be a dropdown that allows you to select one of the deployment types that you have permissions for, e.g.:<br/><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image confluence-thumbnail" width="100" src="https://arterisip.atlassian.net/wiki/download/attachments/16167647/image2016-9-30%2017:31:18.png?api=v2"></span></p></li><li><p>Click on <strong>Debug</strong> . Then click on <strong>Start Deployment</strong> .  Once the deployment is successful, it will create a file in /engr/dev/releases/conductor (also visible in <a class="external-link" href="http://dev.arteris.com/releases/conductor/" rel="nofollow">http://dev.arteris.com/releases/conductor/</a>), e.g.:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ ls -l conductor-1.6.0-rc.17-69+debug.tgz 
+-rw-r--r-- 1 bamboo 501 199848728 Sep 30 13:44 conductor-1.6.0-rc.17-69+debug.tgz</pre>
+</div></div></li><li><p>Use the browser <em>back</em> button to go back two pages, and repeat the previous two steps for the Release build.</p></li><li>Repeat again for the NoRTL build.</li><li><p>Once the deployment of the Release, Debug, and NoRTL builds complete, you can the create the <em>bundle</em>s which install those builds.  This is done by modifying the <em>bundler</em> package so that Bamboo will create the bundles.  Change the bundler/env file to have the release and build information for the current release/build, e.g.:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">CONDUCTOR_VERSION=1.6.0-rc.17
+CONDUCTOR_BUILD_NUM=-69</pre>
+</div></div></li><li>Commit and push the changes to <em>bundler</em>.<br/><br/></li><li><p>Wait for Bamboo to finish running <em>bundler</em>.  Once it completes, there will be installers in /engr/dev/releases/Ncore for the Debug, Release and NoRTL builds (also visible in <a class="external-link" href="http://dev.arteris.com/releases/Ncore/" rel="nofollow">http://dev.arteris.com/releases/Ncore/</a>), e.g.:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ ls -l Ncore-1.6.0-rc.17-69*
+-rwxr-xr-x 1 bamboo 501 159152675 Sep 30 13:51 Ncore-1.6.0-rc.17-69+debug.run*
+-rwxr-xr-x 1 bamboo 501 159152675 Sep 30 13:51 Ncore-1.6.0-rc.17-69+noRTL.run*
+-rwxr-xr-x 1 bamboo 501 134921152 Sep 30 13:49 Ncore-1.6.0-rc.17-69.run*</pre>
+</div></div></li><li><p>Do a test installation of the release and debug versions, e.g.:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91.run
+Copyright (c) 2015 Arteris. Licensed software. ALL RIGHTS RESERVED
+Enter installation directory [/engr/dev/tools/conductor/Ncore-1.6.1-rc1-91]: /tmp/Ncore-1.6.1-rc.1-91                     
+Enter FlexNoC installation directory []: /engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1
+Setting the FlexNoC path to be &quot;/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1&quot;.  This can be changed by editing config.sh.
+Installation of /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91.run is complete
+
+
+$ /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+debug.run 
+Copyright (c) 2015 Arteris. Licensed software. ALL RIGHTS RESERVED
+Enter installation directory [/engr/dev/tools/conductor/Ncore-1.6.1-rc.1-91+debug]: /tmp/Ncore-1.6.1-rc.1-91+debug
+Enter FlexNoC installation directory []: /engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1
+Setting the FlexNoC path to be &quot;/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1&quot;.  This can be changed by editing config.sh.
+Installation of /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+debug.run is complete
+ 
+
+
+$ /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+noRTL.run 
+Copyright (c) 2015 Arteris. Licensed software. ALL RIGHTS RESERVED
+Enter installation directory [/engr/dev/tools/conductor/Ncore-1.6.1-rc.1-91+debug]: /tmp/Ncore-1.6.1-rc.1-91+noRTL
+Enter FlexNoC installation directory []: /engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1
+Setting the FlexNoC path to be &quot;/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1&quot;.  This can be changed by editing config.sh.
+Installation of /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+noRTL.run is complete</pre>
+</div></div></li><li><p>Test all three 'conductor' scripts to make sure that they start up and open an apf file (e.g. one of the apf files in codegen/test) successfully.</p></li><li><p>Change user to 'engadmin' and install the release, debug and noRTL versions into the /engr/dev/tools/conductor directory:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ su engadmin
+Password:
+
+$ /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91.run 
+Copyright (c) 2015 Arteris. Licensed software. ALL RIGHTS RESERVED
+Enter installation directory [/engr/dev/tools/conductor/Ncore-1.6.1-rc.1-91]: 
+Enter FlexNoC installation directory [/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1]: 
+Setting the FlexNoC path to be &quot;/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1&quot;.  This can be changed by editing config.sh.
+Installation of /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91.run is complete
+
+$ /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+debug.run 
+Copyright (c) 2015 Arteris. Licensed software. ALL RIGHTS RESERVED
+Enter installation directory [/engr/dev/tools/conductor/Ncore-1.6.1-rc.1-91+debug]: 
+Enter FlexNoC installation directory [/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1]: 
+Setting the FlexNoC path to be &quot;/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1&quot;.  This can be changed by editing config.sh.
+Installation of /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+debug.run is complete
+
+$ /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+noRTL.run 
+Copyright (c) 2015 Arteris. Licensed software. ALL RIGHTS RESERVED
+Enter installation directory [/engr/dev/tools/conductor/Ncore-1.6.1-rc.1-91+noRTL]: 
+Enter FlexNoC installation directory [/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1]: 
+Setting the FlexNoC path to be &quot;/engr/dev/tools/FlexNoC/limited/FlexNoC-3.2.0-1&quot;.  This can be changed by editing config.sh.
+Installation of /engr/dev/releases/Ncore/Ncore-1.6.1-rc.1-91+noRTL.run is complete
+
+
+
+</pre>
+</div></div></li><li><p>Update the symbolic links to point to the new versions.  For an 'ir' or 'rc' the symbolic links are named '<em>internal</em>', '<em>internalDebug</em>', and '<em>internalNoRTL</em>'.  For a customer release version the symbolic links are named '<em>release</em>', '<em>debug</em>', and <em>'noRTL'</em>.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">$ ln -fsn Ncore-1.6.1-rc.1-91 internal
+$ ln -fsn Ncore-1.6.1-rc.1-91+debug internalDebug
+$ ln -fsn Ncore-1.6.1-rc.1-91+noRTL internalNoRTL</pre>
+</div></div></li><li><p>Send email announcing the availability to:</p></li></ol><ul><li>For 'ir' releases - 'Engineering team', JP Loison &lt;jp.loison@<a class="external-link" href="http://arteris.com" rel="nofollow">arteris.com</a>&gt;; Benoit de Lescure &lt;benoit.delescure@<a class="external-link" href="http://arteris.com" rel="nofollow">arteris.com</a>&gt;</li><li>For 'rc' releases - 'Engineering team', 'FAE team'<br/><br/></li></ul>

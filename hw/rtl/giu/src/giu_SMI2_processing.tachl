@@ -1,0 +1,30 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU
+// Author: Benjamin Madon
+//=============================================================================
+
+
+var m = obj.userLib;
+var u=obj.lib;
+var p =u.getParam();
+var newToOldStyleInterface	=m.newToOldStyleInterface.bind( null, m);
+var utilFunctions   = m.lib_utils;
+
+u.nInterfaces(p.interfaces);
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+
+\=m.bundleFunctions.assignByBundle(p.interfaces["smiTxInt_out"].name+"ndp_",p.interfaces["smiTxInt_in"].name+"ndp_",newToOldStyleInterface(p.interfaces["smiTxInt_out"]).signals["ndp_"],[],u.bundle)=\
+
+\=m.bundleFunctions.assignByBundle(p.interfaces["smiTxInt_out"].name+"dp_",p.interfaces["smiTxInt_in"].name+"dp_",newToOldStyleInterface(p.interfaces["smiTxInt_out"]).signals["dp_"],[],u.bundle)=\
+
+
+assign \=p.interfaces["active"].name=\active = 1'b1;
+endmodule

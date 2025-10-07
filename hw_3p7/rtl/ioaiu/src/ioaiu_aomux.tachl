@@ -1,0 +1,82 @@
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2022
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Kjeld
+// Date   : January 2022
+//
+// Description : IOAIU mux.
+//
+//////////////////////////////////////////////////////////////////////////
+\jsbegin
+var u = obj.lib;
+var m = obj.userLib;
+
+var assertOn = u.getParam('assertOn');
+var DW = u.getParam('DW');
+var NUM = u.getParam('NUM');
+
+u.paramDefault('clkAssertInterface', 'object', null);
+var clkAssertInterface     = m.hierGetParam('clkAssertInterface', u.getParam);
+u.interface(clkAssertInterface.name, 'slave', clkAssertInterface.signals);
+
+u.port('input','data_i',NUM*DW);
+u.port('output','data_o',DW);
+u.port('input','bvsel_i',NUM);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+\=u.getPorts('\n    ')=\
+);
+
+wire [\=(NUM*DW)=\-1:0]	t_be;
+wire [\=DW=\-1:0]		t_mask[\=DW=\-1:0];
+wire [\=DW=\-1:0]		q_data;
+
+assign data_o = q_data;
+
+\js	for(let j=0; j<NUM; j=j+1) {
+		assign t_be[\=j*DW=\+:\=DW=\] = {\=DW=\{bvsel_i[\=j=\]}};
+\js	}
+
+\js if(DW==1) {
+    assign t_mask[0] = 1'b1;
+    assign q_data[0] = (| (data_i & t_be & {\=NUM=\{t_mask[0]}}));
+
+\js } else {
+\js for(let i=0; i<DW; i=i+1) {
+      assign t_mask[\=i=\] = ({{\=DW=\-1{1'b0}},1'b1} << \=i=\); 
+      assign q_data[\=i=\] = (| (data_i & t_be & {\=NUM=\{t_mask[\=i=\]}}));
+\js }
+\js }
+
+\jsbegin
+/////////////////////////////////////////////////////////////////
+/* istanbul ignore else env ncore_3p7 */
+    if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off   
+// coverage off
+assert_never #(0) assert_parameters(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((\=DW=\==0))
+);
+
+assert_zero_one_hot #(0, \=NUM=\) assert_select(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	(bvsel_i)
+);
+
+// coverage on
+// pragma synthesis_on
+// synopsys translate_on 
+`endif
+
+\js }
+
+endmodule

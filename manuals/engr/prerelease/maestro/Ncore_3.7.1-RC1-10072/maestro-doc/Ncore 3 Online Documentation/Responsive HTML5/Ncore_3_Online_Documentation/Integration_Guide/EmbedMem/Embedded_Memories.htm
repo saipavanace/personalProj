@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Embedded_Memories</title>
+<meta content="Embedded Memories" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Integration_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "2.2.1";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/EmbedMem.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/SRAM_Test_Signals.htm">
+ <meta name="topic-breadcrumbs" content="Integration Guide > Select Maestro Flow Considerations" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1045464"><a id="966_Heading1_1045464" name="966_Heading1_1045464"></a>3.1 Embedded Memories</p><p class="Body" id="1045468">Ncore enables the user to, optionally, implement specific data structures as embedded memories.</p><p class="Body" id="1049201">For example, the user could specify tag&#x2D;based snoop filter data structures to be implemented as compiled SRAMs, while other data structures, for example staging data buffers, are implemented as cell&#x2D;based flops.</p><p class="Heading2" id="1049182"><a id="966_Heading2_1049182" name="966_Heading2_1049182"></a>3.1.1 Memory Wrapper</p><p class="Body" id="1045469">Ncore creates a &quot;wrapper&quot; for each logical data structure, which is an empty RTL module with control, address, and data signals required to implement a functional interface that is driven from Ncore to the embedded memory wrapper. The user is responsible for implementing the wrapper module by instantiating one or more compiled memory arrays and specifying any other external logic required to fully implement the memory side of the Ncore control interface. The user can add or remove signals required for BIST&#47;DFT or other functionalities. These signals are also driven from Ncore to the embedded memory wrapper.</p><p class="Body" id="1045488">The user&#x2D;supplied functionality for the wrapper module <span style="font-weight:Bold;">must</span> fully implement the specification that is generated in the embedded memories section of the reports summary. This logical embedded memory specification describes control sequencing, embedded memory depth requirements, and embedded memory width requirements. </p><p class="Body" id="1046819">Ncore creates both single and double ported memory wrappers. The list of signals for a single ported memory wrapper is as follows&#x3A;<div align="left"><table class="Terms" style="max-width: 100% ;height: auto;"><col width="55.93px"/><col width="423.72px"/><tr height="22.67px"><td><p class="CellBody" id="1034327">D&#x3A;</p></td><td><p class="CellBody" id="1034329">Write Data</p></td></tr><tr height="22.67px"><td><p class="CellBody" id="1034331">ADR&#x3A;</p></td><td><p class="CellBody" id="1034333">Address</p></td></tr><tr height="22.67px"><td><p class="CellBody" id="1034335">ME&#x3A;</p></td><td><p class="CellBody" id="1034337">Memory Enable. Asserted high for each read or write</p></td></tr><tr height="22.67px"><td><p class="CellBody" id="1034339">WE&#x3A;</p></td><td><p class="CellBody" id="1034341">Write Enable. Asserted high for writes</p></td></tr><tr height="37.33px"><td><p class="CellBody" id="1034343">WEM&#x3A;</p></td><td><p class="CellBody" id="1034345">Write Enable Mask. WEM is as wide as the data and has negative polarity. When it is &#x30;, then the associated bit should be written.</p></td></tr><tr height="22.67px"><td><p class="CellBody" id="1034347">Q&#x3A;</p></td><td><p class="CellBody" id="1034349">Read Data</p></td></tr></table></div></p><p class="Body" id="1045284"><span style="font-kerning:none;">The timing of the embedded memories is shown in </span><span style="font-kerning:none;color:#0000ff;"><a  href="#XREF_46040__Figure%111__Embedded_Memory_Timing4" style="font-kerning:none;color:#0000ff;">Figure&#160;1</a></span><span style="font-kerning:none;">, which shows read timing and <a  href="#XREF_62321__Figure%113__Write_Timing4" style="font-kerning:none;color:#0000ff;">Figure&#160;2</a></span><span style="font-kerning:none;">, w</span><span style="font-kerning:none;">hich shows write timing.</span></p><p class="Figure" id="1034353">Figure&#160;1. <a id="XREF_46040__Figure%111__Embedded_Memory_Timing4" name="XREF_46040__Figure%111__Embedded_Memory_Timing4">iming </a>Read T<img align="" alt="Read_timing" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/Read_timing.png" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="346.879395" x="48.000000" y="6.400024" /><a id="XREF_42124__3_5_Report_Files4" name="XREF_42124__3_5_Report_Files4"></a></p><p class="Figure" id="1045670">Figure&#160;2. <a id="XREF_62321__Figure%113__Write_Timing4" name="XREF_62321__Figure%113__Write_Timing4">Write Timing </a><img align="" alt="Write_timing" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/Write_timing.png" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="340.479492" x="48.000000" y="10.399963" /></p><p class="Heading2" id="1048375"><a id="966_Heading2_1048375" name="966_Heading2_1048375"></a>3.1.2 DCE Memory Read Operation Assumption</p><p class="BodyAfterHead" id="1048434">Ncore Distributed Coherence Engine embeds memories for the directory structures to track the location of data. The DCE unit has an implicit assumption, for pipeline stall&#47;replay logic, that the Memory Output holds after a read operation completes that is aligned to the memory behavior as shown in the following figure.</p><p class="Figure" id="1048473">Figure&#160;3. Memory Read Cycle Timing Waveforms<img align="" alt="" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/Integration_Guide_EmbedMem_image7.png" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="513.000000" x="15.000020" y="5.000000" /></p></div>
+</body>
+</html>

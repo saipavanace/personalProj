@@ -1,0 +1,62 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Simple round-robin arbiter combinatorial logic.
+// Last decision is not stored inside arbiter.
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+
+var num_inputs = u.getParam('num_inputs');
+
+\jsend
+
+\jsbegin
+u.port('input',  'req',        num_inputs);
+u.port('input',  'park_point', num_inputs);
+u.port('output', 'grant',      num_inputs);
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+    wire [\=num_inputs-1=\:0] park_point_therm;
+    wire [\=num_inputs-1=\:0] req_mask_0;
+    wire [\=num_inputs-1=\:0] req_mask_1;
+    reg  [\=num_inputs-1=\:0] req_mask_0_ffs;
+    reg  [\=num_inputs-1=\:0] req_mask_1_ffs;
+
+    assign park_point_therm = park_point;
+        
+    assign req_mask_0  =  park_point_therm & req;
+    assign req_mask_1  = ~park_point_therm & req;
+    assign grant       = |{req_mask_1} ? req_mask_1_ffs : req_mask_0_ffs; 
+
+    always @(*)
+    case (1'b1)
+        \jsbegin
+        for (var i = 0; i < num_inputs; i++) {
+        \jsend
+        req_mask_0[\=num_inputs-i-1=\]: req_mask_0_ffs = (\=num_inputs=\'b1 << \=num_inputs-i-1=\);
+        \jsbegin
+        }
+        \jsend
+        default req_mask_0_ffs = \=num_inputs=\'b0;
+    endcase
+
+    always @(*)
+    case (1'b1)
+        \jsbegin
+        for (var i = 0; i < num_inputs; i++) {
+        \jsend
+        req_mask_1[\=num_inputs-i-1=\]: req_mask_1_ffs = (\=num_inputs=\'b1 << \=num_inputs-i-1=\);
+        \jsbegin
+        }
+        \jsend
+        default req_mask_1_ffs = \=num_inputs=\'b0;
+    endcase
+
+endmodule

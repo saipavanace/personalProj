@@ -1,0 +1,453 @@
+[
+    {
+        "name": "xCNTCR",
+        "description": "Counter Control Register",
+        "csrDescription": "Counter Control Register",
+        "addressOffset": 0,
+        "fields": [
+            {
+                "name": "CountEn",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable counting",
+                "reset": 0
+            },
+            {
+                "name": "CountClr",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "WSC",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Clear counter",
+                "reset": 0
+            },
+            {
+                "name": "InterruptEn",
+                "bitOffset": 2,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable rollover or overflow interrupt",
+                "reset": 0
+            },
+            {
+                "name": "OverFlowStatus",
+                "bitOffset": 3,
+                "bitWidth": 1,
+                "access": "RO",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Indicates overflow, sticky bit clears by clearing the counter",
+                "reset": 0
+            },
+            {
+                "name": "CounterCtl",
+                "bitOffset": 4,
+                "bitWidth": 3,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Counter mode. 000: Normal, 001: AND, 010: XOR",
+                "reset": 0
+            },
+            {
+                "name": "SSRCount",
+                "bitOffset": 7,
+                "bitWidth": 3,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "000: clear CNTSR, 001: capture upper bits in CNTSR, 010: use CNTSR as LPF, 011: use CNTSR as max/saturation",
+                "reset": 0
+            },
+            {
+                "name": "FilterSel",
+                "bitOffset": 10,
+                "bitWidth": 3,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "LPF coefficients",
+                "reset": 0
+            },
+            {
+                "name": "MinStallPeriod",
+                "bitOffset": 13,
+                "bitWidth": 3,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "value is (2^ minstallperiod)",
+                "reset": 0
+            },
+            {
+                "name": "CntEvtSecond",
+                "bitOffset": 16,
+                "bitWidth": 6,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Select the second count event, 0 not valid",
+                "reset": 0
+            },
+            {
+                "name": "Rsvd0",
+                "bitOffset": 22,
+                "bitWidth": 2,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bis 23:22",
+                "reset": 0
+            },
+            {
+                "name": "CntEvtFirst",
+                "bitOffset": 24,
+                "bitWidth": 6,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Select the first count event, 0 not valid",
+                "reset": 0
+            },
+	    {
+                "name": "Rsvd1",
+                "bitOffset": 30,
+                "bitWidth": 2,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bis 31:30",
+                "reset": 0
+            }
+
+           ]
+    },
+    {
+        "name": "xCNTVR",
+        "description": "Counter Value Register",
+        "csrDescription": "Counter Value Register Register",
+        "addressOffset": 4,
+        "fields": [
+            {
+                "name": "CountVal",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RW",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Counter value lower bits 31:0"
+            }
+        ]
+    },
+    {
+        "name": "xCNTSR",
+        "description": "Counter Saturation Register",
+        "csrDescription": "Counter Saturation Register",
+        "addressOffset": 8,
+        "fields": [
+            {
+                "name": "CountSatVal",
+                "bitOffset": 0,
+                "bitWidth": 32,
+                "access": "RW",
+                "hardware": "RW",
+                "reset": 0,
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Either upper counter value 63:32 or LPF bits"
+            }
+        ]
+    },
+    {
+        "name": "xBCNTFR",
+        "description": "BW Counter Filter Register",
+        "csrDescription": "BW Counter Filter Register",
+        "addressOffset": 12,
+        "fields": [
+            {
+                "name": "FilterVal",
+                "bitOffset": 0,
+                "bitWidth": 20,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Filter value",
+                "reset": 0
+            },
+            {
+                "name": "Rsvd0",
+                "bitOffset": 20,
+                "bitWidth": 10,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bits 29:20",
+                "reset": 0
+            },
+            {
+                "name": "FilterSel",
+                "bitOffset": 30,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Set to filter BW counting",
+                "reset": 1
+            },
+            {
+                "name": "FilterEn",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Set to enable BW counting else disabled",
+                "reset": 0
+            }
+	]
+    },
+    {
+        "name": "xBCNTMR",
+        "description": "BW Counter Mask Register",
+        "csrDescription": "BW Counter Mask Register",
+        "addressOffset": 16,
+        "fields": [
+            {
+                "name": "MaskVal",
+                "bitOffset": 0,
+                "bitWidth": 20,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Mask value",
+                "reset": 0
+            },
+            {
+                "name": "Rsvd0",
+                "bitOffset": 20,
+                "bitWidth": 12,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bits 20:31",
+                "reset": 0
+            }
+
+	]
+    },
+    {
+        "name": "xLCNTCR",
+        "description": "Latency Counter Control Register",
+        "csrDescription": "Latency Counter Control Register",
+        "addressOffset": 20,
+        "fields": [
+            {
+                "name": "LatencyPreScale",
+                "bitOffset": 0,
+                "bitWidth": 2,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "latency pre scale; 00 counts every 2 cycles, 01 counts every 4 cycles, 10 counts every 8 cycles, 11 counts every 16 cycles",
+                "reset": 0
+            },
+            {
+                "name": "Rsvd0",
+                "bitOffset": 2,
+                "bitWidth": 2,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bits 3:2",
+                "reset": 0
+            },
+	    {
+                "name": "LatencyCountEn",
+                "bitOffset": 4,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enable latency counter",
+                "reset": 0
+            },
+	    {
+                "name": "RdWrLatency",
+                "bitOffset": 5,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Read/Wr latency, 0 to count read latency and 1 to count wr latency",
+                "reset": 0
+            },
+	    {
+                "name": "Rsvd1",
+                "bitOffset": 6,
+                "bitWidth": 2,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Reserved bis 7:6",
+                "reset": 0
+            },
+	    {
+                "name": "LatencyBinOffset",
+                "bitOffset": 8,
+                "bitWidth": 8,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "latency bit offset",
+                "reset": 0
+            },
+
+	    {
+                "name": "Rsvd2",
+                "bitOffset": 16,
+                "bitWidth": 16,
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "reserved bits [31:16]",
+                "reset": 0
+            }
+	]
+    },
+    {
+        "name": "xMCNTCR",
+        "description": "Main Counter Control Register",
+        "csrDescription": "Main Counter Control Register",
+        "addressOffset": 24,
+        "fields": [
+            {
+                "name": "LocalCountEnable",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enables all local counters when set (0-1) and stops all local counters when reset (1-0)",
+                "reset": 0
+            },
+            {
+                "name": "LocalCountClear",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "WSC",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Clear all local counters",
+                "reset": 0
+            }
+        ]
+    },
+    {
+        "name": "xMCNTCRDVE",
+        "description": "Main Counter Control Register for DVE",
+        "csrDescription": "Main Counter Control Register for DVE",
+        "addressOffset": 28,
+        "fields": [
+            {
+                "name": "LocalCountEnable",
+                "bitOffset": 0,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Enables all local counters when set (0-1) and stops all local counters when reset (1-0)",
+                "reset": 0
+            },
+            {
+                "name": "LocalCountClear",
+                "bitOffset": 1,
+                "bitWidth": 1,
+                "access": "WSC",
+                "hardware": "RW",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Clear all local counters",
+                "reset": 0
+            },
+	        {
+                "name": "MasterCountEnable",
+                "bitOffset": 31,
+                "bitWidth": 1,
+                "access": "RW",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Setting this (0-1) will set Count Enable in all Ncore unit performance counters",
+                "reset": 0
+            }
+        ]
+    }
+]

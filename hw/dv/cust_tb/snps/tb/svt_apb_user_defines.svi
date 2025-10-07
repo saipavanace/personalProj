@@ -1,0 +1,13 @@
+<%const chipletObj = obj.lib.getAllChipletRefs();%>
+///////////////////////////////////////////////////////////
+// Overriding ACE VIP defines with Concerto system defines
+///////////////////////////////////////////////////////////
+
+`ifndef SVT_APB_INCLUDE_USER_DEFINES
+`define SVT_APB_INCLUDE_USER_DEFINES
+
+`define SVT_APB_MAX_ADDR_WIDTH 64
+`define SVT_APB_PADDR_WIDTH                     <%=chipletObj[0].DebugApbInfo[0].interfaces.apbInterface.params.wAddr%>
+`define SVT_APB_MAX_DATA_WIDTH                  <%=chipletObj[0].DebugApbInfo[0].interfaces.apbInterface.params.wData%>
+
+`endif

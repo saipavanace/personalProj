@@ -1,0 +1,3126 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+//
+// NAME: DCE
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+//
+//=============================================================================
+
+
+//      
+// Variables
+// 
+   
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+var utilFunctions   = obj.userLib.lib_utils;
+var newToOldStyleInterface      = m.newToOldStyleInterface.bind( null, obj.userLib );
+const flattenInterface          = m.flattenInterface;
+const vlogGen       = m.vlogGen();
+const vlogPkdArray  = vlogGen.vlogPkdArray;
+
+u.paramDefault('syncDepth', 'int', 2);
+
+u.paramDefault('engVerId',                    'int',      0);
+u.paramDefault('implVerId',                   'int',      0);
+u.paramDefault('wRpn',                        'int',      3);
+u.paramDefault('wNrri',                       'int',      3);
+u.paramDefault('useResiliency',               'int',      0);
+u.paramDefault('ResilienceInfo',              'object',   {});
+u.paramDefault('wAddr',                       'int',      48);
+u.paramDefault('timeOutThreshold',            'int',      0);
+u.paramDefault('fnEnableTimeOutRef',          'int',      0);
+
+u.paramDefault('concParams',                  'object',   {});
+u.paramDefault('concMuxMsgParams',            'object',   {});
+u.paramDefault('interfaces',                  'object',   {});
+u.paramDefault('smiPortParams',               'object',   {});
+u.paramDefault('BootInfo',                    'object',   {});
+
+u.paramDefault('wSnoopEnables'                ,'int'  ,   0);
+u.paramDefault('nPerfCounters'                ,'int'  ,   4);
+
+//
+// Params
+//
+
+u.paramDefault('useSramInputFlop',            'int',      0);
+u.paramDefault('useMemoryGating',             'int',      0);
+u.paramDefault('usePma','int',1);
+u.paramDefault('PmaInfo', 'object', {"wActive" : 1, "fnPmaInterfaceType":"Q"});
+
+u.paramDefault('timeoutBistControlEnable','boolean', true);
+
+u.paramDefault('MemoryGeneration','object',{});
+
+u.paramDefault('CMDOverflowBufInSRAM','int',0);
+
+var MemoryGeneration = obj.lib.getParam('MemoryGeneration');
+
+var CMDOverflowBufInSRAM = obj.lib.getParam('CMDOverflowBufInSRAM');
+
+if (CMDOverflowBufInSRAM) {
+var cSbMemGen   = MemoryGeneration["CmdSkidBufMem"][0];
+}
+
+let fnEnableQos     = m.ParamDefaultGet(u, 'fnEnableQos',       'int',     0);
+let QosInfo         = m.ParamDefaultGet(u, 'QosInfo',           'object',  {qosMap:[]});
+
+var timeoutBistControlEnable        = u.getParam('timeoutBistControlEnable');
+
+var syncDepth = u.getParam('syncDepth');
+
+var useSramInputFlop = u.getParam('useSramInputFlop');
+var useMemoryGating = u.getParam('useMemoryGating');
+
+var useSaveLatency = 0;
+
+var wSnoopEnables	= obj.lib.getParam('wSnoopEnables');
+var nPerfCounters	= obj.lib.getParam('nPerfCounters');
+
+let smiTxPortParams = u.getParam('smiPortParams', 'tx');
+let smiRxPortParams = u.getParam('smiPortParams', 'rx');
+let concParams = u.getParam('concParams');
+let concMuxTxMsgParams = u.getParam('concMuxMsgParams', 'tx');
+let concMuxRxMsgParams = u.getParam('concMuxMsgParams', 'rx');
+let interfaces = u.getParam('interfaces');
+let usePma = u.getParam('usePma');
+let PmaInfo = u.getParam('PmaInfo');
+let csr = u.getParam('csr');
+let useResiliency = u.getParam('useResiliency');
+let ResilienceInfo = u.getParam('ResilienceInfo');
+var nSkidBufSize          = obj.lib.getParam('nCMDSkidBufSize');
+var nSkidBufArb           = obj.lib.getParam('nCMDSkidBufArb');
+var haveMasterTriggerInterface = (interfaces.masterTriggerInt != undefined) && !interfaces.masterTriggerInt._SKIP_;
+
+let enableUnitDuplication;
+let nDelay;
+
+if (useResiliency) {
+    enableUnitDuplication = u.getParam('ResilienceInfo').enableUnitDuplication;
+    nDelay = u.getParam('ResilienceInfo').nResiliencyDelay;
+} else {
+    enableUnitDuplication = 0;
+    nDelay = 0;
+}
+
+var useSysEvtCoh = concMuxRxMsgParams.hasOwnProperty('sysReq');
+
+var EnableSysEvtToDve = 1;
+
+// Concerto Mux TX Message struture
+let CMD_RSP = m.concMsgGen(obj, 'cmd_rsp_', 'ConcMsgBodyCCMDRsp', concParams.hdrParams, concParams.cmdRspParams, concMuxTxMsgParams.cmdRsp, 'tx');
+let UPD_RSP = m.concMsgGen(obj, 'upd_rsp_', 'ConcMsgBodyUPDRsp', concParams.hdrParams, concParams.updRspParams, concMuxTxMsgParams.updRsp, 'tx');
+let SNP_REQ = m.concMsgGen(obj, 'snp_req_', 'ConcMsgBodySNPReq', concParams.hdrParams, concParams.snpReqParams, concMuxTxMsgParams.snpReq, 'tx');
+let STR_REQ = m.concMsgGen(obj, 'str_req_', 'ConcMsgBodySTRReq', concParams.hdrParams, concParams.strReqParams, concMuxTxMsgParams.strReq, 'tx');
+let RBR_REQ = m.concMsgGen(obj, 'rbr_req_', 'ConcMsgBodyRBRReq', concParams.hdrParams, concParams.rbrReqParams, concMuxTxMsgParams.rbrReq, 'tx');
+let MRD_REQ = m.concMsgGen(obj, 'mrd_req_', 'ConcMsgBodyMRDReq', concParams.hdrParams, concParams.mrdReqParams, concMuxTxMsgParams.mrdReq, 'tx');
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+var SYS_REQ_TX = m.concMsgGen(obj, 'sys_req_tx_', 'ConcMsgBodySYSReq', concParams.hdrParams, concParams.sysReqParams, concMuxTxMsgParams.sysReq, 'tx');
+var SYS_RSP_TX = m.concMsgGen(obj, 'sys_rsp_tx_', 'ConcMsgBodySYSRsp', concParams.hdrParams, concParams.sysRspParams, concMuxTxMsgParams.sysRsp, 'tx');
+}
+
+// Concerto Mux RX Message structure
+let CMD_REQ = m.concMsgGen(obj, 'cmd_req_', 'ConcMsgBodyCMDReq', concParams.hdrParams, concParams.cmdReqParams, concMuxRxMsgParams.cmdReq, 'rx');
+let UPD_REQ = m.concMsgGen(obj, 'upd_req_', 'ConcMsgBodyUPDReq', concParams.hdrParams, concParams.updReqParams, concMuxRxMsgParams.updReq, 'rx');
+let SNP_RSP = m.concMsgGen(obj, 'snp_rsp_', 'ConcMsgBodySNPRsp', concParams.hdrParams, concParams.snpRspParams, concMuxRxMsgParams.snpRsp, 'rx');
+let STR_RSP = m.concMsgGen(obj, 'str_rsp_', 'ConcMsgBodySTRRsp', concParams.hdrParams, concParams.strRspParams, concMuxRxMsgParams.strRsp, 'rx');
+let MRD_RSP = m.concMsgGen(obj, 'mrd_rsp_', 'ConcMsgBodyMRDRsp', concParams.hdrParams, concParams.mrdRspParams, concMuxRxMsgParams.mrdRsp, 'rx');
+let RBR_RSP = m.concMsgGen(obj, 'rbr_rsp_', 'ConcMsgBodyRBRRsp', concParams.hdrParams, concParams.rbrRspParams, concMuxRxMsgParams.rbrRsp, 'rx');
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+var SYS_RSP_RX = m.concMsgGen(obj, 'sys_rsp_rx_', 'ConcMsgBodySYSRsp', concParams.hdrParams, concParams.sysRspParams, concMuxRxMsgParams.sysRsp, 'rx');
+var SYS_REQ_RX = m.concMsgGen(obj, 'sys_req_rx_', 'ConcMsgBodySYSReq', concParams.hdrParams, concParams.sysReqParams, concMuxRxMsgParams.sysReq, 'rx');
+}
+
+let CONC_TX_INTF = [];
+let CONC_RX_INTF = [];
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+CONC_TX_INTF.push(CMD_RSP, UPD_RSP, SNP_REQ, STR_REQ, RBR_REQ, MRD_REQ, SYS_REQ_TX, SYS_RSP_TX);
+CONC_RX_INTF.push(CMD_REQ, UPD_REQ, SNP_RSP, STR_RSP, MRD_RSP, RBR_RSP, SYS_RSP_RX, SYS_REQ_RX);
+} else {
+CONC_TX_INTF.push(CMD_RSP, UPD_RSP, SNP_REQ, STR_REQ, RBR_REQ, MRD_REQ);
+CONC_RX_INTF.push(CMD_REQ, UPD_REQ, SNP_RSP, STR_RSP, MRD_RSP, RBR_RSP);
+}
+
+// SMI interface params generation
+let SMI_TX_INTF = [];
+let SMI_TX_INTF_DIRECTION = [];
+let SMI_RX_INTF = [];
+let SMI_RX_INTF_DIRECTION = [];
+for(let i = 0; i< smiTxPortParams.length; i++) {
+    SMI_TX_INTF.push(m.smiPortGen(obj, smiTxPortParams[i], interfaces.smiTxInt[i].params, 'tx'));
+    SMI_TX_INTF_DIRECTION.push(interfaces.smiTxInt[i].direction);
+};
+
+for(let i = 0; i < smiRxPortParams.length; i++) {
+    SMI_RX_INTF.push(m.smiPortGen(obj, smiRxPortParams[i], interfaces.smiRxInt[i].params, 'rx'));
+    SMI_RX_INTF_DIRECTION.push(interfaces.smiRxInt[i].direction);
+};
+   
+// clk interface params generation
+let interfaceFunc = new m[interfaces.clkInt.interface];
+let clkInterface          = interfaceFunc.getSignalsBundle(interfaces.clkInt.params);
+let clkInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.clkInt.params);
+let clkInterfaceName      = interfaces.clkInt.name;
+let clkInterfaceDirection = interfaces.clkInt.direction;
+let intClkInterface       = { clk:1, reset_n:1 };
+// IRQ interface params generation
+interfaceFunc = new m[interfaces.irqInt.interface];
+let irqInterface          = interfaceFunc.getSignalsBundle(interfaces.irqInt.params);
+let irqInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.irqInt.params);
+let irqInterfaceName      = interfaces.irqInt.name;
+let irqInterfaceDirection = interfaces.irqInt.direction;
+
+// Unit Id interface params generation
+interfaceFunc = new m[interfaces.uIdInt.interface];
+let unitIdInterface          = interfaceFunc.getSignalsBundle(interfaces.uIdInt.params);
+let unitIdInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uIdInt.params);
+let unitIdInterfaceName      = interfaces.uIdInt.name;
+let unitIdInterfaceDirection = interfaces.uIdInt.direction;
+
+// CA Sys Unit Id interface params generation
+interfaceFunc = new m[interfaces.uSysCaIdInt.interface];
+let caUnitIdInterface          = interfaceFunc.getSignalsBundle(interfaces.uSysCaIdInt.params);
+let caUnitIdInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uSysCaIdInt.params);
+let caUnitIdInterfaceName      = interfaces.uSysCaIdInt.name;
+let caUnitIdInterfaceDirection = interfaces.uSysCaIdInt.direction;
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+// CA Sys Node Unit Id interface params generation
+interfaceFunc = new m[interfaces.uSysCaNodeIdInt.interface];
+var caNodeUnitIdInterface          = interfaceFunc.getSignalsBundle(interfaces.uSysCaNodeIdInt.params);
+var caNodeUnitIdInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uSysCaNodeIdInt.params);
+var caNodeUnitIdInterfaceName      = interfaces.uSysCaNodeIdInt.name;
+var caNodeUnitIdInterfaceDirection = interfaces.uSysCaNodeIdInt.direction;
+}
+
+// DMI Sys Unit Id interface params generation
+interfaceFunc = new m[interfaces.uSysDmiIdInt.interface];
+let dmiUnitIdInterface          = interfaceFunc.getSignalsBundle(interfaces.uSysDmiIdInt.params);
+let dmiUnitIdInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uSysDmiIdInt.params);
+let dmiUnitIdInterfaceName      = interfaces.uSysDmiIdInt.name;
+let dmiUnitIdInterfaceDirection = interfaces.uSysDmiIdInt.direction;
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (interfaces.uSysDveIdInt) {
+// Dve Sys Unit Id interface params generation
+interfaceFunc           = new m[interfaces.uSysDveIdInt.interface];
+var dveIdInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uSysDveIdInt.params);
+var dveIdInterfaceName      = interfaces.uSysDveIdInt.name;
+var dveIdInterface          = {name: dveIdInterfaceName, signals: dveIdInterfaceBundle};
+var dveIdInterfaceDirection = interfaces.uSysDveIdInt.direction;
+}
+
+let connected_dmiUnitIdInterface, connected_dmiUnitIdInterfaceBundle, connected_dmiUnitIdInterfaceName, connected_dmiUnitIdInterfaceDirection;
+// Connected DMI Sys Unit Id interface params generation
+interfaceFunc = new m[interfaces.uSysConnectedDmiIdInt.interface];
+    connected_dmiUnitIdInterface          = interfaceFunc.getSignalsBundle(interfaces.uSysConnectedDmiIdInt.params);
+    connected_dmiUnitIdInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uSysConnectedDmiIdInt.params);
+    connected_dmiUnitIdInterfaceName      = interfaces.uSysConnectedDmiIdInt.name;
+    connected_dmiUnitIdInterfaceDirection = interfaces.uSysConnectedDmiIdInt.direction;
+
+let connected_dmiRbOffsetInterface, connected_dmiRbOffsetInterfaceBundle, connected_dmiRbOffsetInterfaceName, connected_dmiRbOffsetInterfaceDirection;
+// Connected DMI RBID Offset Sys Unit Id interface params generation
+interfaceFunc = new m[interfaces.uSysConnectedDmiRbOffsetInt.interface];
+    connected_dmiRbOffsetInterface          = interfaceFunc.getSignalsBundle(interfaces.uSysConnectedDmiRbOffsetInt.params);
+    connected_dmiRbOffsetInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uSysConnectedDmiRbOffsetInt.params);
+    connected_dmiRbOffsetInterfaceName      = interfaces.uSysConnectedDmiRbOffsetInt.name;
+    connected_dmiRbOffsetInterfaceDirection = interfaces.uSysConnectedDmiRbOffsetInt.direction;
+
+let connected_caUnitIdInterface, connected_caUnitIdInterfaceBundle, connected_caUnitIdInterfaceName, connected_caUnitIdInterfaceDirection;
+// Connected Caching Agent Sys Unit Id interface params generation
+interfaceFunc = new m[interfaces.uSysConnectedCaIdInt.interface];
+    connected_caUnitIdInterface          = interfaceFunc.getSignalsBundle(interfaces.uSysConnectedCaIdInt.params);
+    connected_caUnitIdInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.uSysConnectedCaIdInt.params);
+    connected_caUnitIdInterfaceName      = interfaces.uSysConnectedCaIdInt.name;
+    connected_caUnitIdInterfaceDirection = interfaces.uSysConnectedCaIdInt.direction;
+
+// APB interface params generation
+interfaceFunc = new m[interfaces.apbInt.interface];
+let apbInterface          = interfaceFunc.getSignalsBundle(interfaces.apbInt.params);
+let apbInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.apbInt.params);
+let apbInterfaceName      = interfaces.apbInt.name;
+let apbInterfaceDirection = interfaces.apbInt.direction;
+
+// Generic interface (for memory sideband signals) params generation
+  var memInterfaceFunc      = [];
+  var memInterface          = [];
+  var memInterfaceBundle    = [];
+  var memInterfaceName      = [];
+  var memInterfaceDirection = [];
+  var memInterfaceDef       = [];
+  var memInterfaceSkip      = [];
+  var memInterfaceDict      = {};
+  for (var i=0; i < interfaces.memoryInt.length; i++) {
+    memInterfaceFunc.push( new obj.userLib[interfaces.memoryInt[i].interface] );
+    memInterface.push( memInterfaceFunc[i].getSignals(interfaces.memoryInt[i].params) );
+    memInterfaceBundle.push( memInterfaceFunc[i].getSignalsBundle(interfaces.memoryInt[i].params) );
+    memInterfaceName.push( interfaces.memoryInt[i].name );
+    memInterfaceDirection.push( interfaces.memoryInt[i].direction );
+    memInterfaceDef.push( interfaces.memoryInt[i].synonyms );
+    memInterfaceSkip.push( interfaces.memoryInt[i]._SKIP_ );
+    memInterfaceDict[ interfaces.memoryInt[i].name ] = i;
+  }
+
+// Register Protection interface params generation
+var regProtectionInterfaceBundle = {};
+var regProtectionInterfaceName   = '';
+var regProtectionStyle           = null;
+
+// Q-Channel Interface
+if (usePma) {
+
+interfaceFunc            = new obj.userLib[interfaces.qInt.interface];
+var qInterface           = interfaceFunc.getSignals(interfaces.qInt.params);
+var qInterfaceBundle     = interfaceFunc.getSignalsBundle(interfaces.qInt.params);
+var qInterfaceName       = interfaces.qInt.name;
+var qInterfaceDirection  = interfaces.qInt.direction;
+
+}
+
+// Resilliancy interface params generation
+if (useResiliency) {
+
+interfaceFunc               = new obj.userLib[interfaces.bistInt.interface];
+var bistInterface           = interfaceFunc.getSignals(interfaces.bistInt.params);
+var bistInterfaceBundle     = interfaceFunc.getSignalsBundle(interfaces.bistInt.params);
+var bistInterfaceName       = interfaces.bistInt.name;
+var bistInterfaceDirection  = interfaces.bistInt.direction;
+
+interfaceFunc               = new obj.userLib[interfaces.faultInt.interface];
+var faultInterface          = interfaceFunc.getSignals(interfaces.faultInt.params);
+var faultInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.faultInt.params);
+var faultInterfaceName      = interfaces.faultInt.name;
+var faultInterfaceDirection = interfaces.faultInt.direction;
+
+    if (enableUnitDuplication) {
+interfaceFunc                  = new m[interfaces.checkClkInt.interface];
+var checkClkInterface          = interfaceFunc.getSignalsBundle(interfaces.checkClkInt.params);
+var checkClkInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.checkClkInt.params);
+var checkClkInterfaceName      = interfaces.checkClkInt.name;
+var checkClkInterfaceParam     = interfaces.checkClkInt.params;
+var checkClkInterfaceDirection = interfaces.checkClkInt.direction;
+    }
+
+}
+
+// Internal Fault interface params generation
+
+var internalFaultInterfaceBundle = {
+            "target_id_UCE"     : 1,
+            "timeout_UCE"       : 1,
+            "dm_UCE"            : 1,
+            "dm_CE"             : 1,
+            "cmux_UCE"          : 1,
+};
+var dce_cmux_ce_ports = {
+            "cmux_cmd_req_CE"   : 1,
+            "cmux_str_rsp_CE"   : 1,
+            "cmux_snp_rsp_CE"   : 1,
+            "cmux_upd_req_CE"   : 1,
+            "cmux_rbr_rsp_CE"   : 1,
+            "cmux_mrd_rsp_CE"   : 1
+        };
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+    dce_cmux_ce_ports["cmux_sys_req_rx_CE"] = 1;
+    dce_cmux_ce_ports["cmux_sys_rsp_rx_CE"] = 1;
+}
+
+if (CMDOverflowBufInSRAM) {
+    internalFaultInterfaceBundle['cmd_skid_buffer_uce'] = 1;
+    internalFaultInterfaceBundle['cmd_skid_buffer_ce'] = 1;
+}
+
+var internalFaultInterfaceName = 'dce_';
+
+
+
+//var protectionStyle = {protection: "none", protWidth: 0};
+//var protectionInterface = {name: "", signals: {}};
+
+var protectionStyle = {protection: "parity", protWidth: 32};
+
+var csr_prot_intf = {name: "dce_csr_", signals: {err_par : 1}};
+
+var sb_prot_intf = {name: "dce_skid_buffer_", signals: {err_par : 1}};
+
+var sbcmdreqfifo_prot_intf = {name: "dce_sbcmdreqfifo_", signals: {err_par : 1}};
+var sbcmdrspfifo_prot_intf = {name: "dce_sbcmdrspfifo_", signals: {err_par : 1}};
+
+var interfaces_protInt = {
+        name: '',
+        direction: 'master',
+        interface: 'InterfacePROT',
+        params: {
+            wErrPar: 1,
+            wErrSb: 0,
+            wErrDb: 0,
+            wSynd: 0,
+            wIndex: 0,
+            wCorrectable: 0,
+            wUncorrectable: 0
+        }
+};
+
+var protInterfaceFunc = new obj.userLib[interfaces_protInt.interface];
+
+var cmux_prot_intf = {};
+    cmux_prot_intf.name    = 'dce_concerto_mux_';
+    cmux_prot_intf.signals = protInterfaceFunc.getSignalsBundle(interfaces_protInt.params);
+
+var dce_att_flops_protectionInterface = {};
+    dce_att_flops_protectionInterface.name = 'dce_att_flops_prot_';
+    dce_att_flops_protectionInterface.signals = { err_par : 1 };
+
+var dce_att_flops_interfaces = [];
+    dce_att_flops_interfaces.push({
+        modulePrefix : dce_att_flops_protectionInterface.name,
+        localPrefix  : dce_att_flops_protectionInterface.name,
+        interface    : dce_att_flops_protectionInterface.signals});
+
+//=============================================================================
+// Concerto MUX variables
+//=============================================================================
+
+    var concertoMuxFaultPorts = {};
+    var conc_intf_iterated = []; 
+
+    var dce_cmux_CE_tieoffs = {};
+    var dce_cmux_header_UCE_wires = {};
+    var dce_cmux_message_UCE_wires = {};
+    var dce_cmux_data_UCE_wires = {};
+
+    // Create CMUX/Tre Fault Ports if they Exist
+    for(let i=0; i<SMI_RX_INTF.length; i++) 
+    {    
+       for (let j=0; j<SMI_RX_INTF[i].params.fnMsgClass.length; j++)
+       {
+         let name = SMI_RX_INTF[i].params.fnMsgClass[j];
+         let index = CONC_RX_INTF.findIndex(function(element) {return element.name === name; });
+
+         var hasMessageProt  = (CONC_RX_INTF[index].params.protection != null & CONC_RX_INTF[index].params.protection != "none");
+         var hasDataProt     = (CONC_RX_INTF[index].params.dpProtection != null & CONC_RX_INTF[index].params.dpProtection != "none" &  CONC_RX_INTF[index].params.dpPresent);
+         var hasHeaderProt   = (SMI_RX_INTF[i].params.protection != null & SMI_RX_INTF[i].params.protection != "none");
+         var isDuplicate     = conc_intf_iterated.includes(name);
+
+         /* istanbul ignore else env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ 
+         if((hasMessageProt | hasDataProt | hasHeaderProt) & !isDuplicate) {
+            concertoMuxFaultPorts[CONC_RX_INTF[index].name + 'CE'] = 'dce_cmux_' + CONC_RX_INTF[index].name + 'CE';
+         } else if (!isDuplicate) {
+	    dce_cmux_CE_tieoffs[CONC_RX_INTF[index].name+'CE'] = 1; //assign  dce_cmux_\=CONC_RX_INTF[index].name=\CE = 'h0;
+	 } else {}; 
+         if(hasHeaderProt & !isDuplicate ) {
+	    dce_cmux_header_UCE_wires[CONC_RX_INTF[index].name+'header_UCE'] = 1; //wire dce_cmux_\=CONC_RX_INTF[index].name=\header_UCE;
+	    concertoMuxFaultPorts[CONC_RX_INTF[index].name + 'header_UCE'] = 'dce_cmux_' + CONC_RX_INTF[index].name + 'header_UCE';
+         }
+         if(hasMessageProt & !isDuplicate ) {
+	    dce_cmux_header_UCE_wires[CONC_RX_INTF[index].name+'message_UCE'] = 1; //wire dce_cmux_\=CONC_RX_INTF[index].name=\message_UCE;
+	    concertoMuxFaultPorts[CONC_RX_INTF[index].name + 'message_UCE'] = 'dce_cmux_' + CONC_RX_INTF[index].name + 'message_UCE';
+         }
+         /* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+         if(hasDataProt & !isDuplicate ) {
+	    dce_cmux_header_UCE_wires[CONC_RX_INTF[index].name+'data_UCE'] = 1; //wire dce_cmux_\=CONC_RX_INTF[index].name=\data_UCE;
+	    concertoMuxFaultPorts[CONC_RX_INTF[index].name + 'data_UCE'] = 'dce_cmux_' + CONC_RX_INTF[index].name + 'data_UCE';
+         }
+	 conc_intf_iterated.push(name);
+       }
+    }
+
+    concertoMuxFaultPorts['clk']        = interfaces.clkInt.name+'clk';
+    concertoMuxFaultPorts['reset_n']    = interfaces.clkInt.name+'reset_n';
+    concertoMuxFaultPorts['busy']       = 'cmux_busy';
+
+//=============================================================================
+// Master Trigger Interface
+//=============================================================================
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_) {
+  var masterTriggerInterface      = newToOldStyleInterface( interfaces.masterTriggerInt );
+  obj.lib.interface( masterTriggerInterface.name, 'slave', masterTriggerInterface.signals);
+}
+
+
+
+let ASILB             = 0;
+let useMoveFlopsToTop = ASILB; // (useResiliency && enableUnitDuplication) ? 0 : 1;
+let useMoveCmuxToTop  = ASILB; // useMoveFlopsToTop;
+let useMoveCsrToTop   = ASILB; // useMoveFlopsToTop;
+let useMoveSbToTop    = ASILB; // useMoveFlopsToTop;
+let useMovePmonToTop  = ASILB; // useMoveFlopsToTop;
+
+
+let ASSERT_ON = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+let CMD_SB_DEPTH = 0; //BOON: UNUSED!! //m.ParamDefaultGet(u, 'nAttSkidEntries', 'int', 4);
+let UPD_SB_DEPTH = 4;
+let SF_INFO = m.ParamDefaultGet(u, 'SnoopFilterInfo', 'array', {});
+
+let usePLRU = (SF_INFO[0].RepPolicy === "PLRU") ? 1 : 0;
+
+let N_WAYS = m.ParamDefaultGet(u, 'nWays', 'int', 8);
+let CLO = m.ParamDefaultGet(u, 'wCacheLineOffset', 'int', 4);
+let ARST = m.ParamDefaultGet(u, 'AsyncReset', 'int', 0);
+let DRST = m.ParamDefaultGet(u, 'DataReset', 'int', 0);
+let RRD = /* istanbul ignore else env ncore_3p7 */ useSramInputFlop ? 8 : 4; //m.ParamDefaultGet(u, 'RetryDepth', 'int', useSramInputFlop ? 5 : 4);
+let PIPEDEPTH = /* istanbul ignore else env ncore_3p7 */ useSramInputFlop ? 4 : 3; //m.ParamDefaultGet(u, 'PipeDepth', 'int', useSramInputFlop ? 4 : 3);
+let NF = m.ParamDefaultGet(u, 'NullFilter', 'int', 4);
+let CM_TYPE = m.ParamDefaultGet(u, 'cmType', 'object', {});
+let N_ATT =m.ParamDefaultGet(u, 'nAttCtrlEntries', 'int', 32);
+let N_DMIS = m.ParamDefaultGet(u, 'nDmis', 'int', 4);
+var N_CONNECTED_DMIS = m.ParamDefaultGet(u, 'nDceConnectedDmis', 'int', 4);
+let W_FUNIT_ID = m.ParamDefaultGet(u, 'wFUnitId', 'int', 4);
+let W_FPORT_ID = m.ParamDefaultGet(u, 'wFPortId', 'int', 4);
+let W_NUNIT_ID = m.ParamDefaultGet(u, 'wNUnitId', 'int', 4);
+let W_RPN  = interfaces.uIdInt.params.wRpn;
+let W_NRRI = interfaces.uIdInt.params.wNrri;
+let N_AIUS = m.ParamDefaultGet(u, 'nAius', 'int', 4);
+let N_CHIE_AIUS = m.ParamDefaultGet(u, 'nChieAius', 'int', 0);
+let N_C_AGENTS = m.ParamDefaultGet(u, 'nCachingAgents', 'int', 4);
+let W_LP_ID = m.ParamDefaultGet(u, 'wLpId', 'int', 4);
+let N_LP_IDS = m.ParamDefaultGet(u, 'nLpIdPerCaAgent', 'int', 2);
+let N_PROCS = m.ParamDefaultGet(u, 'nProcs', 'int', 14);
+let N_TAG_MONS = m.ParamDefaultGet(u, 'nTaggedMonitors', 'int', 8);
+let LP_IDS = m.ParamDefaultGet(u, 'CachingAgentsLpIds', 'string', "{4'h0, 4'h1, 4'h2, 4'h3, 4'h4, 4'h5, 4'h6, 4'h7, 4'h8, 4'h9, 4'ha, 4'hb, 4'hc, 4'hd}");
+let N_MRD_CREDITS = 0; //BOON: UNUSED!! //m.ParamDefaultGet(u, 'nMrdsPerDmi', 'int', 8);
+let N_SNP_CREDITS = m.ParamDefaultGet(u, 'nSnpsPerAiu', 'int', 8);
+let N_RBS = m.ParamDefaultGet(u, 'nRbsPerDmi', 'int', 8);
+let INTV_INFO = m.ParamDefaultGet(u, 'InterleaveInfo', 'object', {});
+let N_GPRA =  m.ParamDefaultGet(u, 'nGPRA', 'int', 2);
+let DMI_IGSV = INTV_INFO.dmiIGSV;
+let DMI_2WIFV = INTV_INFO.dmi2WIFV;
+let DMI_3WIFV = INTV_INFO.dmi3WIFV;
+let DMI_4WIFV = INTV_INFO.dmi4WIFV;
+let DMI_8WIFV = INTV_INFO.dmi8WIFV;
+let DMI_16WIFV= INTV_INFO.dmi16WIFV;
+let STASH_EN_VEC = m.ParamDefaultGet(u, 'StashEnable', 'string', "7'd0");
+let CachingAgentIsCHI = m.ParamDefaultGet(u, 'CachingAgentIsCHI', 'string', "7'd0");
+
+let N_DVES = m.ParamDefaultGet(u, 'nDve', 'int', 1);
+   
+var fAW = concParams.cmdReqParams.wAddr + 1;
+   
+var fSW = 0;
+var fKW = 0;
+var fDW = 0;
+var fEW = 0;
+
+var MaxEW = 0;
+for (let f=0; f<SF_INFO.length; f++) {
+	fSW = Math.max(m.log2ceil(SF_INFO[f].nSets), 1);
+    /* istanbul ignore next env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+	fKW = ((fAW - fSW - CLO) < 1) ? 1 : (fAW - fSW - CLO);
+	fDW = ((SF_INFO[f].nCachingAgents>1) ? m.log2ceil(SF_INFO[f].nCachingAgents) : 0) + 1 + SF_INFO[f].nCachingAgents;
+    /* istanbul ignore next env ncore_3p6, ncore_3p7 */
+	fEW = (SF_INFO[f].TagFilterErrorInfo.fnErrDetectCorrect=="NONE") ? 0 :
+	      (SF_INFO[f].TagFilterErrorInfo.fnErrDetectCorrect=="PARITY") ? 1 :
+				obj.userLib.lib_utils.getEccWidth(fKW + fDW + fSW);
+        var MaxEW = (fEW>MaxEW) ? fEW : MaxEW;
+}
+
+for (let f=0; f<SF_INFO.length; f++) {
+	fSW = Math.max(m.log2ceil(SF_INFO[f].nSets), 1);
+    /* istanbul ignore next env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+	fKW = ((fAW - fSW - CLO) < 1) ? 1 : (fAW - fSW - CLO);
+	fDW = ((SF_INFO[f].nCachingAgents>1) ? m.log2ceil(SF_INFO[f].nCachingAgents) : 0) + 1 + SF_INFO[f].nCachingAgents;
+    /* istanbul ignore next env ncore_3p6, ncore_3p7 */
+	fEW = (SF_INFO[f].TagFilterErrorInfo.fnErrDetectCorrect=="NONE") ? 0 :
+	      (SF_INFO[f].TagFilterErrorInfo.fnErrDetectCorrect=="PARITY") ? 1 :
+				obj.userLib.lib_utils.getEccWidth(fSW + fKW + fDW);
+	SF_INFO[f]['wEntry'] = fKW + fDW + fEW;
+        /* istanbul ignore next env ncore_3p0 */ 
+        SF_INFO[f]['nMemory'] = SF_INFO[f].biten ? /* istanbul ignore next env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ SF_INFO[f].biten : 
+						   SF_INFO[f].nWays;
+        /* istanbul ignore next env ncore_3p0 */
+        SF_INFO[f]['wMemory'] = SF_INFO[f].biten ? /* istanbul ignore next env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */ SF_INFO[f].nWays *
+						   SF_INFO[f].wEntry /
+						   SF_INFO[f].biten :
+						   SF_INFO[f].wEntry;
+}
+
+
+for(var reg=0; reg < csr.spaceBlock[0].registers.length; reg++) { 
+    var reg_name = csr.spaceBlock[0].registers[reg].name ;
+    for(var field=0; field < csr.spaceBlock[0].registers[reg].fields.length ; field++) {
+        var entry = csr.spaceBlock[0].registers[reg].fields[field];
+            if(reg_name == "DCEUCRTR0" && entry.name == "ResThreshold") {
+                var wResThreshold = entry.bitWidth;
+            }
+      }
+}
+
+if ( wResThreshold == undefined ) { 
+var wResThreshold = 0;
+}
+
+
+//=============================================================================
+// Modified CSR
+//=============================================================================
+// This function accepts a CCR (Credit control register) CSR definition and returns
+// a new CCR register with properties of certain fields modified. The function doesn't
+// mutate the original CCR register object passed as a param.
+function fixCCRRegister( register, params ) {
+  var regMatch                  = register.name.match(/^DCEUCCR(?<n>\d+)$/);
+  var n                         = parseInt( regMatch.groups.n ); // index or number of the CCR register
+  var modifiedFields            = [];
+
+  register.fields.forEach( field => {
+  //var fieldMatch              = field.name.match(/^(?<type>DMI)(?<n>[A-Z])(CreditLimit|CounterState)$/);
+    var fieldMatch              = field.name.match(/^(?<type>DMI)(CreditLimit|CounterState)$/);
+    var modifiedField           = !fieldMatch || (n < params.nUnits[fieldMatch.groups.type]) ? field : Object.assign({}, field, {access: "RO", hardware: "RO"});
+    modifiedFields.push( modifiedField );
+  });
+
+  return Object.assign({}, register, {fields: modifiedFields});
+}
+
+
+// Compute modifiedCSR with certain register and field definition modified
+var nUnits                      = { "DMI": u.getParam('nDmis') };
+var modifiedRegisters                   = [];
+
+csr.spaceBlock[0].registers.forEach( register => {
+  var modifiedRegister          = /^DCEUCCR\d+$/.test(register.name) ? fixCCRRegister(register, {nUnits}) : register;
+  modifiedRegisters.push(modifiedRegister);
+});
+
+var modifiedCsr                 = {
+  addressWidth     : csr.addressWidth,
+  width            : csr.width,
+  spaceBlock       : [ Object.assign({}, csr.spaceBlock[0], {registers: modifiedRegisters}) ]
+};
+
+
+//
+// ports
+//
+
+// SMI interfaces
+   
+for (let i=0; i<SMI_TX_INTF.length; i++) {
+                                      m.defineMasterPortsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].signals, u.port);
+                                      }
+for (let i=0; i<SMI_RX_INTF.length; i++) {
+                                      m.defineSlavePortsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].signals, u.port);
+                                      }
+// clk interface
+u.interface(interfaces.clkInt.name, 'slave', clkInterface);
+   
+// IRQ interface
+u.interface(interfaces.irqInt.name, 'master', irqInterface);
+   
+// APB interface
+u.interface(interfaces.apbInt.name, interfaces.apbInt.direction, apbInterface);
+
+//
+// Memory Interface Sideband Signals
+//
+for (var i=0; i < memInterface.length; i++) {
+	/* istanbul ignore else env ncore_3p7 */ 
+	if (!memInterfaceSkip[i]) {
+    u.interface(memInterfaceName[i], memInterfaceDirection[i], memInterface[i]);
+  }
+}
+
+// UNIT ID
+u.interface(interfaces.uIdInt.name, 'slave', unitIdInterface);
+
+// CA UNIT ID
+u.interface(interfaces.uSysCaIdInt.name, 'slave', caUnitIdInterface);
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+// CA Node UNIT ID
+u.interface(interfaces.uSysCaNodeIdInt.name, 'slave', caNodeUnitIdInterface);
+}
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (interfaces.uSysDveIdInt) {
+//DVE UNIT ID
+u.interface(dveIdInterface.name,  'slave' , dveIdInterface.signals);
+}
+
+// DMI UNIT ID
+u.interface(interfaces.uSysDmiIdInt.name, 'slave', dmiUnitIdInterface);
+
+// Connected DMI UNIT ID
+u.interface(interfaces.uSysConnectedDmiIdInt.name, 'slave', connected_dmiUnitIdInterface);
+
+// Connected DMI RBID OFFSET
+u.interface(interfaces.uSysConnectedDmiRbOffsetInt.name, 'slave', connected_dmiRbOffsetInterface);
+    
+// Connected CA UNIT ID
+u.interface(interfaces.uSysConnectedCaIdInt.name, 'slave', connected_caUnitIdInterface);
+
+
+//=============================================================================
+// Q Channel Interface
+//=============================================================================
+if (usePma) {
+
+u.interface(qInterfaceName, 'slave' , qInterface);
+
+}
+
+//=============================================================================
+// Resiliency Interfaces
+//=============================================================================
+
+if (useResiliency) {
+
+u.interface(bistInterfaceName, 'slave' , bistInterface);
+u.interface(faultInterfaceName, 'master' , faultInterface);
+    if (enableUnitDuplication) {
+u.interface(checkClkInterfaceName, 'slave' , checkClkInterface);
+    }
+
+}
+
+
+
+let index = CONC_RX_INTF.findIndex(function(element) {return element.name === 'cmd_req_'; });
+let CMD_REQ_INTF = CONC_RX_INTF[index].signals;
+
+index = CONC_RX_INTF.findIndex(function(element) {return element.name === 'upd_req_'; });
+let UPD_REQ_INTF = CONC_RX_INTF[index].signals;
+
+index = CONC_TX_INTF.findIndex(function(element) {return element.name === 'cmd_rsp_'; });
+let CMD_RSP_INTF = CONC_TX_INTF[index].signals;
+
+index = CONC_TX_INTF.findIndex(function(element) {return element.name === 'upd_rsp_'; });
+let UPD_RSP_INTF = CONC_TX_INTF[index].signals;
+
+index = CONC_TX_INTF.findIndex(function(element) {return element.name === 'rbr_req_'; });
+let RBR_REQ_INTF = CONC_TX_INTF[index].signals;
+
+index = CONC_TX_INTF.findIndex(function(element) {return element.name === 'snp_req_'; });
+let SNP_REQ_INTF = CONC_TX_INTF[index].signals;
+
+
+let W_RB_ID = RBR_REQ_INTF.rb_id - 1;
+let W_R_TYPE = RBR_REQ_INTF.r_type;
+let W_MW = RBR_REQ_INTF.mw;
+
+let W_MSG_ID = CMD_REQ_INTF.message_id;
+let W_INIT_ID = CMD_REQ_INTF.initiator_id;
+let W_TARGET_ID = CMD_REQ_INTF.target_id;
+let W_CM_TYPE = CMD_REQ_INTF.cm_type;
+let W_H_PROT = CMD_REQ_INTF.h_prot;
+let W_CM_STATUS = CMD_REQ_INTF.cm_status;
+let W_ADDR = CMD_REQ_INTF.addr;
+let W_VZ = CMD_REQ_INTF.vz;
+let W_AC = CMD_REQ_INTF.ac;
+let W_CA = CMD_REQ_INTF.ca;
+let W_CH = CMD_REQ_INTF.ch;
+let W_ST = CMD_REQ_INTF.st;
+let W_EN = CMD_REQ_INTF.en;
+let W_ES = CMD_REQ_INTF.es;
+let W_NS = CMD_REQ_INTF.ns;
+let W_PR = CMD_REQ_INTF.pr;
+let W_OR = CMD_REQ_INTF.or;
+let W_LK = CMD_REQ_INTF.lk;
+let W_RL = CMD_REQ_INTF.rl;
+let W_TM = CMD_REQ_INTF.tm;
+let W_MPF1 = CMD_REQ_INTF.mpf1;
+let W_MPF2 = CMD_REQ_INTF.mpf2;
+let W_SIZE = CMD_REQ_INTF.size;
+let W_INTF_SIZE = CMD_REQ_INTF.intf_size;
+let W_AUX = CMD_REQ_INTF.aux;
+let W_D_ID = CMD_REQ_INTF.d_id;
+let W_TOF = CMD_REQ_INTF.tof;
+
+let W_T_TIER = SNP_REQ_INTF.t_tier;
+let W_STEER = SNP_REQ_INTF.steering;
+let W_PRI = SNP_REQ_INTF.priority;
+let W_QL = SNP_REQ_INTF.ql;
+let W_MPF3 = SNP_REQ_INTF.mpf3;
+let W_UP = SNP_REQ_INTF.up;
+let W_QOS = SNP_REQ_INTF.qos;
+
+let att_req_alloc_bundle =  {
+            aux        : W_AUX,
+            pri        : W_PRI,
+            qos        : W_QOS,
+            tm         : W_TM,
+            pr         : W_PR,
+            ch         : W_CH,
+            ca         : W_CA,
+            ac         : W_AC,
+            vz         : W_VZ,
+            tof        : W_TOF,
+            size       : W_SIZE,
+            intf_size  : W_INTF_SIZE,
+            ns         : W_NS,
+          //d_id       : W_D_ID,  //COMMENTED OUT FOR TIMING FIX
+            addr       : W_ADDR,
+            type       : W_CM_TYPE
+        };
+
+let att_alloc_bundle =  {
+            initiator_id : W_INIT_ID,
+            message_id   : W_MSG_ID,
+            st           : W_ST,
+            en           : W_EN,
+            es           : W_ES,
+            or           : W_OR,
+            lk           : W_LK,
+            rl           : W_RL,
+            mpf1         : W_MPF1,
+            mpf2         : W_MPF2
+        };
+
+let att_req_alloc_bundle_width = bundleFunctions.getBundleWidth(att_req_alloc_bundle, [], u.bundle);
+let att_alloc_bundle_width     = bundleFunctions.getBundleWidth(att_alloc_bundle, [], u.bundle);
+
+let CONCERTO_MUX_INTF = [];
+for (let i=0; i<SMI_TX_INTF.length; i++)
+  {CONCERTO_MUX_INTF.push({
+                           modulePrefix: SMI_TX_INTF[i].name,
+                           localPrefix: SMI_TX_INTF[i].name,
+                           interface: SMI_TX_INTF[i].signals});
+   };
+for (let i=0; i<SMI_RX_INTF.length; i++)
+  {CONCERTO_MUX_INTF.push({
+                           modulePrefix: SMI_RX_INTF[i].name,
+                           localPrefix: SMI_RX_INTF[i].name,
+                           interface: SMI_RX_INTF[i].signals});
+   };
+for (let i=0; i<CONC_TX_INTF.length; i++)
+  {CONCERTO_MUX_INTF.push({
+                           modulePrefix: CONC_TX_INTF[i].name,
+                           localPrefix: CONC_TX_INTF[i].name,
+                           interface: CONC_TX_INTF[i].signals});
+   };
+for (let i=0; i<CONC_RX_INTF.length; i++)
+  {CONCERTO_MUX_INTF.push({
+                           modulePrefix: CONC_RX_INTF[i].name,
+                           localPrefix: CONC_RX_INTF[i].name,
+                           interface: CONC_RX_INTF[i].signals});
+   };
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCmuxToTop) {
+   CONCERTO_MUX_INTF.push({
+                           modulePrefix: cmux_prot_intf.name,
+                           localPrefix: cmux_prot_intf.name,
+                           interface: cmux_prot_intf.signals});
+}
+
+
+
+let clkInterfaceNewStyle  = interfaces.clkInt;
+let clkInterfaceOldStyle  = newToOldStyleInterface(clkInterfaceNewStyle);
+var clkAndResetOnlyBundle = { clk: 1, reset_n: 1 };
+
+const pmonRegisters            = m.genNcorePmonRegisters(csr.spaceBlock[0].registers, "DCE", { nPerfCounters });
+const pmonCsrIfGenerator       = m.createCSRInterfaceGenerator( pmonRegisters );
+const oldStylePmonCsrInterface = { name: "DCE", signals: pmonCsrIfGenerator.signalBundle("slave") };
+
+var nCCR              = N_DMIS; // Number of CCR (credit control) registers
+var ccrRegisters      = m.genNcoreCCRRegisters(csr.spaceBlock[0].registers, "DCEU", { nCCR });
+var ccrCsrIfGenerator = m.createCSRInterfaceGenerator( ccrRegisters );
+var ccrCsrInterface   = { name: "DCEU", signals: ccrCsrIfGenerator.signalBundle('slave') };
+
+    var CSR_INTF = [];
+
+    CSR_INTF.push({
+        modulePrefix: clkInterfaceOldStyle.name,
+        localPrefix: clkInterfaceOldStyle.name,
+        interface: clkAndResetOnlyBundle
+    });
+
+    CSR_INTF.push({
+        modulePrefix: apbInterfaceName,
+        localPrefix: apbInterfaceName,
+        interface: apbInterfaceBundle
+    });
+
+    CSR_INTF.push({
+        modulePrefix: oldStylePmonCsrInterface.name,
+        localPrefix: oldStylePmonCsrInterface.name,
+        interface: oldStylePmonCsrInterface.signals
+    });
+
+    CSR_INTF.push({
+        modulePrefix: ccrCsrInterface.name,
+        localPrefix: ccrCsrInterface.name,
+        interface: ccrCsrInterface.signals
+    });
+
+    /* istanbul ignore if env ncore_3p7 */
+    if (useMoveCsrToTop) {
+
+    CSR_INTF.push({
+        modulePrefix: csr_prot_intf.name,
+        localPrefix: csr_prot_intf.name,
+        interface: csr_prot_intf.signals
+    });
+
+    }
+
+let useQos           = fnEnableQos;
+let wStarvThreshold  = useQos * 16;
+let wEventTimeout    = 20; //must be the same as wProtocolTimeout
+let wProtocolTimeout = 20;
+
+    // Create CCR CSR register input Interface only (all *out ports appear by default on dce_csr instance)
+    var ccrCsrInputPorts              = {};
+
+    ccrCsrIfGenerator.inputs().forEach( port => {
+      ccrCsrInputPorts[port.name]     = -port.width;
+    });
+
+let  csr_params = {
+                   nSkidBufSize               : nSkidBufSize,
+                   nSkidBufArb                : nSkidBufArb,
+                   useSysEvtCoh               : useSysEvtCoh,
+                   wSnoopEnables              : wSnoopEnables,
+                   wEventTimeout              : wEventTimeout,
+                   wProtocolTimeout           : wProtocolTimeout,
+                   nAius                      : N_AIUS,
+                   nCachingAgents             : N_C_AGENTS,
+                   clkInterface               : clkAndResetOnlyBundle,
+                   clkInterfaceName           : clkInterfaceOldStyle.name,
+                   apbInterface               : apbInterfaceBundle, //BOON
+                   apbInterfaceName           : apbInterfaceName,
+                   regProtectionInterface     : regProtectionInterfaceBundle, //BOON
+                   regProtectionInterfaceName : regProtectionInterfaceName,
+                   regProtectionStyle         : regProtectionStyle,
+                   wFUnitId                   : W_FUNIT_ID,
+                   wNUnitId                   : W_NUNIT_ID,
+                   wRpn                       : W_RPN,
+                   wNrri                      : W_NRRI,
+                   wPortId                    : W_FPORT_ID,
+                   useResiliency              : useResiliency,
+                   csr                        : csr, //BOON
+                   nGPRA                      : N_GPRA,
+                   nWays                      : N_WAYS,
+                   wNs                        : W_NS,
+                   wAddr                      : W_ADDR,
+                   wInitiatorId               : W_INIT_ID,
+                   SnoopFilterInfo            : SF_INFO,
+                   wMsgId                     : W_MSG_ID,
+                   wStarvThreshold            : wStarvThreshold,
+                   useQos                     : useQos,
+		   nPerfCounters	      : nPerfCounters,
+                   pmonCsrInterface           : oldStylePmonCsrInterface,
+                   ccrCsrInputInterface       : { name: "DCEU", signals: ccrCsrInputPorts },
+                   };
+
+// Represent input bit-vectors ca_f_unit_id and ca_n_unit_id as packed arrays
+const nUnitID = vlogPkdArray({ length: N_C_AGENTS, width: W_NUNIT_ID }, 'n_unit_id');
+
+let instance_ports_for_csr = {
+                              csr_DceTransActive : 'csr_DceTransActive',
+                              csr_DceMntOpActive : 'csr_DceMntOpActive',
+                              csr_sf_init : 'csr_sf_init', 
+                              csr_dm_debg_cfg : 'csr_dm_debg_cfg',
+                              csr_dm_ue_valid : 'csr_dm_ue_valid',
+                              csr_dm_ue_way_vec : 'csr_dm_ue_way_vec',
+                              csr_dm_ue_index : 'csr_dm_ue_index',
+                              csr_dm_ce_valid : 'csr_dm_ce_valid',
+                              csr_dm_ce_way_vec : 'csr_dm_ce_way_vec',
+                              csr_dm_ce_index : 'csr_dm_ce_index', 
+                              csr_dm_addr : 'csr_dm_addr[W_ADDR-1:0]',
+                              csr_dm_ns : 'csr_dm_addr[W_ADDR]',
+
+                              csr_sb_ue_valid : 'csr_sb_ue_valid',
+                              csr_sb_ce_valid : 'csr_sb_ce_valid',
+                              csr_sb_err_index : 'csr_sb_err_index',
+
+                              cmux_UCE_err_vld : 'cmux_UCE_err_vld',
+                              cmux_CE_err_vld  : 'cmux_CE_err_vld',
+
+                              csr_target_ue_valid : 'csr_target_ue_valid',
+                              csr_target_ue_init_id : 'csr_target_ue_init_id',
+
+                              csr_timeout_ue_valid : 'tm_timeout_ue_valid',
+                              csr_timeout_ue_addr : 'tm_timeout_ue_addr',
+                              csr_timeout_ue_ns :  'tm_timeout_ue_ns',                         
+             
+                              csr_timeout_threshold : 'csr_timeout_threshold',
+                              csr_timeout_ref_en : 'csr_timeout_ref_en',
+                              csr_timeout_count_reset : 'csr_timeout_count_reset',
+
+                              csr_addr_map_multi_hit : 'csr_addr_map_multi_hit',
+                              csr_addr_map_no_hit : 'csr_addr_map_no_hit',
+                              csr_addr_map_req_wr : 'csr_addr_map_req_wr', 
+                              csr_addr_map_trans_id : 'csr_addr_map_trans_id',
+                              csr_addr_map_addr : 'csr_addr_map_addr',
+                              csr_addr_map_unconnected_dmi_access : 'csr_addr_map_unconnected_dmi_access',
+
+                              no_credits_access_err      : 'no_credits_access_err',
+                              no_credits_access_err_addr : 'no_credits_access_err_addr',
+                              err_p1_tm_cmd_req_d_id_valid : 'err_p1_tm_cmd_req_d_id_valid',
+                              err_p1_tm_cmd_req_d_id_addr  : 'err_p1_tm_cmd_req_d_id_addr',
+
+                              BRAR_Valid : 'BRAR_Valid',
+                              BRAR_Size : 'BRAR_Size',
+                              BRAR_HUT : 'BRAR_HUT',
+                              BRAR_HUI : 'BRAR_HUI',
+                              BRBAR_AddrLo : 'BRBAR_AddrLo',
+                              BRBAR_AddrHi : 'BRBAR_AddrHi',
+                              
+                              AMIGR_AMIGS : 'AMIGR_AMIGS',
+                              AMIGR_Valid : 'AMIGR_Valid',
+                              MIFSR_A16WIFId : 'MIFSR_A16WIFId',
+                              MIFSR_A8WIFId : 'MIFSR_A8WIFId',
+                              MIFSR_A4WIFId : 'MIFSR_A4WIFId',
+                              MIFSR_A3WIFId : 'MIFSR_A3WIFId',
+                              MIFSR_A2WIFId : 'MIFSR_A2WIFId',
+                              apb_busy : 'apb_busy'                                 
+                              };
+   
+    instance_ports_for_csr['my_n_unit_id'] = unitIdInterfaceName + 'my_n_unit_id';
+    instance_ports_for_csr['my_f_unit_id'] = unitIdInterfaceName + 'my_f_unit_id';
+    instance_ports_for_csr['my_csr_rpn']   = unitIdInterfaceName + 'my_csr_rpn';
+    instance_ports_for_csr['my_csr_nrri']  = unitIdInterfaceName + 'my_csr_nrri';
+
+    instance_ports_for_csr['IRQ_uc']       = irqInterfaceName + 'uc';
+    instance_ports_for_csr['IRQ_c']        = irqInterfaceName + 'c';
+
+    for (let i = 0; i < N_GPRA; i++) {
+        instance_ports_for_csr['GPRAR'+i+'_Valid'] = 'GPRAR'+i+'_Valid';
+        instance_ports_for_csr['GPRAR'+i+'_HUT'] = 'GPRAR'+i+'_HUT';
+        instance_ports_for_csr['GPRAR'+i+'_Size'] = 'GPRAR'+i+'_Size';
+        instance_ports_for_csr['GPRAR'+i+'_HUI'] = 'GPRAR'+i+'_HUI';
+        instance_ports_for_csr['GPRBAR'+i+'_AddrLo'] = 'GPRBAR'+i+'_AddrLo';
+        instance_ports_for_csr['GPRBAR'+i+'_AddrHi'] = 'GPRBAR'+i+'_AddrHi';
+    };
+
+    if (useResiliency) {
+        instance_ports_for_csr['dce_res_cerr_threshold'] = 'dce_res_cerr_threshold';
+    }
+
+    if (useQos) {
+        instance_ports_for_csr['csr_starv_count_threshold'] = 'csr_starv_count_threshold';
+        instance_ports_for_csr['csr_eviction_qos']          = 'csr_eviction_qos';
+        instance_ports_for_csr['csr_use_eviction_qos']      = 'csr_use_eviction_qos';
+    }
+
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (useSysEvtCoh) {
+        instance_ports_for_csr['csr_sys_coh_receiver_err_vld'] = 'csr_sys_coh_receiver_err_vld';
+        instance_ports_for_csr['csr_sys_coh_receiver_err_f_unit_id'] = 'csr_sys_coh_receiver_err_f_unit_id';
+        instance_ports_for_csr['snoop_enables'] = 'snoop_enables';
+        instance_ports_for_csr['snoop_enables_update'] = 'snoop_enables_update';
+        instance_ports_for_csr['csr_snoop_enables'] = 'csr_snoop_enables';
+        instance_ports_for_csr['csr_snoop_enables_update'] = 'csr_snoop_enables_update';
+        instance_ports_for_csr['csr_protocol_timeout_value'] = 'csr_protocol_timeout_value';
+        instance_ports_for_csr['csr_sys_evt_sender_enable'] = 'csr_sys_evt_sender_enable';
+        instance_ports_for_csr['csr_sys_evt_sender_err_vld'] = 'csr_sys_evt_sender_err_vld';
+        instance_ports_for_csr['csr_sys_evt_sender_err_f_unit_id'] = 'csr_sys_evt_sender_err_f_unit_id';
+        instance_ports_for_csr['csr_sys_evt_sender_err_protocol_sys'] = 'csr_sys_evt_sender_err_protocol_sys';
+        instance_ports_for_csr['csr_sys_evt_sender_err_protocol_timeout'] = 'csr_sys_evt_sender_err_protocol_timeout';
+        instance_ports_for_csr['csr_sys_evt_sender_err_event_timeout'] = 'csr_sys_evt_sender_err_event_timeout';
+        for (var i=0; i < N_C_AGENTS; i++) {
+	    instance_ports_for_csr['ca'+i+'_n_unit_id'] = 'ca'+i+'_n_unit_id';
+        }
+        instance_ports_for_csr['ca_SnoopEnable'] = 'ca_SnoopEnable';
+    }
+
+let dce_unit_csr_intf = {
+
+    csr_DceTransActive : 1,
+    csr_DceMntOpActive : 1,
+    apb_busy : -1,
+
+    tm_timeout_ue_valid : 1,
+    tm_timeout_ue_addr : W_ADDR,
+    tm_timeout_ue_ns : W_NS,
+
+    csr_timeout_threshold : -31,
+    csr_timeout_ref_en : -1,
+    csr_timeout_count_reset : -1,
+
+    csr_addr_map_multi_hit : 1,
+    csr_addr_map_no_hit : 1,
+    csr_addr_map_req_wr : 1,
+    csr_addr_map_trans_id : W_MSG_ID,
+    csr_addr_map_addr : W_ADDR,
+    csr_addr_map_unconnected_dmi_access : 1,
+
+    no_credits_access_err : 1,
+    no_credits_access_err_addr : W_ADDR,
+    err_p1_tm_cmd_req_d_id_valid : 1,
+    err_p1_tm_cmd_req_d_id_addr : W_ADDR,
+
+    csr_target_ue_valid : 1,
+    csr_target_ue_init_id : W_FUNIT_ID,
+
+    cmux_UCE_err_vld : 1,
+    cmux_CE_err_vld : 1,
+
+    csr_sf_init : -1,
+    csr_dm_debg_cfg : -32,
+    csr_dm_ue_valid : 1,
+    csr_dm_ue_way_vec : N_WAYS,
+    csr_dm_ue_index : W_ADDR+1,
+    csr_dm_ce_valid : 1,
+    csr_dm_ce_way_vec : N_WAYS,
+    csr_dm_ce_index : W_ADDR+1,
+    csr_dm_addr : W_ADDR+1,
+
+    csr_sb_ue_valid : 1,
+    csr_sb_ce_valid : 1,
+    csr_sb_err_index : 20,
+
+    BRAR_Valid : -1,
+    BRAR_Size : -6,
+    BRAR_HUT : -1,
+    BRAR_HUI : -5,
+    BRBAR_AddrLo : -32,
+    BRBAR_AddrHi : -8,
+    AMIGR_AMIGS : -4,
+    AMIGR_Valid : -1,
+    MIFSR_A16WIFId : -3,
+    MIFSR_A8WIFId : -3,
+    MIFSR_A4WIFId : -3,
+    MIFSR_A3WIFId : -3,
+    MIFSR_A2WIFId : -3,
+
+    };
+
+    if (useQos) {
+
+    dce_unit_csr_intf['csr_starv_count_threshold'] = -1 * wStarvThreshold;
+    dce_unit_csr_intf['csr_eviction_qos'] = -4;
+    dce_unit_csr_intf['csr_use_eviction_qos'] = -1;
+
+    }
+
+    for (var i = 0; i < N_GPRA; i++) {
+
+    dce_unit_csr_intf['GPRAR'+i+'_Valid'] = -1;
+    dce_unit_csr_intf['GPRAR'+i+'_HUT'] = -1;
+    dce_unit_csr_intf['GPRAR'+i+'_Size'] = -6;
+    dce_unit_csr_intf['GPRAR'+i+'_HUI'] = -5;
+    dce_unit_csr_intf['GPRBAR'+i+'_AddrLo'] = -32;
+    dce_unit_csr_intf['GPRBAR'+i+'_AddrHi'] = -8;
+
+    }
+
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (useSysEvtCoh) {
+
+    dce_unit_csr_intf['csr_sys_coh_receiver_err_vld'] = 1;
+    dce_unit_csr_intf['csr_sys_coh_receiver_err_f_unit_id'] = W_FUNIT_ID;
+    dce_unit_csr_intf['snoop_enables'] = wSnoopEnables;
+    dce_unit_csr_intf['snoop_enables_update'] = 1;
+    dce_unit_csr_intf['csr_snoop_enables'] = -1 * wSnoopEnables;
+    dce_unit_csr_intf['csr_snoop_enables_update'] = -1;
+    dce_unit_csr_intf['ca_SnoopEnable'] = -1 * N_C_AGENTS;
+
+    dce_unit_csr_intf['csr_protocol_timeout_value'] = -1 * wProtocolTimeout;
+    dce_unit_csr_intf['csr_sys_evt_sender_enable'] = -1;
+    dce_unit_csr_intf['csr_sys_evt_sender_err_vld'] = 1;
+    dce_unit_csr_intf['csr_sys_evt_sender_err_f_unit_id'] = W_FUNIT_ID;
+    dce_unit_csr_intf['csr_sys_evt_sender_err_protocol_sys'] = 1;
+    dce_unit_csr_intf['csr_sys_evt_sender_err_protocol_timeout'] = 1;
+    dce_unit_csr_intf['csr_sys_evt_sender_err_event_timeout'] = 1;
+
+    };
+
+   var sb_fnErrDetectCorrect = SF_INFO[0].TagFilterErrorInfo.fnErrDetectCorrect;
+
+   var sb_memoryType = (cSbMemGen != undefined) ? cSbMemGen.MemType : 'SYNOPSYS'; //SF_INFO[0].TagMem[0].MemType;
+
+   var sb_depth = (nSkidBufSize - nSkidBufArb) > 0 ? Math.max(nSkidBufSize - nSkidBufArb, 4) : 0;
+
+   var useSramFifo = CMDOverflowBufInSRAM;
+
+   var sb_mem_addr_width = sb_depth > 0 ? utilFunctions.log2ceil(sb_depth) : 0;
+
+   var sb_width = m.bundleFunctions.getBundleWidth(CMD_REQ_INTF, ['valid', 'ready'],  u.bundle);
+
+   var sb_ecc_width = utilFunctions.getErrorEncodingWidth(sb_fnErrDetectCorrect, sb_mem_addr_width + sb_width);
+
+   var sb_mem_data_width = sb_width + sb_ecc_width;
+
+var SKID_BUFFER_PORTS = {
+                        clk     : 'dce_skid_buffer__clk',
+                        reset_n : 'dce_skid_buffer__reset_n',
+                        my_f_unit_id : unitIdInterfaceName + 'my_f_unit_id',
+                        busy : 'skid_buffer_busy',
+                        cmux_cmd_req_UCE : 'cmux_cmd_req_UCE',
+                        cmux_upd_req_UCE : 'cmux_upd_req_UCE',
+                        csr_sb_ce_valid : 'csr_sb_ce_valid',
+                        csr_sb_ue_valid : 'csr_sb_ue_valid',
+                        csr_sb_err_index : 'csr_sb_err_index',
+                        csr_target_ue_valid : 'skid_target_ue_valid',
+                        csr_target_ue_init_id : 'skid_target_ue_init_id',
+                                                pmon_starvation_event : 'pmon_starvation_event'
+                       };
+
+if (useQos) {
+SKID_BUFFER_PORTS['csr_starv_count_threshold'] = 'csr_starv_count_threshold';
+}
+
+SKID_BUFFER_PORTS['cmd_rsp_out_ready'] = /* istanbul ignore if env ncore_3p7 */ useSaveLatency ? 'cmd_rsp_int_ready' : 'dce_skid_buffer__cmd_rsp_out_ready';
+
+/* istanbul ignore else env ncore_3p7 */
+if (useSramFifo && (sb_memoryType === 'SYNOPSYS')) {
+
+SKID_BUFFER_PORTS['sb_mem_write_en']   = 'sb_mem_write_en';
+SKID_BUFFER_PORTS['sb_mem_write_addr'] = 'sb_mem_write_addr';
+SKID_BUFFER_PORTS['sb_mem_write_data'] = 'sb_mem_write_data';
+SKID_BUFFER_PORTS['sb_mem_read_en']    = 'sb_mem_read_en';
+SKID_BUFFER_PORTS['sb_mem_read_addr']  = 'sb_mem_read_addr';
+SKID_BUFFER_PORTS['sb_mem_read_data']  = 'sb_mem_read_data';
+
+}
+
+
+// Function to generate pmon evtInterfaces
+function genPmonEvtInterfaces( table ) {
+    const result = [];
+    for (let i=0; i<table.length; i++)
+        result.push({ name: "evt"+i+"_", direction: "slave", "interface": "InterfaceEvt", params: { width: table[i].width } });
+    return result;
+}
+
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMovePmonToTop) {
+
+// Function that returns the stall event expression for a given SMI interface (old-style)
+// Function that returns wire declarations of an old-style interface (with properties 'name' and 'signals')
+function declareOldStyleInterface ( oldStyleInterface ) {
+        return m.bundleFunctions.wiresFromInterface(oldStyleInterface.name, oldStyleInterface.signals, [], obj.lib.bundle);
+}
+
+
+// Function that returns wire declarations of a new-style interface
+function declareNewStyleInterface ( newStyleInterface ) {
+        const oldStyleInterface         = newToOldStyleInterface( newStyleInterface );
+        const flatOldInterface          = flattenInterface ( oldStyleInterface );
+        return declareOldStyleInterface( flatOldInterface );
+}
+
+} // if (useMovePmonToTop)
+
+
+// Create a local clock interface instance for carrying div-by-16 clock
+var clk16Interface = { name: clkInterfaceOldStyle.name+"16_", signals: clkInterfaceOldStyle.signals };
+
+/* istanbul ignore next env ncore_3p6, ncore_3p7 */
+if (!nPerfCounters) {
+  var pmonEventTable = [];
+ 
+} else { 
+// Perfmon event table
+// Returns an array with { expr, width } objects one for each interface in SMI_TX_INTF array
+// Returns an array with { expr, width } objects one for each interface in SMI_RX_INTF array
+const smiTxStallEvents = SMI_TX_INTF.map( m.genSmiStallEvent );
+const smiRxStallEvents = SMI_RX_INTF.map( m.genSmiStallEvent );
+
+// Index matches the value programmed by software to select an event
+var pmonEventTable = [
+	{ width: 1, expr: "1'b0"},
+	smiTxStallEvents[0],
+	smiTxStallEvents[1],
+	smiTxStallEvents[2],
+	{ width: 1, expr: "1'b0"}, //4
+	smiRxStallEvents[0],
+	smiRxStallEvents[1],
+	smiRxStallEvents[2],
+	{ width: 1, expr: "1'b0"}, //8
+	{ width: 1, expr: "1'b0"}, 
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"}, //16
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"},
+	{ width: 1, expr: "1'b0"},
+	{ width: 8, expr: "pmon_att_evt" },            // "pmon_num_active_entries",
+	{ width: 1, expr: "1'b0" },
+	{ width: 1, expr: "1'b0" },
+	{ width: 1, expr: "1'b0" },	
+	{ width: 1, expr: "pmon_addr_collisions" },    // "pmon_addr_collisions"},
+	{ width: 1, expr: "snoop_filter_hit" },	       // "snoop_filter_hit"},
+	{ width: 1, expr: "snoop_filter_miss" },       // "snoop_filter_miss"},
+	{ width: 1, expr: "snoop_filter_recall" },     // "snoop_filter_recall"},
+	{ width: 1, expr: "snp_rsp_miss" },            // "snoop_rsp_miss"},
+	{ width: 1, expr: "snp_rsp_owner_transfer" },  // "snoop_rsp_owner_transfer"},
+	{ width: 1, expr: clk16Interface.name+"clk" }, // "div16_counter"},
+	{ width: 1, expr: "pmon_starvation_event"}     // starvation event
+    ];
+}
+
+let masterTriggerInterfaceJson = interfaces.masterTriggerInt || /* istanbul ignore next env ncore_3p4, ncore_3p6, ncore_3p7 */ { _SKIP_: true };
+
+var pmonInterfaces = {
+	clkInterface: clkInterfaceNewStyle,
+	csrInterface: pmonCsrIfGenerator.interfaceGeneric("slave", "DCE"),	// Returns a new-style InterfaceGeneric instance
+	evtInterfaces: genPmonEvtInterfaces( pmonEventTable ),
+	masterTriggerInterface: /* istanbul ignore next env ncore_3p4, ncore_3p6, ncore_3p7 */ masterTriggerInterfaceJson || { _SKIP_: true }
+};
+
+
+obj.lib.setAttribute("csr", modifiedCsr);
+   
+// 
+// Module
+//
+
+\jsend
+module \=u.getModuleName()=\
+         (\=u.getPorts('\n    ')=\
+        );
+
+localparam
+  N_CONNECTED_DMIS = \=N_CONNECTED_DMIS=\,
+  N_C_AGENTS = \=N_C_AGENTS=\,
+  N_WAYS = \=N_WAYS=\,
+  W_ADDR = \=W_ADDR=\,
+  W_NS = \=W_NS=\,
+  W_RB_ID = \=W_RB_ID=\,
+  W_MSG_ID = \=W_MSG_ID=\,
+  W_FUNIT_ID = \=W_FUNIT_ID=\,
+  W_NUNIT_ID = \=W_NUNIT_ID=\;
+
+\jsbegin
+// =======================================================
+// Wires
+// =======================================================
+\jsend
+
+\=bundleFunctions.wiresFromInterface(csr_prot_intf.name, csr_prot_intf.signals, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface(sbcmdreqfifo_prot_intf.name, sbcmdreqfifo_prot_intf.signals, [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface(sbcmdrspfifo_prot_intf.name, sbcmdrspfifo_prot_intf.signals, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface(sb_prot_intf.name, sb_prot_intf.signals, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface(cmux_prot_intf.name, cmux_prot_intf.signals, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface(dce_att_flops_protectionInterface.name, dce_att_flops_protectionInterface.signals, [], u.bundle)=\
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCsrToTop) {
+\jsend
+
+\=bundleFunctions.wiresFromInterface('', dce_unit_csr_intf, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface(oldStylePmonCsrInterface.name, oldStylePmonCsrInterface.signals, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface(ccrCsrInterface.name, ccrCsrInterface.signals, [], u.bundle)=\ 
+
+        \js for (var i=0; i < N_C_AGENTS; i++) {
+wire [W_NUNIT_ID-1:0] ca\=i=\_n_unit_id = \=interfaces.uSysCaNodeIdInt.name + nUnitID.idx(i).expr=\;
+        \js }
+
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveFlopsToTop) {
+\jsend
+
+wire [\=N_ATT*att_req_alloc_bundle_width-1=\:0] in_att_req_alloc_bundle_vec;
+wire [\=N_ATT*att_req_alloc_bundle_width-1=\:0] out_att_req_alloc_bundle_vec;
+wire [\=N_ATT-1=\:0] en_att_req_alloc_bundle_vec;
+wire att_req_alloc_bundle_clk;
+wire att_req_alloc_bundle_reset_n;
+
+wire [\=N_ATT*att_alloc_bundle_width-1=\:0] in_att_alloc_bundle_vec;
+wire [\=N_ATT*att_alloc_bundle_width-1=\:0] out_att_alloc_bundle_vec;
+wire [\=N_ATT-1=\:0] en_att_alloc_bundle_vec;
+wire att_alloc_bundle_clk;
+wire att_alloc_bundle_reset_n;
+
+\=u.instance({
+    instanceName: 'dce_att_flops',
+    moduleName: 'dce_att_flops',
+    params : {
+        protectionInterface        : dce_att_flops_protectionInterface,
+        assertOn                   : ASSERT_ON,
+        N_ATT                      : N_ATT,
+        att_req_alloc_bundle_width : att_req_alloc_bundle_width,
+        att_alloc_bundle_width     : att_alloc_bundle_width
+    },
+    ports : {
+        att_req_alloc_bundle_clk      : 'att_req_alloc_bundle_clk',
+        att_req_alloc_bundle_reset_n  : 'att_req_alloc_bundle_reset_n',
+        en_att_req_alloc_bundle_vec   : 'en_att_req_alloc_bundle_vec',
+        in_att_req_alloc_bundle_vec   : 'in_att_req_alloc_bundle_vec',
+        out_att_req_alloc_bundle_vec  : 'out_att_req_alloc_bundle_vec',
+
+        att_alloc_bundle_clk          : 'att_alloc_bundle_clk',
+        att_alloc_bundle_reset_n      : 'att_alloc_bundle_reset_n',
+        en_att_alloc_bundle_vec       : 'en_att_alloc_bundle_vec',
+        in_att_alloc_bundle_vec       : 'in_att_alloc_bundle_vec',
+        out_att_alloc_bundle_vec      : 'out_att_alloc_bundle_vec'
+    },
+    interfaces : dce_att_flops_interfaces
+    })=\
+
+\js }
+
+wire bist_timeout_trigger;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_ ) { \jsend
+wire \=masterTriggerInterface.name=\trigger_sync; \jsbegin
+} \jsend
+
+    \js if (useResiliency) {
+
+wire fault_checker_clk;
+wire fault_checker_reset_n;
+wire fault_checker_reset_n_delay;
+
+    \js }
+\js if (usePma) {
+wire \=qInterfaceName=\REQn_sync;
+\js }
+
+    \js if (useResiliency && enableUnitDuplication) {
+
+wire dup_unit_bist_timeout_trigger;
+
+        \jsbegin
+        /* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+        if (interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_) {
+        \jsend
+\=bundleFunctions.wiresFromInterface('dup_unit_' + masterTriggerInterface.name, masterTriggerInterface.signals, ['trigger'], obj.lib.bundle)=\
+wire dup_unit_\=masterTriggerInterface.name=\trigger_sync;
+wire dup_unit_\=masterTriggerInterface.name=\trigger; 
+        \js }
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + clkInterfaceName, clkInterfaceBundle, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + unitIdInterfaceName, unitIdInterfaceBundle, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + caUnitIdInterfaceName, caUnitIdInterfaceBundle, [], obj.lib.bundle)=\
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) { \jsend
+\=bundleFunctions.wiresFromInterface('dup_unit_' + caNodeUnitIdInterfaceName, caNodeUnitIdInterfaceBundle, [], obj.lib.bundle)=\ \jsbegin
+} \jsend
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + dmiUnitIdInterfaceName, dmiUnitIdInterfaceBundle, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + connected_dmiUnitIdInterfaceName, connected_dmiUnitIdInterfaceBundle, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + connected_dmiRbOffsetInterfaceName, connected_dmiRbOffsetInterfaceBundle, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + apbInterfaceName, apbInterfaceBundle, [], obj.lib.bundle)=\
+
+\=bundleFunctions.wiresFromInterface('dup_unit_' + irqInterfaceName, irqInterfaceBundle, [], obj.lib.bundle)=\
+
+\jsbegin
+/* istanbul ignore if env ncore_3p0 */
+        if (usePma) {
+\jsend
+\=bundleFunctions.wiresFromInterface('dup_unit_' + qInterfaceName, qInterfaceBundle, [], obj.lib.bundle)=\
+wire dup_unit_\=qInterfaceName=\REQn_sync;
+\jsbegin
+        }
+\jsend
+        \js for (var i=0; i < SMI_TX_INTF.length; i++) {
+\=bundleFunctions.wiresFromInterface('dup_unit_' + SMI_TX_INTF[i].name, SMI_TX_INTF[i].signals, [], obj.lib.bundle)=\
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+            if (SMI_TX_INTF[i].params.dpPresent) {
+\jsend
+\=bundleFunctions.wiresFromInterface('dup_unit_' + SMI_TX_INTF[i].name,SMI_TX_INTF[i].dpSignals, [], obj.lib.bundle)=\
+            \js }
+        \js };
+
+        \js for (var i=0; i < SMI_RX_INTF.length; i++) {
+\=bundleFunctions.wiresFromInterface('dup_unit_' + SMI_RX_INTF[i].name, SMI_RX_INTF[i].signals, [], obj.lib.bundle)=\
+\jsbegin
+/* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+            if (SMI_RX_INTF[i].params.dpPresent) {
+\jsend
+\=bundleFunctions.wiresFromInterface('dup_unit_' + SMI_RX_INTF[i].name, SMI_RX_INTF[i].dpSignals, [], obj.lib.bundle)=\
+            \js }
+        \js };
+
+\=bundleFunctions.wiresFromInterface('dup_unit_'+internalFaultInterfaceName, internalFaultInterfaceBundle, [], obj.lib.bundle)=\
+
+wire [\=wResThreshold-1=\:0] dup_unit_cerr_threshold;
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p7 */
+    if (JSON.stringify(dce_cmux_CE_tieoffs) === '{}') {
+    \jsend
+\=m.bundleFunctions.wiresFromInterface('dup_unit_dce_', dce_cmux_ce_ports, [], obj.lib.bundle)=\
+    \js }
+
+wire reset_n_delay;
+
+    \js }   
+
+    \js if (useResiliency) {
+wire [\=wResThreshold-1=\:0] dce_res_cerr_threshold;
+wire [\=wResThreshold-1=\:0] fault_checker_cerr_threshold;
+wire [\=wResThreshold-1=\:0] cerr_threshold = dce_res_cerr_threshold;
+    \js }
+
+\=bundleFunctions.wiresFromInterface(internalFaultInterfaceName, internalFaultInterfaceBundle, [], obj.lib.bundle)=\
+
+wire [\=N_DMIS-1=\:0] hexDceDmiVec = \=dmiUnitIdInterfaceName=\connectivity;
+
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCmuxToTop) {
+\jsend
+
+wire cmux_busy;
+
+\js for (let i=0; i<CONC_TX_INTF.length; i++) {
+\=m.bundleFunctions.wiresFromInterface(CONC_TX_INTF[i].name, CONC_TX_INTF[i].signals, [], u.bundle)=\
+\js}
+
+
+\js for (let i=0; i<CONC_RX_INTF.length; i++) {
+\=m.bundleFunctions.wiresFromInterface(CONC_RX_INTF[i].name, CONC_RX_INTF[i].signals, [], u.bundle)=\
+\js}
+
+\=m.bundleFunctions.wiresFromInterface('dce_cmux_', dce_cmux_header_UCE_wires, [], obj.lib.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('dce_cmux_', dce_cmux_message_UCE_wires, [], obj.lib.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('dce_cmux_', dce_cmux_data_UCE_wires, [], obj.lib.bundle)=\
+
+\js }
+
+    \js if (JSON.stringify(dce_cmux_CE_tieoffs) === '{}') {
+\=m.bundleFunctions.wiresFromInterface('dce_', dce_cmux_ce_ports, [], obj.lib.bundle)=\
+    \js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveSbToTop) {
+\jsend
+
+\=m.bundleFunctions.wiresFromInterface('skid_buf_cmd_req_',     CMD_REQ_INTF, [], u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('skid_buf_cmd_req_int_', CMD_REQ_INTF, [], u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('skid_buf_upd_req_',     UPD_REQ_INTF, [], u.bundle)=\
+
+\=m.bundleFunctions.wiresFromInterface('cmd_rsp_int_', CMD_RSP_INTF, [], u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface('upd_rsp_int_', UPD_RSP_INTF, [], u.bundle)=\
+
+wire dce_skid_buffer__clk;
+wire dce_skid_buffer__reset_n;
+
+wire dce_skid_buffer__cmd_rsp_out_ready;
+
+wire skid_buf_cmd_req_fifo__clk;
+wire skid_buf_cmd_req_fifo__reset_n;
+wire skid_buf_cmd_req_fifo__pop_ready;
+
+wire cmd_rsp_fifo__clk;
+wire cmd_rsp_fifo__reset_n;
+wire cmd_rsp_fifo__push_valid;
+
+wire cmux_cmd_req_UCE;
+wire cmux_upd_req_UCE;
+
+wire skid_target_ue_valid;
+wire [W_FUNIT_ID-1:0] skid_target_ue_init_id;
+
+wire pmon_starvation_event;
+wire skid_buffer_busy;
+
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMovePmonToTop) {
+    if (nPerfCounters) {
+        pmonInterfaces.evtInterfaces.forEach( evtInterface => {
+\jsend
+\=declareNewStyleInterface( evtInterface )=\
+\jsbegin
+        });
+    }
+}
+\jsend
+
+\jsbegin
+// =======================================================
+// DCE unit instance
+// =======================================================
+\jsend
+
+\jsbegin
+
+  var DCE_UNIT_INTF = [];
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: clkInterfaceName,
+        localPrefix: clkInterfaceName,
+        interface: clkInterfaceBundle,
+        direction: clkInterfaceDirection
+    });
+
+/* istanbul ignore else env ncore_3p7 */
+if (!useMoveCsrToTop) {
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: apbInterfaceName,
+        localPrefix: apbInterfaceName,
+        interface: apbInterfaceBundle,
+        direction: apbInterfaceDirection
+    });
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: irqInterfaceName,
+        localPrefix: irqInterfaceName,
+        interface: irqInterfaceBundle,
+        direction: irqInterfaceDirection,
+        excludeFromFC: true
+    });
+
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCsrToTop) {
+    if (!useMovePmonToTop) {
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: oldStylePmonCsrInterface.name,
+        localPrefix: oldStylePmonCsrInterface.name,
+        interface: oldStylePmonCsrInterface.signals,
+        direction: 'master',
+        excludeFromFC: true
+    });
+
+    }
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCsrToTop) {
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: ccrCsrInterface.name,
+        localPrefix: ccrCsrInterface.name,
+        interface: ccrCsrInterface.signals,
+        direction: 'master',
+        excludeFromFC: true
+    });
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: '',
+        localPrefix: '',
+        interface: dce_unit_csr_intf,
+        direction: 'master',
+        excludeFromFC: true
+    });
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMovePmonToTop) {
+
+    /* istanbul ignore next env ncore_3p6, ncore_3p7 */
+    if(!nPerfCounters) {
+
+    } else {
+
+        pmonInterfaces.evtInterfaces.forEach( evtInterface => {
+            var evtInterfaceOldStyle = newToOldStyleInterface( evtInterface );
+            DCE_UNIT_INTF.push({
+                modulePrefix: evtInterfaceOldStyle.name,
+                localPrefix: evtInterfaceOldStyle.name,
+                interface: evtInterfaceOldStyle.signals,
+                direction: 'master',
+                excludeFromFC: true
+            });
+        });
+    }
+
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveSbToTop) {
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: 'skid_buf_cmd_req_',
+        localPrefix: 'skid_buf_cmd_req_',
+        interface: CMD_REQ_INTF,
+        direction: 'master',
+        excludeFromFC: true
+    });
+
+  DCE_UNIT_INTF.push({
+        modulePrefix: 'skid_buf_upd_req_',
+        localPrefix: 'skid_buf_upd_req_',
+        interface: UPD_REQ_INTF,
+        direction: 'master',
+        excludeFromFC: true
+    });
+
+}
+
+    DCE_UNIT_INTF.push({
+        modulePrefix: 'dce_',
+        localPrefix: 'dce_',
+        interface: internalFaultInterfaceBundle,
+        direction: 'master',
+        excludeFromFC: true
+    });
+
+  if (usePma) {
+  DCE_UNIT_INTF.push({
+        modulePrefix: qInterfaceName,
+        localPrefix: qInterfaceName,
+        interface: qInterfaceBundle,
+        direction: qInterfaceDirection,
+        exclude:['REQn']
+  });
+  }
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCmuxToTop) {
+
+for (let i=0; i<CONC_TX_INTF.length; i++) {
+
+  /* istanbul ignore if env ncore_3p7 */
+  if (useMoveSbToTop) {
+    if ((CONC_TX_INTF[i].name === 'cmd_rsp_') || (CONC_TX_INTF[i].name === 'upd_rsp_')) {
+    } else {
+      DCE_UNIT_INTF.push({
+                           modulePrefix: CONC_TX_INTF[i].name,
+                           localPrefix: CONC_TX_INTF[i].name,
+                           interface: CONC_TX_INTF[i].signals});
+    }
+  } else {
+     DCE_UNIT_INTF.push({
+                           modulePrefix: CONC_TX_INTF[i].name,
+                           localPrefix: CONC_TX_INTF[i].name,
+                           interface: CONC_TX_INTF[i].signals});
+  }
+};
+for (let i=0; i<CONC_RX_INTF.length; i++) {
+  /* istanbul ignore if env ncore_3p7 */
+  if (useMoveSbToTop) {
+    if (CONC_RX_INTF[i].name === 'cmd_req_') {
+    } else {
+      DCE_UNIT_INTF.push({
+                           modulePrefix: CONC_RX_INTF[i].name,
+                           localPrefix: CONC_RX_INTF[i].name,
+                           interface: CONC_RX_INTF[i].signals});
+    }
+  } else {
+      DCE_UNIT_INTF.push({
+                           modulePrefix: CONC_RX_INTF[i].name,
+                           localPrefix: CONC_RX_INTF[i].name,
+                           interface: CONC_RX_INTF[i].signals});
+  }
+};
+
+  DCE_UNIT_INTF.push({
+                           modulePrefix: 'dce_cmux_',
+                           localPrefix: 'dce_cmux_',
+                           interface: dce_cmux_header_UCE_wires});
+
+  DCE_UNIT_INTF.push({
+                           modulePrefix: 'dce_cmux_',
+                           localPrefix: 'dce_cmux_',
+                           interface: dce_cmux_message_UCE_wires});
+
+  DCE_UNIT_INTF.push({
+                           modulePrefix: 'dce_cmux_',
+                           localPrefix: 'dce_cmux_',
+                           interface: dce_cmux_data_UCE_wires});
+
+} else {
+
+  for (let i=0; i<SMI_TX_INTF.length; i++)
+    {
+     DCE_UNIT_INTF.push({
+                         modulePrefix: SMI_TX_INTF[i].name, 
+                         localPrefix: SMI_TX_INTF[i].name, 
+                         interface: SMI_TX_INTF[i].signals,
+                         direction: SMI_TX_INTF_DIRECTION[i]
+                         });
+     };
+   for (let i=0; i<SMI_RX_INTF.length; i++)
+     {
+      DCE_UNIT_INTF.push({
+                          modulePrefix: SMI_RX_INTF[i].name, 
+                          localPrefix: SMI_RX_INTF[i].name, 
+                          interface: SMI_RX_INTF[i].signals,
+                          direction: SMI_RX_INTF_DIRECTION[i]
+                          });
+      };
+
+} // useMoveCmuxToTop
+
+  if (JSON.stringify(dce_cmux_CE_tieoffs) === '{}') {
+
+     DCE_UNIT_INTF.push({
+                           modulePrefix: 'dce_',
+                           localPrefix: 'dce_',
+                           interface: dce_cmux_ce_ports,
+                           direction: 'master',
+                           excludeFromFC: true
+                        });
+
+   }
+
+   var memoryInterface = [];
+
+   for (let i=0; i<SF_INFO.length; i++) {
+   memoryInterface[i] = {
+        '_ce'      : 1,
+        '_we'      : 1,
+        '_addr'    : m.log2ceil(SF_INFO[i].nSets),
+        '_biten'   : SF_INFO[i].wMemory,
+        '_wdata'   : SF_INFO[i].wMemory,
+        '_rdata'   :-SF_INFO[i].wMemory
+    };
+
+        for ( let j=0; j<SF_INFO[i].nMemory; j++ ){
+
+    DCE_UNIT_INTF.push({
+                        modulePrefix:'f'+ i + 'm' + j,
+                        localPrefix: 'w_f'+ i + 'm' + j,
+                        interface: memoryInterface[i],
+                        direction: 'master'
+    });
+        }
+
+   }
+
+if (usePLRU) {
+
+   var plruMemoryInterface = [];
+
+   for (let i=0; i<SF_INFO.length; i++) {
+
+   plruMemoryInterface[i] = {
+        '_plru_mem_read_en'      : 1,
+        '_plru_mem_write_en'     : 1,
+        '_plru_mem_read_addr'    : m.log2ceil(SF_INFO[i].nSets),
+        '_plru_mem_write_addr'   : m.log2ceil(SF_INFO[i].nSets),
+        '_plru_mem_write_data'   : SF_INFO[i].nWays,
+        '_plru_mem_read_data'    :-SF_INFO[i].nWays
+    };
+
+    DCE_UNIT_INTF.push({
+                        modulePrefix:'f'+ i,
+                        localPrefix: 'w_f'+ i,
+                        interface: plruMemoryInterface[i],
+                        direction: 'master'
+    });
+
+   }
+
+}
+
+/* istanbul ignore else env ncore_3p7 */
+if (useSramFifo && (sb_memoryType === 'SYNOPSYS')) {
+
+   var sbMemoryInterface = [];
+
+   sbMemoryInterface[0] = {
+        'sb_mem_read_en'      : 1,
+        'sb_mem_write_en'     : 1,
+        'sb_mem_read_addr'    : sb_mem_addr_width,
+        'sb_mem_write_addr'   : sb_mem_addr_width,
+        'sb_mem_write_data'   : sb_mem_data_width,
+        'sb_mem_read_data'    : -sb_mem_data_width
+    };
+
+    DCE_UNIT_INTF.push({
+                        modulePrefix:'',
+                        localPrefix: '',
+                        interface: sbMemoryInterface[0],
+                        direction: 'master'
+    });
+
+}
+
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_ && !useMovePmonToTop ) {
+    DCE_UNIT_INTF.push({
+        modulePrefix: masterTriggerInterface.name,
+        localPrefix: masterTriggerInterface.name,
+        "interface": masterTriggerInterface.signals,
+        direction: "slave",
+	exclude : ['trigger']
+    });
+}
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (interfaces.uSysDveIdInt) {
+    DCE_UNIT_INTF.push({
+        modulePrefix: dveIdInterface.name,
+        localPrefix: dveIdInterface.name,
+        "interface": dveIdInterface.signals,
+        direction: "slave"
+    });
+  
+}
+
+var unit_ports = {
+             ca_f_unit_id : interfaces.uSysCaIdInt.name+'f_unit_id',
+             dmi_f_unit_id : interfaces.uSysDmiIdInt.name+'f_unit_id'
+};
+   unit_ports["connected_dmi_f_unit_id"] = interfaces.uSysConnectedDmiIdInt.name+'f_unit_id';
+   unit_ports["hexDceConnectedDmiRbOffset"] = interfaces.uSysConnectedDmiRbOffsetInt.name+'f_unit_id';
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+    unit_ports['ca_n_unit_id'] = interfaces.uSysCaNodeIdInt.name+'n_unit_id';
+}
+
+unit_ports['bist_timeout_trigger'] = 'bist_timeout_trigger';
+
+Object.keys(unitIdInterface).forEach(function(key) {
+    unit_ports[unitIdInterfaceName + key] = unitIdInterfaceName + key;
+});
+
+/* istanbul ignore else env ncore_3p7 */
+if (!useMoveCsrToTop) {
+  if ( useResiliency ) {
+unit_ports['dce_res_cerr_threshold'] = 'dce_res_cerr_threshold';
+  }
+}
+if (usePma) {
+unit_ports[qInterfaceName+'REQn'] = qInterfaceName+'REQn_sync';
+}
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_ && !useMovePmonToTop ) {
+unit_ports[masterTriggerInterface.name+'trigger'] = masterTriggerInterface.name+'trigger_sync';
+}
+
+unit_ports['hexDceDmiVec'] = 'hexDceDmiVec';
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveFlopsToTop) {
+
+unit_ports['out_att_req_alloc_bundle_vec'] = 'out_att_req_alloc_bundle_vec';
+unit_ports['in_att_req_alloc_bundle_vec']  = 'in_att_req_alloc_bundle_vec';
+unit_ports['en_att_req_alloc_bundle_vec']  = 'en_att_req_alloc_bundle_vec';
+unit_ports['att_req_alloc_bundle_clk']     = 'att_req_alloc_bundle_clk';
+unit_ports['att_req_alloc_bundle_reset_n'] = 'att_req_alloc_bundle_reset_n';
+
+unit_ports['out_att_alloc_bundle_vec'] = 'out_att_alloc_bundle_vec';
+unit_ports['in_att_alloc_bundle_vec']  = 'in_att_alloc_bundle_vec';
+unit_ports['en_att_alloc_bundle_vec']  = 'en_att_alloc_bundle_vec';
+unit_ports['att_alloc_bundle_clk']     = 'att_alloc_bundle_clk';
+unit_ports['att_alloc_bundle_reset_n'] = 'att_alloc_bundle_reset_n';
+
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCmuxToTop) {
+
+for (let i=0; i<SMI_TX_INTF.length; i++) {
+    unit_ports[SMI_TX_INTF[i].name+'ndp_msg_valid'] = SMI_TX_INTF[i].name+'ndp_msg_valid';
+    unit_ports[SMI_TX_INTF[i].name+'ndp_msg_ready'] = SMI_TX_INTF[i].name+'ndp_msg_ready';
+    }
+for (let i=0; i<SMI_RX_INTF.length; i++) {
+    unit_ports[SMI_RX_INTF[i].name+'ndp_msg_valid'] = SMI_RX_INTF[i].name+'ndp_msg_valid';
+    unit_ports[SMI_RX_INTF[i].name+'ndp_msg_ready'] = SMI_RX_INTF[i].name+'ndp_msg_ready';
+    }
+
+    unit_ports['cmux_busy'] = 'cmux_busy';
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveSbToTop) {
+
+unit_ports['dce_skid_buffer__clk']     = 'dce_skid_buffer__clk';
+unit_ports['dce_skid_buffer__reset_n'] = 'dce_skid_buffer__reset_n';
+
+unit_ports['dce_skid_buffer__cmd_rsp_out_ready'] = 'dce_skid_buffer__cmd_rsp_out_ready';
+
+unit_ports['skid_buf_cmd_req_fifo__clk']       = 'skid_buf_cmd_req_fifo__clk';
+unit_ports['skid_buf_cmd_req_fifo__reset_n']   = 'skid_buf_cmd_req_fifo__reset_n';
+unit_ports['skid_buf_cmd_req_fifo__pop_ready'] = 'skid_buf_cmd_req_fifo__pop_ready';
+
+unit_ports['cmd_rsp_fifo__clk']        = 'cmd_rsp_fifo__clk';
+unit_ports['cmd_rsp_fifo__reset_n']    = 'cmd_rsp_fifo__reset_n';
+unit_ports['cmd_rsp_fifo__push_valid'] = 'cmd_rsp_fifo__push_valid';
+
+unit_ports['cmux_cmd_req_UCE']  = 'cmux_cmd_req_UCE';
+unit_ports['cmux_upd_req_UCE']  = 'cmux_upd_req_UCE';
+unit_ports['skid_buf_upd_req_ready'] = 'skid_buf_upd_req_ready';
+
+unit_ports['cmd_rsp_valid'] = 'cmd_rsp_valid';
+unit_ports['cmd_req_valid'] = 'cmd_req_valid';
+unit_ports['cmd_req_ready'] = 'cmd_req_ready';
+
+unit_ports['skid_target_ue_valid']   = 'skid_target_ue_valid';
+unit_ports['skid_target_ue_init_id'] = 'skid_target_ue_init_id';
+
+unit_ports['pmon_starvation_event']  = 'pmon_starvation_event';
+unit_ports['skid_buffer_busy'] = 'skid_buffer_busy';
+unit_ports['cmd_rsp_int_ready'] = 'cmd_rsp_int_ready';
+unit_ports['upd_req_ready'] = 'upd_req_ready';
+
+}
+
+    var dce_unit_params = {
+                           useSaveLatency        : useSaveLatency,
+
+                           useSramFifo           : useSramFifo,
+                           sb_width              : sb_width,
+                           sb_depth              : sb_depth,
+                           sb_memoryType         : sb_memoryType,
+                           sb_fnErrDetectCorrect : sb_fnErrDetectCorrect,
+                           sb_mem_addr_width     : sb_mem_addr_width,
+                           sb_mem_data_width     : sb_mem_data_width,
+
+                           useSramInputFlop : useSramInputFlop,
+
+                           useMoveFlopsToTop : useMoveFlopsToTop,
+                           att_req_alloc_bundle : att_req_alloc_bundle,
+                           att_alloc_bundle : att_alloc_bundle,
+
+                           useMoveCmuxToTop : useMoveCmuxToTop,
+                           hasHeaderProt    : hasHeaderProt,
+                           hasMessageProt   : hasMessageProt,
+                           hasDataProt      : hasDataProt,
+                           isDuplicate      : isDuplicate,
+                           concertoMuxFaultPorts : concertoMuxFaultPorts,
+                           dce_cmux_CE_tieoffs : dce_cmux_CE_tieoffs,
+                           dce_cmux_header_UCE_wires : dce_cmux_header_UCE_wires,
+                           dce_cmux_message_UCE_wires : dce_cmux_message_UCE_wires,
+                           dce_cmux_data_UCE_wires : dce_cmux_data_UCE_wires,
+                           CONCERTO_MUX_INTF : CONCERTO_MUX_INTF,
+
+                           useMoveCsrToTop : useMoveCsrToTop,
+                           CSR_INTF : CSR_INTF,
+                           csr_params : csr_params,
+                           instance_ports_for_csr : instance_ports_for_csr,
+                           oldStylePmonCsrInterface : oldStylePmonCsrInterface,
+                           dce_unit_csr_intf : dce_unit_csr_intf,
+
+                           useMovePmonToTop : useMovePmonToTop,
+                           pmonInterfaces : pmonInterfaces,
+                           pmonEventTable : pmonEventTable,
+                           clk16Interface : clk16Interface,
+
+                           useMoveSbToTop : useMoveSbToTop,
+                           SKID_BUFFER_PORTS : SKID_BUFFER_PORTS,
+
+                           usePLRU : usePLRU,
+                           nSkidBufSize : nSkidBufSize,
+                           nSkidBufArb : nSkidBufArb,
+                           useSysEvtCoh: useSysEvtCoh,
+                           assertOn : ASSERT_ON,
+
+						   clkInterfaceNewStyle : interfaces.clkInt,
+                           smiTxPortInterfaces : SMI_TX_INTF,
+                           smiRxPortInterfaces : SMI_RX_INTF,
+                           concertoTxInterfaces : CONC_TX_INTF,
+                           concertoRxInterfaces : CONC_RX_INTF,
+                           internalFaultInterface: internalFaultInterfaceBundle,
+                           dce_cmux_ce_ports:      dce_cmux_ce_ports,
+                           unitIdInterface:            unitIdInterface,
+                           unitIdInterfaceName:        unitIdInterfaceName,
+                           apbInterface:               apbInterfaceBundle,
+                           apbInterfaceName:           apbInterfaceName,
+                           regProtectionInterface:     regProtectionInterfaceBundle,
+                           regProtectionInterfaceName: regProtectionInterfaceName,
+                           regProtectionStyle:         regProtectionStyle,
+                           irqInterface:               irqInterfaceBundle,
+                           irqInterfaceName:           irqInterfaceName,
+                           qInterface:                 qInterfaceBundle,
+                           qInterfaceName:             qInterfaceName,
+
+                           masterTriggerInterfaceJson: masterTriggerInterfaceJson,
+			   haveMasterTriggerInterface: haveMasterTriggerInterface,
+
+                           wResThreshold:              wResThreshold,
+                           wSnoopEnables:              wSnoopEnables,
+                           nPerfCounters:              nPerfCounters,
+                           concParams:                 concParams,
+                           csr:                        modifiedCsr,
+                           
+                           useResiliency:              useResiliency,
+                           usePma:                     usePma,
+                           PmaInfo:                    PmaInfo,
+                           
+                           cmdSkidBufferDepth : CMD_SB_DEPTH,
+                           updSkidBufferDepth : UPD_SB_DEPTH,
+                           SnoopFilterInfo : SF_INFO,
+                           nWays : N_WAYS,
+                           wCacheLineOffset : CLO,
+	                       AsyncReset: ARST,
+	                       DataReset: DRST,
+                           RetryDepth : RRD,
+                           PipeDepth : PIPEDEPTH,
+                           NullFilter : NF,
+                           nAius : N_AIUS,
+                           nChieAius : N_CHIE_AIUS,
+                           nCachingAgents : N_C_AGENTS,
+                           nAttCtrlEntries : N_ATT,
+                           cmType : CM_TYPE,
+                           nDmis : N_DMIS,
+			   nDves : N_DVES,
+                           nConnectedDmis : N_CONNECTED_DMIS,
+                           wRpn     : W_RPN,
+                           wNrri    : W_NRRI,
+                           wFUnitId : W_FUNIT_ID,
+                           wNUnitId : W_NUNIT_ID,
+                           wFPortId : W_FPORT_ID,
+                           nLpIdPerCaAgent : N_LP_IDS,
+                           wLpId : W_LP_ID,
+                           CachingAgentsLpIds : LP_IDS,
+                           nProcs : N_PROCS,
+                           nTaggedMonitors : N_TAG_MONS,
+                           nMrdsPerDmi : N_MRD_CREDITS,
+                           nSnpsPerAiu : N_SNP_CREDITS,
+                           nRbsPerDmi : N_RBS,
+                           nGPRA : N_GPRA,
+                           dmiIGSV : DMI_IGSV,
+                           dmi2WIFV : DMI_2WIFV,
+                           dmi3WIFV : DMI_3WIFV,
+                           dmi4WIFV : DMI_4WIFV,
+                           dmi8WIFV : DMI_8WIFV,
+                           dmi16WIFV: DMI_16WIFV,
+                           StashEnable : STASH_EN_VEC,
+                           CachingAgentIsCHI : CachingAgentIsCHI,
+                           QosInfo: QosInfo,
+                           fnEnableQos: fnEnableQos,
+			   EnableSysEvtToDve: EnableSysEvtToDve
+                           
+    };
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (interfaces.uSysDveIdInt) {		
+	dce_unit_params["dveIdInterface"] = dveIdInterface;
+}
+
+
+\jsend
+\js if (useResiliency && enableUnitDuplication  && interfaces.uSysDveIdInt) {
+\=bundleFunctions.wiresFromInterface('dup_unit_'+dveIdInterface.name, dveIdInterface.signals, [], obj.lib.bundle)=\
+\js }
+
+\jsbegin
+    for (let i=0; i<SF_INFO.length; i++) {
+        for ( let j=0; j<SF_INFO[i].nMemory; j++ ){
+\jsend
+\=bundleFunctions.wiresFromInterface('w_f'+ i + 'm' + j, memoryInterface[i], [], obj.lib.bundle)=\
+\js if (useResiliency && enableUnitDuplication) {
+\=bundleFunctions.wiresFromInterface('dup_unit_w_f'+ i + 'm' + j, memoryInterface[i], [], obj.lib.bundle)=\
+\js }
+
+
+\jsbegin
+        }
+    }
+
+\jsend
+
+\jsbegin
+if (usePLRU) {
+    for (let i=0; i<SF_INFO.length; i++) {
+\jsend
+\=bundleFunctions.wiresFromInterface('w_f'+ i,       plruMemoryInterface[i], [], obj.lib.bundle)=\
+    \jsbegin
+		/* istanbul ignore if env ncore_3p7 */
+    	if (useResiliency && enableUnitDuplication) { \jsend
+\=bundleFunctions.wiresFromInterface('dup_unit_w_f'+ i,       plruMemoryInterface[i], [], obj.lib.bundle)=\
+    \js }
+\jsbegin
+    }
+}
+\jsend
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (useSramFifo && (sb_memoryType === 'SYNOPSYS')) {
+\jsend
+
+wire sb_mem_write_en;
+wire [\=sb_mem_addr_width-1=\:0] sb_mem_write_addr;
+wire [\=sb_mem_data_width-1=\:0] sb_mem_write_data;
+wire sb_mem_read_en;
+wire [\=sb_mem_addr_width-1=\:0] sb_mem_read_addr;
+wire [\=sb_mem_data_width-1=\:0] sb_mem_read_data;
+    \js if (useResiliency && enableUnitDuplication) {
+wire dup_unit_sb_mem_write_en;
+wire [\=sb_mem_addr_width-1=\:0] dup_unit_sb_mem_write_addr;
+wire [\=sb_mem_data_width-1=\:0] dup_unit_sb_mem_write_data;
+wire dup_unit_sb_mem_read_en;
+wire [\=sb_mem_addr_width-1=\:0] dup_unit_sb_mem_read_addr;
+wire [\=sb_mem_data_width-1=\:0] dup_unit_sb_mem_read_data;
+    \js }
+
+\js }
+ 
+\= u.instance
+   ({
+     instanceName: 'dce_func_unit',
+     moduleName: 'dce_unit',
+     params: dce_unit_params,
+     verilogParams: {},
+     ports: unit_ports,
+     interfaces: DCE_UNIT_INTF         
+     })=\
+
+
+\jsbegin
+for (let f=0; f<SF_INFO.length; f++) {
+	for (let w=0; w<SF_INFO[f].nMemory; w++) {
+		var mem_ports = {
+		clk:		interfaces.clkInt.name+'clk',
+                int_chip_en:	'w_f'+f+'m'+w+'_ce',
+		int_write_en:	'w_f'+f+'m'+w+'_we',
+		int_address:	'w_f'+f+'m'+w+'_addr',
+		int_data_in:	'w_f'+f+'m'+w+'_wdata',
+		int_data_out:	'w_f'+f+'m'+w+'_rdata'
+		};
+        /* istanbul ignore if env ncore_3p0, ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+		if (SF_INFO[f].biten) {
+			mem_ports['int_write_en_mask'] = 'w_f'+f+'m'+w+'_biten';
+		}
+		/* istanbul ignore else env ncore_3p4 */
+		/* istanbul ignore next env ncore_3p6, ncore_3p7 */
+		if (useMemoryGating) {
+			mem_ports['cg_test_en'] = interfaces.clkInt.name+'test_en';
+		}
+
+	var memEccBlocks = [[]];
+        for (let b=0; b<SF_INFO[f].wEntry; b++) {
+            memEccBlocks[0][b] = b;
+        }
+
+    var TagMemIndex = memInterfaceDict[ SF_INFO[f].TagMem[0].rtlPrefixString + '_' ];
+    var TagMemIndexi = memInterfaceDict[ SF_INFO[f].TagMem[w].rtlPrefixString + '_' ];
+    var em_mem_external_interfaces = {};
+    if (SF_INFO[f].TagMem[w].MemType !== 'NONE') {
+		/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+        if (interfaces.memoryInt.length > 0) {
+    em_mem_external_interfaces.externalInterface = utilFunctions.deepCopy(interfaces.memoryInt[ TagMemIndexi ]);
+    em_mem_external_interfaces.externalInterface.name = ' ';
+        }
+    }
+
+    var TagMemInterfaces = [];
+
+    TagMemInterfaces.push({
+        modulePrefix: '', //memInterfaceName[ TagMemIndex ],
+        localPrefix: memInterfaceName[ TagMemIndexi ],
+        interface: memInterfaceBundle[ TagMemIndexi ],
+        direction: memInterfaceDirection[ TagMemIndexi ]
+    });
+
+\jsend
+
+\=obj.lib.instance({
+	instanceName: SF_INFO[f].TagMem[w].rtlPrefixString,
+	moduleName: SF_INFO[f].TagMem[w].moduleName + '_em_mem_external',
+	tachlName: 'em_mem_external',
+	params: {
+		useMemoryGating: useMemoryGating, 
+		sverilog: ASSERT_ON, 
+                interfaces      : em_mem_external_interfaces,
+		memEccBlocks: memEccBlocks,
+		rtlPrefixString: SF_INFO[f].TagMem[w].moduleName, //SF_INFO[f].TagMem[0].rtlPrefixString,
+		modulePrefix: 'sf',
+		memoryType: SF_INFO[f].TagMem[w].MemType,
+		nSignals: SF_INFO[f].TagMem[w].Signals.length,
+		signals: SF_INFO[f].TagMem[w].Signals,
+		useHandshake: 0,
+		no_mem_init: 0,
+		ports: 'sp',
+		bitEnable: SF_INFO[f].biten,
+		numberOfEnables: SF_INFO[f].wMemory,
+		width: SF_INFO[f].wMemory,
+		depth: SF_INFO[f].nSets},
+	verilogParams: {},
+	ports: mem_ports,
+        interfaces: TagMemInterfaces,
+	portsDelimiter: '\n\t'
+})=\
+
+\js 	}
+\js }
+
+
+\jsbegin
+
+if (usePLRU) {
+
+  for (let f=0; f<SF_INFO.length; f++) {
+            var plru_mem_ports = {
+                clk:            interfaces.clkInt.name+'clk',
+                int_chip_en_read:       'w_f'+f+'_plru_mem_read_en',
+                int_chip_en_write:      'w_f'+f+'_plru_mem_write_en',
+                int_address_read:       'w_f'+f+'_plru_mem_read_addr',
+                int_address_write:      'w_f'+f+'_plru_mem_write_addr',
+                int_data_in:    'w_f'+f+'_plru_mem_write_data',
+                int_data_out:   'w_f'+f+'_plru_mem_read_data'
+                };
+                /* istanbul ignore else env ncore_3p4 */
+                /* istanbul ignore next env ncore_3p6, ncore_3p7 */
+                if (useMemoryGating) {
+                        mem_ports['cg_test_en'] = interfaces.clkInt.name+'test_en';
+                }
+
+    var plruMemEccBlocks = [[]];
+    for (var i=0; i < SF_INFO[f].nWays; i++) {
+        plruMemEccBlocks[0][i] = i;
+    }
+
+    var plru_em_mem_external_interfaces = {};
+
+    var PlruMemInterfaces = [];
+
+   /* istanbul ignore else env ncore_3p7 */
+   if (SF_INFO[f].RpMem != undefined) {
+
+    var PlruMemIndexi = memInterfaceDict[ SF_INFO[f].RpMem[0].rtlPrefixString + '_' ];
+
+    /* istanbul ignore else env ncore_3p7 */
+    if (SF_INFO[f].RpMem[0].MemType !== 'NONE') {
+		/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+        if (interfaces.memoryInt.length > 0) {
+    plru_em_mem_external_interfaces.externalInterface = utilFunctions.deepCopy(interfaces.memoryInt[ PlruMemIndexi ]);
+    plru_em_mem_external_interfaces.externalInterface.name = ' ';
+        }
+    }
+
+    PlruMemInterfaces.push({
+        modulePrefix: '',
+        localPrefix: memInterfaceName[ PlruMemIndexi ],
+        interface: memInterfaceBundle[ PlruMemIndexi ],
+        direction: memInterfaceDirection[ PlruMemIndexi ]
+    });
+
+   }
+
+\jsend
+
+    \=obj.lib.instance({
+        instanceName: (SF_INFO[f].RpMem != undefined) ? SF_INFO[f].RpMem[0].rtlPrefixString : /* istanbul ignore next env ncore_3p7 */ 'u_f'+f+'_plru_mem',
+        moduleName: (SF_INFO[f].RpMem != undefined) ? SF_INFO[f].RpMem[0].moduleName + '_em_mem_external' : /* istanbul ignore next env ncore_3p7 */ 'f'+f+'_plru_'+'_em_mem_external',
+        tachlName: 'em_mem_external',
+        params: {
+                useMemoryGating: 0, //useMemoryGating
+                sverilog: ASSERT_ON,
+                interfaces      : plru_em_mem_external_interfaces,
+                memEccBlocks: plruMemEccBlocks,
+                rtlPrefixString: (SF_INFO[f].RpMem != undefined) ? SF_INFO[f].RpMem[0].moduleName : /* istanbul ignore next env ncore_3p7 */ 'f'+f+'plru_',
+                modulePrefix: 'plru',
+                memoryType: (SF_INFO[f].RpMem != undefined) ? SF_INFO[f].RpMem[0].MemType : /* istanbul ignore next env ncore_3p7 */ 'SYNOPSYS',
+                nSignals: (SF_INFO[f].RpMem != undefined) ? SF_INFO[f].RpMem[0].Signals.length : /* istanbul ignore next env ncore_3p7 */ 0,
+                signals: (SF_INFO[f].RpMem != undefined) ? SF_INFO[f].RpMem[0].Signals : /* istanbul ignore next env ncore_3p7 */ [],
+                useHandshake: 0,
+                no_mem_init: 0,
+                ports: 'tp',
+                bitEnable: 0,
+                numberOfEnables: SF_INFO[f].nWays,
+                width: SF_INFO[f].nWays,
+                depth: SF_INFO[f].nSets},
+        verilogParams: {},
+        ports: plru_mem_ports,
+        interfaces: PlruMemInterfaces,
+        portsDelimiter: '\n\t'
+    })=\
+
+\jsbegin
+  }
+}
+\jsend
+
+\jsbegin
+
+    var sb_mem_ports = {
+                clk:                    interfaces.clkInt.name+'clk',
+                int_chip_en_read:       'sb_mem_read_en',
+                int_chip_en_write:      'sb_mem_write_en',
+                int_address_read:       'sb_mem_read_addr',
+                int_address_write:      'sb_mem_write_addr',
+                int_data_in:            'sb_mem_write_data',
+                int_data_out:           'sb_mem_read_data'
+    };
+
+    var sbMemEccBlocks = [[]];
+    for (var i=0; i < sb_mem_data_width; i++) {
+        sbMemEccBlocks[0][i] = i;
+    }
+
+    var sb_em_mem_external_interfaces = {};
+
+    var SbMemInterfaces = [];
+
+    if (cSbMemGen != undefined) {
+
+      var SbMemIndexi = memInterfaceDict[ cSbMemGen.rtlPrefixString + '_' ];
+
+	  /* istanbul ignore else env ncore_3p7 */
+      if (cSbMemGen.MemType !== 'NONE') {
+		/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+        if (interfaces.memoryInt.length > 0) {
+    sb_em_mem_external_interfaces.externalInterface = utilFunctions.deepCopy(interfaces.memoryInt[ SbMemIndexi ]);
+    sb_em_mem_external_interfaces.externalInterface.name = ' ';
+        }
+      }
+
+      SbMemInterfaces.push({
+        modulePrefix: '',
+        localPrefix: memInterfaceName[ SbMemIndexi ],
+        interface: memInterfaceBundle[ SbMemIndexi ],
+        direction: memInterfaceDirection[ SbMemIndexi ]
+      });
+
+    }
+
+\jsend
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (useSramFifo && (sb_memoryType === 'SYNOPSYS')) {
+\jsend
+
+    \=obj.lib.instance({
+        instanceName: (cSbMemGen != undefined) ? cSbMemGen.rtlPrefixString : /* istanbul ignore next env ncore_3p7 */ 'u_sb_mem',
+        moduleName: (cSbMemGen != undefined) ? cSbMemGen.moduleName + '_em_mem_external' : /* istanbul ignore next env ncore_3p7 */ 'sb_em_mem_external',
+        tachlName: 'em_mem_external',
+        params: {
+                useMemoryGating: 0, //useMemoryGating
+                sverilog: ASSERT_ON,
+                interfaces      : sb_em_mem_external_interfaces,
+                memEccBlocks: sbMemEccBlocks,
+                rtlPrefixString: (cSbMemGen != undefined) ? cSbMemGen.moduleName : /* istanbul ignore next env ncore_3p7 */ 'sb_',
+                modulePrefix: 'sb',
+                memoryType: (cSbMemGen != undefined) ? cSbMemGen.MemType : /* istanbul ignore next env ncore_3p7 */ 'SYNOPSYS',
+                nSignals: (cSbMemGen != undefined) ? cSbMemGen.Signals.length : /* istanbul ignore next env ncore_3p7 */ 0,
+                signals: (cSbMemGen != undefined) ? cSbMemGen.Signals : /* istanbul ignore next env ncore_3p7 */ [],
+                useHandshake: 0,
+                no_mem_init: 0,
+                ports: 'tp',
+                bitEnable: 0,
+                numberOfEnables: sb_mem_data_width,
+                width: sb_mem_data_width,
+                depth: sb_depth},
+        verilogParams: {},
+        ports: sb_mem_ports,
+        interfaces: SbMemInterfaces,
+        portsDelimiter: '\n\t'
+    })=\
+
+\js }
+
+
+\jsbegin
+// =======================================================
+// Checker i.e. Duplicated DCE Unit Instance
+// =======================================================
+\jsend
+
+\js if (useResiliency && enableUnitDuplication) {
+
+\jsbegin
+    var DUP_UNIT_INTF = [];
+
+    for (var i = 0; i < DCE_UNIT_INTF.length; i++) {
+        DUP_UNIT_INTF.push({
+            modulePrefix: DCE_UNIT_INTF[i].modulePrefix,
+            localPrefix: 'dup_unit_' + DCE_UNIT_INTF[i].localPrefix,
+            interface: DCE_UNIT_INTF[i].interface,
+            direction: DCE_UNIT_INTF[i].direction,
+            excludeFromFC: DCE_UNIT_INTF[i].excludeFromFC,
+            exclude: DCE_UNIT_INTF[i].exclude
+    });
+}
+
+
+
+var dup_unit_ports = {
+             ca_f_unit_id : interfaces.uSysCaIdInt.name+'f_unit_id',
+             dmi_f_unit_id : interfaces.uSysDmiIdInt.name+'f_unit_id'
+};
+   dup_unit_ports["connected_dmi_f_unit_id"] = interfaces.uSysConnectedDmiIdInt.name+'f_unit_id';
+   dup_unit_ports["hexDceConnectedDmiRbOffset"] = interfaces.uSysConnectedDmiRbOffsetInt.name+'f_unit_id';
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+    dup_unit_ports['ca_n_unit_id'] = interfaces.uSysCaNodeIdInt.name+'n_unit_id';
+}
+
+dup_unit_ports['bist_timeout_trigger'] = 'dup_unit_bist_timeout_trigger';
+
+Object.keys(unitIdInterface).forEach(function(key) {
+    dup_unit_ports[unitIdInterfaceName + key] = unitIdInterfaceName + key;
+});
+
+/* istanbul ignore else env ncore_3p7 */
+if (!useMoveCsrToTop) {
+dup_unit_ports['dce_res_cerr_threshold'] = 'dup_unit_cerr_threshold';
+}
+
+if (usePma) {
+dup_unit_ports[qInterfaceName+'REQn'] = 'dup_unit_'+qInterfaceName+'REQn_sync';
+}
+
+dup_unit_ports['hexDceDmiVec'] = 'hexDceDmiVec';
+
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_ ) {
+dup_unit_ports[masterTriggerInterface.name+'trigger'] = 'dup_unit_'+masterTriggerInterface.name+'trigger_sync';
+}
+
+\jsend
+
+\= u.instance
+   ({
+     instanceName: 'dup_unit',
+     moduleName: 'dce_unit',
+     params: dce_unit_params,
+     verilogParams: {},
+     ports: dup_unit_ports,
+     interfaces: DUP_UNIT_INTF         
+     })=\
+
+\js }
+  
+
+\jsbegin
+// =======================================================
+// Checker Delay Instance
+// =======================================================
+
+
+\jsend
+
+\js if (useResiliency && enableUnitDuplication) {
+\jsbegin
+var checkerInterfaceBundle = {};
+var delayInterfaceBundle   = {};
+
+delayInterfaceBundle['bist_timeout_trigger'] = 1;
+
+if (usePma) {
+    delayInterfaceBundle[qInterfaceName+'REQn_sync'] = 1;
+}
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_ ) {
+    delayInterfaceBundle[masterTriggerInterface.name+'trigger_sync'] = 1;
+}
+    for (var intf = 0; intf < DUP_UNIT_INTF.length; intf++) {
+        if (DUP_UNIT_INTF[intf].excludeFromFC != true) {
+            var inputSignalKeys  = [];
+            var outputSignalKeys = [];
+            if (DCE_UNIT_INTF[intf].direction == "master"){
+                inputSignalKeys  = Object.keys(DUP_UNIT_INTF[intf].interface).filter(key => (DUP_UNIT_INTF[intf].interface[key] < 0) & key != 'clk' & key != 'reset_n' & key != 'test_en');
+                outputSignalKeys = Object.keys(DUP_UNIT_INTF[intf].interface).filter(key => (DUP_UNIT_INTF[intf].interface[key] > 0) & key != 'clk' & key != 'reset_n' & key != 'test_en');
+            } else {
+                inputSignalKeys  = Object.keys(DUP_UNIT_INTF[intf].interface).filter(key => (DUP_UNIT_INTF[intf].interface[key] > 0) & key != 'clk' & key != 'reset_n' & key != 'test_en');
+                outputSignalKeys = Object.keys(DUP_UNIT_INTF[intf].interface).filter(key => (DUP_UNIT_INTF[intf].interface[key] < 0) & key != 'clk' & key != 'reset_n' & key != 'test_en');
+            }
+            for (var sig = 0; sig < inputSignalKeys.length; sig++) {
+                delayInterfaceBundle[DCE_UNIT_INTF[intf].localPrefix + inputSignalKeys[sig]] = Math.abs(DUP_UNIT_INTF[intf].interface[inputSignalKeys[sig]]);
+            }
+            for (var sig = 0; sig < outputSignalKeys.length; sig++) {
+                checkerInterfaceBundle[DCE_UNIT_INTF[intf].localPrefix + outputSignalKeys[sig]] = Math.abs(DUP_UNIT_INTF[intf].interface[outputSignalKeys[sig]]);
+            }
+        }
+    }
+
+    var delayInterfaceBundleKeys = Object.keys(delayInterfaceBundle);
+
+    var delayInterfaces = [];
+
+
+    delayInterfaces.push({
+            modulePrefix: '',
+            localPrefix: clkInterfaceName,
+            interface: clkInterface
+    });
+
+    delayInterfaces.push({
+            modulePrefix: 'in_',
+            localPrefix: '',
+            interface: delayInterfaceBundle
+    });
+
+    delayInterfaces.push({
+            modulePrefix: 'out_',
+            localPrefix: 'dup_unit_',
+            interface: delayInterfaceBundle
+    });
+
+var checker_delay_ports = {};
+checker_delay_ports['reset_n_delay'] = 'reset_n_delay';
+checker_delay_ports['clk'] = clkInterfaceName+'clk';
+checker_delay_ports['reset_n'] = clkInterfaceName+'reset_n';
+if (usePma) {
+    checker_delay_ports['in_'+qInterfaceName+'REQn_sync'] = qInterfaceName+'REQn_sync';
+    checker_delay_ports['out_'+qInterfaceName+'REQn_sync'] = 'dup_unit_'+qInterfaceName+'REQn_sync';
+}
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_ ) {
+    checker_delay_ports['in_'+masterTriggerInterface.name+'trigger_sync'] = masterTriggerInterface.name+'trigger_sync';
+    checker_delay_ports['out_'+masterTriggerInterface.name+'trigger_sync'] = 'dup_unit_'+masterTriggerInterface.name+'trigger_sync';
+}
+
+\jsend
+
+
+    \=obj.lib.instance({
+        instanceName   : 'delay',
+        moduleName     : 'checker_delay',
+        params         :  {
+                             clkInterface    : clkInterface,
+                             delayInterface  : delayInterfaceBundle,
+                             nDelay          : nDelay
+                          },
+        interfaces     : delayInterfaces,
+        ports          : checker_delay_ports,
+        verilogParams  :  {},
+        portsDelimiter : '\n    '
+    })=\
+
+\js }
+
+\jsbegin
+// =======================================================
+// Fault Checker
+// =======================================================
+\jsend
+
+\js if (useResiliency) {
+
+assign \=bistInterfaceName=\domain_is_on = 1'b1;
+
+    \jsbegin
+    var dce_checker_interfaces = [];
+
+
+    dce_checker_interfaces.push({
+        modulePrefix: '',
+        localPrefix: bistInterfaceName,
+        interface: bistInterfaceBundle, exclude : ['domain_is_on']
+    });
+
+    dce_checker_interfaces.push({
+        modulePrefix: '',
+        localPrefix: faultInterfaceName,
+        interface: faultInterfaceBundle, exclude : ['late_clk']
+    });
+
+    if (enableUnitDuplication) {
+    checkerInterfaceBundle.cerr_threshold = wResThreshold;
+        dce_checker_interfaces.push({
+            modulePrefix: 'func_',
+            localPrefix: '',
+            interface: checkerInterfaceBundle
+        });
+
+        dce_checker_interfaces.push({
+            modulePrefix: 'check_',
+            localPrefix: 'dup_unit_',
+            interface: checkerInterfaceBundle
+        });
+
+    }
+
+    var instance_ports_for_fault_checker = {
+                             clk                   : 'fault_checker_clk',
+                             reset_n               : 'fault_checker_reset_n',
+                             reset_n_delay         : 'fault_checker_reset_n_delay'
+    };
+
+    /* istanbul ignore else env ncore_3p7 */
+    if (timeoutBistControlEnable) {
+    instance_ports_for_fault_checker['bist_timeout_trigger'] = 'bist_timeout_trigger';
+    }
+
+    var numFaultInputs = 9;
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) {
+        numFaultInputs += 2;
+}
+
+if (CMDOverflowBufInSRAM) {
+        numFaultInputs += 1;
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveFlopsToTop) {
+        numFaultInputs += 4;
+}
+
+        instance_ports_for_fault_checker["cerr_threshold"] = 'fault_checker_cerr_threshold';
+
+for (i=0;i<numFaultInputs;i++) {
+    instance_ports_for_fault_checker['func_'+i+'_fault_in']       = 'func_'+i+'_fault_in';
+    instance_ports_for_fault_checker['check_'+i+'_fault_in']      = 'check_'+i+'_fault_in';
+    instance_ports_for_fault_checker['func_'+i+'_cerr_fault_in']  = 'func_'+i+'_cerr_fault_in';
+    instance_ports_for_fault_checker['check_'+i+'_cerr_fault_in'] = 'check_'+i+'_cerr_fault_in';
+}
+
+    \jsend
+
+wire func_0_fault_in       = dce_cmux_UCE;
+wire func_0_cerr_fault_in  = dce_cmux_cmd_req_CE;
+\js if (enableUnitDuplication) {
+wire check_0_fault_in      = dup_unit_dce_cmux_UCE;
+wire check_0_cerr_fault_in = dup_unit_dce_cmux_cmd_req_CE;
+\js } else {
+wire check_0_fault_in      = dce_cmux_UCE;
+wire check_0_cerr_fault_in = dce_cmux_cmd_req_CE;
+\js }
+
+wire func_1_fault_in       = dce_target_id_UCE;
+wire func_1_cerr_fault_in  = dce_cmux_str_rsp_CE;
+\js if (enableUnitDuplication) {
+wire check_1_fault_in      = dup_unit_dce_target_id_UCE;
+wire check_1_cerr_fault_in = dup_unit_dce_cmux_str_rsp_CE;
+\js } else {
+wire check_1_fault_in      = dce_target_id_UCE;
+wire check_1_cerr_fault_in = dce_cmux_str_rsp_CE;
+\js }
+
+wire func_2_fault_in       = dce_dm_UCE;
+wire func_2_cerr_fault_in  = dce_cmux_snp_rsp_CE;
+\js if (enableUnitDuplication) {
+wire check_2_fault_in      = dup_unit_dce_dm_UCE;
+wire check_2_cerr_fault_in = dup_unit_dce_cmux_snp_rsp_CE;
+\js } else {
+wire check_2_fault_in      = dce_dm_UCE;
+wire check_2_cerr_fault_in = dce_cmux_snp_rsp_CE;
+\js }
+
+wire func_3_fault_in       = 1'b0;
+wire check_3_fault_in      = 1'b0;
+wire func_3_cerr_fault_in  = dce_cmux_upd_req_CE;
+\js if (enableUnitDuplication) {
+wire check_3_cerr_fault_in = dup_unit_dce_cmux_upd_req_CE;
+\js } else {
+wire check_3_cerr_fault_in = dce_cmux_upd_req_CE;
+\js }
+
+wire func_4_fault_in       = 1'b0;
+wire check_4_fault_in      = 1'b0;
+wire func_4_cerr_fault_in  = 1'b0;
+\js if (enableUnitDuplication) {
+wire check_4_cerr_fault_in = 1'b0;
+\js } else {
+wire check_4_cerr_fault_in = 1'b0;
+\js }
+
+wire func_5_fault_in       = 1'b0;
+wire check_5_fault_in      = 1'b0;
+wire func_5_cerr_fault_in  = dce_cmux_rbr_rsp_CE;
+\js if (enableUnitDuplication) {
+wire check_5_cerr_fault_in = dup_unit_dce_cmux_rbr_rsp_CE;
+\js } else {
+wire check_5_cerr_fault_in = dce_cmux_rbr_rsp_CE;
+\js }
+
+wire func_6_fault_in       = 1'b0;
+wire check_6_fault_in      = 1'b0;
+wire func_6_cerr_fault_in  = dce_cmux_mrd_rsp_CE;
+\js if (enableUnitDuplication) {
+wire check_6_cerr_fault_in = dup_unit_dce_cmux_mrd_rsp_CE;
+\js } else {
+wire check_6_cerr_fault_in = dce_cmux_mrd_rsp_CE;
+\js }
+
+\js var faultNdx = 7;
+wire func_\=faultNdx=\_fault_in       = 1'b0;
+wire check_\=faultNdx=\_fault_in      = 1'b0;
+wire func_\=faultNdx=\_cerr_fault_in  = dce_dm_CE;
+\js if (enableUnitDuplication) {
+wire check_\=faultNdx=\_cerr_fault_in = dup_unit_dce_dm_CE;
+\js } else {
+wire check_\=faultNdx=\_cerr_fault_in = dce_dm_CE;
+\js }
+\js faultNdx++;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (useSysEvtCoh) { \jsend
+wire func_\=faultNdx=\_fault_in       = 1'b0;
+wire check_\=faultNdx=\_fault_in      = 1'b0;
+wire func_\=faultNdx=\_cerr_fault_in  = dce_cmux_sys_req_rx_CE;
+\js if (enableUnitDuplication) {
+wire check_\=faultNdx=\_cerr_fault_in = dup_unit_dce_cmux_sys_req_rx_CE;
+\js } else {
+wire check_\=faultNdx=\_cerr_fault_in = dce_cmux_sys_req_rx_CE;
+\js }
+\js faultNdx++;
+
+wire func_\=faultNdx=\_fault_in       = 1'b0;
+wire check_\=faultNdx=\_fault_in      = 1'b0;
+wire func_\=faultNdx=\_cerr_fault_in  = dce_cmux_sys_rsp_rx_CE;
+\js if (enableUnitDuplication) {
+wire check_\=faultNdx=\_cerr_fault_in = dup_unit_dce_cmux_sys_rsp_rx_CE;
+\js } else {
+wire check_\=faultNdx=\_cerr_fault_in = dce_cmux_sys_rsp_rx_CE;
+\js }
+\js faultNdx++;
+\js }
+
+wire func_\=faultNdx=\_fault_in       = dce_timeout_UCE;
+wire func_\=faultNdx=\_cerr_fault_in  = 1'b0;
+\js if (enableUnitDuplication) {
+wire check_\=faultNdx=\_fault_in      = dup_unit_dce_timeout_UCE;
+wire check_\=faultNdx=\_cerr_fault_in = 1'b0;
+\js } else {
+wire check_\=faultNdx=\_fault_in      = dce_timeout_UCE;
+wire check_\=faultNdx=\_cerr_fault_in = 1'b0;
+\js }
+\js faultNdx++;
+
+\js if (CMDOverflowBufInSRAM) {
+
+wire func_\=faultNdx=\_fault_in       = dce_cmd_skid_buffer_uce;
+wire func_\=faultNdx=\_cerr_fault_in  = dce_cmd_skid_buffer_ce;
+    \jsbegin
+	/* istanbul ignore else env ncore_3p7 */
+    if (enableUnitDuplication) { \jsend
+wire check_\=faultNdx=\_fault_in      = dup_unit_dce_cmd_skid_buffer_uce;
+wire check_\=faultNdx=\_cerr_fault_in = dup_unit_dce_cmd_skid_buffer_ce;
+    \js } else {
+wire check_\=faultNdx=\_fault_in      = dce_cmd_skid_buffer_uce;
+wire check_\=faultNdx=\_cerr_fault_in = dce_cmd_skid_buffer_ce;
+    \js }
+\js faultNdx++;
+
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveFlopsToTop) {
+\jsend
+wire func_\=faultNdx=\_fault_in       = dce_att_flops_prot_err_par;
+wire func_\=faultNdx=\_cerr_fault_in  = 1'b0;
+wire check_\=faultNdx=\_fault_in      = dce_att_flops_prot_err_par;
+wire check_\=faultNdx=\_cerr_fault_in = 1'b0;
+\js faultNdx++;
+
+wire func_\=faultNdx=\_fault_in       = dce_concerto_mux_err_par;
+wire func_\=faultNdx=\_cerr_fault_in  = 1'b0;
+wire check_\=faultNdx=\_fault_in      = dce_concerto_mux_err_par;
+wire check_\=faultNdx=\_cerr_fault_in = 1'b0;
+\js faultNdx++;
+
+wire func_\=faultNdx=\_fault_in       = dce_skid_buffer_err_par | dce_sbcmdreqfifo_err_par | dce_sbcmdrspfifo_err_par;
+wire func_\=faultNdx=\_cerr_fault_in  = 1'b0;
+wire check_\=faultNdx=\_fault_in      = dce_skid_buffer_err_par | dce_sbcmdreqfifo_err_par | dce_sbcmdrspfifo_err_par;
+wire check_\=faultNdx=\_cerr_fault_in = 1'b0;
+\js faultNdx++;
+
+wire func_\=faultNdx=\_fault_in       = dce_csr_err_par;
+wire func_\=faultNdx=\_cerr_fault_in  = 1'b0;
+wire check_\=faultNdx=\_fault_in      = dce_csr_err_par;
+wire check_\=faultNdx=\_cerr_fault_in = 1'b0;
+\js faultNdx++;
+
+\js }
+
+assign fault_checker_cerr_threshold = cerr_threshold[\=wResThreshold-1=\:0];
+
+    \=u.instance({
+        instanceName   : 'u_dce_fault_checker',
+        moduleName     : 'fault_checker',
+        params         :  {
+                             timeoutBistControlEnable : timeoutBistControlEnable,
+                             eSignalPipe      : 1,
+                             nDelay                 : (enableUnitDuplication ? nDelay : 0),
+                             wThresWidth            : wResThreshold,
+                             enableUnitDuplication  : enableUnitDuplication,
+                             clkInterface           : intClkInterface,
+                             checkerInterface       : (enableUnitDuplication ? checkerInterfaceBundle : {}),
+                             numFaultInputs         : faultNdx
+                          },
+        verilogParams  :  {},
+        interfaces     :  dce_checker_interfaces,
+        ports          : instance_ports_for_fault_checker,
+        portsDelimiter : '\n    '
+    })=\
+
+\js }
+
+\jsbegin
+// =======================================================
+// Wire Connections
+// =======================================================
+\jsend
+
+\js if (useResiliency) {
+
+assign fault_checker_clk        = \=clkInterfaceName=\clk;
+assign fault_checker_reset_n    = \=clkInterfaceName=\reset_n;
+
+    \js if (enableUnitDuplication) {
+assign fault_checker_reset_n_delay          = reset_n_delay;
+assign dup_unit_\=clkInterfaceName=\clk     = \=checkClkInterfaceName=\clk;
+assign dup_unit_\=clkInterfaceName=\reset_n = reset_n_delay; \jsbegin
+		/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+		if (checkClkInterfaceParam.wTestEn) { \jsend
+assign dup_unit_\=clkInterfaceName=\test_en = \=checkClkInterfaceName=\test_en; \jsbegin
+		}
+	} else { \jsend
+assign fault_checker_reset_n_delay = \=clkInterfaceName=\reset_n;
+    \js }
+
+\js }
+
+\js if (useResiliency && enableUnitDuplication) {
+//assign dup_unit_\=clkInterfaceName=\clk       = \=checkClkInterfaceName=\clk;
+//assign dup_unit_\=clkInterfaceName=\reset_n   = reset_n_delay;
+\js }
+
+\jsbegin
+// =======================================================
+// PMA REQn Synchronizers
+// =======================================================
+\jsend
+
+\js if (usePma) {
+
+\=u.instance({
+   instanceName: 'u_pma_REQn_sync',
+   moduleName:   'dffr_sync',
+   params: {
+       'width' : 1,
+       'depth' : syncDepth,
+   },
+   ports: {
+       clk      : clkInterfaceName+'clk',
+       reset_n  : clkInterfaceName+'reset_n',
+       in_data  : qInterfaceName+'REQn',
+       out_data : qInterfaceName+'REQn_sync'
+    }
+})=\
+
+\js }
+
+\jsbegin
+// =======================================================
+// Master Trigger Synchronizer
+// =======================================================
+/* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+if( interfaces.masterTriggerInt && !interfaces.masterTriggerInt._SKIP_ ) { \jsend
+
+ \=obj.lib.instance({
+    'portsDelimiter': '\n  ',
+    'instanceName': 'u_sync_main_trig',
+    'moduleName':   'dffr_sync',
+    'params': {
+      'width' : 1,
+      'depth' : syncDepth}, 
+    'ports': {
+      'clk'      : clkInterfaceName+'clk',
+      'reset_n'  : clkInterfaceName+'reset_n',
+      'in_data'  : masterTriggerInterface.name+'trigger',
+      'out_data' : masterTriggerInterface.name+'trigger_sync'}})=\
+\jsbegin
+} \jsend
+
+\jsbegin
+// =======================================================
+// BIST Timeout Trigger
+// =======================================================
+\jsend
+
+\js if (!useResiliency | !timeoutBistControlEnable) {
+assign bist_timeout_trigger = 1'b0;
+\js }
+
+\jsbegin
+// =======================================================
+// Concerto MUX
+// =======================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCmuxToTop) {
+\jsend
+
+\= u.instance ({
+                instanceName: 'dce_conc_mux',
+                moduleName: 'concerto_mux',
+                params : {
+                          memProtectionInterface: cmux_prot_intf,
+                          wFPortId: W_FPORT_ID,
+                          wFUnitId: W_FUNIT_ID,
+                          smiTxPortInterfaces : SMI_TX_INTF,
+                          smiRxPortInterfaces : SMI_RX_INTF,
+                          concertoTxInterfaces : CONC_TX_INTF,
+                          concertoRxInterfaces : CONC_RX_INTF
+                          },
+                verilogParams : {},
+                ports : concertoMuxFaultPorts,
+                interfaces : CONCERTO_MUX_INTF})=\
+
+\js }
+
+\jsbegin
+// =======================================================
+// DCE CSR
+// =======================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveCsrToTop) {
+\jsend
+
+    \jsbegin
+    csr_params['regProtectionInterface']       = csr_prot_intf.signals;
+    csr_params['regProtectionInterfaceName']   = csr_prot_intf.name;
+    csr_params['regProtectionStyle']           = protectionStyle;
+    \jsend
+
+    \=obj.lib.instance({
+        instanceName: 'u_csr',
+        moduleName: 'dce_csr',
+        params: csr_params,
+        verilogParams: {},
+        ports: instance_ports_for_csr,
+        interfaces: CSR_INTF,
+        portsDelimiter: '\n'
+    })=\
+
+\js }
+
+\jsbegin
+// =======================================================
+// DCE Skid Buffer
+// =======================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveSbToTop) {
+\jsend
+
+\=u.instance ({
+               instanceName: 'dce_skid_buffer',
+               moduleName: 'dce_skid_buffer',
+               params: {
+                        sb_width          : sb_width,
+                        sb_depth          : sb_depth,
+                        sb_mem_addr_width : sb_mem_addr_width,
+                        sb_mem_data_width : sb_mem_data_width,
+                        protectionStyle : protectionStyle,
+                        protectionInterface : sb_prot_intf,
+                        nSkidBufSize : nSkidBufSize,
+                        assertOn        : ASSERT_ON,
+                        cmdReqInterface : CMD_REQ_INTF,
+                        updReqInterface : UPD_REQ_INTF,
+                        cmdRspInterface : CMD_RSP_INTF,
+                        updRspInterface : UPD_RSP_INTF,
+                        cmdSkidBufferDepth : nSkidBufArb,
+                        updSkidBufferDepth : UPD_SB_DEPTH,
+                        wFUnitId : W_FUNIT_ID,
+                        wFPortId : W_FPORT_ID,
+                        cmType : CM_TYPE,
+                        QosInfo: QosInfo,
+                        wStarvThreshold: wStarvThreshold,
+                        fnEnableQos: fnEnableQos
+                        },
+               ports : SKID_BUFFER_PORTS,
+               interfaces : [
+                             {modulePrefix: 'cmd_req_in_', localPrefix: 'cmd_req_', interface: CMD_REQ_INTF},
+                             {modulePrefix: 'cmd_req_out_', localPrefix: 'skid_buf_cmd_req_int_', interface: CMD_REQ_INTF},
+                             {modulePrefix: 'upd_req_in_', localPrefix: 'upd_req_', interface: UPD_REQ_INTF},
+                             {modulePrefix: 'upd_req_out_', localPrefix: 'skid_buf_upd_req_', interface: UPD_REQ_INTF},
+                             {modulePrefix: 'cmd_rsp_out_', localPrefix: 'cmd_rsp_int_', interface: CMD_RSP_INTF, exclude: ['ready']},
+                             {modulePrefix: 'upd_rsp_out_', localPrefix: 'upd_rsp_', interface: UPD_RSP_INTF},
+                             {modulePrefix: sb_prot_intf.name, localPrefix: sb_prot_intf.name, interface: sb_prot_intf.signals}
+                             ]
+               })=\
+
+    \=u.instance ({
+        instanceName: 'skid_buf_cmd_req_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            protectionStyle: protectionStyle,
+            protectionInterface: sbcmdreqfifo_prot_intf,
+            width: m.bundleFunctions.getBundleWidth(CMD_REQ_INTF, ['valid', 'ready'], u.bundle),
+            depth: 2,
+            zerodepth: /* istanbul ignore if env ncore_3p7 */ useSaveLatency ? 1 : 0,
+            bypass_mode: 0,
+            interface: CMD_REQ_INTF
+        },
+        ports: {
+            clk       : 'skid_buf_cmd_req_fifo__clk',
+            reset_n   : 'skid_buf_cmd_req_fifo__reset_n',
+            pop_ready : 'skid_buf_cmd_req_fifo__pop_ready'
+        },
+        interfaces: [
+            {modulePrefix: 'push_', localPrefix: 'skid_buf_cmd_req_int_', interface: CMD_REQ_INTF},
+            {modulePrefix: 'pop_',  localPrefix: 'skid_buf_cmd_req_',     interface: CMD_REQ_INTF, exclude: ['ready']},
+            {modulePrefix: sbcmdreqfifo_prot_intf.name, localPrefix: sbcmdreqfifo_prot_intf.name, interface: sbcmdreqfifo_prot_intf.signals}]
+        })=\  
+
+    \=u.instance ({
+        instanceName: 'cmd_rsp_fifo',
+        moduleName: 'fifo_bundle',
+        params: {
+            protectionStyle: protectionStyle,
+            protectionInterface: sbcmdrspfifo_prot_intf,
+            width: m.bundleFunctions.getBundleWidth(CMD_RSP_INTF, ['valid', 'ready'], u.bundle),
+            depth: 2,
+            zerodepth: /* istanbul ignore if env ncore_3p7 */ useSaveLatency ? 1 : 0,
+            bypass_mode: 0,
+            interface: CMD_RSP_INTF
+        },
+        ports: {
+            clk        : 'cmd_rsp_fifo__clk',
+            reset_n    : 'cmd_rsp_fifo__reset_n',
+            push_valid : 'cmd_rsp_fifo__push_valid'
+        },
+        interfaces: [
+            {modulePrefix: 'push_', localPrefix: 'cmd_rsp_int_', interface: CMD_RSP_INTF, exclude: ['valid']},
+            {modulePrefix: 'pop_',  localPrefix: 'cmd_rsp_',     interface: CMD_RSP_INTF},
+            {modulePrefix: sbcmdrspfifo_prot_intf.name, localPrefix: sbcmdrspfifo_prot_intf.name, interface: sbcmdrspfifo_prot_intf.signals}]
+        })=\  
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Ncore PerfMon Instance
+//=============================================================================
+\jsend
+
+\jsbegin
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMovePmonToTop) {
+
+    /* istanbul ignore else env ncore_3p6, ncore_3p7 */
+    if (nPerfCounters) {
+\jsend
+
+    \=u.nInstance({
+    instanceName : 'u_ncr_pmon',
+        moduleName : 'ncr_pmon',
+        params: {
+            nPerfCounters,
+                    interfaces: pmonInterfaces
+        },
+        interfaceObj: {
+                    interfaces: pmonInterfaces,
+                    prefixes: pmonInterfaces
+        }
+    })=\
+
+\jsbegin
+    }
+
+}
+\jsend
+
+endmodule

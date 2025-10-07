@@ -1,0 +1,48 @@
+#reset
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_csr_all_reg_rd_reset_val_test -p +UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+no_transactions
+
+#bit bash
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_csr_bit_bash_test -p +UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+no_transactions
+
+#tcr - this is now run with all tests
+
+#tar - this is not a live check
+
+#cecr
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucecr_errDetEn_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+corr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucecr_errCntOvf_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+corr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+tb_delay=1
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucecr_errInt_reg_test -p +k_num_addr=150,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+corr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+tb_delay=1
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucecr_errThd_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+corr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+tb_delay=1
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucecr_sw_write_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+corr_error_test,+always_inject_error,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucecr_noDetEn_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+corr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucecr_noIntEn_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+corr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucesr_rstNoVld_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+inject_one_corr_err,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiucelr_reg_test -p +k_num_addr=8,+k_num_cmd=500,+wt_mrd_read=50,+wt_hnt_read=50,+wt_dtw_data=0,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+inject_one_corr_err,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+
+#uecr
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuecr_errCntOvf_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+uncorr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+tb_delay=1
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuecr_errDetEn_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+uncorr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuecr_errInt_reg_test -p +k_num_addr=150,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+uncorr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+tb_delay=1
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuecr_errThd_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+uncorr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+tb_delay=1
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuecr_sw_write_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+uncorr_error_test,+always_inject_error,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuecr_noDetEn_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+uncorr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuecr_noIntEn_reg_test -p +k_num_addr=15,+k_num_cmd=1500,+wt_mrd_read=45,+wt_hnt_read=45,+wt_dtw_data=10,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+uncorr_error_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t ralgen_cmiuuelr_reg_test -p +k_num_addr=8,+k_num_cmd=500,+wt_mrd_read=50,+wt_hnt_read=50,+wt_dtw_data=0,+k_req_vld_burst_pct=100,+k_req_rdy_burst_pct=10,+k_timeout_usec=200000,+inject_one_uncorr_err,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+
+#directed
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_bresp_backpressure_test -p +dmi_bresp_backpressure_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_hnt_sfi_mst_rdy_backpressure_test -p +dmi_hnt_sfi_mst_rdy_backpressure_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_mrd_sfi_mst_rdy_backpressure_test -p +dmi_mrd_sfi_mst_rdy_backpressure_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_arready_backpressure_test1 -p +dmi_arready_backpressure_test1,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_arready_backpressure_test2 -p +dmi_arready_backpressure_test2,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_rtt_full_test1 -p +dmi_rtt_full_test1,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_rtt_full_test2 -p +dmi_rtt_full_test2,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_htt_no_backpressure_test -p +dmi_htt_no_backpressure_test,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE
+
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_test -p +k_num_addr=101,+k_num_cmd=592,+wt_mrd_read=43,+wt_hnt_read=25,+wt_dtw_data=31,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+no_error
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_test -p +k_num_addr=101,+k_num_cmd=592,+wt_mrd_read=100,+wt_hnt_read=0,+wt_dtw_data=0,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+no_error
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_test -p +k_num_addr=101,+k_num_cmd=592,+wt_mrd_read=0,+wt_hnt_read=100,+wt_dtw_data=0,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+no_error
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_test -p +k_num_addr=101,+k_num_cmd=592,+wt_mrd_read=0,+wt_hnt_read=0,+wt_dtw_data=100,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE,+no_error
+
+#nPendingTransactions
+node $WORK_TOP/dv/scripts/rsim.js -e dmi -t dmi_test -p +k_num_addr=200,+k_num_cmd=80,+wt_mrd_read=50,+wt_hnt_read=0,+wt_dtw_data=50,+n_pending_txn_mode=1,k_slow_read_agent=1,+k_ace_slave_write_resp_chnl_delay_min=350,+k_ace_slave_write_resp_chnl_delay_max=400,+k_rsp_rdy_delay_min=450,+k_rsp_rdy_delay_min=500,+UVM_MAX_QUIT_COUNT=10,+UVM_VERBOSITY=UVM_NONE

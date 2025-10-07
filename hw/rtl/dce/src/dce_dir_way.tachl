@@ -1,0 +1,428 @@
+\jsbegin
+var u = obj.lib;
+var m = obj.userLib;
+
+var ioaiu_pos = function(n) { return (n < 1) ? /* istanbul ignore next env ncore_3p6, ncore_3p7 */ 1 : n; };
+var ioaiu_log = function(n) { return (n > 1) ? m.log2ceil(n) : 1; };
+
+var assertOn = u.getParam('assertOn');
+
+var useSramInputFlop = u.getParam('useSramInputFlop');
+
+var SETS = u.getParam('SETS');
+var SW = ioaiu_log(SETS);
+
+var AW = u.getParam('AW');
+var FN = u.getParam('FN'); //i.e. SnoopFilterInfo.length
+var CLO = u.getParam('CLO');
+
+var FCN = u.getParam('FCN');
+var PROT = u.getParam('PROT');
+
+var FCW = ioaiu_log(FCN);
+var KW = ioaiu_pos(AW-SW-CLO);		//tag width
+var DW = ((FCN>1) ? FCW : 0) +	//optional owner number
+		1 +			//owner valid
+		FCN;			//sharer bit vector
+var EW = m.lib_utils.getEccWidth(SW+KW+DW);
+var EW = (PROT > 1) ? EW : 1;
+var NW = KW+DW+((PROT>0) ? EW : 0);
+var TMNW = KW+DW;
+
+
+u.port('input','clk_i',1);
+u.port('input','reset_ni',1);
+u.port('input','p2_stall_i',1);
+u.port('input','w_p1_valid',1);
+u.port('input','q_p2_rindex',SW);
+u.port('input','q_p2_ltag',KW);
+u.port('input','t_vb_hit',1);
+u.port('input','t_rc_hit',1);
+
+// Per Way
+u.port('input','w_p1_rindex',SW);
+u.port('input','w_p1_rentry',NW);
+u.port('input','w_p1_res',1);
+u.port('input','w_p2_evbv',1);
+u.port('input','q_p2_busy',1);
+u.port('input','q_p2_stale',1);
+u.port('input','t_p2_invals',1);
+u.port('output','w_p2_ready',1);
+u.port('output','n_p2_ready',1);
+u.port('output','n_p2_valid',1);
+u.port('output','w_p2_valid',1);
+u.port('output','w_p2_valid_dup',1);
+u.port('output','w_p2_rtag', KW);
+u.port('output','w_p2_sbv', FCN);
+u.port('output','w_p2_owner', FCW);
+u.port('output','w_p2_oval', 1);
+u.port('output','t_p2_uerrs',1);
+u.port('output','t_p2_cerrs',1);
+u.port('output','t_p2_vals',1);
+u.port('output','t_p2_hits',1);
+u.port('output','n_vb_rtags',KW);
+u.port('output','t_p2_sbvs',FCN);
+u.port('output','n_vb_sbvs',FCN);
+u.port('output','t_p2_ovals',1);
+u.port('output','n_vb_ovals',1);
+u.port('output','t_p2_owners',FCW);
+u.port('output','n_vb_owners',FCW);
+\jsend
+
+module \=u.getModuleName()=\
+        (\=u.getPorts('\n\t')=\
+);
+
+localparam PROT = \=PROT=\;
+
+localparam FN = \=FN=\;
+localparam AW = \=AW=\;
+localparam SETS = \=SETS=\;
+localparam CLO = \=CLO=\;
+localparam FCN = \=FCN=\;
+
+localparam FCW = \=FCW=\;
+localparam SW = \=SW=\;
+localparam KW = \=KW=\;
+localparam DW = \=DW=\;
+localparam EW = \=EW=\;
+localparam NW = \=NW=\;
+localparam TMNW = \=TMNW=\;
+
+wire dff_enable = 1'b1;
+
+wire [NW-1:0] n_p2_rentry, w_p2_rentry_raw, w_p2_rentry_raw_dup;
+wire [DW-1:0] w_p2_rstate;
+//wire [KW-1:0] w_p2_rtag;
+//wire [FCN-1:0] w_p2_sbv;
+//wire [FCW-1:0] w_p2_owner;
+//wire w_p2_oval;
+wire t_p2_matches;
+
+\js if (PROT > 1) {
+
+wire               t_p2_uerrs_org;
+wire               t_p2_cerrs_org;
+wire [SW+TMNW-1:0] t_p2_rdata;
+wire [EW-1:0]      t_p2_recc;
+wire [EW-1:0]      w_p2_syn;
+wire [SW+TMNW-1:0] w_p2_cdata;
+wire [EW-1:0]      w_p2_cecc;
+wire [SW-1:0]      w_p2_caddr;
+wire               w_p2_addr_prot_err;
+
+\js }
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p7 */
+    if (useSramInputFlop) {
+    \jsend
+assign n_p2_valid = (w_p1_valid & w_p1_res);
+    \js } else {
+assign n_p2_valid = (w_p1_valid & w_p1_res) | 
+		    (w_p2_valid_dup & p2_stall_i);
+    \js }
+
+assign n_p2_ready = 1'b1;
+
+\js if ((useSramInputFlop) && (PROT > 1)) {
+
+wire [SW+TMNW-1:0] t_p1_rdata;
+wire [EW-1:0]      t_p1_recc;
+wire [EW-1:0]      w_p1_syn, w_p2_syn_dup;
+wire               t_p1_uerrs_org_unused;
+wire               t_p1_cerrs_org_unused;
+
+assign t_p1_rdata = {\=TMNW-(KW+DW) > 0 ? /* istanbul ignore next env ncore_3p6, ncore_3p7 */ (TMNW-(KW+DW))+"'d0 ," : ""=\ w_p1_rindex, n_p2_rentry[0 +: KW+DW]};
+
+assign t_p1_recc = n_p2_rentry[KW+DW +: EW];
+
+    \=u.instance({
+        moduleName: 'ecc_dec',
+        instanceName: 'ecc_dec_p1',
+        params: {
+                data_width:     SW+TMNW
+        },
+        ports: {
+                data:           't_p1_rdata',
+                ecc:            't_p1_recc',
+                syndrome:       'w_p1_syn',
+                err_sb:         't_p1_cerrs_org_unused',
+                err_db:         't_p1_uerrs_org_unused'
+        }
+    })=\
+
+    \=u.instance({
+        moduleName: 'dce_stage_type0',
+        instanceName: 'p2',
+        params: {
+            assertOn: assertOn,
+            DUPS : 1,
+            WIDTH : EW+NW
+        },
+        ports: {
+            clk_i:      'clk_i',
+            reset_ni:   'reset_ni',
+            wr_ready_o: 'w_p2_ready',
+            wr_valid_i: 'n_p2_valid',
+            wr_wdata_i: '{w_p1_syn, n_p2_rentry}',
+            rd_ready_i: 'n_p2_ready',
+            rd_valid_o: 'w_p2_valid',
+            rd_rdata_o: '{w_p2_syn, w_p2_rentry_raw}',
+            rd_valid0_o: 'w_p2_valid_dup',
+            rd_rdata0_o: '{w_p2_syn_dup, w_p2_rentry_raw_dup}'
+        }
+    })=\
+
+\js } else {
+
+    \=u.instance({
+        moduleName: 'dce_stage_type0',
+        instanceName: 'p2',
+        params: {
+            assertOn: assertOn,
+            DUPS : 1,
+            WIDTH : NW
+        },
+        ports: {
+            clk_i:      'clk_i',
+            reset_ni:   'reset_ni',
+            wr_ready_o: 'w_p2_ready',
+            wr_valid_i: 'n_p2_valid',
+            wr_wdata_i: 'n_p2_rentry',
+            rd_ready_i: 'n_p2_ready',
+            rd_valid_o: 'w_p2_valid',
+            rd_rdata_o: 'w_p2_rentry_raw',
+            rd_valid0_o: 'w_p2_valid_dup',
+            rd_rdata0_o: 'w_p2_rentry_raw_dup'
+        }
+    })=\
+
+\js }
+
+\js if (PROT > 1) {
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p7 */
+    if (useSramInputFlop) {
+    \jsend
+assign {w_p2_rtag, w_p2_rstate} = w_p2_cdata[0 +: KW+DW];
+    \js } else {
+assign {w_p2_rtag, w_p2_rstate} = w_p2_rentry_raw_dup[0 +: KW+DW];
+    \js }
+
+assign t_p2_rdata = {\=TMNW-(KW+DW) > 0 ? /* istanbul ignore next env ncore_3p6, ncore_3p7 */ (TMNW-(KW+DW))+"'d0 ," : ""=\ q_p2_rindex, w_p2_rentry_raw[0 +: KW+DW]};
+
+assign t_p2_recc = w_p2_rentry_raw[KW+DW +: EW];
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p7 */
+    if (useSramInputFlop) {
+    \jsend
+
+    \=u.instance({
+        moduleName: 'dce_ecc_dec_err',
+        instanceName: 'ecc_dec_err',
+        params: {
+                data_width:     SW+TMNW
+        },
+        ports: {
+                data:           't_p2_rdata',     //INPUT
+                ecc:            't_p2_recc',      //INPUT
+                syndrome:       'w_p2_syn',       //INPUT
+                err_sb:         't_p2_cerrs_org', //OUTPUT
+                err_db:         't_p2_uerrs_org'  //OUTPUT
+        }
+    })=\
+
+    \js } else {
+
+    \=u.instance({
+	moduleName: 'ecc_dec',
+	instanceName: 'ecc_dec',
+	params: {
+		data_width:	SW+TMNW
+	},
+	ports: {
+		data:		't_p2_rdata',
+		ecc:		't_p2_recc',
+		syndrome:	'w_p2_syn',
+		err_sb:		't_p2_cerrs_org',
+		err_db:		't_p2_uerrs_org'
+	}
+    })=\
+
+    \js }
+
+    \=u.instance({
+        instanceName: 'ecc_addr_err',
+        moduleName:   'ecc_addr_err',
+        params: {
+            'data_width' : SW+TMNW,
+            'addr_width' : SW
+        },
+        ports: {
+            'syndrome' : 'w_p2_syn',
+            'addr_err' : 'w_p2_addr_prot_err'
+        }
+    })=\
+
+    \=u.instance({
+	moduleName: 'ecc_cor',
+	instanceName: 'ecc_cor',
+	params: {
+		data_width:	SW+TMNW
+	},
+	ports: {
+		data_in:	't_p2_rdata',
+		ecc_in:		't_p2_recc',
+		syndrome:	'w_p2_syn',
+		data_out:	'w_p2_cdata',
+		ecc_out:	'w_p2_cecc'
+	}
+    })=\
+
+assign w_p2_caddr = w_p2_cdata[KW+DW +: SW];
+
+assign t_p2_cerrs = w_p2_addr_prot_err ? 1'b0 : t_p2_cerrs_org;
+assign t_p2_uerrs = w_p2_addr_prot_err ? 1'b1 : t_p2_uerrs_org;
+
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p7 */
+    if (useSramInputFlop) {
+    \jsend
+assign n_p2_rentry = w_p1_rentry;
+    \js } else {
+assign n_p2_rentry = p2_stall_i ? {w_p2_cecc, w_p2_cdata[0 +: KW+DW]} : w_p1_rentry;
+    \js }
+
+\js } else if (PROT == 1) {
+
+assign {w_p2_rtag, w_p2_rstate} = w_p2_rentry_raw_dup[0 +: KW+DW];
+
+wire w_p2_parity;
+wire w_p2_parity_raw;
+
+assign w_p2_parity = {^{q_p2_rindex, w_p2_rentry_raw[0 +: KW+DW]}};
+assign w_p2_parity_raw = w_p2_rentry_raw[KW+DW +: 1];
+
+assign t_p2_cerrs = 1'b0;
+assign t_p2_uerrs = w_p2_parity ^ w_p2_parity_raw;
+assign n_p2_rentry = w_p1_rentry;
+
+\js } else {
+
+assign {w_p2_rtag, w_p2_rstate} = w_p2_rentry_raw_dup[0 +: KW+DW];
+
+assign t_p2_cerrs = 1'b0;
+assign t_p2_uerrs = 1'b0;
+assign n_p2_rentry = w_p1_rentry;
+
+\js }
+
+
+\js if (FCN > 1) {
+assign {w_p2_owner, w_p2_oval, w_p2_sbv} = w_p2_rstate;
+\js } else {
+assign w_p2_owner = 1'b0;
+assign {w_p2_oval, w_p2_sbv} = w_p2_rstate;
+\js }
+
+
+assign t_p2_vals = ((| w_p2_sbv) | w_p2_oval) & ~q_p2_busy;
+
+assign t_p2_matches = w_p2_valid_dup & (q_p2_ltag == w_p2_rtag) & ((| w_p2_sbv) | w_p2_oval);
+
+assign t_p2_hits = t_p2_matches & ~q_p2_stale & ~t_vb_hit & ~t_rc_hit;
+
+assign t_p2_sbvs   = {FCN{t_p2_hits}} & w_p2_sbv;
+assign t_p2_ovals  =      t_p2_hits   & w_p2_oval;
+assign t_p2_owners = {FCW{t_p2_hits}} & w_p2_owner;
+
+assign n_vb_rtags  =  {KW{w_p2_evbv}} & w_p2_rtag;
+assign n_vb_sbvs   = {FCN{w_p2_evbv}} & w_p2_sbv;
+assign n_vb_ovals  =      w_p2_evbv   & w_p2_oval;
+assign n_vb_owners = {FCW{w_p2_evbv}} & w_p2_owner;
+
+
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) { \jsend
+
+`ifdef OVL_ASSERT_ON
+
+//coverage off
+//pragma synthesis_off
+
+reg a_error_test;
+initial begin
+	if ($test$plusargs("error_test")) begin
+		a_error_test = 1'b1;
+	end else begin
+		a_error_test = 1'b0;
+	end
+end
+
+    assert_never #(0) assert_dir(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((~w_p2_ready & ~p2_stall_i) | 
+			 (t_p2_vals & t_p2_invals) |
+			 (w_p2_valid & ~a_error_test & ~p2_stall_i &
+					  ~w_p2_oval & (| w_p2_owner)) |
+			 (w_p2_valid & ~a_error_test & (w_p2_owner > FCN)))
+    );
+
+    \js if ((useSramInputFlop) && (PROT > 1)) {
+
+wire [EW-1:0]      w_p2_syn_compare;
+wire               t_p2_uerrs_compare;
+wire               t_p2_cerrs_compare;
+
+    \=u.instance({
+	moduleName: 'ecc_dec',
+	instanceName: 'ecc_dec',
+	params: {
+		data_width:	SW+TMNW
+	},
+	ports: {
+		data:		't_p2_rdata',
+		ecc:		't_p2_recc',
+		syndrome:	'w_p2_syn_compare',
+		err_sb:		't_p2_cerrs_compare',
+		err_db:		't_p2_uerrs_compare'
+	}
+    })=\
+
+    assert_never #(0) assert_w_p2_sync(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((w_p2_valid & (w_p2_syn != w_p2_syn_compare)) 
+			)
+    );
+    assert_never #(0) assert_t_p2_cerrs(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((w_p2_valid & (t_p2_cerrs != t_p2_cerrs_compare)) 
+			)
+    );
+    assert_never #(0) assert_t_p2_uerrs(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((w_p2_valid & (t_p2_uerrs != t_p2_uerrs_compare)) 
+			)
+    );
+
+    \js }
+
+//pragma synthesis_on
+//coverage on
+
+`endif
+
+\js }
+
+
+endmodule

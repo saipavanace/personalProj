@@ -1,0 +1,100 @@
+<p>In this experiment we exercised a simple scenario where 2 clock region=&gt;domain=&gt;subdomain structures are created in Maestro.  Most network elements (units) are bound to the first subdomain, and only two switches of the yellow network are bound to the second one. Clock adapters on links crossing domain boundaries are  not yet implemented.</p><p>Below is current Maestro tcl syntax (correct as of 601 build), which creates clock structures on top of the dry run</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Clock a
+set clkrgn_a [create_object -type clock_region -name a -parent $chip]
+set clkdomain_a_0 [create_object -type clock_domain -name 0 -parent $clkrgn_a]
+set clksubdomain_a_0_0 [create_object -type clock_subdomain -name 0 -parent $clkdomain_a_0] 
+
+# Clock b
+set
+clkrgn_b [create_object -type clock_region -name b -parent $chip]
+set clkdomain_b_1 [create_object -type clock_domain -name 1 -parent $clkrgn_b]
+set clksubdomain_b_1_0 [create_object -type clock_subdomain -name 0 -parent $clkdomain_b_1] 
+
+# By default associate all units with subdomain a_0_0
+set allUnits [concat [get_objects -parent $chip -type ncoreunit] [get_objects
+-parent $chip -type packetizer] [get_objects -parent $chip -type depacketizer] [get_objects -parent $chip -type switch] [get_objects -parent $chip -type pipeadapter] ]
+foreach unit $allUnits {
+  update_object -name $unit -bind $clksubdomain_a_0_0
+}
+
+# Reassign sw0 and sw6 of the yellow network to subdomain b_1_0
+foreach unit [list $yellow/sw0 $yellow/sw6] {
+  update_object -name $unit -bind $clksubdomain_b_1_0
+}</pre>
+</div></div><p>This tcl fragment executes querying in Maestro to confirm that clock-unit binding went through correctly  </p><div class="code panel pdl" style="border-width: 1px;">
+ <div class="codeHeader panelHeader pdl hide-border-bottom">
+  <b class="code-title"></b><span class="collapse-source expand-control" style="display:none;"><span class="expand-control-icon icon">&nbsp;</span><span class="expand-control-text">Expand source</span></span><span class="collapse-spinner-wrapper"></span>
+ </div>
+ <div class="codeContent panelContent pdl hide-toolbar">
+  <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence; collapse: true" data-theme="Confluence"># Check clock associations for all units of the yellow network with clock domains
+# it should be dry_run/chip/b/1/0 for sw0 and sw6 and dry_run/chip/a/0/0 for everything else 
+puts"Association between instances clock subdomains inside yellow network"
+foreach unit [concat [get_objects -parent $chip -type switch -subtype $yellow] [get_objects -parent $chip -type packetizer -subtype $yellow] [get_objects
+-parent $chip -type depacketizer -subtype $yellow]] {
+  set clkDomain [get_objects -parent $unit -type clockdomain]
+  set clkSubdomain [get_objects -parent $unit -type clocksubdomain]  
+  puts "$unit is associated with"
+  puts "  clk domain:    $clkDomain"
+  puts "  clk subdomain: $clkSubdomain" 
+}
+# Show association of Ncore units with clock domains
+foreach unit [get_objects -parent $chip -type ncoreunit] {
+  set clkDomain [get_objects -parent $unit -type clockdomain]
+  set clkSubdomain [get_objects -parent $unit -type clocksubdomain]  
+  puts "$unit is associated with"
+  puts "  clk domain:    $clkDomain"
+  puts "  clk subdomain: $clkSubdomain" 
+}</pre>
+ </div>
+</div><p>To test correctness of the generated json , execute following sequence </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">cd /home/bennyw/bugs/maestro/MAES-136
+module purge
+module load dev/maestro_test/bleeding_edge
+run_maestro -t dryrun_w_clock.tcl 
+aria -s check_clocks.js</pre>
+</div></div><p>Here is the aria script checking clock connectivity</p><div class="code panel pdl" style="border-width: 1px;">
+ <div class="codeHeader panelHeader pdl hide-border-bottom">
+  <b class="code-title"></b><span class="collapse-source expand-control" style="display:none;"><span class="expand-control-icon icon">&nbsp;</span><span class="expand-control-text">Expand source</span></span><span class="collapse-spinner-wrapper"></span>
+ </div>
+ <div class="codeContent panelContent pdl hide-toolbar">
+  <pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence; collapse: true" data-theme="Confluence">// Read RTL json
+readRtlJson('output/debug/top.level.rtl.gw.csr.json');
+// Initialize error count
+errCnt = 0;
+// Find chip object
+myChip = getOneObj({type:'chip'});
+// Find primary clock interfaces of the chip
+primaryClocks = myChip.getObjs({type:'interface'}).filter(o=&gt;o.model==='InterfaceCLK');
+
+// Check that only a_0_0_ b_1_0_ clocks are found and there is no default clock
+if (primaryClocks.map(o=&gt;o.name).join('') !== 'a_0_0_b_1_0_') {
+  console.log(`\n\nError: found clocks other than 'a_0_0_, b_1_0_'`);
+  errCnt++;
+}
+// Total number of clock interfaces on all levels of hierarchy should be 83
+if (getObjs().filter(o=&gt;o.model==='InterfaceCLK').length !== 83) {
+  console.log(`\n\nError: total number of clock interfaces != 83`);
+  errCnt++;
+} 
+// Clock A should be connected to 77 downstream elements
+clkA=myChip.getOneObj({type:'interface',name:'a_0_0_'});
+if (clkA.traceConnectivity('down').length !== 77) {
+  console.log(`\n\nError: number of downstream connections of clk a_0_0_ != 77`);
+  errCnt++;
+}
+// To print the entire connectivity of clkA tree:
+// clkA.traceConnectivity('down').map(o=&gt;o.getHierPath()).join('\n');
+// Clock B should be connected to 4 downstream elements
+clkB=myChip.getOneObj({type:'interface',name:'b_1_0_'});
+if (clkB.traceConnectivity('down').length !== 4) {
+  console.log(`\n\nError: number of downstream connections of clk b_1_0_ != 4`);
+  errCnt++;
+}
+
+// Exit status will be error count
+console.log(`${errCnt} errors detected`);
+exit(errCnt);
+
+</pre>
+ </div>
+</div><p> </p><p> </p><p>Finally here is the graphical representation of clock connectivity on 3 levels of hierarchy</p><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" width="800" src="https://arterisip.atlassian.net/wiki/download/attachments/16163032/image2019-7-1%2011:57:57.png?api=v2"></span></p><p> </p>

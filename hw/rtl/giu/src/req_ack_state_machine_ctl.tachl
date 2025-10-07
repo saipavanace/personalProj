@@ -1,0 +1,82 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//Req Ack state machine
+// Author: Ronak Salamat
+//=============================================================================
+\jsend
+
+
+\jsbegin
+var utilFunctions     = obj.userLib.lib_utils;
+var u			=obj.lib;
+var m			= obj.userLib;
+var p 		= u.getParam();
+
+//=============================================================================
+// Parameters
+//=============================================================================
+
+
+//=============================================================================
+// Interfaces and port declarations
+//=============================================================================
+u.port('input',  'st_req', 1);
+u.port('input', 'st_ack', 1);
+
+u.port('output', 'state_is_STOP',1);
+u.port('output', 'state_is_ACTIVATE',1);
+u.port('output', 'state_is_RUN',1);
+u.port('output', 'state_is_DEACTIVATE',1);
+
+u.port('output', 'cur_state', 2);
+
+u.nInterfaces(p.interfaces);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);  
+
+//=============================================================================
+// Wire declaration
+//=============================================================================
+
+reg [1:0] nxt_state;
+
+wire dff_enable = 1'b1;
+
+wire [1:0] ST_STOP        = 2'b00;
+wire [1:0] ST_ACTIVATE    = 2'b01;
+wire [1:0] ST_RUN         = 2'b10;
+wire [1:0] ST_DEACTIVATE  = 2'b11;
+
+//=============================================================================
+// State Machine
+//=============================================================================
+\=u.dffre(2, 'cur_state', 'nxt_state', "2'b0", 'dff_enable', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\
+
+always @(*) begin
+
+case (cur_state)
+
+        ST_STOP:        nxt_state = (st_req & ~st_ack) ? ST_ACTIVATE : ST_STOP;
+
+        ST_ACTIVATE:    nxt_state = (st_req & st_ack) ? ST_RUN : ST_ACTIVATE;
+
+        ST_RUN:         nxt_state = (~st_req & st_ack) ? ST_DEACTIVATE : ST_RUN;
+
+        ST_DEACTIVATE:  nxt_state = (~st_req & ~st_ack) ? ST_STOP : ST_DEACTIVATE;
+
+        default :       nxt_state = cur_state;
+
+endcase
+end
+
+assign state_is_STOP        = (cur_state == ST_STOP);
+assign state_is_ACTIVATE    = (cur_state == ST_ACTIVATE);
+assign state_is_RUN         = (cur_state == ST_RUN);
+assign state_is_DEACTIVATE  = (cur_state == ST_DEACTIVATE);
+ 
+endmodule
+

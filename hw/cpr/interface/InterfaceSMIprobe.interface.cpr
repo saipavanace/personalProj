@@ -1,0 +1,447 @@
+{
+        "name": "InterfaceSMIprobe",
+        "interface": [
+                {
+                        "name": "InterfaceSMIprobe",
+                        "signals": [
+                                {
+                                        "name": "ndp_",
+                                        "type": "interface",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "def": "interfaceSMIndp"
+                                },
+                                {
+                                        "name": "dp_",
+                                        "type": "interface",
+                                        "dir": "m_out",
+                                        "excludable": true,
+                                        "def": "interfaceSMIdp"
+                                }
+                        ]
+                },
+                {
+                        "name": "interfaceSMIndp",
+                        "signals": [
+                                {
+                                        "name": "targ_id",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTid=== undefined) ? 0 : params.wSmiTid"
+                                },
+                                {
+                                        "name": "steer",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiSteer=== undefined) ? 0 : params.wSmiSteer"
+                                },
+                                {
+                                        "name": "src_id",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiSid=== undefined) ? 0 : params.wSmiSid"
+                                },
+                                {
+                                        "name": "sec_fail",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiProtFail=== undefined) ? 0 : params.wSmiProtFail"
+                                },
+                                {
+                                        "name": "sec",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiSec=== undefined) ? 0 : params.wSmiSec"
+                                },
+                                {
+                                        "name": "sb_prot_b",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiNdpSbProtB=== undefined) ? 0 : params.wSmiNdpSbProtB"
+                                },
+                                {
+                                        "name": "sb_prot",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiNdpSbProt=== undefined) ? 0 : params.wSmiNdpSbProt"
+                                },
+                                {
+                                        "name": "route",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiRoute=== undefined) ? 0 : params.wSmiRoute"
+                                },
+                                {
+                                        "name": "qos",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiQos=== undefined) ? 0 : params.wSmiQos"
+                                },
+                                {
+                                        "name": "pressure",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiPressure=== undefined) ? 0 : params.wSmiPressure"
+                                },
+                                {
+                                        "name": "pkt_type",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiPktType=== undefined) ? 0 : params.wSmiPktType"
+                                },
+                                {
+                                        "name": "pkt_id",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiPktId=== undefined) ? 0 : params.wSmiPktId"
+                                },
+                                {
+                                        "name": "ordering_model",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiOrderingModel=== undefined) ? 0 : params.wSmiOrderingModel"
+                                },
+                                {
+                                        "name": "ordering_id",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiOrderingId=== undefined) ? 0 : params.wSmiOrderingId"
+                                },
+                                {
+                                        "name": "ndp_len",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiNDPLen=== undefined) ? 0 : params.wSmiNDPLen"
+                                },
+                                {
+                                        "name": "ndp",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiNDP=== undefined) ? 0 : params.wSmiNDP"
+                                },
+                                {
+                                        "name": "multi_mask",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiMultiMask=== undefined) ? 0 : params.wSmiMultiMask"
+                                },
+                                {
+                                        "name": "multi_label",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiMultiLabel=== undefined) ? 0 : params.wSmiMultiLabel"
+                                },
+                                {
+                                        "name": "msg_vnid",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiVNid=== undefined) ? 0 : params.wSmiVNid"
+                                },
+                                {
+                                        "name": "msg_valid",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.nSmiVC=== undefined) ? 0 : params.nSmiVC"
+                                },
+                                {
+                                        "name": "msg_user",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiUser=== undefined) ? 0 : params.wSmiUser"
+                                },
+                                {
+                                        "name": "msg_type_attr",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTypeAttr=== undefined) ? 0 : params.wSmiTypeAttr"
+                                },
+                                {
+                                        "name": "msg_type",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiType=== undefined) ? 0 : params.wSmiType"
+                                },
+                                {
+                                        "name": "msg_txn_resp",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnResp=== undefined) ? 0 : params.wSmiTxnResp"
+                                },
+                                {
+                                        "name": "msg_txn_hdr_region",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnHdrRegion=== undefined) ? 0 : params.wSmiTxnHdrRegion"
+                                },
+                                {
+                                        "name": "msg_txn_hdr_memattr",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnHdrMemAttr=== undefined) ? 0 : params.wSmiTxnHdrMemAttr"
+                                },
+                                {
+                                        "name": "msg_txn_hdr_maxbsize",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnHdrMaxBsize=== undefined) ? 0 : params.wSmiTxnHdrMaxBsize"
+                                },
+                                {
+                                        "name": "msg_txn_hdr_btype",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnHdrBtype=== undefined) ? 0 : params.wSmiTxnHdrBtype"
+                                },
+                                {
+                                        "name": "msg_txn_hdr_bsize",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnHdrBsize=== undefined) ? 0 : params.wSmiTxnHdrBsize"
+                                },
+                                {
+                                        "name": "msg_txn_hdr_atomic",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnHdrAtomic=== undefined) ? 0 : params.wSmiTxnHdrAtomic"
+                                },
+                                {
+                                        "name": "msg_txn_hdr",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTxnHdr=== undefined) ? 0 : params.wSmiTxnHdr"
+                                },
+                                {
+                                        "name": "msg_tier",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiTier=== undefined) ? 0 : params.wSmiTier"
+                                },
+                                {
+                                        "name": "msg_seqnum",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiSeqnum=== undefined) ? 0 : params.wSmiSeqnum"
+                                },
+                                {
+                                        "name": "msg_sec",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiMsgSec=== undefined) ? 0 : params.wSmiMsgSec"
+                                },
+                                {
+                                        "name": "msg_ready",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.nSmiVC=== undefined) ? 0 : params.nSmiVC"
+                                },
+                                {
+                                        "name": "msg_qos",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiMsgQos=== undefined) ? 0 : params.wSmiMsgQos"
+                                },
+                                {
+                                        "name": "msg_pri",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiPri=== undefined) ? 0 : params.wSmiPri"
+                                },
+                                {
+                                        "name": "msg_poison",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiPoison=== undefined) ? 0 : params.wSmiPoison"
+                                },
+                                {
+                                        "name": "msg_len",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiLen=== undefined) ? 0 : params.wSmiLen"
+                                },
+                                {
+                                        "name": "msg_id",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiId=== undefined) ? 0 : params.wSmiId"
+                                },
+                                {
+                                        "name": "msg_err",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiErr=== undefined) ? 0 : params.wSmiErr"
+                                },
+                                {
+                                        "name": "msg_class",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "0"
+                                },
+                                {
+                                        "name": "msg_addr",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiAddr=== undefined) ? 0 : params.wSmiAddr"
+                                },
+                                {
+                                        "name": "dp_present",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.nSmiPayload=== undefined) ? 1 : params.nSmiPayload"
+                                },
+                                {
+                                        "name": "chl_id",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiChlId=== undefined) ? 0 : params.wSmiChlId"
+                                }
+                        ]
+                },
+                {
+                        "name": "interfaceSMIdp",
+                        "signals": [
+                                {
+                                        "name": "valid",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.nSmiDPvc=== undefined) ? 0 : params.nSmiDPvc"
+                                },
+                                {
+                                        "name": "user",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPuser=== undefined) ? 0 : params.wSmiDPuser"
+                                },
+                                {
+                                        "name": "sb_prot_b",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPSbProtB=== undefined) ? 0 : params.wSmiDPSbProtB"
+                                },
+                                {
+                                        "name": "sb_prot",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPSbProt=== undefined) ? 0 : params.wSmiDPSbProt"
+                                },
+                                {
+                                        "name": "resp",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPresp=== undefined) ? 0 : params.wSmiDPresp"
+                                },
+                                {
+                                        "name": "ready",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.nSmiDPvc=== undefined) ? 0 : params.nSmiDPvc"
+                                },
+                                {
+                                        "name": "last",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPlast=== undefined) ? 0 : params.wSmiDPlast"
+                                },
+                                {
+                                        "name": "id",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPid=== undefined) ? 0 : params.wSmiDPid"
+                                },
+                                {
+                                        "name": "ib_prot",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiIbProt=== undefined) ? 0 : params.wSmiIbProt"
+                                },
+                                {
+                                        "name": "err",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPErr=== undefined) ? 0 : params.wSmiDPErr"
+                                },
+                                {
+                                        "name": "dummy",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPdummy=== undefined) ? 0 : params.wSmiDPdummy"
+                                },
+                                {
+                                        "name": "data",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPdata=== undefined) ? 0 : params.wSmiDPdata"
+                                },
+                                {
+                                        "name": "be",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPbe=== undefined) ? 0 : params.wSmiDPbe"
+                                },
+                                {
+                                        "name": "p_last",
+                                        "type": "logic",
+                                        "dir": "m_out",
+                                        "excludable": false,
+                                        "width": "(params.wSmiDPPlast=== undefined) ? 0 : params.wSmiDPPlast"
+                                }
+                        ]
+                }
+        ]
+}

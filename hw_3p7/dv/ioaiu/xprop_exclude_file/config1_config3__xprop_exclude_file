@@ -1,0 +1,28 @@
+#assign timestamp_inc_updated = dtw_resp_cm_status[7] ? (XAIUCCTRLR_inc_out - {4'd0,timestamp_gainErrProduct[10:3]}) : (XAIUCCTRLR_inc_out + {4'd0,timestamp_gainErrProduct[10:3]});
+assertion enable -off -filter XPROP_COMB_1196_32 /tb_top/dut/trace_capture
+assertion enable -off -filter XPROP_COMB_1196_34 /tb_top/dut/trace_capture
+# apb event ordering issue setting fire_xcheck (note: you will see it pass in the sim until the ignore delay counter is hit)
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/assert_unknown_apb
+# old waivers
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/assert_unknown_mux
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_control
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_mpc
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_mpr
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_mpu
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_mpw
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_src
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_srn
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_unknown_srr
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpc/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpc/g_enable/g_memory/pfifo_control/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpr/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpr/g_enable/g_memory/pfifo_control/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpu/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpu/g_enable/g_memory/pfifo_control/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpw/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/mpw/g_enable/g_memory/pfifo_control/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/src/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/src/g_enable/g_memory/pfifo_control/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/srn/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/srn/g_enable/g_memory/pfifo_control/assert_wcontrol
+assertion enable -off -filter XPROP_COMB_53 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/ioaiu_control/assert_response

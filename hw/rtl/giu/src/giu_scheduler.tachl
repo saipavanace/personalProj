@@ -1,0 +1,310 @@
+
+\jsbegin
+
+var u=obj.lib;
+var p=u.getParam();
+
+var log2ceil =function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+var log2ceilp1 =function(n) { return Math.ceil(Math.log(n+1)/Math.LN2); };
+
+
+var MaxNumberOfMEssagePerVC = p.MaxNumberOfMEssagePerVC;
+var wMaxNumberOfMEssagePerVC = MaxNumberOfMEssagePerVC.map(log2ceilp1);
+
+
+var wcary = log2ceil(Math.max(...p.vc_descriptor.MessageSizeInGranule));
+var wsel =  log2ceil(p.vc_descriptor["nVC"]);
+
+function calculate_transaction(g,Number_of_VC,priority,Message_size,state,Flit_width){
+    var transaction=[0,0,0,0];
+    var carry=0;
+    var carriedVC=0;
+    var cg=Flit_width-g;
+    var Mux_sel=[];
+    var mux_select_valid =[];
+    var start = [];
+    var NconsumeMessage = []
+    var wsel = log2ceil(Number_of_VC);
+    for (var g=0;g<Flit_width; g++){
+        Mux_sel.push(wsel+"'h0");
+        mux_select_valid.push("1'b0");
+        start.push("1'b0");
+        NconsumeMessage.push(0)
+    }
+
+
+    for (var p=0; p<Number_of_VC;p++)  {
+        var VC=priority[p];
+        var NumCmd=state[VC];
+        if (NumCmd >0) {
+            transaction[VC]= Math.min(Math.ceil(g/(Message_size[VC])),NumCmd);
+            var granule_used=(transaction[VC]*Message_size[VC]);
+            g-=granule_used;
+            for (var gu=0; gu<granule_used;gu++) {
+                if((gu+cg)<Flit_width) {
+                    if(gu%Message_size[VC] == 0){
+                        start[gu+cg] = "1'b1"
+                    }
+                    Mux_sel[gu+cg] = wsel+"'h"+VC;
+                    mux_select_valid[gu+cg] ="1'b1";
+                }
+            }
+            cg+=granule_used;
+        }
+
+        if (g<=0) {
+            break;
+        }
+    }
+    for (var vc =0; vc<Number_of_VC;vc++){
+        for (var g=0;g<Flit_width; g++){
+            if ((Mux_sel[g] == wsel+"'h"+vc) & (start[g]=="1'b1")){
+                NconsumeMessage[vc]+=1
+            }
+        }
+    }
+    consumedmessage=""
+    for (var vc =0; vc<Number_of_VC;vc++){
+        consumedmessage+= "number_of_message_sent_VC_"+vc+" = 3'h"+NconsumeMessage[vc]+";"
+    }
+    carry=g <0 & ("1'b1" in start)? -g : 0; 
+    carriedVC=VC
+return [transaction,Mux_sel,mux_select_valid,start,carry,carriedVC,consumedmessage]
+}
+
+
+
+function Mux_sel(Muxarray) {
+    var sel="}"
+    for (var els in Muxarray) {
+        sel = ","+Muxarray[els] +sel
+    }
+    sel="{"+sel.slice(1)
+    return sel
+}
+
+//This function is not fully parametrised to number of VC, ideally would build a tree structure and would traverse the tree to generate states.
+function generate_state(MaxNumberOfMEssagePerVC,Flit_width){
+    var state=[];
+    for (var g = 0 ; g<Flit_width+1;g++) {
+        for (var vc0 = 0 ; vc0<(MaxNumberOfMEssagePerVC[0]+1);vc0++) {
+            for (var vc1 = 0 ; vc1<(MaxNumberOfMEssagePerVC[1]+1);vc1++) {
+                for (var vc2 = 0 ; vc2<(MaxNumberOfMEssagePerVC[2]+1);vc2++){
+                        for (var vc3 = 0 ; vc3<(MaxNumberOfMEssagePerVC[3]+1);vc3++) {
+                            state.push(["{3'h"+g+","+Math.max(1,wMaxNumberOfMEssagePerVC[3])+"'h"+vc3+","+Math.max(1,wMaxNumberOfMEssagePerVC[2])+"'h"+vc2+","+Math.max(1,wMaxNumberOfMEssagePerVC[1])+"'h"+vc1+","+Math.max(1,wMaxNumberOfMEssagePerVC[0])+"'h"+vc0+"}",g,vc0,vc1,vc2,vc3])
+                        }
+                }
+            }
+        }
+    }
+    return state
+}
+
+function generate_case_statement(Message_size,Flit_width,Number_of_VC,MaxNumberOfMEssagePerVC,wcary,priority) {
+    state=generate_state(MaxNumberOfMEssagePerVC,Flit_width)
+    var result=[];
+    res_s="case (state) \n"
+    for (var ss in state) {
+        transactions = calculate_transaction(state[ss][1],Number_of_VC,priority,Message_size,state[ss].slice(2),Flit_width);
+        res_s+=state[ss][0]+" : begin sel = "+Mux_sel(transactions[1])+";"+" sel_v = "+Mux_sel(transactions[2])+"; start_v="+Mux_sel(transactions[3])+";new_carry="+wcary+"'h"+transactions[4]+";new_carry_VC=2'h"+transactions[5]+";"+transactions[6]+" end\n";
+        result.push(calculate_transaction(state[ss][1],Number_of_VC,priority,Message_size,state[ss].slice(2),Flit_width) );
+    }
+    res_s += "default : begin sel = {2'h0,2'h0,2'h0,2'h0,2'h0,2'h0}; sel_v = {1'b0,1'b0,1'b0,1'b0,1'b0,1'b0}; start_v={1'b0,1'b0,1'b0,1'b0,1'b0,1'b0}; new_carry="+wcary+"'h0; new_carry_VC=2'h0;"
+    for (var vc =0; vc<Number_of_VC;vc++){
+        res_s+= "number_of_message_sent_VC_"+vc+" = 3'h0;"
+    } 
+    res_s+= "end\n";
+    res_s+="endcase"
+    return res_s
+}
+
+u.nInterfaces(p.interfaces);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+
+
+wire [1:0] message_vc3;
+wire [1:0] message_vc2;
+wire [1:0] message_vc1;
+wire [1:0] message_vc0;
+
+wire [\=wcary=\:0]  consume_carry;
+wire [\=p.packet_descriptor.NumberOfGranulePerBeat-1=\ : 0 ]carry_valid_vector;
+wire [\=wcary-1=\:0] carry,next_carry ;
+wire [3:0] number_of_available_granule ;
+
+wire carry_VC_en;
+
+wire [10:0] state;
+reg [11:0] sel    ; 
+reg [5:0] sel_v   ; 
+reg [5:0] start_v ;
+reg [\=wcary-1=\:0] new_carry ;
+
+\jsbegin
+for (var vc=0; vc< p.vc_descriptor.nVC; vc++){
+\jsend
+
+    reg [2:0] number_of_message_sent_VC_\=vc=\;
+    wire fifo_number_of_message_ready_VC_\=vc=\_en;
+    wire [4:0] fifo_number_of_message_ready_VC\=vc=\;
+    wire [4: 0] next_fifo_number_of_message_ready_VC\=vc=\;
+    wire next_fifo_number_of_message_ready_VC_overflow\=vc=\;
+    wire [1:0] credit_number_of_message_ready_VC\=vc=\;
+\jsbegin
+}
+\jsend
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+//this logic is to handle the case where messages can carry over to the next flit
+//it keeps track of how many granule will need to be used for the message started in teh previous flit
+///////////////////////////////////////////////////////////////////////////
+\jsend
+wire carry_v;
+wire carry_en;
+
+reg [1:0] new_carry_VC;
+wire [1:0] carry_VC;
+
+\=u.dffre(wcary, 'carry',  'next_carry',  wcary+"'h0", "carry_en", p.interfaces.clkInt.name+"clk", p.interfaces.clkInt.name+"reset_n")=\
+
+assign consume_carry =  carry-3'h\=p.packet_descriptor.NumberOfGranulePerBeat=\;
+
+assign next_carry = ((|new_carry) | consume_carry[\=wcary=\]) ? new_carry : consume_carry[\=wcary-1=\:0];
+assign carry_en = flit_accepted_data;
+assign carry_v = |carry;
+
+
+assign number_of_available_granule = (carry_v & ~consume_carry[\=wcary=\] ) ? 3'h0 : 3'h\=p.packet_descriptor.NumberOfGranulePerBeat=\ - carry;
+assign carry_valid_vector = {6{1'b1}} >> number_of_available_granule[2:0];
+
+
+
+\=u.dffre(log2ceil(p.vc_descriptor["nVC"]), 'carry_VC',  'new_carry_VC', "2'h0", "carry_VC_en", p.interfaces.clkInt.name+"clk", p.interfaces.clkInt.name+"reset_n")=\
+
+
+assign carry_VC_en = |new_carry;
+
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+//end of teh carry logic
+///////////////////////////////////////////////////////////////////////////
+\jsend
+
+
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+//this should take the min of number of credit and number of message ready to go for a max of 3 messages.
+//this calcualtes how many messages are in the vc fifos and return the Min of the number of messages and 3.
+///////////////////////////////////////////////////////////////////////////
+\jsend
+
+\jsbegin
+for (var vc=0;vc<p.vc_descriptor["nVC"];vc++){
+\jsend
+  assign credit_number_of_message_ready_VC\=vc=\[1] = (message_credit_status_VC_\=vc=\_data[3] | message_credit_status_VC_\=vc=\_data[2] | message_credit_status_VC_\=vc=\_data[1]);
+  assign credit_number_of_message_ready_VC\=vc=\[0] = (message_credit_status_VC_\=vc=\_data[3] | message_credit_status_VC_\=vc=\_data[2] | message_credit_status_VC_\=vc=\_data[0]);
+
+  assign message_vc\=vc=\[0] = (credit_number_of_message_ready_VC\=vc=\[0] & fifo_number_of_message_ready_VC\=vc=\[0]) | (credit_number_of_message_ready_VC\=vc=\[1] & ~fifo_number_of_message_ready_VC\=vc=\[1] &fifo_number_of_message_ready_VC\=vc=\[0]) | (~credit_number_of_message_ready_VC\=vc=\[1] & credit_number_of_message_ready_VC\=vc=\[0] &fifo_number_of_message_ready_VC\=vc=\[1]);
+  assign message_vc\=vc=\[1] = credit_number_of_message_ready_VC\=vc=\[1] & fifo_number_of_message_ready_VC\=vc=\[1];
+
+
+  \jsbegin
+}
+///////////////////////////////////////////////////////////////////////////
+//end of the max logic
+///////////////////////////////////////////////////////////////////////////
+\jsend
+
+
+
+assign state = {number_of_available_granule[2:0],message_vc3,message_vc2,message_vc1,message_vc0};
+
+always@(*) begin
+    \=generate_case_statement(p.vc_descriptor.MessageSizeInGranule,p.packet_descriptor.NumberOfGranulePerBeat,p.vc_descriptor["nVC"],MaxNumberOfMEssagePerVC,wcary,p.priority)=\
+end
+
+assign start_pointer_data = start_v;
+
+assign mux_select_valid_data = sel_v | carry_valid_vector;
+
+
+\jsbegin
+for (var g=0; g<p.packet_descriptor.NumberOfGranulePerBeat;g++){
+\jsend
+assign mux_select_data[\=g*2+1=\:\=g*2=\] = sel[\=g*2+1=\:\=g*2=\]& {2{sel_v[\=g=\]}} | (carry_VC & {2{carry_valid_vector[\=g=\]}});
+
+
+\jsbegin
+}
+\jsend
+
+
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+//This logic calcualtes the number of entries in the VC fifos
+///////////////////////////////////////////////////////////////////////////
+for(var vc =0 ; vc<p.vc_descriptor.nVC; vc++){
+\jsend
+
+\=u.dffre(5,"fifo_number_of_message_ready_VC"+vc,"next_fifo_number_of_message_ready_VC"+vc,"5'd0","fifo_number_of_message_ready_VC_"+vc+"_en",p.interfaces.clkInt.name+"clk",p.interfaces.clkInt.name+"reset_n")=\
+assign fifo_number_of_message_ready_VC_\=vc=\_en = VC_\=vc=\_to_framer_push_0_ready_valid_data | flit_accepted_data ;
+assign {next_fifo_number_of_message_ready_VC_overflow\=vc=\, next_fifo_number_of_message_ready_VC\=vc=\ } = fifo_number_of_message_ready_VC\=vc=\ - (  {5{flit_accepted_data}} &
+                                                                             {2'b00,number_of_message_sent_VC_\=vc=\} )
+                                                                        +  ( {4'd0,VC_\=vc=\_to_framer_push_0_ready_valid_data})
+                                                                            ;
+\jsbegin
+}
+///////////////////////////////////////////////////////////////////////////
+//end calculation
+
+///////////////////////////////////////////////////////////////////////////
+\jsend
+
+
+
+\jsbegin
+for(var vc = 0; vc< p.vc_descriptor["nVC"]; vc++){
+\jsend
+
+assign \=p.interfaces["message_credit_use_VC_"+vc].name=\data = number_of_message_sent_VC_\=vc=\;
+assign \=p.interfaces["message_credit_use_VC_"+vc].name=\valid = flit_accepted_data;
+
+\jsbegin
+}
+\jsend
+
+
+\jsbegin
+// case statement to decide how many credit to return.
+\jsend
+
+\js if (p.assertOn) {
+
+    `ifdef OVL_ASSERT_ON
+    
+    //coverage off
+    //pragma synthesis_off
+    \jsbegin
+    for (var vc=0; vc< p.vc_descriptor["nVC"];vc++){
+    \jsend
+
+    ovl_never #(.msg("vc credit counter overflow")) next_fifo_number_of_message_ready_VC_overflow\=vc=\ (.clock(\=p.interfaces.clkInt.name=\clk),
+                                                                .reset(\=p.interfaces.clkInt.name=\reset_n),
+                                                                .en(1'b1), 
+                                                                .test_expr(~next_fifo_number_of_message_ready_VC_overflow\=vc=\));
+    
+    
+            \jsbegin
+    }
+    \jsend  
+    //pragma synthesis_on
+    //coverage on
+    
+    `endif
+    
+    \js }
+
+endmodule

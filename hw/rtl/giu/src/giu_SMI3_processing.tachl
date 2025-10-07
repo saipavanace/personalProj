@@ -1,0 +1,212 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU
+// Author: Benjamin Madon
+//=============================================================================
+
+
+var m = obj.userLib;
+var u=obj.lib;
+var p =u.getParam();
+var newToOldStyleInterface	=m.newToOldStyleInterface.bind( null, m);
+var utilFunctions   = m.lib_utils;
+
+function encode_header (interface,ResilienceEnable,TIResiliencyProtectionType){
+    var oldrx2=newToOldStyleInterface(interface);
+    var protection =  "none";                                 
+    if (ResilienceEnable) {  
+        if (TIResiliencyProtectionType === 'SECDED') {
+            protection =  'ecc';  
+        }  
+        if (TIResiliencyProtectionType === 'PARITY') {    
+            protection=  'parity';  
+        }
+    }
+
+    let smiHeaderSignalsToProtect = ["targ_id","src_id","msg_type","msg_id"];
+    
+    var direction              = "forward";
+    var inInterface            = {"name": "in_" ,
+                                  "signals": {}
+                     };
+    var outInterface           = {"name": "out_",
+                                  "signals": {}
+                     };
+    
+    var protWidth = 0;
+    for (let i =0; i<smiHeaderSignalsToProtect.length; i++){
+     if(oldrx2.signals[smiHeaderSignalsToProtect[i]] != 0) {
+       inInterface.signals["ndp_"+smiHeaderSignalsToProtect[i]]  =   oldrx2.signals.ndp_[smiHeaderSignalsToProtect[i]];
+      outInterface.signals["ndp_"+smiHeaderSignalsToProtect[i]] =   oldrx2.signals.ndp_[smiHeaderSignalsToProtect[i]];
+     }
+     protWidth += oldrx2.signals.ndp_[smiHeaderSignalsToProtect[i]];
+    }
+    
+    var protSigWidth = 0;
+    if (TIResiliencyProtectionType == "SECDED"){
+        protSigWidth = m.getEccWidth(protWidth);
+    } 
+    if (TIResiliencyProtectionType == "PARITY" ) {
+        protSigWidth = 1;
+    }
+
+                                      
+    outInterface.signals.sb_prot  = protSigWidth;
+    
+    var smiTxProtInterfaces    = [];
+    smiTxProtInterfaces[0]     = {
+                                    modulePrefix  : 'in_',
+                                    localPrefix   : oldrx2.name,
+                                    interface     : inInterface.signals
+                                  };
+    
+    smiTxProtInterfaces[1]     = {
+                                    modulePrefix  : 'out_',
+                                    localPrefix   : 'prot_out_' + oldrx2.name,
+                                    interface     : outInterface.signals
+                                  };
+    var headerProtectionScheme = {
+            "all":[
+                {"signals" : smiHeaderSignalsToProtect.map(item => "ndp_"+item),
+                 "protectionStyle" : {"protection":protection ,"protWidth": protWidth }
+                }
+            ]
+                
+        };
+    return {
+        instanceName: oldrx2.name+'prot_interface',
+        moduleName: 'prot_interface',
+        params: {
+                   direction        : direction,
+                   inInterface      : inInterface,
+       outInterface     : outInterface,
+       protectionScheme : headerProtectionScheme
+                 },
+        verilogParams: {},
+        interfaces: smiTxProtInterfaces
+    };
+}
+
+u.nInterfaces(p.interfaces);
+
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+
+wire sink0_valid,sink1_valid,source_valid;
+wire sink0_ready,sink1_ready,source_ready;
+wire sink0_last,sink1_last,source_last;
+\=m.bundleFunctions.wiresFromInterface("prot_out_" + p.interfaces["smi_tx_trace_"].name+"ndp_",        newToOldStyleInterface(p.interfaces["smi_tx_trace_"]).signals.ndp_,       [],  u.bundle)=\
+\=m.bundleFunctions.wiresFromInterface("prot_out_" + p.interfaces["smi_tx_trace_"].name+"dp_",        newToOldStyleInterface(p.interfaces["smi_tx_trace_"]).signals.dp_,       [],  u.bundle)=\
+
+assign sink0_valid = \=p.interfaces["smiTxInt_in"].name+"ndp_msg_valid & " + p.interfaces["smiTxInt_in"].name + "dp_valid ;"=\
+assign \=p.interfaces["smiTxInt_in"].name+"ndp_msg_ready"=\ = sink0_ready;
+assign \=p.interfaces["smiTxInt_in"].name+"dp_ready"=\ = sink0_ready;
+assign sink0_last = \=p.interfaces["smiTxInt_in"].name + "dp_last ;"=\
+
+assign sink1_valid = prot_out_\=p.interfaces["smi_tx_trace_"].name+"ndp_msg_valid & " + "prot_out_"+p.interfaces["smi_tx_trace_"].name + "dp_valid ;"=\
+assign prot_out_\=p.interfaces["smi_tx_trace_"].name+"ndp_msg_ready"=\ = sink1_ready;
+assign prot_out_\=p.interfaces["smi_tx_trace_"].name+"dp_ready"=\ = sink1_ready;
+assign sink1_last = prot_out_\=p.interfaces["smi_tx_trace_"].name + "dp_last ;"=\
+
+assign source_ready = \=p.interfaces["smiTxInt_out"].name+"ndp_msg_ready & " + p.interfaces["smiTxInt_out"].name + "dp_ready ;"=\
+assign \=p.interfaces["smiTxInt_out"].name+"ndp_msg_valid"=\ = source_valid;
+assign \=p.interfaces["smiTxInt_out"].name+"dp_valid"=\ = source_valid;
+assign \=p.interfaces["smiTxInt_out"].name + "dp_last "=\ = source_last;
+
+
+\jsbegin 
+
+var arbiterBundle = {}
+var dpint =  newToOldStyleInterface(p.interfaces["smiTxInt_in"]).signals["dp_"]
+var ndpint =  newToOldStyleInterface(p.interfaces["smiTxInt_in"]).signals["ndp_"]
+for (var i in dpint){
+    if (!(["ndp_msg_valid","ndp_msg_ready","dp_valid","dp_ready","dp_last"].includes("dp_"+i))){
+        arbiterBundle["dp_"+i] = dpint[i];
+    }
+}
+for (var i in ndpint){
+    if (!(["ndp_msg_valid","ndp_msg_ready","dp_valid","dp_ready","dp_last"].includes("ndp_"+i))){
+        arbiterBundle["ndp_"+i] = ndpint[i];
+    }
+}
+arbiterBundle["valid"] = 1;
+arbiterBundle["ready"] =-1;
+arbiterBundle["last"] = 1;
+
+var smi_tx3_rr_arbiter_interfaces= []
+smi_tx3_rr_arbiter_interfaces.push({modulePrefix: "sink0_", localPrefix : p.interfaces["smiTxInt_in"].name, interface : arbiterBundle,exclude :   ["valid","ready","last"]});
+smi_tx3_rr_arbiter_interfaces.push({modulePrefix: "sink1_", localPrefix : "prot_out_"+p.interfaces["smi_tx_trace_"].name, interface : arbiterBundle,exclude : ["valid","ready","last"]});
+smi_tx3_rr_arbiter_interfaces.push({modulePrefix: "source_", localPrefix : p.interfaces["smiTxInt_out"].name, interface : arbiterBundle,exclude : ["valid","ready","last"]});
+
+var smi_tx3_rr_arbiter_ports =        { clk                    : p.interfaces["clkInt"].name+"clk",
+                                        reset_n                : p.interfaces["clkInt"].name+"reset_n",
+                                        sink0_last             : "sink0_last",
+                                        sink0_valid            : "sink0_valid",
+                                        sink0_ready            : "sink0_ready",
+                                        sink1_last             : "sink1_last",
+                                        sink1_valid            : "sink1_valid",
+                                        sink1_ready            : "sink1_ready",
+                                        source_last             : "source_last",
+                                        source_valid            : "source_valid",
+                                        source_ready            : "source_ready"
+                                    };
+
+var smi_tx3_rr_arbiter_parameter ={
+        number_of_inputs:  2,
+        width: m.bundleFunctions.getBundleWidth( arbiterBundle, ["valid","ready"], u.bundle),
+        sink_type: 'RdyVld',
+        pipeline: 1,
+        arb_priority: 'RoundRobin',
+        sfi_compliant: 1,
+        output_grant: 0,
+        interface:   arbiterBundle ,
+        noLastSignal: 0
+};
+\jsend
+
+
+\=u.instance({
+    instanceName: 'smi_tx3_rr_arbiter',
+    moduleName: 'muxarb_bundle',
+    params: smi_tx3_rr_arbiter_parameter ,
+    ports: smi_tx3_rr_arbiter_ports,
+    interfaces: smi_tx3_rr_arbiter_interfaces,
+    portsDelimiter: '\n'
+})=\
+
+
+\jsbegin
+
+//protection encoding for tx3 coming from trace capture
+//header protection.
+
+
+if (((p.system.TIResiliencyProtectionType === 'SECDED') | (p.system.TIResiliencyProtectionType === 'PARITY')) & p.system.ResilienceEnable) {
+var encode_trace_header = encode_header (p.interfaces["smi_tx_trace_"],p.system["ResilienceEnable"],p.system["TIResiliencyProtectionType"]);
+\jsend
+wire [\=encode_trace_header.params.outInterface.signals["sb_prot"]-1=\:0] prot_out_\=p.interfaces["smi_tx_trace_"].name=\sb_prot;
+
+\=u.instance(encode_trace_header)=\
+
+assign prot_out_\=p.interfaces["smi_tx_trace_"].name=\ndp_user = prot_out_\=p.interfaces["smi_tx_trace_"].name=\sb_prot;
+
+\jsbegin
+} else {
+\jsend
+
+\=m.bundleFunctions.assignByBundle("prot_out_" + p.interfaces["smi_tx_trace_"].name+"ndp_", p.interfaces["smi_tx_trace_"].name+"ndp_",       newToOldStyleInterface(p.interfaces["smi_tx_trace_"]).signals.ndp_,       [],  u.bundle)=\
+\=m.bundleFunctions.assignByBundle("prot_out_" + p.interfaces["smi_tx_trace_"].name+"dp_", p.interfaces["smi_tx_trace_"].name+"dp_",       newToOldStyleInterface(p.interfaces["smi_tx_trace_"]).signals.dp_,       [],  u.bundle)=\
+
+
+\jsbegin
+}
+\jsend
+
+assign \=p.interfaces["active"].name=\active = 1'b1;
+endmodule

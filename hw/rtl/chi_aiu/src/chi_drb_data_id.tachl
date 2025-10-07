@@ -1,0 +1,88 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2021 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+// Data ID computed from CCID=address[5:4] and address[3] for data width conversion
+// from source data width=wData=128,256 to target data width 256,128,64.
+//
+// Author: Boon Chuan
+// Filename: chi_drb_data_id.tachl
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+
+var wData = u.getParam('wData');
+
+var wDataId = (wData/64) * 3;
+
+//=============================================================================
+// Port declaration
+//=============================================================================
+
+u.port('input',  'data_id',            2);
+u.port('input',  'ccid',               2);
+u.port('input',  'addr_bit3',          1);
+u.port('output', 'data_id_target_256', wDataId);
+u.port('output', 'data_id_target_128', wDataId);
+u.port('output', 'data_id_target_64',  wDataId);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+wire dwid_0 = ((ccid[1:0] == 2'b00) & ~addr_bit3);
+wire dwid_1 = ((ccid[1:0] == 2'b00) &  addr_bit3);
+wire dwid_2 = ((ccid[1:0] == 2'b01) & ~addr_bit3);
+wire dwid_3 = ((ccid[1:0] == 2'b01) &  addr_bit3);
+wire dwid_4 = ((ccid[1:0] == 2'b10) & ~addr_bit3);
+wire dwid_5 = ((ccid[1:0] == 2'b10) &  addr_bit3);
+wire dwid_6 = ((ccid[1:0] == 2'b11) & ~addr_bit3);
+wire dwid_7 = ((ccid[1:0] == 2'b11) &  addr_bit3);
+
+\js if (wData == 128) {
+
+assign data_id_target_256 = ({6{(data_id == 2'b00)}} & 6'b001000) |
+                            ({6{(data_id == 2'b01)}} & 6'b011010) |
+                            ({6{(data_id == 2'b10)}} & 6'b101100) |
+                            ({6{(data_id == 2'b11)}} & 6'b111110);
+
+assign data_id_target_128 = ({6{(data_id == 2'b00)}} & 6'b001000) |
+                            ({6{(data_id == 2'b01)}} & 6'b011010) |
+                            ({6{(data_id == 2'b10)}} & 6'b101100) |
+                            ({6{(data_id == 2'b11)}} & 6'b111110);
+
+assign data_id_target_64  = ({6{(data_id == 2'b00) & (dwid_0 | dwid_2 | dwid_4 | dwid_6)}} & 6'b001000) | 
+                            ({6{(data_id == 2'b00) & (dwid_1 | dwid_3 | dwid_5 | dwid_7)}} & 6'b010001) |
+                            ({6{(data_id == 2'b01) & (dwid_0 | dwid_2 | dwid_4 | dwid_6)}} & 6'b011010) |
+                            ({6{(data_id == 2'b01) & (dwid_1 | dwid_3 | dwid_5 | dwid_7)}} & 6'b100011) | 
+                            ({6{(data_id == 2'b10) & (dwid_0 | dwid_2 | dwid_4 | dwid_6)}} & 6'b101100) | 
+                            ({6{(data_id == 2'b10) & (dwid_1 | dwid_3 | dwid_5 | dwid_7)}} & 6'b110101) |
+                            ({6{(data_id == 2'b11) & (dwid_0 | dwid_2 | dwid_4 | dwid_6)}} & 6'b111110) |  
+                            ({6{(data_id == 2'b11) & (dwid_1 | dwid_3 | dwid_5 | dwid_7)}} & 6'b000111);
+
+\js }
+
+\js if (wData == 256) {
+
+assign data_id_target_256 = (data_id[1] == 1'b0) ? 12'b011010001000 : 12'b111110101100;
+ 
+assign data_id_target_128 = ({12{(data_id[1] == 1'b0) & ((ccid[1:0] == 2'b00) | (ccid[1:0] == 2'b10))}} & 12'b011010001000) | 
+                            ({12{(data_id[1] == 1'b0) & ((ccid[1:0] == 2'b01) | (ccid[1:0] == 2'b11))}} & 12'b101100011010) | 
+                            ({12{(data_id[1] == 1'b1) & ((ccid[1:0] == 2'b00) | (ccid[1:0] == 2'b10))}} & 12'b111110101100) | 
+                            ({12{(data_id[1] == 1'b1) & ((ccid[1:0] == 2'b01) | (ccid[1:0] == 2'b11))}} & 12'b001000111110);
+
+assign data_id_target_64  = ({12{(data_id[1] == 1'b0) & (dwid_0 | dwid_4)}} & 12'b011010001000) | 
+                            ({12{(data_id[1] == 1'b0) & (dwid_1 | dwid_5)}} & 12'b100011010001) |
+                            ({12{(data_id[1] == 1'b0) & (dwid_2 | dwid_6)}} & 12'b101100011010) |
+                            ({12{(data_id[1] == 1'b0) & (dwid_3 | dwid_7)}} & 12'b110101100011) | 
+                            ({12{(data_id[1] == 1'b1) & (dwid_4 | dwid_0)}} & 12'b111110101100) |
+                            ({12{(data_id[1] == 1'b1) & (dwid_5 | dwid_1)}} & 12'b000111110101) |
+                            ({12{(data_id[1] == 1'b1) & (dwid_6 | dwid_2)}} & 12'b001000111110) |
+                            ({12{(data_id[1] == 1'b1) & (dwid_7 | dwid_3)}} & 12'b010001000111);
+
+\js }
+
+endmodule

@@ -1,0 +1,4 @@
+(function() {
+var toc =  [{"key":"toc12","name":"3.1  Embedded Memories","type":"book","url":"Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/Embedded_Memories.htm#1045464"},{"name":"3.2  SRAM Test Signals","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/SRAM_Test_Signals.htm#1048766"},{"key":"toc13","name":"3.3  Replication","type":"book","url":"Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/Replication.htm#1048908"},{"name":"3.4  RTL Prefixing","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/RTL_Prefixing.htm#1049088"}];
+window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
+})();

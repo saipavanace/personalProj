@@ -1,0 +1,124 @@
+<p>This module is a wrapper around the <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16171929/apb_csr" data-linked-resource-id="16171929" data-linked-resource-version="3" data-linked-resource-type="page">apb_csr</a> module.</p><p>We will add a single bit generic interface coming into the apb_csr_wrapper<br/>When this input is set the registers can be written or read as normal<br/>When this input is not set the registers can only be read but not modified i.e. writes are not allowed.</p><p> </p><p>We do not need to reply in error and it’s acceptable to silently ignore the writes.</p><p>Most safety critical applications requires that the SW reads the registers back after writing, if the writes did not occur, then the SW will detect the issue.</p><h3 id="apb_csr_wrapper-References">References</h3><p><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16154965/csr" data-linked-resource-id="16154965" data-linked-resource-version="35" data-linked-resource-type="page">csr</a></p><p><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16171932/Support+for+TrustZone+and+for+disabling+register+read-write+operations+in+apb_csr+proposed" data-linked-resource-id="16171932" data-linked-resource-version="10" data-linked-resource-type="page">Support for TrustZone and for disabling register read-write operations in apb_csr (proposed)</a></p><p> </p><h3 id="apb_csr_wrapper-ExampleJSONfileandgeneratedVerilogcode">Example JSON file and generated Verilog code</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;clkInterface&quot; :
+    {
+      &quot;name&quot;:&quot;a_&quot;,
+      &quot;signals&quot;:{&quot;clk&quot;:1,&quot;reset_n&quot;:1,&quot;test_en&quot;:0,&quot;clk_en&quot;:0,&quot;edge_en&quot;:0,&quot;pre_edge_en&quot;:0,&quot;retention_reset_n&quot;:0}
+    },
+  &quot;cfgInterface&quot; :
+    {
+      &quot;name&quot;:&quot;cfg_&quot;,
+      &quot;signals&quot;:{&quot;paddr&quot;:8,&quot;psel&quot;:1,&quot;penable&quot;:1,&quot;pwrite&quot;:1,&quot;pprot&quot;:2,&quot;pwdata&quot;:32,&quot;pstrb&quot;:0,&quot;pready&quot;:-1,&quot;prdata&quot;:-32,&quot;pslverr&quot;:-1}
+    },
+  &quot;gioInterface&quot;:
+    {
+      &quot;name&quot;: &quot;gio_&quot;,
+      &quot;signals&quot;:{&quot;in&quot;:1}
+    },
+  &quot;protectionInterface&quot;: {&quot;name&quot;:&quot;&quot;,&quot;signals&quot;:{}},
+  &quot;protectionStyle&quot;: null,
+  &quot;flopAPB&quot;: &quot;yes&quot;,
+  &quot;csr&quot;:
+    {
+    &quot;addressWidth&quot;:8,
+    &quot;width&quot;: 32,
+    &quot;spaceBlock&quot;: [
+      {
+        &quot;baseAddress&quot;:0,
+        &quot;registers&quot; : [
+          {
+            &quot;name&quot;: &quot;STS&quot;,
+            &quot;description&quot;: &quot;Status register&quot;,
+            &quot;csrDescription&quot;: &quot;Status register&quot;,
+            &quot;addressOffset&quot;: 0,
+            &quot;fields&quot;: [
+              {
+                &quot;name&quot;:&quot;Sts&quot;,
+                &quot;bitOffset&quot;: 0,
+                &quot;bitWidth&quot;: 32,
+                &quot;access&quot;: &quot;W1C&quot;,
+                &quot;hardware&quot;: &quot;RW&quot;,
+                &quot;reset&quot;: 0,
+                &quot;linkOp&quot;: &quot;NULL&quot;,
+                &quot;opOrder&quot;: &quot;NULL&quot;,
+                &quot;scope&quot;: &quot;All&quot;,
+                &quot;description&quot;: &quot;Status bits to reflect certain hardware status. Writing a one to bit N clears bit N.&quot;
+              }
+            ],
+            &quot;specialImplementation&quot;:false
+          },
+          {
+            &quot;name&quot;: &quot;CTRL&quot;,
+            &quot;description&quot;: &quot;Control register&quot;,
+            &quot;csrDescription&quot;: &quot;Control register&quot;,
+            &quot;addressOffset&quot;: 4,
+            &quot;fields&quot;: [
+              {
+                &quot;name&quot;: &quot;Ctrl&quot;,
+                &quot;bitOffset&quot;: 0,
+                &quot;bitWidth&quot;: 32,
+                &quot;access&quot;: &quot;RW&quot;,
+                &quot;hardware&quot;: &quot;RO&quot;,
+                &quot;reset&quot;: 0,
+                &quot;linkOp&quot;: &quot;NULL&quot;,
+                &quot;opOrder&quot;: &quot;NULL&quot;,
+                &quot;scope&quot;: &quot;All&quot;,
+                &quot;description&quot;: &quot;Control bits to enable certain hardware features.&quot;
+              }
+            ],
+            &quot;specialImplementation&quot;: false
+          }
+        ]
+      }
+    ]
+  },
+  &quot;enSwWritePorts&quot; : 1,
+  &quot;enSwReadPorts&quot; : 0
+}</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">module apb_csr_wrapper (
+ input  a_clk,
+ input  a_reset_n,
+ input  gio_in,
+ input  [7:0]   cfg_paddr,
+ input  cfg_psel,
+ input  cfg_penable,
+ input  cfg_pwrite,
+ input  [1:0]   cfg_pprot,
+ input  [31:0]  cfg_pwdata,
+ output cfg_pready,
+ output [31:0]  cfg_prdata,
+ output cfg_pslverr,
+ input  [31:0]   STS_Sts_in,
+ input   STS_Sts_wr,
+ output  STS_sw_wr,
+ output [31:0]   STS_Sts_out,
+ output [31:0]   STS_Sts_sw_wdata,
+ output  CTRL_sw_wr,
+ output [31:0]   CTRL_Ctrl_out,
+ output [31:0]   CTRL_Ctrl_sw_wdata);
+
+apb_csr_a u_apb_csr (
+                .STS_Sts_in     (STS_Sts_in),
+                .STS_Sts_wr     (STS_Sts_wr),
+                .STS_sw_wr      (STS_sw_wr),
+                .STS_Sts_out    (STS_Sts_out),
+                .STS_Sts_sw_wdata       (STS_Sts_sw_wdata),
+                .CTRL_sw_wr     (CTRL_sw_wr),
+                .CTRL_Ctrl_out  (CTRL_Ctrl_out),
+                .CTRL_Ctrl_sw_wdata     (CTRL_Ctrl_sw_wdata),
+                .cfg_paddr      (cfg_paddr),
+                .cfg_psel       (cfg_psel),
+                .cfg_penable    (cfg_penable),
+                .cfg_pwrite     (cfg_pwrite &amp; gio_in),
+                .cfg_pprot      (cfg_pprot),
+                .cfg_pwdata     (cfg_pwdata),
+                .cfg_pstrb      (cfg_pstrb),
+                .cfg_pready     (cfg_pready),
+                .cfg_prdata     (cfg_prdata),
+                .cfg_pslverr    (cfg_pslverr),
+                .a_clk  (a_clk),
+                .a_reset_n      (a_reset_n));
+
+endmodule</pre>
+</div></div><p> </p><p> </p><p> </p><p> </p>

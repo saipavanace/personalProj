@@ -1,0 +1,133 @@
+[
+  {
+    "name": "xNRSAR",
+    "fields": [
+      {
+        "name": "NRSAR",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Set high to enable CSR access via this AIU.",
+        "reset": "return derived.fnCsrAccess",
+        "scope": "Engg"
+      }
+    ]
+  },
+  {
+    "name": "xTOCR",
+    "fields": [
+      {
+        "name": "TimeOutThreshold",
+        "bitOffset": 0,
+        "bitWidth": "31",
+        "access": "RW",
+        "hardware": "RO",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Time out threshold value; counts in increments of 4K cycles.",
+        "reset": "return derived.timeOutThreshold",
+        "scope": "All"
+      },
+      {
+        "name": "TimeOutRefEn",
+        "bitOffset": 31,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Set to use reference singal input instead of counting every 4K cycle",
+        "scope": "Engg"
+      }
+    ]
+  },
+  {
+    "name": "xQOSCR",
+    "fields": [
+      {
+        "name": "EventThreshold",
+        "bitOffset": 0,
+        "bitWidth": "16",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "return derived.QosInfo.qosEventThreshold",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Event threshold value counts every event (command issues) if value is 0 event count is disabled (event starvation disabled).",
+        "scope": "All"
+      },
+      {
+        "name": "useEvictionQoS",
+        "bitOffset": 16,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Use Eviction QoS value. If disabled the eviction takes the QoS of the transaction causing the eviction.",
+        "scope": "All"
+      },
+      {
+        "name": "EvictionQoS",
+        "bitOffset": 17,
+        "bitWidth": "4",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0xf",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Eviction QoS value",
+        "scope": "All"
+      }
+    ]
+  },
+  {
+    "name": "xQOSSR",
+    "fields": [
+      {
+        "name": "EventStatus",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "0: Normal Mode \n1: Starvation Mode ",
+        "scope": "Engg",
+        "link": ""
+      },
+      {
+        "name": "EventStatusCountOverflow",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Event count overflow bit, this bit is set once the counter overflows",
+        "scope": "Engg",
+        "link": ""
+      },
+      {
+        "bitOffset": 4,
+        "name": "EventStatusCount",
+        "bitWidth": "16",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Counts number of times event threshold was hit",
+        "scope": "Engg",
+        "link": ""
+      }
+    ]
+  }
+]

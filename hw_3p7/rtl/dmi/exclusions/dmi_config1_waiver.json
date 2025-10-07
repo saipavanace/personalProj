@@ -1,0 +1,402 @@
+[
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_e.*",
+     "line_pat" : "\\= m_penable \\& m_psel \\& m_pwrite\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_e.*",
+     "line_pat" : "\\= m_penable \\& m_psel \\& \\~m_pwrite\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_e.*",
+     "line_pat" : "\\= m_penable \\& m_psel \\& \\(addr_no_hit ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_e.*",
+     "line_pat" : "\\= m_penable \\& m_psel\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "test_en is not asserted in functional testing. Not tested on ncore.",
+     "file_pat" : "cg_prim.*",
+     "line_pat" : "assign int_en = test_se \\| en\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {test_en is not asserted in functional testing. Not tested on ncore.}"
+    },
+    {"comment" : "PMON event tests are run on config5 and can be waived from this config.",
+     "file_pat" : "dmi_csr_a.*",
+     "line_pat" : "assign corr_pmon_ovf_int\\[.* \\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1-4 -comment {PMON event tests are run on config5 and can be waived from this config.}"
+    },
+    {"comment" : "PMON event tests are run on config5 and can be waived from this config.",
+     "file_pat" : "dmi_csr_a.*",
+     "line_pat" : "assign irq_c_sig.*\\= .*corr_pmon_ovf_int\\)\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 6 -comment {PMON event tests are run on config5 and can be waived from this config.}"
+    },
+    {"comment" : "PMON monitor excluded in this config, fully covered in <config>.",
+     "file_pat" : "ncr_pmon_*.*",
+     "instances": ["/tb_top/dut/dmi_unit/u_ncr_pmon"],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {PMON monitor excluded in this config, fully covered in <config>.}"
+    },
+    {"comment" : "STR req FLM selects IDs based on find first, thus not reach upper IDs since related to nNcCmdInFlight.",
+     "file_pat" : "arb_spri",
+     "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/str_req_flm/flm_alloc_find_first"],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {21 to 64 are not covered}"
+    },
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "need_early_resp *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 6",
+    "comment" : "not possible to have vz = 0 while late=1"
+    },
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "early_en *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "vlate_ready = 0 is waived"
+    }, 
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "rmsg_ready &",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "vlate_ready = 0 is waived"
+    },
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "valid_en *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3",
+    "comment" : "dtr_resp_ready = 0 is waived"
+    },
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "valid_clr *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -feccondrow %line% 3",
+    "comment" : "dtr_resp_ready = 0 is waived"
+    },
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "== dtr_resp_r_message_id",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 7",
+    "comment" : "dtr_resp_ready = 0 is waived"
+    },
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "vlate_valid_d *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3-5",
+    "comment" : "vlate_ready = 0 is waived"
+    },
+    {"file_pat" : "dmi_write_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/dtw_resp_mux"],
+    "line_pat" : "dtr_resp_ready *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 1-3",
+    "comment" : "vlate_ready = 0 is waived"
+    },
+    {"file_pat" : "fifo",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/str_req_fifo"],
+    "line_pat" : "do_write *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 1",
+    "comment" : "push_ready can't be 0 when push_valid = 1"
+    },
+    {"file_pat" : "fifo",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/str_req_fifo"],
+    "line_pat" : "full *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2 4",
+    "comment" : "push_ready can't be 0 when push_valid = 1"
+    },
+    {"file_pat" : "pri_age_buffer_arbiter",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_skid_buffer"],
+    "line_pat" : "alloc_en *= req_in",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3",
+    "comment" : "Not possible to have req_in_ready = 0 while req_in_valid = 1"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "valid_en *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3",
+    "comment" : "Not possible to have dtr_resp_ready = 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "valid_clr *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -feccondrow %line% 3",
+    "comment" : "Not possible to have dtr_resp_ready = 0"
+    }, 
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "vlate_valid_d *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3-5",
+    "comment" : "Not possible to have vlate_ready = 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_offset" : 2,
+    "line_pat" : "always",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 7",
+    "comment" : "Not possible to have dtr_resp_ready = 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "msg_ready *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "rmsg_ready can't be 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "req_valid *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "rmsg_ready can't be 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "early_en *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "Not possible to have rmsg_ready = 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "late_ready *=~",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "Not possible to have rmsg_ready = 0"
+    },
+     {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_mux"],
+    "line_pat" : "dtr_resp_ready *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 1-3",
+    "comment" : "Not possible to have vlate_ready = 0"
+    },
+     {"file_pat" : "dmi_flm",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/str_req_flm"],
+    "line_pat" : "alloc_valid *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 1",
+    "comment" : "other flm instancfes are covered"
+    },
+    {"file_pat" : "dmi_write_buffer",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer"],
+    "line_pat" : "active *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 4",
+    "comment" : "acitve can't be 0 when dtw_pop_valid = 1"
+    },
+    {"file_pat" : "dmi_write_buffer",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer"],
+    "line_pat" : "rb_id_error *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2",
+    "comment" : "can't be greater than 48"
+    },
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry1"
+    ],
+    "line_pat" : "assign rob_dw_valid_set_[0-7] ",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 6",
+    "comment" : "last_beat_rd_q = 1 is waived"
+    },
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry1"
+    ],
+    "line_pat" : "assign rob_dw_be_en_[0-7] ",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 4",
+    "comment" : "last_beat_rd_q = 1 is waived"
+    },
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry1"
+    ],
+    "line_pat" : "last_beat_written_d *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 6",
+    "comment" : "last_beat_rd_q = 1 is waived"
+    },
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/c_write_buffer/dtw_drb/drb_entry1"
+    ],
+    "line_pat" : "rb_id_retire_valid *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 4 8",
+    "comment" : "last_beat_rd_q = 1 is waived"
+    },
+    {"file_pat" : "dmi_nc_write_buffer",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/nc_write_buffer"],
+    "line_pat" : "is_atomic *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% ",
+    "comment" : "UseAtomic = 0 in config1"
+    },
+    {"file_pat" : "dmi_nc_write_buffer",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/nc_write_buffer"],
+    "line_pat" : "active *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 4",
+    "comment" : "data_valid = 1 while rb_id_valid = 0 not possible"
+    }, 
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/nc_write_buffer/nc_dtw_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/nc_write_buffer/nc_dtw_drb/drb_entry1"
+    ],
+    "line_pat" : "rob_dw_be_en_[0-7] *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 4",
+    "comment" : "last_beat_rd_q = 1 is waived"
+    },
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/nc_write_buffer/nc_dtw_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/nc_write_buffer/nc_dtw_drb/drb_entry1"
+    ],
+    "line_pat" : "assign rd_data_valid_[0-7] *= rob_dw_valid_",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 6 8 14 16 22 24 30 32",
+    "comment" : "data width==128bit, only reading aligned dwID 0,2,4,6 at 2DW each time."
+    },
+     {"file_pat" : "fifo",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/wdata_sel_fifo"],
+    "line_pat" : "do_write *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 1",
+    "comment" : "push_ready = 0 while push_valid = 1 not possible"
+    },
+    {"file_pat" : "fifo",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/wdata_sel_fifo"],
+    "line_pat" : "full *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2 4",
+    "comment" : "push_ready = 0 while push_valid = 1 not possible"
+    },
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/dtr_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/dtr_drb/drb_entry1"
+    ],
+    "line_pat" : "last_beat_written_d *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 6",
+    "comment" : "last_beat_rd_q = 1 waived"
+    },
+    {"file_pat" : "dmi_drb_entry",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/dtr_drb/drb_entry0",
+        "/tb_top/dut/dmi_unit/dmi_protocol_control/dtr_drb/drb_entry1"
+    ],
+    "line_pat" : "last_beat_read_d *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 4",
+    "comment" : "simultaneous 1 in rd_last_beat and write_last_beat not possible"
+    },
+    {"file_pat" : "pri_age_buffer_arbiter",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/cmd_skid_buffer"],
+    "line_pat" : "full *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2 4",
+    "comment" : "Hard to hit "
+    }, 
+    {"file_pat" : "pri_age_buffer_arbiter",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/cmd_skid_buffer"],
+    "line_pat" : "alloc_en *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3",
+    "comment" : "req_in_ready can't be zero when req_in_valid = 1"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/cmd_resp_mux"],
+    "line_pat" : "early_en *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3",
+    "comment" : "vlate_ready = 0 is waived"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/cmd_resp_mux"],
+    "line_pat" : "late_ready *=~",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3",
+    "comment" : "Not possible to have rmsg_ready = 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/cmd_resp_mux"],
+    "line_pat" : "msg_ready *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "rmsg_ready can't be 0"
+    },
+    {"file_pat" : "dmi_read_resp",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/cmd_resp_mux"],
+    "line_pat" : "req_valid *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5",
+    "comment" : "rmsg_ready can't be 0"
+    },
+     {"file_pat" : "fifo_bundle",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/nc_cmd_resp_buffer/fifo"],
+    "line_pat" : "full *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2 4",
+    "comment" : "DV confirmed that it's hard to hit with this configuration"
+    },
+    {"file_pat" : "fifo_bundle",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/nc_cmd_resp_buffer/fifo"],
+    "line_pat" : "do_write *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 1",
+    "comment" : "push_ready can't be 0 when push_valid = 1"
+    },
+    {"file_pat" : "pri_age_buffer_arbiter",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_skid_buffer"],
+    "line_pat" : "full *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2 4",
+    "comment" : "Hard to hit when nMrdInFlight = 16 and buffer size is also 16"
+    },
+    {"file_pat" : "fifo_bundle",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_buffer/fifo"],
+    "line_pat" : "full *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2 4",
+    "comment" : "Hard to hit in config4"
+    },
+    {"file_pat" : "fifo_bundle",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_protocol_control/mrd_resp_buffer/fifo"],
+    "line_pat" : "do_write *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 1",
+    "comment" : "push_ready can't be 0 when push_valid = 1"
+    },
+    {"file_pat" : "dffr_sync",
+    "instances": ["/tb_top/dut/u_sync_main_trig"],
+    "line_pat" : "endmodule",
+    "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {main_trigger input pmon feature is tested properly in fsys testing.}",
+    "comment" : "main_trigger input pmon feature is tested properly in fsys testing."
+    },
+    {"file_pat" : "dmi_transaction_control",
+    "instances": ["/tb_top/dut/dmi_unit/dmi_transaction_control"],
+    "line_pat" : "\\(cm_type == RD_PRF\\)\\|",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 2 -comment {Pref cm_type dropped in protocol control for configuration with no cache}",
+    "comment" : "Pref cm_type dropped in protocol control for configuration with no cache"
+    },
+    {"comment" : "PMON events tested completely in config5b configuration.",
+        "file_pat" : "dmi_unit",
+        "instances": [
+         "/tb_top/dut/dmi_unit"
+        ],
+        "line_pat" : "pmon_.*_stall_in.*\\= ",
+        "exclusion" : "coverage exclude -scope {%instance%} -fecexprrow %line% -comment {PMON events tested completely in config5b configuration.}"
+    },
+    {"comment" : "AXI b channel will not back pressure in this configuration, done it others.",
+        "file_pat" : "fifo_bundle",
+        "instances": [
+         "/tb_top/dut/dmi_unit/dmi_native_interface/b_fifo"
+        ],
+        "line_pat" : "endmodule",
+        "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {AXI b channel will not back pressure in this configuration, done it others.}"
+    },
+    {"comment" : "WTT timeouts use find_first to service multiple timeouts. All entries covered in other instances of multiple configs/modules.",
+        "file_pat" : "logic_tree",
+        "instances": [
+         "/tb_top/dut/dmi_unit/dmi_transaction_control/wtt/u_timeout_overflow_or"
+        ],
+        "line_pat" : "endmodule",
+        "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {WTT timeouts use find_first to service multiple timeouts. All entries covered in other instances of multiple configs/modules.}"
+    },
+    {"comment" : "WTT timeouts use find_first to service multiple timeouts. Design coverage goals are met by this module.",
+        "file_pat" : "arb_spri_.*",
+        "instances": [
+         "/tb_top/dut/dmi_unit/dmi_transaction_control/wtt/timeout_find_first"
+        ],
+        "line_pat" : "endmodule",
+        "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {WTT timeouts use find_first to service multiple timeouts. Design coverage goals are met by this module.}"
+    },
+    {"comment" : "trace_capture is covered fully in config4.",
+     "file_pat" : "trace_capture.*",
+     "instances": [
+         "/tb_top/dut/trace_capture"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {trace_capture is covered fully in config4.}"
+    }
+]

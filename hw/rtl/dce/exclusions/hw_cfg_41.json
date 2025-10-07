@@ -1,0 +1,630 @@
+[
+	{"comment" : "Dup_unit instance can be waived",
+	"file_pat" : "dce_unit*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dup_unit} -recursive"  
+	},    
+	{"comment" : "Excluding library element ",
+	"file_pat" : "ioaiu_enc*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src {%file%}"  
+	},    
+	{"comment" : "Excluding library element with case statement that implements priority logic",
+	"file_pat" : "ioaiu_encoder*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src {%file%}"  
+	},    
+	{"comment" : "Excluding library element sf_tagmem_external_mem",
+	"file_pat" : "sf_tagmem_external_mem*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src {%file%}"  
+	},    
+	{"comment" : "Excluding library element cg_prim",
+	"file_pat" : "cg_prim*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src {%file%}"  
+	},    
+        {"comment" : "Excluding Exclusive monitor since it is already covered in other configs fully and is oversized by Maestro in this config.",
+        "file_pat" : "dce_excl_mon_a*",
+        "line_pat" : "endmodule*",
+        "exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_tm/exmon} -code e -recursive"
+        },
+  {
+    "comment": "Fifo is expected to be never full because of how credits and buffer sizes are configured",
+    "file_pat": "concerto_mux*",
+    "line_pat": "assign\\s+f0_cmd_req_ndp_msg_ready",
+    "exclusion": "coverage exclude -src %file% -fecexprrow %line% 5"
+  },
+  {
+    "comment": "Fifo is expected to be never full because of how credits and buffer sizes are configured",
+    "file_pat": "concerto_mux*",
+    "line_pat": "assign\\s+f0_sys_req_rx_ndp_msg_ready",
+    "exclusion": "coverage exclude -src %file% -fecexprrow %line% 5"
+  },
+  {
+    "comment": "Fifo is expected to be never full because of how credits and buffer sizes are configured",
+    "file_pat": "concerto_mux*",
+    "line_pat": "assign\\s+f0_rbu_req_ndp_msg_ready",
+    "exclusion": "coverage exclude -src %file% -fecexprrow %line% 5"
+  },
+	{"comment" : "Excluding Exclusive monitor since it is already covered in other configs fully and is oversized by Maestro in this config.",
+	"file_pat" : "dce_excl_mon*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src {%file%}"  
+	},    
+	{"comment" : "Excluding dce_dir1 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir1} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir2 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir2} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir3 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir3} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir4 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir4} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir5 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir5} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir7 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir7} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir9 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir9} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir11 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir11} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir12 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir12} -recursive -code e"  
+	},    
+	{"comment" : "Excluding dce_dir13 because the configuration is duplicated in dce_dir0",
+	"file_pat" : "dce_dir*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/dce_dm/dce_dir13} -recursive -code e"  
+	},    
+	{"comment" : "Excluding library element logic_tree",
+	"file_pat" : "logic_tree*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -src {%file%}"  
+	},    
+	{"comment" : "PMON can be waived",
+	"file_pat" : "ncr_pmon.*",
+	"line_pat" : "endmodule*",
+	"exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/u_ncr_pmon} -recursive"  
+	},
+	{"comment" : "Excluding conditional coverage only in apb_csr due to bug in coverage tool not displaying conditional coverage holes",
+	 "file_pat" : "apb_csr*",
+	 "line_pat" : "endmodule*",
+	 "exclusion" : "coverage exclude -scope {/tb_top/dut/dce_func_unit/u_csr/u_apb_csr} -recursive -code c"
+	},    
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr*",
+     "line_pat" : "\\=\\s+m_penable\\s+&\\s+m_psel\\s+&\\s+m_pwrite\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment"  : "cmd_req buffer is never full because never allocates more credits to AIUs than there are entries in the skid buffer",
+     "file_pat" : "dce_skid_buffer*",
+     "line_pat" : "cmd_ue_valid \\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {cmd_req buffer is never full because never allocates more credits to AIUs than there are entries in the skid buffer}"
+    },
+    {"comment" : "PMON event tests are run on config5 and can be waived from this config.",
+     "file_pat" : "dce_csr.*",
+     "line_pat" : "assign corr_pmon_ovf_int\\[.* \\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1-4 -comment {PMON event tests are run on config5 and can be waived from this config.}"
+    },
+    {"comment" : "PMON event tests are run on config5 and can be waived from this config.",
+     "file_pat" : "dce_csr.*",
+     "line_pat" : "assign IRQ_c_sig.*\\= .*corr_pmon_ovf_int\\)\\;",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 6 -comment {PMON event tests are run on config5 and can be waived from this config.}"
+    },
+    {"comment" : "Not a legal scenario to disable TimeoutErrDetEn bit when transactions are in flight",
+     "file_pat" : "dce_csr.*",
+     "line_pat" : "assign DCEUUELR\\d+_ErrAddr_wr\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {Not a legal scenario to disable TimeoutErrDetEn bit when transactions are in flight}"
+    },
+    {"comment" : "Not a legal scenario to disable TimeoutErrDetEn bit when transactions are in flight",
+     "file_pat" : "dce_csr.*",
+     "line_pat" : "assign DCEUUELR\\d+_ErrEntry_wr\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 13 -comment {Not a legal scenario to disable TimeoutErrDetEn bit when transactions are in flight}"
+    },
+    {"comment" : "Not a legal scenario to disable TimeoutErrDetEn bit when transactions are in flight",
+     "file_pat" : "dce_csr.*",
+     "line_pat" : "assign DCEUUESR_ErrInfo_wr\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 15 -comment {Not a legal scenario to disable TimeoutErrDetEn bit when transactions are in flight}"
+    },
+    {"comment"  : "Write Clean partial command is never issued in hw_cfg_41 because it only has a single coherent AIU that is CHI-B",
+     "file_pat" : "dce_att_entry*",
+     "line_pat" : "cmd_type_wrcln \\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {Write Clean partial command is never issued in hw_cfg_41 because it only has a single coherent AIU that is CHI-B}"
+    },
+    {"comment"  : "second_snp_stash not set for ReadStash in hw_cfg_41 because there is only one coherent AIU",
+     "file_pat" : "dce_att_entry*",
+     "line_pat" : "no_second_snp_stash \\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 6 8 -comment {second_snp_stash not set for ReadStash in hw_cfg_41 because there is only one coherent AIU}"
+    },
+    {"comment"  : "cmd_wrunq_sharer is always set when cdm_wrunq_owner is set, but not the other way around",
+     "file_pat" : "dce_att_entry*",
+     "line_pat" : "snp_sharer_wrbk_vec_update \\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 8 -comment {cmd_wrunq_sharer is always set when cdm_wrunq_owner is set, but not the other way around}"
+    },
+    {"comment"  : "snp_rsp_owner_trf is never set because there is only one coherent AIU and hence ownership cannot be trasnferred",
+     "file_pat" : "dce_att_entry*",
+     "line_pat" : "snp_rsp_owner_trf\\s+\\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 2 -comment {snp_rsp_owner_trf is never set because there is only one coherent AIU and hence ownership cannot be trasnferred}"
+    },
+    {"comment"  : "According to Spec, CM status bits RS should be set to 0 if RV = 1",
+     "file_pat" : "dce_att_entry*",
+     "line_pat" : "snp_rsp_sharer\\s+\\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1 -comment {According to Spec, CM status bits RS should be set to 0 if RV = 1}"
+    },
+    {"comment"  : "Owner number cannot be one since there is only one possible owner and coherent AIU in the hw_cfg_41",
+     "file_pat" : "dce_att_entry*",
+     "line_pat" : "cmd_init_owner\\s+\\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {Owner number cannot be one since there is only one possible owner and coherent AIU in the hw_cfg_41}"
+    },
+    {"comment"  : "att_req_stash_mpf1 is set then stash_targ_vec is also one",
+     "file_pat" : "dce_att_entry*",
+     "line_pat" : "att_entry_agent_active_vec\\s+\\= ",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 5 -comment {att_req_stash_mpf1 is set then stash_targ_vec is also one}"
+    },
+    {"comment"  : "sysrsp_fifo__push_ready is never set because the fifo is sized so as to never get full",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "ST_DONE\\s*\\:\\s*next_state\\s*\\=",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 -comment {sysrsp_fifo__push_ready is never set because the fifo is sized so as to never get full}"
+    },
+    {"comment"  : "wfosc_ready is only asserted when outstanding_snoop_count_zero_matched is set",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "ST_WFOSC\\s*\\:\\s*next_state\\s*\\=",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 -comment {wfosc_ready is only asserted when outstanding_snoop_count_zero_matched is set}"
+    },
+    {"comment"  : "cmstatus_arrival_err is never seen asserted by the sys_coh_receiver module",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "sysreq_fifo__pop_valid\\s+&\\s+cmstatus_arrival_err",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 1 2 -comment {cmstatus transport error is never seen asserted by the sys_coh_receiver module in DCE}"
+    },
+    {"comment"  : "cmstatus_arrival_err is never seen asserted by the sys_coh_receiver module",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "sysreq_fifo__pop_valid\\s+&\\s+~cmstatus_arrival_err",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 4 -comment {cmstatus transport error is never seen asserted by the sys_coh_receiver module}"
+    },
+    {"comment"  : "sysrsp_fifo__push_ready is never set because the fifo is sized so as to never get full",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "sysrsp_fifo__push_valid\\s+&\\s+sysrsp_fifo__push_ready",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {sysrsp_fifo__push_ready is never set because the fifo is sized so as to never get full}"
+    },
+    {"comment"  : "Only when sys req fifo has valid entries can the state machine go to state DONE and not cleared in this state",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "assign\\s+sysrsp_fifo__push_valid\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1 -comment {}"
+    },
+    {"comment"  : "Only when sys req fifo has valid entries can the state machine go to SETSNP and CLRSNP states and not cleared until it gets out of these states",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "assign\\s+snoop_enables_update\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1 -comment {}"
+    },
+    {"comment"  : "In a legal configuration, there will always be a target F unit id match",
+     "file_pat" : "sys_coh_receiver*",
+     "line_pat" : "assign\\s+snoop_enables_fid_matched\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 3 -comment {}"
+    },
+    {"comment"  : "cmstatus transport error is not seen by the sys co modules in DCE",
+     "file_pat" : "sys_evt_coh_concerto*",
+     "line_pat" : "assign\\s+sender_sysrsp_valid\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 4 -comment {cmstatus transport error is not seen by the sys co modules in DCE}"
+    },
+    {"comment"  : "receiver_sysreq_ready never goes low because the FIFO is sized such that it never fills up",
+     "file_pat" : "sys_evt_coh_concerto*",
+     "line_pat" : "assign\\s+sys_req_rx_ready\\s+\\=",
+     "exclusion" : "coverage exclude -src %file% -fecexprrow %line% 1 3 4 5 6 -comment {receiver_sysreq_ready never goes low because the FIFO is sized such that it never fills up}"
+    },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[0]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[1]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[2]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[3]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[4]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[5]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[6]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[7]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[8]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[9]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[10]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[11]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[12]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[13]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[14]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[15]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[16]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[17]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[18]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[19]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[20]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[21]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[22]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[23]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[24]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[25]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[26]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[27]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[28]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[29]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[30]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[31]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[32]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[33]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[34]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[35]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[36]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[37]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[38]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[39]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[40]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[41]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[42]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[43]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[44]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[45]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[46]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[47]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[48]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[49]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[50]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[51]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[52]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[53]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[54]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[55]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[56]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[57]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[58]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[59]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[60]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[61]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Recall requests are constrained to always be allocated to only the last ATT entry",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_recall_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[62]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Non-recall requests are constrained to always be allocated to all ATT entries except for the last and penultimate one",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_req_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[62]} -fecexprrow %line%"
+  },
+  {
+    "comment": "Non-recall requests are constrained to always be allocated to all ATT entries except for the last and penultimate one",
+    "file_pat": "dce_addr_comp*",
+    "line_pat": "assign\\s+att_req_match",
+    "exclusion": "coverage exclude -src %file% -scope {/tb_top/dut/dce_func_unit/dce_tm/cmd_req_addr_comp/ADDR_MATCH[63]} -fecexprrow %line%"
+  }
+]

@@ -1,0 +1,115 @@
+\jsbegin
+//=============================================================================
+// Filename: ncore3_addr_mod3.tachl
+// Author: Boon Chuan
+// Description: Ncore3 Address Modulo 3
+//=============================================================================
+
+var u = obj.lib;
+
+u.paramDefault('wOffset', 'int', 6); // 2 ^ (granularity block offset) = 2^6 = 64 bytes
+
+var wOffset = u.getParam("wOffset");
+
+
+var is_illegal = 0;
+
+if (wOffset < 6) is_illegal = 1;
+if (wOffset > 51) is_illegal = 1;
+
+if (is_illegal) {
+    throw new Error("ERROR! ncore3_addr_mod3.tachl : It's illegal for wOffset=", wOffset);
+}
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'address', 52);
+u.port('output', 'result',  2);
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+wire [1:0] in0;
+wire [1:0] in1;
+wire [1:0] in2;
+wire [1:0] in3;
+wire [1:0] in4;
+wire [1:0] in5;
+wire [1:0] in6;
+wire [1:0] in7;
+wire [1:0] in8;
+wire [1:0] in9;
+wire [1:0] in10;
+wire [1:0] in11;
+
+wire [1:0] sum00;
+wire [1:0] sum01;
+wire [1:0] sum02;
+wire [1:0] sum03;
+wire [1:0] sum04;
+wire [1:0] sum05;
+
+wire [1:0] sum10;
+wire [1:0] sum11;
+wire [1:0] sum12;
+
+wire [1:0] sum20;
+wire [1:0] sum21;
+
+wire [1:0] out;
+
+wire [45:0] operand;
+
+wire [47:0] in;
+
+\js if (wOffset == 6) {
+
+assign operand = address[51:6];
+
+\js } else if (wOffset == 51) {
+
+assign operand = {45'b0, address[51:\=wOffset=\]};
+
+\js } else {
+
+assign operand = {\=46-(52-wOffset)=\'b0, address[51:\=wOffset=\]};
+
+\js }
+
+assign in = {2'b00, operand};
+
+\=u.instance({instanceName: 'u0_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[3:0]',   out: 'in0'} })=\
+\=u.instance({instanceName: 'u1_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[7:4]',   out: 'in1'} })=\
+\=u.instance({instanceName: 'u2_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[11:8]',  out: 'in2'} })=\
+\=u.instance({instanceName: 'u3_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[15:12]', out: 'in3'} })=\
+\=u.instance({instanceName: 'u4_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[19:16]', out: 'in4'} })=\
+\=u.instance({instanceName: 'u5_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[23:20]', out: 'in5'} })=\
+\=u.instance({instanceName: 'u6_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[27:24]', out: 'in6'} })=\
+\=u.instance({instanceName: 'u7_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[31:28]', out: 'in7'} })=\
+\=u.instance({instanceName: 'u8_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[35:32]', out: 'in8'} })=\
+\=u.instance({instanceName: 'u9_luti',  moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[39:36]', out: 'in9'} })=\
+\=u.instance({instanceName: 'u10_luti', moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[43:40]', out: 'in10'} })=\
+\=u.instance({instanceName: 'u11_luti', moduleName: 'ncore3_addr_mod3_lut0', ports: {in: 'in[47:44]', out: 'in11'} })=\
+
+\=u.instance({instanceName: 'u00_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'in0',  in1: 'in1',  out: 'sum00'} })=\
+\=u.instance({instanceName: 'u01_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'in2',  in1: 'in3',  out: 'sum01'} })=\
+\=u.instance({instanceName: 'u02_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'in4',  in1: 'in5',  out: 'sum02'} })=\
+\=u.instance({instanceName: 'u03_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'in6',  in1: 'in7',  out: 'sum03'} })=\
+\=u.instance({instanceName: 'u04_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'in8',  in1: 'in9',  out: 'sum04'} })=\
+\=u.instance({instanceName: 'u05_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'in10', in1: 'in11', out: 'sum05'} })=\
+
+\=u.instance({instanceName: 'u10_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'sum00', in1: 'sum01', out: 'sum10'} })=\
+\=u.instance({instanceName: 'u11_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'sum02', in1: 'sum03', out: 'sum11'} })=\
+\=u.instance({instanceName: 'u12_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'sum04', in1: 'sum05', out: 'sum12'} })=\
+
+\=u.instance({instanceName: 'u20_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'sum10', in1: 'sum11', out: 'sum20'} })=\
+assign sum21 = sum12;
+
+\=u.instance({instanceName: 'u30_lut',  moduleName: 'ncore3_addr_mod3_lut1', ports: {in0: 'sum20', in1: 'sum21', out: 'out'} })=\
+
+assign result = out;
+
+endmodule 

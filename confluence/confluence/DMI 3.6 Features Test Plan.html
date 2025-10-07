@@ -1,0 +1,112 @@
+<h2 id="DMI3.6FeaturesTestPlan-1.AddressHashing:">1. Address Hashing:</h2><p>Use a hash function that utilizes the tag and index portion of the cache address to calculate a new set index value. This enables better cache utilization.</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-6183" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-6183?src=confmacro" class="jira-issue-key">MAES-6183</a>
+                            </span>
+ </p><h3 id="DMI3.6FeaturesTestPlan-Configurations:">Configurations: </h3><p>SecSubRow values for all configurations will be randomized using a global tcl proc to help create different hashing key combinations that aren’t hardcoded.</p><h3 id="DMI3.6FeaturesTestPlan-HashingFunction:">Hashing Function:</h3><p>set_index[0] = addr[PriSubDiagAddrBits[i]] ^ { ^addr[SecSubRows[i]]}</p><p>set_index[1] = addr[PriSubDiagAddrBits[i+1]] ^ { ^addr[SecSubRows[i+1]]}</p><p /><p>Rules for setting SecAddrBits in SecSubRows are enforced at Maestro:</p><ul><li><p>Must contain the same number of entries as PriSubDiagAddrBits</p></li><li><p>SecSubRows is a bit mask. Holds the bit positions aka SecAddrBits</p></li><li><p>SecAddrBits cannot overlap with bits set in PriSubDiagAddrBits</p></li><li><p>Cannot overlap with memory interleaving bits</p></li><li><p>Should be cache-line aligned and not any bit [5:0]</p></li></ul><h3 id="DMI3.6FeaturesTestPlan-Stimulus:">Stimulus:</h3><p>The entire test suite will exercise this functionality on all configurations with cache. </p><h3 id="DMI3.6FeaturesTestPlan-Checks:">Checks:</h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="b641d67d-2cc2-4ce1-8d24-b2fc52f8208b" class="confluenceTable"><colgroup><col style="width: 204.0px;"/><col style="width: 213.0px;"/><col style="width: 169.0px;"/><col style="width: 73.0px;"/><col style="width: 100.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Scenario</strong></p></th><th class="confluenceTh"><p><strong>HashTag</strong></p></th><th class="confluenceTh"><p><strong>Where</strong></p></th><th class="confluenceTh"><p><strong>Done</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th></tr><tr><td class="confluenceTd"><p>Place a check inside CCP to verify Set index calculated with RTL set index</p></td><td class="confluenceTd"><p>#Check.DMI.Concerto.v3.6.HashingLookup</p></td><td class="confluenceTd"><p>dmi_scoreboard.sv</p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">DONE</span>  </p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">CHECKED IN</span>  </p></td></tr></tbody></table></div><h3 id="DMI3.6FeaturesTestPlan-Coverage:">Coverage:</h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="95dfa194-ccf9-4d3d-bef9-d6a177163851" class="confluenceTable"><colgroup><col style="width: 203.0px;"/><col style="width: 200.0px;"/><col style="width: 135.0px;"/><col style="width: 70.0px;"/><col style="width: 152.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Scenario</strong></p></th><th class="confluenceTh"><p><strong>HashTag</strong></p></th><th class="confluenceTh"><p><strong>Where</strong></p></th><th class="confluenceTh"><p><strong>Done</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th></tr><tr><td class="confluenceTd"><p>A variety of SecAddrBits are used. Exclude primary bits</p></td><td class="confluenceTd"><p>#Cover.DMI.Concerto.v3.6.DistributedSecAddrBits</p></td><td class="confluenceTd"><p>dmi_coverage.sv</p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">DONE</span>  </p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">CHECKED IN</span>  </p></td></tr></tbody></table></div><p /><h2 id="DMI3.6FeaturesTestPlan-2.SlowSRAM:">2. Slow SRAM:</h2><p>Feature to solve timing violation paths in Tag and Data RAM. </p><p>P0+, P1- and P3+ are the options for pipe stages that are added.</p><p /><span class="confluence-embedded-file-wrapper image-center-wrapper"><img class="confluence-embedded-image image-center" src="https://arterisip.atlassian.net/wiki/download/attachments/284721198/image-20230830-141210.png?api=v2"></span><h3 id="DMI3.6FeaturesTestPlan-Configurations:.1">Configurations: </h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="babd1e37-2122-4cac-a5b9-944fc6c210b5" class="confluenceTable"><colgroup><col style="width: 206.0px;"/><col style="width: 115.0px;"/><col style="width: 136.0px;"/><col style="width: 302.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Configuration</strong></p></th><th class="confluenceTh"><p><strong>Pipe for Tag</strong></p></th><th class="confluenceTh"><p><strong>Pipe for Data</strong></p></th><th class="confluenceTh"><p><strong>Pipe for SRAM</strong></p></th></tr><tr><td class="confluenceTd"><p>config5</p></td><td class="confluenceTd"><p>Input </p></td><td class="confluenceTd"><p>Input</p></td><td class="confluenceTd"><p>1 cycle</p></td></tr><tr><td class="confluenceTd"><p>config6</p></td><td class="confluenceTd"><p>Input+Output</p></td><td class="confluenceTd"><p>1 cycle</p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>config7</p></td><td class="confluenceTd"><p>Input+Output</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>config8</p></td><td class="confluenceTd"><p>Input+Output</p></td><td class="confluenceTd"><p>2 cycles</p></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><h3 id="DMI3.6FeaturesTestPlan-CoverageandChecks:">Coverage and Checks:</h3><p>None</p><h3 id="DMI3.6FeaturesTestPlan-BeatReordering:">Beat Reordering:</h3><p>Specific to debug maintenance operations, the way the beats are aligned in the cache have changed.</p><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="dcad35df-99bb-4fa9-a259-660b31975e30" class="confluenceTable"><colgroup><col style="width: 75.0px;"/><col style="width: 93.0px;"/><col style="width: 236.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>wData</strong></p></th><th class="confluenceTh"><p><strong>#ofBeats per Bank</strong></p></th><th class="confluenceTh"><p><strong>Legal word value</strong></p></th></tr><tr><td class="confluenceTd"><p>128</p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>0 → 4 (beat 0, word 0-&gt;4)</p><p>8 → 12 (beat 1, word 0-&gt;4)</p><p>16 -&gt;20 (beat 2, word 0-&gt;4)</p><p>24 -&gt;28 (beat 3, word 0-&gt;4)</p></td></tr><tr><td class="confluenceTd"><p>256</p></td><td class="confluenceTd"><p>1</p></td><td class="confluenceTd"><p>0 → 8 (beat 0, word 0-&gt;8)</p><p>16 → 24 (beat 1, word 0-&gt;8)</p></td></tr><tr><td class="confluenceTd"><p>128</p></td><td class="confluenceTd"><p>2</p></td><td class="confluenceTd"><p>0 → 8 (beat 0, word 0-&gt;8)</p><p>16-&gt;24(beat 1, word 0-&gt;8)</p></td></tr><tr><td class="confluenceTd"><p>256</p></td><td class="confluenceTd"><p>2</p></td><td class="confluenceTd"><p>0-&gt;16 (1 beat, word 0 -&gt;16)</p></td></tr></tbody></table></div><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-11743" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-11743?src=confmacro" class="jira-issue-key">CONC-11743</a>
+                            </span>
+ </p><h3 id="DMI3.6FeaturesTestPlan-Checks:.1">Checks:</h3><p>Modify the debug SMC maintenance operation RAW test and the scoreboard to lookup word values to reflect the current modification. </p><h3 id="DMI3.6FeaturesTestPlan-Checks:.2">Checks:</h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="0f8cb752-46ce-4165-91bb-16dd7d205481" class="confluenceTable"><colgroup><col style="width: 162.0px;"/><col style="width: 206.0px;"/><col style="width: 163.0px;"/><col style="width: 103.0px;"/><col style="width: 126.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Scenario</strong></p></th><th class="confluenceTh"><p><strong>HashTag</strong></p></th><th class="confluenceTh"><p><strong>Where</strong></p></th><th class="confluenceTh"><p><strong>Done</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th></tr><tr><td class="confluenceTd"><p>SMC RAW sequence</p></td><td class="confluenceTd"><p>#Check.DMI.Concerto.v3.6.WordLookup</p></td><td class="confluenceTd"><p>dmi_csr_seq_lib.sv</p><p>dmi_scoreboard.sv</p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">DONE</span>  </p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">CHECKED IN</span>  </p></td></tr></tbody></table></div><h3 id="DMI3.6FeaturesTestPlan-Coverage:.1">Coverage:</h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="d357b8bb-6634-4050-a0aa-546d049fd58b" class="confluenceTable"><colgroup><col style="width: 203.0px;"/><col style="width: 208.0px;"/><col style="width: 138.0px;"/><col style="width: 59.0px;"/><col style="width: 152.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Scenario</strong></p></th><th class="confluenceTh"><p><strong>HashTag</strong></p></th><th class="confluenceTh"><p><strong>Where</strong></p></th><th class="confluenceTh"><p><strong>Done</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th></tr><tr><td class="confluenceTd"><p>Legal Word values per config are hit</p></td><td class="confluenceTd"><p>#Cover.DMI.Concerto.v3.6.WordLookup</p></td><td class="confluenceTd"><p>dmi_coverage.sv</p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">DONE</span> </p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">CHECKED IN</span>  </p></td></tr></tbody></table></div><h2 id="DMI3.6FeaturesTestPlan-3.PLRU:">3. PLRU:</h2><p>Addition of Pseudo Least Recently Used eviction policy in cache. Since DMI instantiates the CCP model with updates to the replacement policy, the evicted cache-line is inherently checked. Additionally, DMI scoreboard will instantiate and integrate the PLRU predictor model.</p><h3 id="DMI3.6FeaturesTestPlan-Stimulus:.1">Stimulus:</h3><p>Add a test to stress the eviction process and one that specifically chooses PLRU</p><h3 id="DMI3.6FeaturesTestPlan-Checks:.3">Checks:</h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="6e4fd2c2-6521-411e-870d-8e89040cdb80" class="confluenceTable"><colgroup><col style="width: 162.0px;"/><col style="width: 208.0px;"/><col style="width: 167.0px;"/><col style="width: 71.0px;"/><col style="width: 152.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Scenario</strong></p></th><th class="confluenceTh"><p><strong>HashTag</strong></p></th><th class="confluenceTh"><p><strong>Where</strong></p></th><th class="confluenceTh"><p><strong>Done</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th></tr><tr><td class="confluenceTd"><p>Evicted cacheline way matches PLRU predicted way</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>dmi_scoreboard.sv</p></td><td class="confluenceTd"><p>TBD</p></td><td class="confluenceTd"><p>Move to 3.8</p></td></tr><tr><td class="confluenceTd"><p>Ensure eviction occurs only when all valid ways are busy</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>dmi_scoreboard.sv</p></td><td class="confluenceTd"><p>TBD  </p></td><td class="confluenceTd"><p>Move to 3.8  </p></td></tr></tbody></table></div><h3 id="DMI3.6FeaturesTestPlan-Coverage:.2">Coverage:</h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="0b8f9217-36a0-4e15-9d82-f6e801e0b138" class="confluenceTable"><colgroup><col style="width: 203.0px;"/><col style="width: 208.0px;"/><col style="width: 138.0px;"/><col style="width: 59.0px;"/><col style="width: 152.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Scenario</strong></p></th><th class="confluenceTh"><p><strong>HashTag</strong></p></th><th class="confluenceTh"><p><strong>Where</strong></p></th><th class="confluenceTh"><p><strong>Done</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th></tr><tr><td class="confluenceTd"><p>Victim ways evicted</p></td><td class="confluenceTd"><p>#Cover.DMI.Concerto.v3.6.EvictedWays</p></td><td class="confluenceTd"><p>dmi_coverage.sv</p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">DONE</span>  </p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">CHECKED IN</span>  </p></td></tr></tbody></table></div><h2 id="DMI3.6FeaturesTestPlan-4.WriteEvictPropagate:">4. Write Evict Propagate:</h2><p>For implementations specific to a victim cache downstream from DMI. In current implementation when DMI receives a Write Clean, it holds the clean copy and doesn’t updating the memory downstream. </p><p>To enable data propagation for this specific operation, a new register will be added to DMI. Toggling this bit ON should trigger this functionality.</p><span class="confluence-embedded-file-wrapper image-center-wrapper"><img class="confluence-embedded-image image-center" src="https://arterisip.atlassian.net/wiki/download/attachments/284721198/image-20230830-154728.png?api=v2"></span><p /><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12515" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12515?src=confmacro" class="jira-issue-key">CONC-12515</a>
+                            </span>
+ </p><h3 id="DMI3.6FeaturesTestPlan-Stimulus:.2">Stimulus:</h3><p>Directed test that configures DMI to enable this propagation and scoreboard updates to expect downstream data on the AXI without dropping it.</p><p>This register bit will be otherwise randomized for the rest of the test suite.</p><h3 id="DMI3.6FeaturesTestPlan-Checks:.4">Checks:</h3><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="4095f22f-bb36-41b1-83de-f47faa74529e" class="confluenceTable"><colgroup><col style="width: 204.0px;"/><col style="width: 207.0px;"/><col style="width: 162.0px;"/><col style="width: 77.0px;"/><col style="width: 110.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Scenario</strong></p></th><th class="confluenceTh"><p><strong>HashTag</strong></p></th><th class="confluenceTh"><p><strong>Where</strong></p></th><th class="confluenceTh"><p><strong>Done</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th></tr><tr><td class="confluenceTd"><p>If enabled, write cleans should be propagated to AXI</p></td><td class="confluenceTd"><p>#Check.DMI.Concerto.v3.6.EnforceCleanWritePropagation</p></td><td class="confluenceTd"><p>dmi_scorebaoard.sv</p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">DONE</span>  </p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">CHECKED IN</span>  </p><p /></td></tr></tbody></table></div><h2 id="DMI3.6FeaturesTestPlan-4.ErrorTestplan:">4. Error Testplan:</h2><p>&lt;TBD&gt; Changes to csr_seq_lib on how error registers are accessed as a whole instead of part. Also, new error type of atomic is not supported.</p><hr/><h3 id="DMI3.6FeaturesTestPlan-TestPlanReviewOpens:">Test Plan Review Opens: <time datetime="2023-08-30" class="date-past">30 Aug 2023</time></h3><p /><div class="table-wrap"><table data-table-width="960" data-layout="wide" data-local-id="34c5634f-8fc6-440c-9013-3a565f27ac35" class="confluenceTable"><colgroup><col style="width: 243.0px;"/><col style="width: 240.0px;"/><col style="width: 90.0px;"/><col style="width: 387.0px;"/></colgroup><tbody><tr><th class="confluenceTh"><p><strong>Item</strong></p></th><th class="confluenceTh"><p><strong>Feature</strong></p></th><th class="confluenceTh"><p><strong>Status</strong></p></th><th class="confluenceTh"><p><strong>Comments</strong></p></th></tr><tr><td class="confluenceTd"><p>White-box index from CCP RTL at P2 to help add index hashing check inside the CCP-model/scoreboard</p></td><td class="confluenceTd"><p><strong>Address Hashing</strong></p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-success">DONE</span>  </p></td><td class="confluenceTd"><p>Wait for CCP index RTL P2 signal</p></td></tr><tr><td class="confluenceTd"><p>Identify or create a new directed test to ensure forwarding logic is exercised</p></td><td class="confluenceTd"><p><strong>Slow SRAM</strong></p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-error">OPEN</span>  </p></td><td class="confluenceTd"><p>Leverage these existing tests reuse_addr_ncrd, MRd_reuse_addr,MRd_DTW_reuse_addr</p></td></tr><tr><td class="confluenceTd"><p>Move specified checks to CCP scoreboard instead</p></td><td class="confluenceTd"><p><strong>pLRU</strong></p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-error">OPEN</span>  </p></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>Performance testing of pLRU algorithm from a system perspective</p></td><td class="confluenceTd"><p><strong>pLRU</strong></p></td><td class="confluenceTd"><p><span class="status-macro aui-lozenge aui-lozenge-visual-refresh aui-lozenge-error">OPEN</span>  </p></td><td class="confluenceTd"><p>From top level, when all evictions from same set are being performed. Compare the evicted way chosen with the LRU way over the timeframe of an entire pLRU stress test. The performance expectation is the algorithm should match with LRU way 95-98% of the time.</p></td></tr></tbody></table></div><p />

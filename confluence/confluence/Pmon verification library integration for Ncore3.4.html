@@ -1,0 +1,997 @@
+<style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759724776269 {padding: 0px;}
+div.rbtoc1759724776269 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759724776269 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759724776269'>
+<ul class='toc-indentation'>
+<li><a href='#PmonverificationlibraryintegrationforNcore3.4-1-LibraryPresentation:'>1 - Library Presentation :</a></li>
+<li><a href='#PmonverificationlibraryintegrationforNcore3.4-2-BWcounterintegration'>2- BW counter integration</a></li>
+<li><a href='#PmonverificationlibraryintegrationforNcore3.4-3-Latencycounterintegration'>3- Latency counter integration</a></li>
+<li><a href='#PmonverificationlibraryintegrationforNcore3.4-4-Pmon3.4JIRAs:'>4- Pmon 3.4 JIRAs :</a>
+<ul class='toc-indentation'>
+<li><a href='#PmonverificationlibraryintegrationforNcore3.4-a-BandwidthcounterJIRAs:'>a- Bandwidth counter JIRAs :</a></li>
+<li><a href='#PmonverificationlibraryintegrationforNcore3.4-b-LatencycounterJIRAs'>b - Latency counter JIRAs</a></li>
+</ul>
+</li>
+</ul>
+</div><h1 id="PmonverificationlibraryintegrationforNcore3.4-1-LibraryPresentation:">1 - Library Presentation  : <br/></h1><p>Pmon files are under: <strong>/hw-ncr/dv/common/lib_tb/perf_counter/</strong></p><p>Files:</p><ul><li><p>event_list.json : To define event, it’s used to generate different files.</p></li><li><p>latency_counters_scoreboard.svh  : latency scorebord</p></li><li><p>latency_if.sv  : latency interface used to spy and generate alloc and dealloc <a class="external-link" href="http://signals.It" rel="nofollow">signals : It</a>’s used by latency_scoreboard</p></li><li><p>perf_cnt_pkg.sv : Pmon package</p></li><li><p>perf_cnt_test.sv : Pmon test</p></li><li><p>perf_cnt_unit_cfg_seq.sv : Pmon configuration sequence</p></li><li><p>perf_cnt_unit_defines.svh : Used to define Pmon objects types.</p></li><li><p>perf_cnt_unit_macros.svh : Used to define Marcos</p></li><li><p>perf_cnt_units.sv : Pmon sequence item</p></li><li><p>perf_counters_scoreboard.svh : Pmon scoreboard </p></li><li><p>stall_if.sv an interface  used to collect informations and signals from dut and blocks scoreboard. It’s used also to generate different Pmon events.</p></li></ul><h1 id="PmonverificationlibraryintegrationforNcore3.4-2-BWcounterintegration">2- BW counter integration</h1><p>To integrate DV updates related to PMON 3.4 features you should  : </p><ol><li><p>Add new<strong> BW events</strong> to “<strong>hw-ncr/dv/common/lib_tb/perf_counter/event_list.json”</strong> for your block as DII example below : </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{&quot;evt_idx&quot;:17,&quot;name&quot;:&quot;DtwReq&quot;,&quot;itf_name&quot;:&quot;dtw_req&quot;,&quot;width&quot;:1,&quot;type&quot;:&quot;bw&quot;,&quot;comment&quot;:&quot;Count all DtwReqs that come into DII&quot;},
+{&quot;evt_idx&quot;:18,&quot;name&quot;:&quot;DtrReq&quot;,&quot;itf_name&quot;:&quot;dtr_req&quot;,&quot;width&quot;:1,&quot;type&quot;:&quot;bw&quot;,&quot;comment&quot;:&quot;Count all DtrReqs that are issued by DII&quot;},</pre>
+</div></div><p>Please choose <strong>name</strong> of the event and <strong>itf_name</strong> to be used into stall_if as significant name  <br/></p></li><li><p>Grep for ‘<strong>//Pmon 3.4 feature’</strong> in /hw-ncr/dv/common/lib_tb/perf_counter folder and add your block in the Javascript if statements after each comment having as text <strong>:  //Pmon 3.4 feature</strong><br/><br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">//Pmon 3.4 feature
+&lt;% if (obj.BlockId.includes(&quot;dii&quot;) || obj.BlockId.includes(&quot;&lt;your_block&gt;&quot;)) {  %&gt;</pre>
+</div></div><p /></li><li><p>Define BW filter value constraints in <strong>perf_cnt_units.sv</strong> : BW filter value can be user bits or Funit ID<br/>NB : Search for<strong> // add your bw filter constraint here //</strong><br/>You should protect your code because constraints depends on each block<br/>Noe that below constraints are block defined according to constraint in your block sequence.<br/><br/>example of DII : <br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">    constraint c_bw_filter_value{
+        
+        foreach(bw_filter_value[i]) {
+            if (bw_filter_select[i]) { bw_filter_value[i] inside {[0:&lt;%=obj.DveInfo[0].nAius%&gt;]};}
+            else  { bw_filter_value[i] inside {[5:15]};} 
+        }
+    }
+    
+    constraint c_bw_filter_mask{
+        
+        foreach(bw_filter_mask[i]) {
+            if (bw_filter_select[i]) { 
+                ($urandom_range(1,&lt;%=obj.DveInfo[0].nAius%&gt;) &amp; bw_filter_mask[i]) inside {[1:&lt;%=obj.DveInfo[0].nAius%&gt;]};
+            } // dii funit id values
+            else  { 
+                ($urandom_range(5,15) &amp; bw_filter_mask[i]) inside {[5:15]};
+            } // dii user bits values
+        }
+    }</pre>
+</div></div></li><li><p>Connect BW signals in your block_tp_top.sv file : <br/>NB : Connect signals with generated names in stall_if : &lt;event.itf_name&gt; is defined in event_list.json and it will be generated in stall_if</p><ol><li><p>&lt;event.itf_name&gt;_valid : <br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_stall_if.dtr_req_valid = dut.u_dii_unit.dtr_req_valid;</pre>
+</div></div></li><li><p>&lt;event.itf_name&gt;_ready : <br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_stall_if.dtr_req_ready = dut.u_dii_unit.dtr_req_ready;</pre>
+</div></div></li><li><p>&lt;event.itf_name&gt;__funit_id_if : <br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_stall_if.dtr_req_funit_id_if = dut.u_dii_unit.dtr_req_target_id;</pre>
+</div></div></li><li><p>&lt;event.itf_name&gt;__user_bits_if : <br/></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&lt;%if (wArUser &gt; 0){%&gt;assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_stall_if.dtr_req_user_bits_if = dut.u_dii_unit.pmon_dtr_req_user_bits; //dut.u_dii_unit.dtr_req_aux;&lt;% } %&gt;</pre>
+</div></div></li></ol></li><li><p>Add Pmon BW tests to your runsim test list : <br/>Try to do like old Pmon tests of your block and add args below to define your requirements test for BW</p></li></ol><p style="margin-left: 30.0px;"></p><p><strong> &quot;+perfmon_32bit_mode&quot;:null,  ==&gt; to enable  32bit mode</strong></p><p><strong>  &quot;+event_first&quot;:&quot;18&quot;, ==&gt; define first event as your bw event</strong></p><p><strong>  &quot;+event_second&quot;:&quot;30&quot;, ==&gt; define second event as div16 event</strong></p><p><strong>    &quot;+ssr_count&quot;:&quot;4&quot;,  ==&gt; use as 32 bit counter</strong></p><p><strong>    “+counter_control&quot;:&quot;4&quot;, ==&gt; use as 32 bit counter</strong></p><p><strong>    &quot;+min_stall_period&quot;:&quot;0&quot;,</strong></p><p><strong>   &quot;+pmon_bw_test&quot;:null,                    ==&gt; to enable bw test </strong></p><p style="margin-left: 30.0px;">To enable and define specific bw filter attributes you should use  :</p><p style="margin-left: 30.0px;"><strong>&quot;+filter_enable&quot;:&quot;1&quot;,  ==&gt; to enable bw filter</strong></p><p><strong>     &quot;+bw_filter_select&quot;:&quot;1&quot;,  ==&gt; to set filter select (default is a random value)</strong></p><p><strong>      &quot;+bw_filter_value&quot;:&quot;04&quot;, ==&gt; to set filter value (default is a random value)</strong></p><p><strong>     &quot;+bw_filter_mask&quot;:&quot;FFFFF&quot;   ==&gt; to set filter mask (default is a random value)</strong></p><p>NB : Make sure that you use <strong>&quot;+bw_filter_mask&quot;:&quot;FFFFF&quot;</strong> (value should be FFFFF) in your BW filter bring-up test.</p><h1 id="PmonverificationlibraryintegrationforNcore3.4-3-Latencycounterintegration">3- Latency counter integration</h1><p>To integrate DV updates related to Latency feature you should  : </p><ol><li><p>Make sure that your have already added your block after each comment <strong>//Pmon 3.4 feature</strong> as explained in BW integration part.</p></li><li><p>Grep for<strong> “//Pmon 3.4 latency”</strong> in <strong>/hw-ncr/dv/common/lib_tb/perf_counter</strong> folder and add your block in the Javascript if statements after each comment having as text <strong>:  “//Pmon 3.4 latency” </strong><br/></p></li></ol><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">  //Pmon 3.4 latency
+  &lt;% if (obj.BlockId.includes(&quot;dii&quot;)) {  %&gt;
+  `include &quot;&lt;%=obj.strRtlNamePrefix%&gt;_latency_counters_scoreboard.svh&quot;
+  &lt;% } %&gt;</pre>
+</div></div><p>3. You need to define params below  in latency_if.sv file for your block :</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">if (obj.BlockId.includes(&quot;dii&quot;)) {
+          nWttEntries = obj.DiiInfo[obj.Id].cmpInfo.nWttCtrlEntries;
+          nRttEntries = obj.DiiInfo[obj.Id].cmpInfo.nRttCtrlEntries;
+
+}</pre>
+</div></div><p>  for IOAIU or CHI nWttEntries and nRttEntries will take the same value which is nOttEntries or you can just define “nXttEntries” in same file latency_if.sv </p><p>4. You need to do below steps in your &lt;block&gt;_tb_top.sv : </p><p style="margin-left: 30.0px;">a. Instantiate latency_if</p><p style="margin-left: 30.0px;">b. implement uvm_config_db set and make sure that field_name in set method has as suffix <strong>“_m_top_latency_if”</strong></p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">// Latency if
+&lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_latency_if &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_latency_if(); // PERF_CNT Latency_IF
+initial uvm_config_db#(virtual &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_latency_if)::set(null, &quot;&quot;, &quot;&lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_m_top_latency_if&quot;,       &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_latency_if); </pre>
+</div></div><p style="margin-left: 30.0px;">c. connect below signals of latency_if : </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">/////////////////////// PERF_CNT CONNECT DUT to LATENCY LATENCY_IF////////////////////////////////////////////////////
+
+assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_latency_if.clk              =   dut_clk;
+assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_latency_if.rst_n            =   soft_rstn;
+assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_latency_if.alloc_if         =   dut.u_dii_unit.u_ncr_pmon.latency_counter_in_alloc;
+assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_latency_if.dealloc_if       =   dut.u_dii_unit.u_ncr_pmon.latency_counter_in_dealloc;
+assign &lt;%=obj.DiiInfo[obj.Id].strRtlNamePrefix%&gt;_sb_latency_if.dut_latency_bins =   dut.u_dii_unit.u_ncr_pmon.latency_bins;
+
+/////////////////////// PERF_CNT CONNECT STALL_IF TO DUT////////////////////////////////////////////////////</pre>
+</div></div><p>4. Add Pmon Latency tests to your runsim test list : <br/>Try to do like old Pmon tests of your block and add args below to define your requirements test for latency : </p><p>                </p><p><strong>&quot;+perfmon_local_count_enable&quot;:null,   ==&gt; to set local count enable register to 1</strong><br/><strong>&quot;+perfmon_32bit_mode&quot;:null,               ==&gt; to enable 32 bit mode</strong><br/><strong>&quot;+perfmon_local_count_clear&quot;:null,      ==&gt; to set local clear register to 1</strong></p><p><strong>&quot;+latency_count_enable&quot;:null,               ==&gt; to enable latency count enable register</strong></p><p><strong>&quot;+pmon_latency_test&quot;:null,                    ==&gt; to enable latency test (enabling Pmon latency        sequence and scoreboard check)</strong></p><p><strong> &quot;+lct_bin_offset&quot;:&quot;00&quot;,                            ==&gt; to set latency bin offset value (default is a random value) </strong></p><p><strong>&quot;+lct_pre_scale&quot;:&quot;0&quot;,                                ==&gt; to set latency pre_scale value (default is a random value)                 </strong></p><p><strong>&quot;+lct_type&quot;:&quot;1&quot;,                                       ==&gt; to set Latency type (rd/wr)</strong></p><p /><p /><p /><p><br/></p><h1 id="PmonverificationlibraryintegrationforNcore3.4-4-Pmon3.4JIRAs:">4- Pmon 3.4 JIRAs : </h1><h2 id="PmonverificationlibraryintegrationforNcore3.4-a-BandwidthcounterJIRAs:">a- Bandwidth counter JIRAs :</h2><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9740"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9740" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9740</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9828"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9828" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9828</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9751"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9751" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9751</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9767"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9767" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9767</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10191"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10191" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10191</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9782"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9782" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9782</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9794"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9794" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9794</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9825"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-9825" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-9825</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10191"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10191" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10191</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><h2 id="PmonverificationlibraryintegrationforNcore3.4-b-LatencycounterJIRAs">b - Latency counter JIRAs</h2><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10130"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10130" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10130</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10124"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10124" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10124</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10125"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10125" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10125</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10148"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10148" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10148</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10143"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10143" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10143</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10170"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10170" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10170</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10247"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10247" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10247</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10248"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10248" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10248</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10272"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10272" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10272</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10285"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10285" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10285</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10286"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10286" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10286</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10287"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10287" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10287</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10291"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10291" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10291</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10359"  data-client-id="SINGLE_bfb5209b-5e34-3655-9c0b-93d8d0d4bec5_39354499_624b3807a629c30068a79f50" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-10359" class="jira-issue-key"><span class="aui-icon aui-icon-wait issue-placeholder"></span>CONC-10359</a>
+                    -
+            <span class="summary">Getting issue details...</span>
+                                    <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-default issue-placeholder">STATUS</span>
+            </span>
+</p><p />

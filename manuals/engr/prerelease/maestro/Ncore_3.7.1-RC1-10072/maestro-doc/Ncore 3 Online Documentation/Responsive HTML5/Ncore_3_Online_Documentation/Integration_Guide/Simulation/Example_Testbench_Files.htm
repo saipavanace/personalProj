@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Example_Testbench_Files</title>
+<meta content="Example Testbench Files" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Integration_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "2.4.0_1";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Integration_Guide/Simulation/Simulation.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Integration_Guide/Simulation/Example_Testbench_Set-up.htm">
+ <meta name="topic-breadcrumbs" content="Integration Guide > RTL Simulation Flows" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1017876"><a id="970_Heading1_1017876" name="970_Heading1_1017876"></a>5.1 Example Testbench Files</p><p class="BodyAfterHead" id="1018505">The example testbench files are generated into the <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;output_dir&#x3E;&#47;tb&#47;&#x3C;</span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">SIM_TOOL_dir&#x3E;</span> directory (&#x3C;<span class="code" style="font-family : Courier New ; font-size : 9.00pt;">SIM_TOOL_</span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">dir</span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3E;</span> can either be xsim or vcs), which contains the following directories and files&#x3A;<div align="left"><table class="Terms" style="max-width: 100% ;height: auto;"><col width="225.10px"/><col width="254.85px"/><tr height="22.67px"><td><p class="cit_CodeInTable" id="1032623">&#x3C;output_dir&#x3E;&#47;tb&#47;&#x3C;SIM_TOOL_dir&#x3E;</p></td><td><p class="CellBody" id="1032625">Description</p></td></tr><tr height="52.00px"><td><p class="cit_Indented" id="1052847"><span class="code">common&#47;</span></p></td><td><p class="CellBody" id="1052863">Directory that contains common files between simulators. (This will be moved up a level to tb&#47; in a later release)</p></td></tr><tr height="22.67px"><td><p class="cit_Indented" id="1054012"><span class="code">tb&#47;</span></p></td><td><p class="CellBody" id="1054019">Core testbench files including the tb top.</p></td></tr><tr height="22.67px"><td><p class="cit_Indented" id="1052851"><span class="code">env&#47;</span></p></td><td><p class="CellBody" id="1052868">Testbench environment files.</p></td></tr><tr height="22.67px"><td><p class="cit_Indented" id="1052835"><span class="code">seq&#47;</span></p></td><td><p class="CellBody" id="1052870">Sequences directory.</p></td></tr><tr height="22.67px"><td><p class="cit_Indented" id="1052839"><span class="code">tests&#47;</span></p></td><td><p class="CellBody" id="1052872">Tests directory.</p></td></tr><tr height="22.67px"><td><p class="cit_Indented" id="1052843"><span class="code">utils&#47;</span></p></td><td><p class="CellBody" id="1052874">Utility and support files (e.g., assertions).</p></td></tr><tr height="22.67px"><td><p class="cit_Indented" id="1052966"><span class="code">vseq&#47;</span></p></td><td><p class="CellBody" id="1052972">Virtual sequences directory.</p></td></tr><tr height="52.00px"><td><p class="cit_Indented" id="1032627"><span class="code">Makefile</span></p></td><td><p class="CellBody" id="1032629">A makefile that supports compiling the testbench environment, and running the tests, either independently, or all at once.</p></td></tr><tr height="37.33px"><td><p class="cit_Indented" id="1054096">Register Map File</p></td><td><p class="CellBody" id="1054098">UVM register model file which is auto generated.</p></td></tr><tr height="52.00px"><td><p class="cit_Indented" id="1032635"><span class="code">&#x2A;.sv, &#x2A;.svh</span><span class="code">, &#x2A;.svi</span></p></td><td><p class="CellBody" id="1032637">Verilog and SystemVerilog implementation of various components of the example testbench, as well as VIP defines.</p></td></tr></table></div></p><p class="Body" id="1053203">Note that the structure and contents of the <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">tb&#47;</span> directory tree may change in future releases.</p></div>
+</body>
+</html>

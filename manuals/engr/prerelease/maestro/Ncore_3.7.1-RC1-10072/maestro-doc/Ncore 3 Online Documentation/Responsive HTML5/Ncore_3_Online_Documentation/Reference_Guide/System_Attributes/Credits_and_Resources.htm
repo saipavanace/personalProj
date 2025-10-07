@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Credits_and_Resources</title>
+<meta content="Credits and Resources" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Reference_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "4.3.2_1";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Reference_Guide/System_Attributes/Caches.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Reference_Guide/System_Attributes/Storage_Protection.htm">
+ <meta name="topic-breadcrumbs" content="Reference Guide > System Attributes" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="980812"><a id="1094_Heading1_980812" name="1094_Heading1_980812"></a>3.5 Credits and Resources</p><p class="BodyAfterHead" id="980813">To alleviate congestion and manage resources in CDTI, credit counters are implemented for certain protocol message types. Credits are explicitly assigned to CMD, SNP, MRD, and RB messages. Remaining messages such as, STR, DTR, and DTW are implicitly controlled by credits defined for other messages. For example, DTW messages are limited by RB messages. </p><p class="Body" id="980814">The credit values must be configured based on round trip latencies. Initiating Ncore component implements credit counters to track messages it initiates. Similarly, target Ncore component implements recourses to accommodate all messages it can receive.</p><p class="BodyAfterHead" id="980815">For each CAIU&#47;NCAIU, following credit counters are implemented&#x3A; </p><p class="Bullet_1" id="980816"><span class="BulletSymbol">&#x2022; </span>CMD message credit counter per connected instance of DCE</p><p class="Bullet_1" id="980817"><span class="BulletSymbol">&#x2022; </span>CMD message credit counter per connected instance of DMI</p><p class="Bullet_1" id="980818"><span class="BulletSymbol">&#x2022; </span>CMD message credit counter per connected instance of DII</p><p class="Bullet_1" id="980819"><span class="BulletSymbol">&#x2022; </span>CMD message credit counter for DVE; this limits the number of DVM commands. This is implemented in all CAIUs only.</p><p class="BodyAfterHead" id="980820">For each DCE, the following credit counters are implemented&#x3A;</p><p class="Bullet_1" id="980821"><span class="BulletSymbol">&#x2022; </span>SNP message credit counter per connected instance of CAIU&#47;NCAIU</p><p class="Bullet_1" id="980822"><span class="BulletSymbol">&#x2022; </span>MRD message credit counter per connected instance of DMI</p><p class="Bullet_1" id="980823"><span class="BulletSymbol">&#x2022; </span>RB message credit counter per connected instance of DMI</p><p class="BodyAfterHead" id="980824">For each DMI&#47;DII, the following counter is implemented&#x3A;</p><p class="Bullet_1" id="980825"><span class="BulletSymbol">&#x2022; </span>RB message counter</p><p class="BodyAfterHead" id="980826">For DVE, the following credit counter is implemented&#x3A;</p><p class="Bullet_1" id="980804"><span class="BulletSymbol">&#x2022; </span>SNP message counter per DVM capable instance of CAIU&#47;NACIU</p><p class="Figure" id="980845">Figure&#160;11. Credit Counters Overview<img align="" alt="100052_008" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/100052_008.jpg" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="612.900574" x="5.363180" y="5.501912" /></p><p class="Body" id="980878">For each CAIU&#47;NCAIU&#x3A;</p><p class="Bullet_1" id="980879"><span class="BulletSymbol">&#x2022; </span>Snoop transaction table&#x3A; this transaction table is sized based on SNP message credits.</p><p class="Bullet_1" id="1000073"><span class="BulletSymbol">&#x2022; </span>For each connected DCE&#47;DMI&#47;DII, a CMD message credit register in CAIU&#47;NCAIU must be configured with respect to the following rules&#x3A;</p><p class="Bullet_2" id="1000074"><span class="BulletSymbol"> &#x2D; </span>The sum&#x2D;up of Number of credits configured in each AIU connected to the same DCE&#47;DMI&#47;DII must be less or equal to this DCE&#47;DMI&#47;DII CMD message skid buffer size. Otherwise the target DCE&#47;DMI&#47;DII skid buffer can be overloaded and that can lead to a deadlock.</p><p class="Bullet_2" id="1000075"><span class="BulletSymbol"> &#x2D; </span>The minimum number of credits to be configured in a CHI&#47;DCE is 1.</p><p class="Bullet_2" id="1000076"><span class="BulletSymbol"> &#x2D; </span>The minimum number of credits to be configured in a IOAIU is 2.</p><p class="Bullet_2" id="1000077"><span class="BulletSymbol"> &#x2D; </span>The maximum number of credits to be configured in a CAIU&#47;NCAIU is 31.</p><p class="Bullet_2" id="1000078"><span class="BulletSymbol"> &#x2D; </span>If a CAIU&#47;NCAIU is not used, the number of credits can be set to &#x30; for each DCE.</p><p class="Bullet_1" id="1000102"><span class="BulletSymbol">&#x2022; </span>For each connected DMI, a Mrd message credit register must be configured with respect to the following rules&#x3A;</p><p class="Bullet_2" id="1000103"><span class="BulletSymbol"> &#x2D; </span>The sum&#x2D;up of credits configured in each DCE connected to the same DMI is less or equal to this DMI Mrd SkidBuffer size. Otherwise the target DMI skid buffer can be overloaded and that can lead to a deadlock.</p><p class="Bullet_2" id="1000104"><span class="BulletSymbol"> &#x2D; </span>The minimum number of credits is 1. </p><p class="Bullet_2" id="1000105"><span class="BulletSymbol"> &#x2D; </span>The maximum number of credits to be configured in a DCE is 31.</p><p class="Body" id="1000121">&#160;&#160;&#160;For each DMI, the RB control entries table is sized based on connected DCEs&#x2019; RB message credits.</p><p class="Body" id="980889">In addition to above resources, all Ncore components are configured with additional resources to achieve required throughput. These resources are configured based on round trip latencies.</p><p class="Body" id="1001035">The CMD message skid buffer in the DMI, DCE, and DII and the MRD message skid buffer in the DMI share the same architecture. These skid buffers are comprised of two parts, a fixed size, limited skid buffer supporting arbitration and an overflow FIFO storage buffer. The arbitration buffer supports sizes of either &#x7B;4, 8, 16, 32, 48, 64, 128, 192, or 256&#x7D; entries. The storage buffer is sized by the size of the arbitration buffer plus &#x7B;&#x30;, 4, 8, 16, 32, 64, 96, 128, 16&#x30;, 192, 224, 128, 256, 512&#x7D;. The skid buffer total size cannot exceed 768.</p><p class="Body" id="1001632">The storage buffer implementation is selectable and SRAM is recommended once the size is equal or over 256. At run time, the maximum number of credits each flow may use is programmable and can be optimized based on differences in round trip latency or bandwidth requirements. A minimum of 2 credits is recommended for each active connection.</p><p class="Body" id="980890">For each CAIU&#47;NCAIU, the following resources are implemented&#x3A;</p><p class="Bullet_1" id="980891"><span class="BulletSymbol">&#x2022; </span>Outstanding Transaction Table Control Entries &#x3A; This limits the number of outstanding transactions this CAIU&#47;NCAIU can have at a given time.</p><p class="Body" id="980892">For each DCE, the following resources are implemented&#x3A;</p><p class="Bullet_1" id="980893"><span class="BulletSymbol">&#x2022; </span>Active Transaction Table Control Entries &#x3A; This limits the number of active transactions each DCE can have at a given time.</p><p class="Body" id="980894">For each DMI&#47;DII, the following resources are implemented&#x3A;</p><p class="Bullet_1" id="980895"><span class="BulletSymbol">&#x2022; </span>Read Transaction Table Control Entries &#x3A; This limits the number of read transactions each DMI&#47;DII can have outstanding on the AXI interface.</p><p class="Bullet_1" id="992043"><span class="BulletSymbol">&#x2022; </span>Write Transaction Table Control Entries &#x3A; This limits the number of write transactions each DMI&#47;DII can have outstanding on the AXI interface.</p><p class="Figure" id="980914">Figure&#160;12. Resource Overview<img align="" alt="100052_009" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/100052_009.jpg" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="610.661560" x="8.086202" y="5.507467" /></p></div>
+</body>
+</html>

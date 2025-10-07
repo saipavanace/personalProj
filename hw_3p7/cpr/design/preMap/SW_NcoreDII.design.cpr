@@ -1,0 +1,90 @@
+{
+  "name": "SW_NcoreDII",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "genericports",
+          "parameterTitle": "GenericPorts",
+          "parameterType": "architecture",
+          "docID": 515,
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/SW_GenericPort.design.cpr",
+          "guiDescription": "user specified protection ports for place holder"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "configuration",
+          "parameterTitle": "Configuration DII",
+          "parameterType": "architecture",
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "memories",
+          "parameterTitle": "Memories",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/SW_Memory.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "mappedObjects",
+          "parameterTitle": "Mapped Objects",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/COMMON_ObjectBase.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDiiRbCredits",
+          "parameterTitle": "Number of Write request buffer credits",
+          "minimum": 2,
+          "maximum": 32,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of non coherent write request buffer credits.",
+          "docID": 531,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nRttCtrlEntries",
+          "parameterTitle": "Max outstanding read transactions",
+          "minimum": 4,
+          "maximum": 32,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of outstanding read transactions on the AXI interface",
+          "docID": 532,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nWttCtrlEntries",
+          "parameterTitle": "Max outstanding write transactions",
+          "minimum": 4,
+          "maximum": 32,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of outstanding write transactions on the AXI interface",
+          "docID": 533,
+          "type": "integer"
+        }
+      ],
+      "baseName": "NC_NcoreUnit"
+    }
+  ]
+}

@@ -1,0 +1,802 @@
+{
+    "interfaces" : {
+        "slaveInterfaces" : [
+            {
+                "name": "chi_",
+                "params": {
+                        "QoS": 4,
+            		"TgtTID": 7,
+            		"SrcID": 7,
+            		"TxnID": 8,
+            		"ReturnNID": 7,
+            		"StashNIDValid": 1,
+            		"ReturnTxnID": 8,
+            		"REQ_Opcode": 6,
+                        "RSP_Opcode": 4,
+                        "SNP_Opcode": 5,
+                        "DAT_Opcode": 3,
+            		"Size": 3,
+            		"Addr": 48,
+            		"NS": 1,
+            		"LikelyShared": 1,
+            		"AllowRetry": 1,
+            		"Order": 2,
+            		"PCrdType": 4,
+            		"MemAttr": 4,
+            		"SnpAttr": 1,
+            		"LPID": 5,
+            		"Excl": 1,
+            		"ExCompAck": 1,
+            		"TraceTag": 1,
+            		"REQ_RSVDC": 0,
+            		"DAT_RSVDC": 0,
+                        "TgtID": 7,
+			"RespErr": 2,
+            		"Resp": 3,
+            		"FwdState": 3,
+            		"DBID": 8,
+		        "FwdNID": 7,
+            		"FwdTxnID": 8,
+            		"DoNotGoToSD": 1,
+            		"RetToSrc": 1,
+		        "Homenode_ID": 7,
+                        "CCID": 2,
+            		"DataID": 2,
+            		"BE": 16,
+            		"Data": 128,
+                        "wReqflit" : 121,
+                        "wRspflit" : 48,
+                        "wDatflit" : 201,
+                        "wSnpflit" : 91
+                      },
+                "direction": "slave",
+                "interface": "InterfaceCHI"
+            },
+            {"name": "a_",
+             "params" : {},
+             "direction" : "slave",
+             "interface" : "InterfaceCLK"},
+            {"name": "io_aiu_axi_", 
+             "params": {
+                        "wSnoop"    :   4,
+                        "eDomain"   :   1,
+                        "eAtomic"   :   1,
+                        "eStash"    :   1,
+                        "eAc"       :   0,
+                        "wCdData"   :   0,
+                        "wLoop"     :   0,
+                        "eTrace"    :   0,
+                        "eUnique"   :   0,
+                 "wAddr"     :   32,
+                 "wArUser"   :   12,
+                 "wArId"     :   12,
+                 "wAwUser"   :   12,
+                 "wAwId"     :   12,
+                 "wRegion"   :   0,
+                 "wQos"      :   4,
+                 "wLock"     :   1,
+                 "wProt"     :   3,
+                 "wWUser"    :   0,
+                 "wData"     :   128,
+                 "wRUser"    :   12,
+                 "wBUser"    :   0,
+                 "wLen"      :   8,
+                 "wSize"     :   3
+             },
+             "direction": "slave",
+             "interface": "InterfaceAXI"
+            }
+        ],
+        "masterInterfaces" : [
+            {"name": "dmi_axi_mst_", 
+             "params": {
+                 "wAddr"     :   48,
+                 "wArUser"   :   4,
+                 "wArId"     :   5,
+                 "wAwUser"   :   4,
+                 "wAwId"     :   5,
+                 "wWUser"    :   0,
+                 "wData"     :   128,
+                 "wRUser"    :   0,
+                 "wBUser"    :   0,
+                 "wLen"      :   8,
+                 "wSize"     :   3,
+                 "wLock"     :   1,
+                 "wProt"     :   3,
+                 "wQos"      :   4,
+                 "wRegion"   :   4
+             },
+             "direction": "master",
+             "interface": "InterfaceAXI"
+            },
+            {"name": "dii_axi_mst_", 
+             "params": {
+                 "wAddr"     :   48,
+                 "wArUser"   :   2,
+                 "wArId"     :   2,
+                 "wAwUser"   :   2,
+                 "wAwId"     :   2,
+                 "wWUser"    :   2,
+                 "wData"     :   128,
+                 "wRUser"    :   2,
+                 "wBUser"    :   2,
+                 "wLen"      :   8,
+                 "wSize"     :   3,
+                 "wLock"     :   1,
+                 "wProt"     :   3,
+                 "wQos"      :   4,
+                 "wRegion"   :   4
+             },
+             "direction": "master",
+             "interface": "InterfaceAXI"
+            }            
+        ]
+    },
+    "wireInterfaces" : [
+        {"name": "smi_rx0_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx1_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx2_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx3_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx0_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx1_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx2_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx3_b_",
+         "params" : {"file_path" : "$ATP_TOP/smi_b.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+
+        {"name": "smi_rx0_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx1_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx2_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx3_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx4_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx0_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx1_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx2_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx3_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx4_g_",
+         "params" : {"file_path" : "$ATP_TOP/smi_g.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        
+        {"name": "smi_rx0_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx1_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx2_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx3_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx4_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx5_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_rx6_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "slave",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx0_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx1_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx2_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx3_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx4_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx5_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "smi_tx6_y_",
+         "params" : {"file_path" : "$ATP_TOP/smi_y.json"},
+         "direction" : "master",
+         "interface" : "InterfaceSMI"},
+        {"name": "dce_ids_",
+         "params": {
+             "wFUnitId"  :   7,
+             "wNUnitId"  :   3,
+             "wRpn"      :   8,
+             "wNrri"     :   8
+         },
+         "direction": "slave",
+         "interface": "InterfaceUnitId"
+        },
+        {"name": "dce_ca_",
+         "params": {
+             "wFUnitId"  :   49
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "dce_dmi_",
+         "params": {
+             "wFUnitId"  :   14
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "dce_apb_slv_", 
+         "params": {
+             "wAddr"     :   12,
+             "wData"     :   32,
+             "wPSlverr"   :   1
+         },
+         "direction": "slave",
+         "interface": "InterfaceAPB"
+        },
+        {"name": "dce_q_",
+          "params": {
+             "wActive" : 1,
+             "channelType" : "Q"
+         },
+          "direction": "slave",
+          "interface": "InterfacePQChannel"
+        },
+        {"name": "dce_irq_",
+         "params" : {},
+         "direction" : "master",
+         "interface" : "InterfaceIRQ"
+        },
+        {"name": "io_aiu_irq_",
+         "params": {},
+         "direction": "master",
+         "interface": "InterfaceIRQ"
+        },
+        {"name": "io_aiu_ids_",
+         "params": {
+             "wFUnitId"  :   7,
+             "wNUnitId"  :   3,
+             "wRpn"      :   8,
+             "wNrri"     :   8
+         },
+         "direction": "slave",
+         "interface": "InterfaceUnitId"
+        },
+	{"name": "dii_aiu_",
+         "params": {
+             "wFUnitId"  :   14
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "io_aiu_ca_",
+         "params": {
+             "wFUnitId"  :   7
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "io_aiu_dce_",
+         "params": {
+             "wFUnitId"  :   7
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "io_aiu_dmi_",
+         "params": {
+             "wFUnitId"  :  7
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "io_aiu_dii_",
+         "params": {
+             "wFUnitId"  :   7
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "io_aiu_apb_slv_",
+         "params": {
+             "wAddr"     :   12,
+             "wData"     :   32,
+             "wPSlverr"   :   1
+         },
+         "direction": "slave",
+         "interface": "InterfaceAPB"
+        },
+	{"name": "io_aiu_qc_",
+         "params": {},
+         "direction": "slave",
+         "interface": "InterfaceQChannel"
+	},
+        {"name": "aiu_ids_",
+         "params": {
+             "wFUnitId"   :   7,
+             "wNUnitId"   :   3,
+             "wNrri"      :   8,
+             "wRpn"       :   8
+         },
+         "direction": "slave",
+         "interface": "InterfaceUnitId"
+        },
+        {"name": "aiu_dce_",
+         "params": {
+             "wFUnitId"  :  7 
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "aiu_dve_",
+         "params": {
+             "wFUnitId"  :  7 
+         },
+         "direction": "slave",    
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "aiu_dmi_",
+         "params": {
+             "wFUnitId"  :  7 
+         },
+         "direction": "slave",    
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "aiu_dii_",
+         "params": {
+             "wFUnitId"  :  7 
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "aiu_caiu_",
+         "params": {
+             "wFUnitId"  :  7 
+         },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+       {"name": "aiu_q_",
+         "params": {
+             "wActive" : 1,
+             "channelType" : "Q"
+         },
+         "direction": "slave",
+         "interface": "InterfacePQChannel"
+        },
+        {"name": "aiu_apb_slv_",
+         "params": {
+             "wAddr"      :   12,
+             "wData"      :   32,
+             "wPSlverr"   :   1
+         },
+         "direction": "slave",
+         "interface": "InterfaceAPB"
+        },
+        {"name": "aiu_irq_",
+         "params": {},
+         "direction": "slave",
+         "interface": "InterfaceIRQ"
+        },
+        {"name": "dmi_ids_",
+         "params": {
+             "wFUnitId"  :   7,
+             "wNUnitId"  :   3,
+             "wRpn"      :   8,
+             "wNrri"     :   8
+         },
+         "direction": "slave",
+         "interface": "InterfaceUnitId"
+        },
+        {"name": "dmi_irq_",
+         "params": {},
+         "direction": "slave",
+         "interface": "InterfaceIRQ"
+        },
+        {"name": "dmi_apb_slv_", 
+         "params": {
+             "wAddr"     :   12,
+             "wData"     :   32,
+             "wPSlverr"   :   1
+         },
+         "direction": "slave",
+         "interface": "InterfaceAPB"
+        },
+        {"name": "dmi_q_",
+         "params": {},
+         "direction": "slave",
+         "interface": "InterfacePQChannel"
+	    },
+        {"name": "aiu_",
+         "params": {
+                      "wFUnitIdV"  :   [7, 7]
+                   },
+         "direction": "slave",
+         "interface": "InterfaceSysUnitId"
+        },
+        {"name": "dii_ids_",
+         "params": {
+             "wFUnitId"   :   7,
+             "wNUnitId"   :   3,
+             "wNrri"      :   8,
+             "wRpn"       :   8
+         },
+         "direction": "slave",
+         "interface": "InterfaceUnitId"
+	},
+        {"name": "dii_q_",
+         "params": {
+	     "wActive" : 1,
+	     "channelType" : "Q"
+	 },         
+         "direction": "slave",
+         "interface": "InterfacePQChannel"
+	},	
+	{"name": "dii_apb_slv_",
+         "params": {
+             "wAddr"      :   12,
+             "wData"      :   32,
+	     "wPSlverr"   :   1
+         },
+         "direction": "slave",
+         "interface": "InterfaceAPB"
+	},
+	{"name": "dii_irq_",
+         "params": {},
+         "direction": "master",
+         "interface": "InterfaceIRQ"
+        }
+    ],
+    "instances" : [
+        {
+            "name": "smi_network_b",
+            "module" : "gen_wrapper",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$ATP_TOP/smi_network_b.json"},
+            "interfaces" : [{"local": "a_",      "module": "a_" , "direction" : "slave"},
+                            {"local": "smi_rx0_b_", "module": "smi_rx0_","direction" : "slave"},
+                            {"local": "smi_rx1_b_", "module": "smi_rx1_","direction" : "slave"},
+                            {"local": "smi_rx2_b_", "module": "smi_rx2_","direction" : "slave"},
+                            {"local": "smi_rx3_b_", "module": "smi_rx3_","direction" : "slave"},
+                            {"local": "smi_tx0_b_", "module": "smi_tx0_","direction" : "master"},
+                            {"local": "smi_tx1_b_", "module": "smi_tx1_","direction" : "master"},
+                            {"local": "smi_tx2_b_", "module": "smi_tx2_","direction" : "master"},
+                            {"local": "smi_tx3_b_", "module": "smi_tx3_","direction" : "master"}
+                           ]
+        },
+        {
+            "name": "smi_network_g",
+            "module" : "gen_wrapper",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$ATP_TOP/smi_network_g.json"},
+            "interfaces" : [{"local": "a_",      "module": "a_" , "direction" : "slave"},
+                            {"local": "smi_rx0_g_", "module": "smi_rx0_","direction" : "slave"},
+                            {"local": "smi_rx1_g_", "module": "smi_rx1_","direction" : "slave"},
+                            {"local": "smi_rx2_g_", "module": "smi_rx2_","direction" : "slave"},
+                            {"local": "smi_rx3_g_", "module": "smi_rx3_","direction" : "slave"},
+                            {"local": "smi_rx4_g_", "module": "smi_rx4_","direction" : "slave"},
+                            {"local": "smi_tx0_g_", "module": "smi_tx0_","direction" : "master"},
+                            {"local": "smi_tx1_g_", "module": "smi_tx1_","direction" : "master"},
+                            {"local": "smi_tx2_g_", "module": "smi_tx2_","direction" : "master"},
+                            {"local": "smi_tx3_g_", "module": "smi_tx3_","direction" : "master"},
+                            {"local": "smi_tx4_g_", "module": "smi_tx4_","direction" : "master"}
+                           ]
+        },
+        {
+            "name": "smi_network_y",
+            "module" : "gen_wrapper",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$ATP_TOP/smi_network_y.json"},
+            "interfaces" : [{"local": "a_",      "module": "a_" , "direction" : "slave"},
+                            {"local": "smi_rx0_y_", "module": "smi_rx0_","direction" : "slave"},
+                            {"local": "smi_rx1_y_", "module": "smi_rx1_","direction" : "slave"},
+                            {"local": "smi_rx2_y_", "module": "smi_rx2_","direction" : "slave"},
+                            {"local": "smi_rx3_y_", "module": "smi_rx3_","direction" : "slave"},
+                            {"local": "smi_rx4_y_", "module": "smi_rx4_","direction" : "slave"},
+                            {"local": "smi_rx5_y_", "module": "smi_rx5_","direction" : "slave"},
+                            {"local": "smi_rx6_y_", "module": "smi_rx6_","direction" : "slave"},
+                            {"local": "smi_tx0_y_", "module": "smi_tx0_","direction" : "master"},
+                            {"local": "smi_tx1_y_", "module": "smi_tx1_","direction" : "master"},
+                            {"local": "smi_tx2_y_", "module": "smi_tx2_","direction" : "master"},
+                            {"local": "smi_tx3_y_", "module": "smi_tx3_","direction" : "master"},
+                            {"local": "smi_tx4_y_", "module": "smi_tx4_","direction" : "master"},
+                            {"local": "smi_tx5_y_", "module": "smi_tx5_","direction" : "master"},
+                            {"local": "smi_tx6_y_", "module": "smi_tx6_","direction" : "master"}
+                           ]
+        },
+        {
+            "name": "u_dce",
+            "module" : "dce",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$WORK_TOP/rtl/dce/bringup/bringup_param.json"},
+            "interfaces" : [{"local": "a_",           "module": "" ,           "direction" : "slave"},
+                            {"local": "dce_irq_",     "module": "dce_irq_",    "direction" : "master"},
+                            {"local": "dce_ids_",     "module": "dce_",        "direction" : "slave"},
+                            {"local": "dce_ca_",      "module": "dce_ca_",     "direction" : "slave"},
+                            {"local": "dce_dmi_",     "module": "dce_dmi_",    "direction" : "slave"},
+                            {"local": "dce_apb_slv_", "module": "dce_apb_slv_","direction" : "slave"},
+                            {"local": "dce_q_",       "module": "dce_q_",      "direction" : "slave"},
+                            {"local": "smi_rx2_y_",   "module": "smi_tx0_",    "direction" : "master"},
+                            {"local": "smi_rx2_g_",   "module": "smi_tx1_",    "direction" : "master"},
+                            {"local": "smi_rx3_y_",   "module": "smi_tx2_",    "direction" : "master"},
+                            {"local": "smi_tx2_y_",   "module": "smi_rx0_",    "direction" : "slave"},
+                            {"local": "smi_tx2_g_",   "module": "smi_rx1_",    "direction" : "slave"},
+                            {"local": "smi_tx3_y_",   "module": "smi_rx2_",    "direction" : "slave"}
+                           ]
+        },
+        {
+            "name": "u_ioaiu_top",
+            "module" : "ioaiu_top",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$WORK_TOP/rtl/ioaiu/src/ioaiu_config4.json"},
+            "interfaces" : [{"local": "a_",              "module": "" ,              "direction" : "slave"},
+                            {"local": "io_aiu_irq_",     "module": "io_aiu_irq_",    "direction" : "master"},
+                            {"local": "io_aiu_ids_",     "module": "io_aiu_",        "direction" : "slave"},
+                            {"local": "io_aiu_ca_",      "module": "io_aiu_ca_",     "direction" : "slave"},
+                            {"local": "io_aiu_dce_",     "module": "io_aiu_dce_",    "direction" : "slave"},
+                            {"local": "io_aiu_dmi_",     "module": "io_aiu_dmi_",    "direction" : "slave"},
+                            {"local": "io_aiu_dii_",     "module": "io_aiu_dii_",    "direction" : "slave"},
+                            {"local": "io_aiu_apb_slv_", "module": "io_aiu_apb_slv_","direction" : "slave"},
+                            {"local": "io_aiu_qc_",	 "module": "io_aiu_qc_",     "direction" : "slave"},
+                            {"local": "io_aiu_axi_",     "module": "io_aiu_axi_",    "direction" : "slave"},
+                            {"local": "smi_rx1_y_",      "module": "smi_tx0_",       "direction" : "master"},
+                            {"local": "smi_rx1_g_",      "module": "smi_tx1_",       "direction" : "master"},
+                            {"local": "smi_rx1_b_",      "module": "smi_tx2_",       "direction" : "master"},
+                            {"local": "smi_tx1_y_",      "module": "smi_rx0_",       "direction" : "slave"},
+                            {"local": "smi_tx1_g_",      "module": "smi_rx1_",       "direction" : "slave"},
+                            {"local": "smi_tx1_b_",      "module": "smi_rx2_",       "direction" : "slave"}
+                           ]
+        },
+        {
+            "name": "u_chi_aiu_top",
+            "module" : "aiu_top",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$WORK_TOP/rtl/chi_aiu/bringup/new_test_params_fullsys.json"},
+            "interfaces" : [{"local": "a_",           "module": "" ,            "direction" : "slave"},
+                            {"local": "aiu_irq_",     "module": "aiu_irq_",     "direction" : "master"},
+                            {"local": "aiu_ids_",     "module": "aiu_",         "direction" : "slave"},
+                            {"local": "aiu_dce_",     "module": "aiu_dce_",     "direction" : "slave"},
+                            {"local": "aiu_dve_",     "module": "aiu_dve_",     "direction" : "slave"},
+                            {"local": "aiu_dmi_",     "module": "aiu_dmi_",     "direction" : "slave"},
+                            {"local": "aiu_dii_",     "module": "aiu_dii_",     "direction" : "slave"},
+                            {"local": "aiu_caiu_",    "module": "aiu_caiu_",    "direction" : "slave"},
+                            {"local": "aiu_apb_slv_", "module": "aiu_apb_slv_", "direction" : "slave"},
+                            {"local": "aiu_q_",       "module": "aiu_q_",       "direction" : "slave"},
+                            {"local": "chi_",         "module": "chi_",         "direction" : "slave"},
+                            {"local": "smi_rx0_y_",   "module": "smi_tx0_",     "direction" : "master"},
+                            {"local": "smi_rx0_g_",   "module": "smi_tx1_",     "direction" : "master"},
+                            {"local": "smi_rx0_b_",   "module": "smi_tx2_",     "direction" : "master"},
+                            {"local": "smi_tx0_y_",   "module": "smi_rx0_",     "direction" : "slave"},
+                            {"local": "smi_tx0_g_",   "module": "smi_rx1_",     "direction" : "slave"},
+                            {"local": "smi_tx0_b_",   "module": "smi_rx2_",     "direction" : "slave"}
+                           ]
+        },
+        {
+            "name": "u_dmi",
+            "module" : "dmi",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$WORK_TOP/rtl/dmi/bringup/bringup_cmc_params.json"},
+            "interfaces" : [{"local": "a_",           "module": "" ,            "direction" : "slave"},
+                            {"local": "dmi_irq_",     "module": "dmi_irq_",     "direction" : "master"},
+                            {"local": "dmi_ids_",     "module": "dmi_",         "direction" : "slave"},
+                            {"local": "dmi_apb_slv_", "module": "dmi_apb_slv_", "direction" : "slave"},
+                            {"local": "dmi_axi_mst_", "module": "dmi_axi_mst_", "direction" : "master"},
+                            {"local": "dmi_q_",       "module": "dmi_q_",       "direction" : "slave"},
+                            {"local": "aiu_",         "module": "aiu_",         "direction" : "slave"},
+                            {"local": "smi_rx4_y_",   "module": "smi_tx0_",     "direction" : "master"},
+                            {"local": "smi_rx3_g_",   "module": "smi_tx1_",     "direction" : "master"},
+                            {"local": "smi_rx5_y_",   "module": "smi_tx2_",     "direction" : "master"},
+                            {"local": "smi_rx2_b_",   "module": "smi_tx3_",     "direction" : "master"},
+                            {"local": "smi_tx4_y_",   "module": "smi_rx0_",     "direction" : "slave"},
+                            {"local": "smi_tx3_g_",   "module": "smi_rx1_",     "direction" : "slave"},
+                            {"local": "smi_tx5_y_",   "module": "smi_rx2_",     "direction" : "slave"},
+                            {"local": "smi_tx2_b_",   "module": "smi_rx3_",     "direction" : "slave"}
+                           ]
+        },
+        {
+            "name": "u_dii_top",
+            "module" : "dii_top",
+            "mergeInterface" : false,
+            "moduleParams" : {"file_path" : "$WORK_TOP/rtl/dii/bringup/config3_params.json"},
+            "interfaces" : [{"local": "a_",           "module": "",             "direction" : "slave"},
+                            {"local": "dii_irq_",     "module": "dii_irq_",     "direction" : "master"},
+                            {"local": "dii_ids_",     "module": "dii_",         "direction" : "slave"},
+			    {"local": "dii_aiu_",     "module": "dii_aiu_",     "direction" : "slave"},
+			    {"local": "dii_q_",       "module": "dii_q_",       "direction" : "slave"},
+                            {"local": "dii_apb_slv_", "module": "dii_apb_",     "direction" : "slave"},
+                            {"local": "dii_axi_mst_", "module": "dii_axi_mst_", "direction" : "master"},
+                            {"local": "smi_rx6_y_",   "module": "smi_tx0_",     "direction" : "master"},
+                            {"local": "smi_rx4_g_",   "module": "smi_tx1_",     "direction" : "master"},
+                            {"local": "smi_rx3_b_",   "module": "smi_tx2_",     "direction" : "master"},
+                            {"local": "smi_tx6_y_",   "module": "smi_rx0_",     "direction" : "slave"},
+                            {"local": "smi_tx4_g_",   "module": "smi_rx1_",     "direction" : "slave"},
+                            {"local": "smi_tx3_b_",   "module": "smi_rx2_",     "direction" : "slave"}
+                           ]
+        }
+    ],
+    "assigns" : [
+    ],
+    "tieOffs" : [
+        { "interface" : "dce_ids_",     "direction" : "master",
+          "values" : [
+              {"signal" : "dce_ids_my_f_unit_id", "value": "7'd4"},
+              {"signal" : "dce_ids_my_n_unit_id", "value": "3'd0"}
+          ]
+        },
+        { "interface" : "dce_ca_",      "direction" : "master",
+          "values" : [
+              {"signal" : "dce_ca_f_unit_id", "value": "{7'h5, 7'h6, 7'h8, 7'h23, 7'h9, 7'h1, 7'h0}"}
+          ]
+        },
+        
+        { "interface" : "dce_dmi_",     "direction" : "master",
+          "values" : [
+              {"signal" : "dce_dmi_f_unit_id", "value": "{7'h9, 7'h2}"}
+          ]
+        },
+        { "interface" : "dce_apb_slv_", "direction" : "master"},
+        { "interface" : "dce_q_",     "direction" : "master",
+          "values" : [
+              {"signal" : "dce_q_REQn", "value": "1'b1"}
+          ]
+        },
+
+        { "interface" : "io_aiu_ids_",     "direction" : "master",
+          "values" : [
+              {"signal" : "io_aiu_ids_my_f_unit_id", "value": "7'd1"},
+              {"signal" : "io_aiu_ids_my_n_unit_id", "value": "3'd1"}
+          ]
+        },
+        { "interface" : "dii_aiu_",      "direction" : "master",
+          "values" : [
+              {"signal" : "dii_aiu_f_unit_id", "value": "{7'h0,7'h1}"}
+          ]
+        },
+        { "interface" : "io_aiu_ca_",      "direction" : "master",
+          "values" : [
+              {"signal" : "io_aiu_ca_f_unit_id", "value": "{7'h0}"}
+          ]
+        },
+        { "interface" : "io_aiu_dce_",     "direction" : "master",
+          "values" : [
+              {"signal" : "io_aiu_dce_f_unit_id", "value": "{7'h4}"}
+          ]
+        },	
+        { "interface" : "io_aiu_dmi_",     "direction" : "master",
+          "values" : [
+              {"signal" : "io_aiu_dmi_f_unit_id", "value": "{7'h2}"}
+          ]
+        },
+        { "interface" : "io_aiu_dii_",     "direction" : "master",
+          "values" : [
+              {"signal" : "io_aiu_dii_f_unit_id", "value": "{7'h3}"}
+          ]
+        },
+        { "interface" : "io_aiu_apb_slv_", "direction" : "master"},
+	{ "interface" : "io_aiu_qc_",     "direction" : "master",
+          "values" : [
+              {"signal" : "io_aiu_qc_REQn", "value": "1'b1"}
+          ]
+        },
+
+        { "interface" : "aiu_ids_",     "direction" : "master",
+          "values" : [
+              {"signal" : "aiu_ids_my_f_unit_id", "value": "7'd0"},
+              {"signal" : "aiu_ids_my_n_unit_id", "value": "3'd0"}
+          ]
+        },
+        { "interface" : "aiu_caiu_",    "direction" : "master",
+          "values" : [
+              {"signal" : "aiu_caiu_f_unit_id", "value": "7'h0"}
+          ]
+        },
+        { "interface" : "aiu_dce_",     "direction" : "master",
+          "values" : [
+              {"signal" : "aiu_dce_f_unit_id", "value": "7'h4"}
+          ]
+        },
+        { "interface" : "aiu_dve_",     "direction" : "master"},
+        { "interface" : "aiu_dmi_",     "direction" : "master",
+          "values" : [
+              {"signal" : "aiu_dmi_f_unit_id", "value": "7'h2"}
+          ]
+        },
+        { "interface" : "aiu_dii_",     "direction" : "master",
+          "values" : [
+              {"signal" : "aiu_dii_f_unit_id", "value": "7'h3"}
+          ]
+        },
+        { "interface" : "aiu_apb_slv_", "direction" : "master"},
+        { "interface" : "aiu_q_",     "direction" : "master",
+          "values" : [
+              {"signal" : "aiu_q_REQn", "value": "1'b1"}
+          ]
+        },
+        { "interface" : "dmi_ids_",     "direction" : "master",
+          "values" : [
+              {"signal" : "dmi_ids_my_f_unit_id", "value": "7'd2"},
+              {"signal" : "dmi_ids_my_n_unit_id", "value": "3'd0"}
+          ]
+        },
+        { "interface" : "dmi_apb_slv_", "direction" : "master"},
+        { "interface" : "dmi_q_",     "direction" : "master",
+          "values" : [
+              {"signal" : "dmi_q_REQn", "value": "1'b1"}
+          ]
+        },
+        { "interface" : "dii_q_",     "direction" : "master",
+          "values" : [
+              {"signal" : "dii_q_REQn", "value": "1'b1"}
+          ]
+        },
+        { "interface" : "dii_ids_",     "direction" : "master",
+          "values" : [
+              {"signal" : "dii_ids_my_f_unit_id", "value": "7'd3"},
+              {"signal" : "dii_ids_my_n_unit_id", "value": "3'd0"}
+          ]
+        },
+        { "interface" : "dii_apb_slv_", "direction" : "master"}
+    ]
+}

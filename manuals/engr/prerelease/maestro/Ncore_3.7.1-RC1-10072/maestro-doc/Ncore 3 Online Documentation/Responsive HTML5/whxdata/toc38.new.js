@@ -1,0 +1,4 @@
+(function() {
+var toc =  [{"name":"5.1  Configure a Transport Solution","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Structural_Design/Configure_a_Transport_Solution.htm#1021298"},{"key":"toc39","name":"5.2  Automation Tool Overview","type":"book","url":"Ncore_3_Online_Documentation/User_Guide/Structural_Design/Automation_Tool_Overview.htm#1035300"},{"key":"toc40","name":"5.3   Topologies","type":"book","url":"Ncore_3_Online_Documentation/User_Guide/Structural_Design/Topologies.htm#1059898"},{"name":"5.4  Merging Two Switches","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Structural_Design/Merging_Two_Switches.htm#1052851"},{"key":"toc41","name":"5.5  Using the Topology Editor","type":"book","url":"Ncore_3_Online_Documentation/User_Guide/Structural_Design/Using_the_Topology_Editor.htm#1058023"}];
+window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
+})();

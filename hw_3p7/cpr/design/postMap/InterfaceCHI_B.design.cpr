@@ -1,0 +1,562 @@
+{
+  "name": "InterfaceCHI_B",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "name",
+          "parameterTitle": "Name of Interface",
+          "default": "chi_b_",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "params",
+          "parameterTitle": "Interface parameters",
+          "parameterType": "architecture",
+          "docID": 108,
+          "type": "object",
+          "reference": "InterfaceParams"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "interface",
+          "parameterTitle": "Object Pointer of Interface",
+          "default": "InterfaceCHI",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "direction",
+          "parameterTitle": "Direction of Interface",
+          "default": "slave",
+          "parameterType": "architecture",
+          "validValues": "master,slave",
+          "type": "string"
+        }
+      ],
+      "baseName": "ParamBase"
+    },
+    {
+      "name": "InterfaceParams",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "NodeID_Width",
+          "parameterTitle": "Width of Node Id",
+          "minimum": 7,
+          "maximum": 11,
+          "default": 7,
+          "parameterType": "architecture",
+          "docID": 109,
+          "type": "integer",
+          "guiDescription": "Width of the Node ID of the CHI Interface "
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "SrcID",
+          "parameterTitle": "Width of source Id",
+          "minimum": 7,
+          "maximum": 11,
+          "default": 7,
+          "parameterType": "architecture",
+          "type": "integer",
+          "guiDescription": "Width of the source ID "
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "TgtID",
+          "parameterTitle": "Width of target Id",
+          "minimum": 7,
+          "maximum": 11,
+          "default": 7,
+          "parameterType": "architecture",
+          "type": "integer",
+          "guiDescription": "Width of the Traget ID."
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "TxnID",
+          "parameterTitle": "Width of txn Id",
+          "minimum": 8,
+          "maximum": 8,
+          "default": 8,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "ReturnNID",
+          "parameterTitle": "Width of return node Id",
+          "minimum": 7,
+          "maximum": 11,
+          "default": 7,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "StashNIDValid",
+          "parameterTitle": "Width of stash node Id",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "ReturnTxnID",
+          "parameterTitle": "Width of return txn Id",
+          "minimum": 8,
+          "maximum": 8,
+          "default": 8,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "REQ_Opcode",
+          "parameterTitle": "Width of request op code",
+          "minimum": 6,
+          "maximum": 6,
+          "default": 6,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "RSP_Opcode",
+          "parameterTitle": "Width of response op code",
+          "minimum": 4,
+          "maximum": 4,
+          "default": 4,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SNP_Opcode",
+          "parameterTitle": "Width of snoop op code",
+          "minimum": 5,
+          "maximum": 5,
+          "default": 5,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "DAT_Opcode",
+          "parameterTitle": "Width of data op code",
+          "minimum": 3,
+          "maximum": 3,
+          "default": 3,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Size",
+          "parameterTitle": "Width of size",
+          "minimum": 3,
+          "maximum": 3,
+          "default": 3,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wAddr",
+          "parameterTitle": "CHI address bus width",
+          "minimum": 44,
+          "maximum": 52,
+          "default": 48,
+          "parameterType": "architecture",
+          "docID": 110,
+          "type": "integer",
+          "guiDescription": "Width of the address on CHI interface"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "NS",
+          "parameterTitle": "Width of NS",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "LikelyShared",
+          "parameterTitle": "Width of LikelyShared",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "AllowRetry",
+          "parameterTitle": "Width of AllowRetry",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Order",
+          "parameterTitle": "Width of Order",
+          "minimum": 2,
+          "maximum": 2,
+          "default": 2,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "PCrdType",
+          "parameterTitle": "Width of potocol credit type",
+          "minimum": 4,
+          "maximum": 4,
+          "default": 4,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "MemAttr",
+          "parameterTitle": "Width of MemAttr",
+          "minimum": 4,
+          "maximum": 4,
+          "default": 4,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SnpAttr",
+          "parameterTitle": "Width of SnpAttr",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "LPID",
+          "parameterTitle": "Width of LPID",
+          "minimum": 5,
+          "maximum": 5,
+          "default": 5,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Excl",
+          "parameterTitle": "Width of Excl",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "ExCompAck",
+          "parameterTitle": "Width of ExCompAck",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "TraceTag",
+          "parameterTitle": "Width of trace tag",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "REQ_RSVDC",
+          "parameterTitle": "Width of request RSVDC",
+          "default": 0,
+          "parameterType": "architecture",
+          "docID": 113,
+          "validValues": "0,4,12,16",
+          "type": "integer",
+          "guiDescription": "Width of the request RSVDC/user bits "
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "DAT_RSVDC",
+          "parameterTitle": "Width of data RSVDC",
+          "default": 0,
+          "parameterType": "architecture",
+          "docID": 114,
+          "validValues": "0,4,12,16",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "RespErr",
+          "parameterTitle": "Width of respErr",
+          "minimum": 2,
+          "maximum": 2,
+          "default": 2,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Resp",
+          "parameterTitle": "Width of resp",
+          "minimum": 3,
+          "maximum": 3,
+          "default": 3,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "FwdState",
+          "parameterTitle": "Width of FwdState",
+          "minimum": 3,
+          "maximum": 3,
+          "default": 3,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "DBID",
+          "parameterTitle": "Width of DBID",
+          "minimum": 8,
+          "maximum": 8,
+          "default": 8,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "FwdNID",
+          "parameterTitle": "Width of Fwd node Id",
+          "minimum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "FwdTxnID",
+          "parameterTitle": "Width of Fwd Txn Id",
+          "minimum": 8,
+          "maximum": 8,
+          "default": 8,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "DoNotGoToSD",
+          "parameterTitle": "Width of DoNotGoToSD",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "RetToSrc",
+          "parameterTitle": "Width of RetToSrc",
+          "minimum": 1,
+          "maximum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Homenode_ID",
+          "parameterTitle": "Width of home node Id",
+          "minimum": 7,
+          "maximum": 11,
+          "default": 7,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "CCID",
+          "parameterTitle": "Width of CCID",
+          "minimum": 2,
+          "maximum": 2,
+          "default": 2,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "DataID",
+          "parameterTitle": "Width of DataID",
+          "minimum": 2,
+          "maximum": 2,
+          "default": 2,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "BE",
+          "parameterTitle": "Width of BE",
+          "minimum": 8,
+          "default": 8,
+          "parameterType": "architecture",
+          "validValues": "8,16,32,64",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "wData",
+          "parameterTitle": "CHI data bus width",
+          "default": 128,
+          "parameterType": "architecture",
+          "docID": 115,
+          "validValues": "128,256",
+          "type": "integer",
+          "minimum": 128,
+          "maximum": 256,
+          "guiDescription": "Width of data on the CHI interface"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wQos",
+          "parameterTitle": "Width of QoS",
+          "minimum": 4,
+          "maximum": 4,
+          "default": 4,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "enPoison",
+          "parameterTitle": "Enable poison bits",
+          "default": false,
+          "parameterType": "architecture",
+          "type": "boolean",
+          "guiDescription": "Enable poison port support on CHI interface"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wPoison",
+          "parameterTitle": "Width of poison field",
+          "default": 2,
+          "parameterType": "architecture",
+          "validValues": "0,2,4",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wReqflit",
+          "parameterTitle": "Width of Request flit",
+          "minimum": 95,
+          "default": 95,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wRspflit",
+          "parameterTitle": "Width of Response flit",
+          "minimum": 34,
+          "default": 34,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wDatflit",
+          "parameterTitle": "Width of Data flit",
+          "minimum": 125,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wSnpflit",
+          "parameterTitle": "Width of Snoop flit",
+          "minimum": 70,
+          "default": 70,
+          "parameterType": "architecture",
+          "type": "integer"
+        }
+      ]
+    }
+  ]
+}

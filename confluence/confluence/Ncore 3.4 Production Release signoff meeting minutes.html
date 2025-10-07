@@ -1,0 +1,149 @@
+<p><strong>Meeting Date: </strong>5/1/2023 11:00 AM</p><h1 id="Ncore3.4ProductionReleasesignoffmeetingminutes-Notes">Notes</h1><p> </p><p>Hi all,</p><p>Thanks for attending the Ncore 3.4 production release pre-signoff meeting to review the product status <br/>to confirm there is no gating item for the product to be released to the customers and the QA is successful. <br/>The supporting data are available in the Ncore 3.4 <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/190316558/Ncore+3.4+production+release+checklist" data-linked-resource-id="190316558" data-linked-resource-version="25" data-linked-resource-type="page">checklist</a>.<br/>See below the notes I have taken and the action items captured during the meeting.</p><p> </p><p>The engineering team has completed all the Ncore 3.4 signoff activities back in early April and created a <br/>1<sup>st</sup> build to verify the product while the QA was run in parallel.</p><p>2 additional builds have been created (to fix a deadlock issue in Maestro, RTL issues found during regressions and Customer Test Benches issues found during QA).</p><p>An initial review  to go through all the signoff data has been held April-6<sup>th</sup> and the action items from that<br/>meeting have been closed in the meantime.</p><p> </p><p><strong>RTL signoff status:</strong></p><p><u>Lint results:</u></p><p>Low number of Errors (~10) are waivable. The fixes are too risky and not implemented.</p><p>List of waivers is provided.</p><p><u>RTL open JIRA tickets:</u></p><p>No open RTL bug while one issue is opened to update the architecture specification to match the RTL behavior which is correct 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-11848" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-11848?src=confmacro" class="jira-issue-key">CONC-11848</a>
+                            </span>
+.</p><p><u>Timing analysis:</u></p><p>DC-NXT run completed for the HW-Config10-Lite and the signoff checklist has been updates with the results. 3 large timing violations have been discussed.</p><ul><li><p>chi_async_adapter_a: violation is due to missing constraint in Maestro script (false paths between the 2 clock domains). Issue has been solved 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-6055" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-6055?src=confmacro" class="jira-issue-key">MAES-6055</a>
+                            </span>
+.</p></li></ul><ul><li><p>DMI: DC-NXT is not able to fully optimize the unit. Synthesis and STA shall be run with RTLA and optimized floorplan to check realistically the timing</p></li></ul><ul><li><p>IOAIU_TOP_G is a XL block and timing results are not accurate. Synthesis and STA shall be run with RTLA to check realistically the timing: DCNXT couldn’t complete optimization even after running for 2 days.</p></li></ul><p>Timing report from Fusion Compiler/ RTLA will be reported instead of DC-NXT starting with Ncore 3.6 onward.</p><p>AI: re-run the synthesis on chi_async_adapter_a block to confirm the violations vanished =&gt; Own = Eric</p><p>AI: re-run the synthesis on IOAIU_TOP_G unit to confirm the small violations remain after optimization is complete =&gt; Own = Eric</p><p><u>Release notes:</u></p><p>Number of items in the release notes is significantly reduced  versus Ncore 3.2.6.</p><p>AI: Plan to close the remaining open items in Ncore 3.6 =&gt; Own = Ben/ Xiaojue/ Jason</p><p> </p><p><strong>DV signoff status:</strong></p><p><u>Regressions:</u></p><p>DV team fixed ~400 bugs from the backlog from previous releases.</p><p>All the regressions pass rates are &gt;=99% for the units and Full System</p><p>Simulations are randomized, plus due to RTL + Maestro changes, regressions results can drop by  1%.</p><p>Failures are analyzed and confirmed that they are not RTL issues.</p><p>Error tests have now been completed.</p><p>Discussed why the regression passing rate target is not 100%.</p><p>In some cases, RTL behavior needs to be clarified with Architect and Design to enable the DV to resolve <br/>a testbench issue. Even if the architecture specification is the reference, the Design and DV analyze the <br/>issue and recommend an architecture specification update. </p><p>Remaining failing TC have been all triaged and analyzed in dedicated meetings to close the gap to 100%.</p><p>Remaining few fail tests are gated by DV JIRA tickets being closed this week.</p><p><u>Functional and TACHL coverage:</u></p><p>Both coverages are at 100%: kudos to the team to achieve that target.</p><p><u>Code coverage:</u></p><p>The criteria are met and gap to 100% has been analyzed.</p><p><u>Xprop:</u></p><p>All issues have been fixed and verified at the unit level. Xprop job has been re-run and only 4 DVE issues <br/>that are from compilation errors only in Jenkins run remain to be fixed.</p><p>AI: re-run the Xprop Jenkins run and update the signoff checklist with the results =&gt; Own = Saad/ Bernard</p><p><u>Customer TestBenches:</u></p><p>All reported issues by AEs during QA have been fixed.</p><p>Performances(Bandwidth/ Latency):</p><p>Need to run a long enough test to stress the network and check the bandwidth</p><p>Latency has been reported with Ncore 3.2 and it is still applicable for Ncore 3.4.</p><p>Performance tests have not been run for this release: to be improved in Ncore 3.6.</p><p>AI: create a dedicated test plan to verify that the design can reach the theoretical frequency =&gt; Own = Saad</p><p><u>Nightly Regressions:</u></p><p>These tests are nightly random regressions run on selected configurations by changing the parameters.</p><p>These tests are important for the product maturity and they are going to be resumed after the release.</p><p>AI: improve the randomizer and resume the configuration random regressions =&gt; Own = Saad</p><p> </p><p><strong>Maestro signoff:</strong></p><p><u>Code coverage:</u></p><p>Function coverage shall be 80% minimum and the team will work to improve that number.</p><p>GUI test automation with Squish will improve the code coverage.</p><p><u>Synopsys script:</u></p><p>Synthesis script supports DC-NXT now</p><p>The synthesis script will support RTLA/ Fusion Compiler with Ncore 3.6</p><p><u>GUI validation:</u></p><p>User experience significantly  improved.</p><p>GUI test with Squish (automatic GUI checker tool) is ramping up, no result available yet</p><p>To be followed up because more Maestro GUI tests are needed to be safe when the tool is delivered to <br/>the customers: most of them will use GUI and just a few Tcl/ Tepam</p><p><u>Deliverable verification:</u></p><p>IP-XACT files from Maestro shall be checked with IPD tool to confirm the compatibility.</p><p>AI: IP-XACT test to be added as part of the regression =&gt; Own = Ben/ Eric will talk to Pascal Chauvet</p><p>Quick QA has been run with CSR compiler tool resulting in 2 open JIRA tickets:<br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-6064" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-6064?src=confmacro" class="jira-issue-key">MAES-6064</a>
+                            </span>
+ =&gt; fix is implemented but RALgen tool from Synopsys is failing because version is out of date <br/>preventing to include the fix to the release<br/>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-6065" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-6065?src=confmacro" class="jira-issue-key">MAES-6065</a>
+                            </span>
+ =&gt; fix in progress</p><p>These 2 issues will be fixed and the fix will be part of the Ncore 3.4.1.<br/>AI: add these 2 issues to the Ncore 3.4 release notes =&gt; Ben/ Eric/ Farnaz</p><p> </p><p><strong>Performance models signoff:</strong></p><p>All the features implemented and verified.</p><p>Performance tests have not been run thoroughly for this release: to be improved with Ncore 3.6.</p><p> </p><p><strong>Documentation signoff:</strong></p><p>Documentation set is ready and available for the product release.</p><p> </p><p><strong>QA:</strong></p><p>QA test items are tracked in JAMA.</p><p>No issue remains after the latest JIRA tickets resolution.</p><p>AI: update the QA test with the latest results =&gt; Own = JP</p><p> </p><p><strong>Meeting outcomes:</strong></p><p>There is no deviation blocking the product release providing that the 2 IP-XACT related issues are added to</p><p>the release notes.</p><p>We are moving to the next steps that are the formal approval from the stakeholders and the transfer of the</p><p>build to the production release area to enable the delivery to the customers: Ncore 3.2 customers that are</p><p>migrating to Ncore 3.4 in priority.</p><p> </p><p>Please let me know if anything is missing or unclear.</p><p> </p><p>Regards,</p><p>Bernard.</p>

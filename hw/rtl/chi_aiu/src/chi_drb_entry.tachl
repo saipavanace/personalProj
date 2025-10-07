@@ -1,0 +1,418 @@
+\jsbegin
+//============================================================================
+// Copyright (C) 2019 Arteris, Inc.
+// All rights reserved.
+//============================================================================
+// DWID write buffer entry. The first DW read out is from critical_dw.
+//
+// Author: Boon Chuan
+// Filename: chi_drb_entry.tachl
+//============================================================================
+
+//============================================================================     
+// Variables
+//============================================================================
+   
+let u = obj.lib;
+let m = obj.userLib;
+let bundleFunctions     = m.bundleFunctions;
+
+//============================================================================
+// Parameters
+//============================================================================
+let width               = u.getParam('width');
+let nBeats              = u.getParam('nBeats');
+let wDwid               = u.getParam('wDwid');
+let wAttr               = u.getParam('wAttr');
+let wIntfSize           = u.getParam('wIntfSize');
+let wTransSize          = u.getParam('wTransSize');
+
+let wBeats              = Math.log2(nBeats);
+let nDWsPerBeat         = width/64;
+let nDWs                = nDWsPerBeat * nBeats;
+
+//============================================================================
+// Ports
+//============================================================================
+u.port('input',  'clk', 1);
+u.port('input',  'reset_n', 1);
+u.port('input',  'trans_size', wTransSize);
+u.port('input',  'intf_size', wIntfSize);
+u.port('input',  'critical_dw', wDwid);
+u.port('output', 'empty' , 1);
+
+u.port('input',  'data_beat_in', width);
+u.port('input',  'data_beat_in_be', width/8);
+u.port('input',  'data_beat_in_dwid', wDwid*nDWsPerBeat);
+u.port('input',  'data_beat_in_data_id', 2);
+u.port('input',  'data_beat_in_attr', wAttr);
+u.port('input',  'data_beat_in_replay', 1);
+u.port('input',  'data_beat_in_last', 1);
+u.port('input',  'data_beat_in_valid', 1);
+u.port('output', 'data_beat_in_ready', 1);
+
+u.port('output', 'data_beat_out', width);
+u.port('output', 'data_beat_out_be', width/8);
+u.port('output', 'data_beat_out_dwid', wDwid*nDWsPerBeat);
+u.port('output', 'data_beat_out_data_id', 2);
+u.port('output', 'data_beat_out_attr', wAttr);
+u.port('output', 'data_beat_out_replay_flag', 1);
+u.port('output', 'data_beat_out_replay_progress', 1);
+u.port('output', 'data_beat_out_last',  1);
+u.port('output', 'data_beat_out_valid', 1);
+u.port('input',  'data_beat_out_ready', 1);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+//============================================================================
+// Wires
+//============================================================================
+    wire [\=wDwid-1=\:0]        trans_size_mask;
+    wire [\=wDwid-1=\:0]        trans_size_dw;
+    wire [\=wDwid=\:0]          rd_ptr_wrap_boundary_d;
+    wire [\=wDwid=\:0]          rd_ptr_wrap_boundary_q;
+    wire [\=wDwid-1=\:0]        trans_size_aligned_dwid_d;
+    wire [\=wDwid-1=\:0]        trans_size_aligned_dwid_q;
+    wire [\=width-1=\:0]        return_rob_beat;
+    wire [\=width/8-1=\:0]      return_rob_beat_be;
+    wire [\=wDwid-1=\:0]        rd_ptr_next;
+    wire [\=wDwid-1=\:0]        rd_ptr_init;
+    wire                        return_rob_beat_valid;
+    wire                        rob_ready;
+    wire                        wr_last_beat;
+    wire                        rd_last_beat;
+    wire                        rd_ptr_en;
+    wire [\=wDwid*nDWsPerBeat-1=\:0] return_rob_beat_dwid;
+    wire [1:0]                  return_rob_beat_data_id;
+    wire [\=wAttr-1=\:0]        return_rob_beat_attr;
+
+\js for(var i = 0; i < nDWs; i++) {
+    wire [1:0]              rob_data_id_\=i=\;
+    wire [63:0]             rob_dw_\=i=\;
+    wire [7:0]              rob_dw_be_\=i=\;
+    wire                    rob_dw_valid_\=i=\;
+    wire                    rob_dw_valid_d_\=i=\;
+\js }
+
+\js for(var i = 0; i < nDWs; i++) {
+    wire                    rob_dw_valid_en_\=i=\;
+    wire                    rob_dw_valid_set_\=i=\;
+    wire                    rob_dw_valid_clr_\=i=\;
+    wire                    wr_rob_dw_\=i=\;
+    wire                    rob_dw_be_en_\=i=\;
+    wire                    wr_hit_dw_\=i=\;
+    wire [63:0]             wr_rob_dw_in_\=i=\;
+    wire [7:0]              wr_rob_dw_be_in_\=i=\;
+\js }
+
+    wire [1:0]              rd_data_id;
+
+\js for(var i =0; i < nDWsPerBeat; i++) {
+    wire [63:0]             rd_data_\=i=\;
+    wire [7:0]              rd_data_be_\=i=\;
+    wire [\=wDwid-1=\:0]    rd_dwid_\=i=\;
+    wire                    rd_data_valid_\=i=\;
+    wire [\=wDwid-1=\:0]    rd_ptr_\=i=\;
+    wire [63:0]             data_dw_in_\=i=\;
+    wire [7:0]              data_dw_in_be_\=i=\;
+    wire [\=wDwid-1=\:0]    data_dw_in_dwid_\=i=\;
+\js }
+
+\js for(var i =0; i < nBeats; i++) {
+    wire [\=wAttr-1=\:0] rd_attr_\=i=\;
+    wire wr_beat_en_\=i=\;
+\js }
+    wire [\=wBeats-1=\:0]  wr_beat_count_q;
+    wire [\=wBeats-1=\:0]  wr_beat_count_d;
+    wire                   wr_beat_count_en;
+    wire [\=wBeats-1=\:0]  rd_beat_count_q;
+    wire [\=wBeats-1=\:0]  rd_beat_count_d;
+    wire                   rd_beat_count_en;
+
+
+    wire                        wr_beat_en;
+    wire                        rd_beat_en;
+    wire [\=wBeats-1=\:0]       beat_count_d;
+    wire [\=wBeats-1=\:0]       beat_count_q;
+    wire                        beat_count_en;
+    wire                        data_first_d;
+    wire                        data_first_q;
+    wire                        data_first_en;
+    wire                        last_beat_written_d;
+    wire                        last_beat_written_q;
+    wire                        last_beat_written_en;
+    wire                        last_beat_read_d;
+    wire                        last_beat_read_q;
+    wire                        last_beat_read_en;
+
+    wire                        replay_flag;
+    wire                        replay_in;
+    wire                        replay_en;
+
+    wire                        replay_progress;
+    wire                        replay_progress_in;
+    wire                        replay_progress_en;
+
+    assign rd_beat_count_en = rd_beat_en;
+    assign rd_beat_count_d  = data_beat_out_last ? \=wBeats=\'d0 : (rd_beat_count_q + 1'b1);
+
+    \=u.dffre(wBeats, 'rd_beat_count_q', 'rd_beat_count_d',  wBeats+"'d0", 'rd_beat_count_en', 'clk', 'reset_n')=\
+
+    assign wr_beat_count_en = wr_beat_en;
+    assign wr_beat_count_d  = data_beat_in_last ? \=wBeats=\'d0 : (wr_beat_count_q + 1'b1);
+
+    \=u.dffre(wBeats, 'wr_beat_count_q', 'wr_beat_count_d',  wBeats+"'d0", 'wr_beat_count_en', 'clk', 'reset_n')=\
+
+\js for(var i =0; i < nBeats; i++) {
+    assign wr_beat_en_\=i=\ = wr_beat_en & (wr_beat_count_q == \=wBeats=\'d\=i=\);
+\js }
+
+\js for(var i =0; i < nBeats; i++) {
+    \=u.dffre(wAttr, 'rd_attr_'+i, 'data_beat_in_attr',  wAttr+"'d0", 'wr_beat_en_'+i, 'clk', 'reset_n')=\
+\js }
+
+//============================================================================
+// Reorder Buffer Entries
+//============================================================================
+\js for(var j = 0; j < nDWsPerBeat; j++) {
+    assign data_dw_in_\=j=\ = data_beat_in[\=(j+1)*64-1=\:\=j*64=\];
+    assign data_dw_in_be_\=j=\ = data_beat_in_be[\=(j+1)*8-1=\:\=j*8=\];
+    assign data_dw_in_dwid_\=j=\ = data_beat_in_dwid[\=(j+1)*3-1=\:\=j*3=\];
+\js }
+
+\js for(var i = 0; i < nDWs; i++) {
+\js //flop wr enable, per DW
+    assign wr_rob_dw_\=i=\ = wr_hit_dw_\=i=\ & wr_beat_en;
+    assign wr_hit_dw_\=i=\ = 
+            (data_dw_in_dwid_0 == \=wDwid=\'d\=i=\)
+\js     for (var j = 1; j < nDWsPerBeat ; j++) {
+          | (data_dw_in_dwid_\=j=\ == \=wDwid=\'d\=i=\)
+\js     }
+          ;
+
+    assign wr_rob_dw_in_\=i=\ = rd_last_beat & ~replay_flag ? 64'd0 :
+            (data_dw_in_dwid_0 == \=wDwid=\'d\=i=\) ? data_dw_in_0 :
+\js     for(var j = 1; j < nDWsPerBeat ; j++) {
+            (data_dw_in_dwid_\=j=\ == \=wDwid=\'d\=i=\) ? data_dw_in_\=j=\ :
+\js     }
+            'b0;
+
+    assign wr_rob_dw_be_in_\=i=\ = rd_last_beat & ~replay_flag ? 8'd0 : 
+            (data_dw_in_dwid_0 == \=wDwid=\'d\=i=\) ? data_dw_in_be_0 :
+\js     for(var j = 1; j < nDWsPerBeat ; j++) {
+            (data_dw_in_dwid_\=j=\ == \=wDwid=\'d\=i=\) ? data_dw_in_be_\=j=\ :
+\js     }
+            8'b0;
+
+\js // clear be when things are read out.
+    \=u.dffre(64,    'rob_dw_'+i,           'wr_rob_dw_in_'+i,           "64'd0",      'rob_dw_be_en_'+i,      'clk', 'reset_n')=\
+    \=u.dffre(8,     'rob_dw_be_'+i,        'wr_rob_dw_be_in_'+i,        "8'd0",       'rob_dw_be_en_'+i,      'clk', 'reset_n')=\
+    \=u.dffre(1,     'rob_dw_valid_'+i,     'rob_dw_valid_d_'+i,         "1'b0",       'rob_dw_valid_en_'+i,   'clk', 'reset_n')=\
+
+    assign rob_dw_valid_set_\=i=\ = (wr_rob_dw_\=i=\ | wr_last_beat) & ~last_beat_read_q;
+    assign rob_dw_valid_clr_\=i=\ = rd_last_beat & ~replay_flag;
+    assign rob_dw_valid_en_\=i=\  = rob_dw_valid_set_\=i=\ | rob_dw_valid_clr_\=i=\;
+
+\js // clear over set, after the last beat is read the entry is cleared.
+    assign rob_dw_valid_d_\=i=\   = rob_dw_valid_set_\=i=\ & ~rob_dw_valid_clr_\=i=\;
+
+    assign rob_dw_be_en_\=i=\     = (wr_rob_dw_\=i=\ & ~last_beat_read_q) | (rd_last_beat & ~replay_flag);
+\js }
+
+    wire [1:0] wr_rob_data_id_in = rd_last_beat & ~replay_flag ? 2'b0 : data_beat_in_data_id;
+
+\js for(var i = 0; i < nDWs; i++) {
+    \=u.dffre(2, 'rob_data_id_'+i, 'wr_rob_data_id_in', "2'd0", 'rob_dw_be_en_'+i, 'clk', 'reset_n')=\
+\js }
+
+    assign data_beat_in_ready = rob_ready;
+
+    wire wr_first_beat;
+
+    assign wr_last_beat  = wr_beat_en & data_beat_in_last;
+    assign rd_last_beat  = rd_beat_en & data_beat_out_last;
+    assign wr_first_beat = wr_beat_en & data_first_q;
+
+    \=u.dffre(1, 'last_beat_written_q', 'last_beat_written_d',  "1'b0", 'last_beat_written_en', 'clk', 'reset_n')=\
+    \=u.dffre(1, 'last_beat_read_q',    'last_beat_read_d',     "1'b0", 'last_beat_read_en',    'clk', 'reset_n')=\
+
+    // read/write same data won't happen in the same cycle
+    assign last_beat_written_d  = wr_last_beat & ~((rd_last_beat & ~replay_flag) | last_beat_read_q);
+    assign last_beat_written_en = wr_last_beat | (rd_last_beat & ~replay_flag);
+
+    assign last_beat_read_d     = (rd_last_beat & ~replay_flag) & ~(wr_last_beat | last_beat_written_q);
+    assign last_beat_read_en    = (rd_last_beat & ~replay_flag) | wr_last_beat;
+
+    // data first counter
+    \=u.dffre(1, 'data_first_q', 'data_first_d', "1'b1", 'data_first_en', 'clk', 'reset_n')=\
+
+    assign data_first_d  = wr_last_beat;
+    assign data_first_en = wr_beat_en;
+
+    assign rob_ready = ~last_beat_written_q;
+
+//============================================================================
+// Replay
+//============================================================================
+
+    assign replay_en    = (wr_first_beat & ~replay_flag) |
+                          (rd_last_beat & replay_flag);
+
+    assign replay_in    = (wr_first_beat & ~replay_flag) ? data_beat_in_replay :
+                          (rd_last_beat & replay_flag)   ? 1'b0 : replay_flag;
+
+    \=u.dffre(1, 'replay_flag', 'replay_in', "1'b0", 'replay_en', 'clk', 'reset_n')=\
+
+
+
+    assign replay_progress_en = rd_last_beat;
+
+    assign replay_progress_in = replay_flag;
+
+    \=u.dffre(1, 'replay_progress', 'replay_progress_in', "1'b0", 'replay_progress_en', 'clk', 'reset_n')=\
+
+
+    assign data_beat_out_replay_flag     = replay_flag;
+    assign data_beat_out_replay_progress = replay_progress;
+
+//============================================================================
+// ROB Pointers Management
+//============================================================================
+\js // This is for cross beat
+    assign rd_ptr_next = (wr_beat_en & data_first_q & ~replay_flag)                 ? rd_ptr_init :
+                         (({1'b0,rd_ptr_0} + \=wDwid+1=\'d\=nDWsPerBeat=\) == rd_ptr_wrap_boundary_q) ? trans_size_aligned_dwid_q :
+                                                                                      (rd_ptr_0 + \=wDwid=\'d\=nDWsPerBeat=\);
+\js // wr_beat_en for first beat and rd_beat_en won't happen in the same cycle
+    assign rd_ptr_en = (wr_beat_en & data_first_q & ~replay_flag) | rd_beat_en; 
+
+    \=u.dffre(wDwid, 'rd_ptr_0', 'rd_ptr_next', wDwid+"'b0", 'rd_ptr_en', 'clk', 'reset_n')=\
+
+\js for(var i = 1; i < nDWsPerBeat; i++) {
+    assign rd_ptr_\=i=\ = rd_ptr_0 + \=wDwid=\'d\=i=\;
+\js }
+
+    assign trans_size_dw = (\=wDwid=\'b1 << (trans_size - \=wTransSize=\'d3));
+    assign trans_size_mask = ~(trans_size_dw - \=wDwid=\'d1);
+    assign rd_ptr_init = critical_dw;
+    assign rd_ptr_wrap_boundary_d = {1'b0, trans_size_aligned_dwid_d} + {1'b0, trans_size_dw};
+
+    assign trans_size_aligned_dwid_d = critical_dw & trans_size_mask;
+
+    \=u.dffre(wDwid+1,  'rd_ptr_wrap_boundary_q',   'rd_ptr_wrap_boundary_d',   (wDwid+1)+"'b0",    'wr_first_beat', 'clk', 'reset_n')=\
+    \=u.dffre(wDwid,    'trans_size_aligned_dwid_q','trans_size_aligned_dwid_d', wDwid+"'b0",       'wr_first_beat', 'clk', 'reset_n')=\
+
+\jsbegin
+//============================================================================
+// Beat Countdown
+//============================================================================
+\jsend
+
+\js // handle special case when trans_size is narrower then intfSize
+\js // if so, size should be intfSize. otherwise size remains.
+
+    wire [\=wBeats-1=\:0]       beats_init;
+    wire [\=wTransSize-1=\:0]   adj_size;
+    wire [\=wTransSize-1=\:0]   intf_size_in_bytes;
+
+    assign intf_size_in_bytes = intf_size + \=wTransSize=\'b11;
+    assign adj_size = (trans_size >= intf_size_in_bytes)? trans_size : intf_size_in_bytes;
+    assign beats_init = (adj_size > \=Math.log2(width/8)=\)? (\=wBeats=\'b1 << (adj_size - \=Math.log2(width/8)=\)) - \=wBeats=\'b1 : \=wBeats=\'b0;
+    assign wr_beat_en = data_beat_in_valid & data_beat_in_ready;
+    assign rd_beat_en = data_beat_out_valid & data_beat_out_ready;
+    assign beat_count_d = (wr_beat_en & data_first_q) ? beats_init : rd_beat_en ? beat_count_q - 1'b1 : beat_count_q;
+    assign beat_count_en = (wr_beat_en & data_first_q) | rd_beat_en;
+
+    \=u.dffre(wBeats, 'beat_count_q', 'beat_count_d', wBeats+"'d0", 'beat_count_en', 'clk', 'reset_n')=\
+
+    assign data_beat_out_last = (beat_count_q == \=wBeats=\'b0);
+
+//============================================================================
+// Ouput Data Mux
+//============================================================================
+
+    assign empty = ~rob_dw_valid_0
+\js for (var i = 1; i < nDWs; i++) {
+                 & ~rob_dw_valid_\=i=\
+\js }
+                 ;
+    assign data_beat_out = return_rob_beat;
+    assign data_beat_out_be = return_rob_beat_be;
+    assign data_beat_out_valid = return_rob_beat_valid;
+    assign data_beat_out_dwid = return_rob_beat_dwid;
+    assign data_beat_out_data_id = return_rob_beat_data_id;
+    assign data_beat_out_attr = return_rob_beat_attr;
+
+    assign return_rob_beat_data_id = rd_data_id;
+
+    assign return_rob_beat_attr = 
+        ({\=wAttr=\{(rd_beat_count_q == \=wBeats=\'d0)}} & rd_attr_0)
+\js for(var i = 1; i < nBeats; i++) {
+      | ({\=wAttr=\{(rd_beat_count_q == \=wBeats=\'d\=i=\)}} & rd_attr_\=i=\)
+\js }
+      ;
+
+
+    assign return_rob_beat = {
+        rd_data_\=nDWsPerBeat - 1=\
+\js for(var i = nDWsPerBeat - 2; i >= 0; i--) {
+        , rd_data_\=i=\
+\js }
+                             };
+
+    assign return_rob_beat_be = {
+        rd_data_be_\=nDWsPerBeat - 1=\
+\js for(var i = nDWsPerBeat - 2; i >= 0; i--) {
+        , rd_data_be_\=i=\
+\js }
+                             };
+
+    assign return_rob_beat_dwid = {
+        rd_dwid_\=nDWsPerBeat - 1=\
+\js for(var i = nDWsPerBeat - 2; i >= 0; i--) {
+        , rd_dwid_\=i=\
+\js }
+                             };
+
+    assign return_rob_beat_valid = {
+        rd_data_valid_\=nDWsPerBeat - 1=\
+\js for(var i = nDWsPerBeat - 2; i >= 0; i--) {
+        & rd_data_valid_\=i=\
+\js }
+                               };
+
+\js for(var i = 0; i < nDWsPerBeat; i++) {
+    assign rd_data_\=i=\ = rob_dw_0 & {64{(rd_ptr_\=i=\ == \=wDwid=\'d0)}}
+\js     for(var j = 1; j < nDWs; j++) {
+                         | rob_dw_\=j=\ & {64{(rd_ptr_\=i=\ == \=wDwid=\'d\=j=\)}}
+\js     }
+                       ;
+\js }
+
+    assign rd_data_id    = (rob_data_id_0 & {2{(rd_ptr_0 == 3'd0)}})
+\js for(var i = 1; i < nDWs; i++) {
+                         | (rob_data_id_\=i=\ & {2{(rd_ptr_0 == 3'd\=i=\)}})
+\js }
+                         ;
+
+\js for(var i = 0; i < nDWsPerBeat; i++) {
+    assign rd_data_be_\=i=\ = rob_dw_be_0 & {8{(rd_ptr_\=i=\ == \=wDwid=\'d0)}}
+\js     for(var j = 1; j < nDWs; j++) {
+                            | rob_dw_be_\=j=\ & {8{(rd_ptr_\=i=\ == \=wDwid=\'d\=j=\)}}
+\js     }
+                       ;
+\js }
+
+\js for(var i = 0; i < nDWsPerBeat; i++) {
+    assign rd_dwid_\=i=\ = rd_ptr_\=i=\;
+\js }
+
+\js for(var i = 0; i < nDWsPerBeat; i++) {
+    assign rd_data_valid_\=i=\ = rob_dw_valid_0 & (rd_ptr_\=i=\ == \=wDwid=\'d0)
+\js     for(var j = 1; j < nDWs; j++) {
+                               | rob_dw_valid_\=j=\ & (rd_ptr_\=i=\ == \=wDwid=\'d\=j=\)
+\js     }
+                       ;
+\js }
+
+endmodule

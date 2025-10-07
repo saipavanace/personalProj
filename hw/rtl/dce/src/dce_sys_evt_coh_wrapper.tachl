@@ -1,0 +1,315 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2021 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// System Event and Coherency Wrapper
+//
+// Author: Boon Chuan
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+
+var nChiplets           = u.getParam('nChiplets');
+var wChipletId          = u.getParam('wChipletId');
+var wGlobalFUnitId      = u.getParam('wGlobalFUnitId');
+var nCachingAgents      = u.getParam('nCachingAgents');
+
+var wSnoopEnables       = u.getParam('wSnoopEnables');
+var nSnoopAgents        = u.getParam('nSnoopAgents');
+
+var nEventAgentsForSender   = u.getParam('nEventAgentsForSender');
+
+var wEventTimeout       = u.getParam('wEventTimeout');
+var wProtocolTimeout    = u.getParam('wProtocolTimeout');
+
+var wFUnitId            = u.getParam('wFUnitId');
+var wNUnitId            = u.getParam('wNUnitId');
+var wMessageId          = u.getParam('wMessageId');
+var wSysReqOp           = u.getParam('wSysReqOp');
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+u.port('input',  'clk',      1);
+u.port('input',  'reset_n',  1);
+u.port('output', 'busy',     1);
+
+u.port('input',  'csr_event_timeout_value', wEventTimeout);
+u.port('input',  'csr_sys_evt_protocol_timeout_value', wProtocolTimeout);
+
+u.port('input',  'csr_sys_evt_sender_enable', 1);
+u.port('output', 'csr_sys_evt_sender_err_vld', 1);
+u.port('output', 'csr_sys_evt_sender_err_f_unit_id', wFUnitId);
+u.port('output', 'csr_sys_evt_sender_err_protocol_sys', 1);
+u.port('output', 'csr_sys_evt_sender_err_protocol_timeout', 1);
+u.port('output', 'csr_sys_evt_sender_err_event_timeout', 1);
+        for (var i=0; i < nEventAgentsForSender; i++) {
+u.port('input', 'event'+i+'_f_unit_id', wFUnitId);
+        }
+
+u.port('output', 'csr_sys_coh_receiver_err_vld', 1);
+u.port('output', 'csr_sys_coh_receiver_err_global_f_unit_id', wGlobalFUnitId);
+u.port('output', 'snoop_enables', wSnoopEnables);
+u.port('output', 'snoop_enables_update', 1);
+u.port('input',  'csr_snoop_enables', wSnoopEnables);
+u.port('input',  'csr_snoop_enables_update', 1);
+        for (var i=0; i < nSnoopAgents; i++) {
+u.port('input', 'aiu'+i+'_f_unit_id', wFUnitId);
+u.port('input', 'aiu'+i+'_n_unit_id', wNUnitId);
+        }
+
+        if (wChipletId > 0) {
+u.port('input', 'ca_global_f_unit_id', nCachingAgents * wGlobalFUnitId);
+u.port('input', 'ca_global_f_unit_id_valid', nCachingAgents);
+        }
+
+u.port('input',  'event_in_req', 1);
+u.port('output', 'event_in_ack', 1);
+u.port('input',  'event_in_targets', nEventAgentsForSender);
+
+u.port('input',  'outstanding_snoop_count_zero', nSnoopAgents);
+
+u.port('output', 'sender_sysreq_valid', 1);
+u.port('input',  'sender_sysreq_ready', 1);
+u.port('output', 'sender_sysreq_target_f_unit_id', wFUnitId);
+u.port('output', 'sender_sysreq_message_id', wMessageId);
+u.port('output', 'sender_sysreq_op', wSysReqOp); // 0=NOP 1=Attach 2=Detach 3=Event
+
+u.port('input',  'sender_sysrsp_valid', 1);
+u.port('output', 'sender_sysrsp_ready', 1);
+u.port('input',  'sender_sysrsp_rmessage_id', wMessageId);
+u.port('input',  'sender_sysrsp_cmstatus', 8);
+u.port('input',  'sender_sysrsp_initiator_f_unit_id', wFUnitId);
+
+u.port('input',  'receiver_sysreq_valid', 1);
+u.port('output', 'receiver_sysreq_ready', 1);
+u.port('input',  'receiver_sysreq_initiator_global_f_unit_id', wGlobalFUnitId);
+u.port('input',  'receiver_sysreq_message_id', wMessageId);
+u.port('input',  'receiver_sysreq_cmstatus', 8);
+u.port('input',  'receiver_sysreq_op', wSysReqOp); // 0=NOP 1=Attach 2=Detach 3=Event
+
+u.port('output', 'receiver_sysrsp_valid', 1);
+u.port('input',  'receiver_sysrsp_ready', 1);
+u.port('output', 'receiver_sysrsp_target_global_f_unit_id', wGlobalFUnitId);
+u.port('output', 'receiver_sysrsp_rmessage_id', wMessageId);
+u.port('output', 'receiver_sysrsp_cmstatus', 8);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+wire [\=wSysReqOp-1=\:0] SYSREQ_OP_NOP    = \=wSysReqOp=\'d0;
+wire [\=wSysReqOp-1=\:0] SYSREQ_OP_ATTACH = \=wSysReqOp=\'d1;
+wire [\=wSysReqOp-1=\:0] SYSREQ_OP_DETACH = \=wSysReqOp=\'d2;
+wire [\=wSysReqOp-1=\:0] SYSREQ_OP_EVENT  = \=wSysReqOp=\'d3;
+
+wire [\=wMessageId-1=\:0] evt_sender_sysreq_message_id = \=wMessageId=\'d0;
+wire [\=wMessageId-1=\:0] coh_sender_sysreq_message_id = \=wMessageId=\'d1;
+
+wire evt_sender_busy;
+wire csr_sys_evt_protocol_timeout_err;
+wire csr_sys_evt_event_timeout_err;
+wire csr_sys_evt_protocol_cmstatus_err;
+wire [7:0] csr_sys_evt_protocol_cmstatus;
+wire evt_sender_sysreq_valid;
+wire evt_sender_sysreq_ready;
+wire [\=wFUnitId-1=\:0] evt_sender_sysreq_target_f_unit_id;
+wire [\=wSysReqOp-1=\:0] evt_sender_sysreq_op;
+wire evt_sender_sysrsp_valid;
+wire evt_sender_sysrsp_ready;
+wire [7:0] evt_sender_sysrsp_cmstatus;
+wire [\=wFUnitId-1=\:0] evt_sender_sysrsp_initiator_f_unit_id;
+
+wire coh_receiver_busy;
+wire coh_receiver_sysreq_valid;
+wire coh_receiver_sysreq_ready;
+wire [\=wGlobalFUnitId-1=\:0] coh_receiver_sysreq_initiator_global_f_unit_id;
+wire [\=wMessageId-1=\:0] coh_receiver_sysreq_message_id;
+wire [7:0] coh_receiver_sysreq_cmstatus;
+wire [\=wSysReqOp-1=\:0] coh_receiver_sysreq_op;
+wire coh_receiver_sysrsp_valid;
+wire coh_receiver_sysrsp_ready;
+wire [\=wGlobalFUnitId-1=\:0] coh_receiver_sysrsp_target_global_f_unit_id;
+wire [\=wMessageId-1=\:0] coh_receiver_sysrsp_rmessage_id;
+wire [7:0] coh_receiver_sysrsp_cmstatus;
+
+\jsbegin
+//=============================================================================
+// Sys.Event Sender
+//=============================================================================
+\jsend
+
+    \jsbegin
+        var sys_evt_sender_params = {
+            nEventAgentsForSender   : nEventAgentsForSender,
+            wFUnitId                : wFUnitId,
+            wMessageId              : wMessageId,
+            wSysReqOp               : wSysReqOp,
+            wEventTimeout           : wEventTimeout,
+            wProtocolTimeout        : wProtocolTimeout
+        };
+        var instance_ports_for_sys_evt_sender = {
+            clk                               : 'clk',
+            reset_n                           : 'reset_n',
+            evt_sender_busy                   : 'evt_sender_busy',
+            csr_event_timeout_value           : 'csr_event_timeout_value',
+            csr_protocol_timeout_value        : 'csr_sys_evt_protocol_timeout_value',
+            csr_sys_evt_sender_enable         : 'csr_sys_evt_sender_enable',
+            csr_sys_evt_sender_err_vld        : 'csr_sys_evt_sender_err_vld',
+            csr_sys_evt_sender_err_f_unit_id        : 'csr_sys_evt_sender_err_f_unit_id',
+            csr_sys_evt_sender_err_protocol_sys     : 'csr_sys_evt_sender_err_protocol_sys',
+            csr_sys_evt_sender_err_protocol_timeout : 'csr_sys_evt_sender_err_protocol_timeout',
+            csr_sys_evt_sender_err_event_timeout    : 'csr_sys_evt_sender_err_event_timeout',
+            event_in_req                      : 'event_in_req',
+            event_in_ack                      : 'event_in_ack',
+            event_in_targets                  : 'event_in_targets',
+            sysreq_valid                      : 'evt_sender_sysreq_valid',
+            sysreq_ready                      : 'evt_sender_sysreq_ready',
+            sysreq_target_f_unit_id           : 'evt_sender_sysreq_target_f_unit_id',
+            sysreq_op                         : 'evt_sender_sysreq_op',
+            sysrsp_valid                      : 'evt_sender_sysrsp_valid',
+            sysrsp_ready                      : 'evt_sender_sysrsp_ready',
+            sysrsp_cmstatus                   : 'evt_sender_sysrsp_cmstatus',
+            sysrsp_initiator_f_unit_id        : 'evt_sender_sysrsp_initiator_f_unit_id'
+        };
+        for (var i=0; i < nEventAgentsForSender; i++) {
+            instance_ports_for_sys_evt_sender['event'+i+'_f_unit_id'] = 'event'+i+'_f_unit_id';
+        }
+    \jsend
+        \=obj.lib.instance({
+            instanceName: 'u_sys_evt_sender',
+            moduleName: 'sys_evt_sender',
+            params: sys_evt_sender_params,
+            verilogParams: {},
+            ports: instance_ports_for_sys_evt_sender,
+            portsDelimiter: '\n    '
+        })=\
+
+\jsbegin
+//=============================================================================
+// Sys.Coh Receiver
+//=============================================================================
+\jsend
+
+    \jsbegin
+        var sys_coh_receiver_params = {
+            useSysEvtSender     : 1, //useSysEvtSender
+            nChiplets           : nChiplets,
+            wChipletId          : wChipletId,
+            wGlobalFUnitId      : wGlobalFUnitId,
+            nCachingAgents      : nCachingAgents,
+            wFUnitId            : wFUnitId,
+            wNUnitId            : wNUnitId,
+            wMessageId          : wMessageId,
+            wSysReqOp           : wSysReqOp,
+            nSnoopAgents        : nSnoopAgents,
+            wSnoopEnables       : wSnoopEnables
+        };
+        var instance_ports_for_sys_coh_receiver = {
+            clk                           : 'clk',
+            reset_n                       : 'reset_n',
+            coh_receiver_busy             : 'coh_receiver_busy',
+            csr_sys_coh_receiver_err_vld  : 'csr_sys_coh_receiver_err_vld',
+            csr_sys_coh_receiver_err_global_f_unit_id  : 'csr_sys_coh_receiver_err_global_f_unit_id',
+            snoop_enables                 : 'snoop_enables',
+            snoop_enables_update          : 'snoop_enables_update',
+            csr_snoop_enables             : 'csr_snoop_enables',
+            csr_snoop_enables_update      : 'csr_snoop_enables_update',
+            outstanding_snoop_count_zero  : 'outstanding_snoop_count_zero',
+            sysreq_valid                  : 'coh_receiver_sysreq_valid',
+            sysreq_ready                  : 'coh_receiver_sysreq_ready',
+            sysreq_initiator_global_f_unit_id    : 'coh_receiver_sysreq_initiator_global_f_unit_id',
+            sysreq_message_id             : 'coh_receiver_sysreq_message_id',
+            sysreq_cmstatus               : 'coh_receiver_sysreq_cmstatus',
+            sysreq_op                     : 'coh_receiver_sysreq_op',
+            sysrsp_valid                  : 'coh_receiver_sysrsp_valid',
+            sysrsp_ready                  : 'coh_receiver_sysrsp_ready',
+            sysrsp_target_global_f_unit_id       : 'coh_receiver_sysrsp_target_global_f_unit_id',
+            sysrsp_rmessage_id            : 'coh_receiver_sysrsp_rmessage_id',
+            sysrsp_cmstatus               : 'coh_receiver_sysrsp_cmstatus'
+        };
+        for (var i=0; i < nSnoopAgents; i++) {
+            instance_ports_for_sys_coh_receiver['aiu'+i+'_f_unit_id'] = 'aiu'+i+'_f_unit_id';
+            instance_ports_for_sys_coh_receiver['aiu'+i+'_n_unit_id'] = 'aiu'+i+'_n_unit_id';
+        }
+        if (wChipletId > 0) {
+            instance_ports_for_sys_coh_receiver['ca_global_f_unit_id']       = 'ca_global_f_unit_id';
+            instance_ports_for_sys_coh_receiver['ca_global_f_unit_id_valid'] = 'ca_global_f_unit_id_valid';
+        }
+            instance_ports_for_sys_coh_receiver['sysrsp_detach_to_wait'] = 'evt_sender_busy';
+
+    \jsend
+        \=obj.lib.instance({
+            instanceName: 'u_sys_coh_receiver',
+            moduleName: 'dce_sys_coh_receiver',
+            params: sys_coh_receiver_params,
+            verilogParams: {},
+            ports: instance_ports_for_sys_coh_receiver,
+            portsDelimiter: '\n    '
+        })=\
+
+\jsbegin
+//=============================================================================
+// Sender SysReq, SysRsp
+//=============================================================================
+\jsend
+
+assign sender_sysreq_valid            = evt_sender_sysreq_valid;
+assign sender_sysreq_target_f_unit_id = evt_sender_sysreq_target_f_unit_id;
+assign sender_sysreq_message_id       = \=wMessageId=\'b0;
+assign sender_sysreq_op               = evt_sender_sysreq_op;
+
+assign evt_sender_sysreq_ready        = sender_sysreq_ready;
+
+assign sender_sysrsp_ready            = evt_sender_sysrsp_ready;
+
+assign evt_sender_sysrsp_valid        = sender_sysrsp_valid;
+assign evt_sender_sysrsp_cmstatus     = sender_sysrsp_cmstatus;
+assign evt_sender_sysrsp_initiator_f_unit_id = sender_sysrsp_initiator_f_unit_id;
+
+\jsbegin
+//=============================================================================
+// Receiver SysReq, SysRsp
+//=============================================================================
+\jsend
+
+assign coh_receiver_sysreq_valid               = receiver_sysreq_valid;
+assign coh_receiver_sysreq_initiator_global_f_unit_id = receiver_sysreq_initiator_global_f_unit_id;
+assign coh_receiver_sysreq_message_id          = receiver_sysreq_message_id;
+assign coh_receiver_sysreq_cmstatus            = receiver_sysreq_cmstatus;
+assign coh_receiver_sysreq_op                  = receiver_sysreq_op;
+
+assign receiver_sysreq_ready = coh_receiver_sysreq_ready;
+
+assign receiver_sysrsp_valid            = coh_receiver_sysrsp_valid;
+assign receiver_sysrsp_target_global_f_unit_id = coh_receiver_sysrsp_target_global_f_unit_id;
+assign receiver_sysrsp_rmessage_id      = coh_receiver_sysrsp_rmessage_id;
+assign receiver_sysrsp_cmstatus         = coh_receiver_sysrsp_cmstatus;
+
+assign coh_receiver_sysrsp_ready = receiver_sysrsp_ready;
+
+
+
+assign busy = 1'b0
+            | evt_sender_busy
+            | coh_receiver_busy
+            ;
+
+endmodule

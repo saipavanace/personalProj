@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>The_directory_output&#47;rtl_and_the_Design_Verilog</title>
+<meta content="The directory output&#47;rtl and the Design Verilog" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Integration_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "2.3.1_2";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Integration_Guide/IP_XACT/The_directory_output__47_models.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Integration_Guide/IP_XACT/The_directory_output__47_setup.htm">
+ <meta name="topic-breadcrumbs" content="Integration Guide > Generating Maestro Outputs" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1048911"><a id="968_Heading1_1048911" name="968_Heading1_1048911"></a>4.4 The directory output&#47;rtl and the Design Verilog</p><p class="BodyAfterHead" id="1049126">The directory <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">output&#47;rtl</span> and the sub&#x2D;directories contain the Verilog RTL modules which make up the design. RTL manifest files &#x201c;<span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;&#x3E;.flist</span>&#x201d; also exist in the <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">output&#47;rtl&#47;design</span> sub&#x2D;tree. The <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">top.flist</span> exists as the manifest for the complete design. Unit level manifest files (e.g., &#x201c;<span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;unit&#x3E;.flist</span>&#x201d;) also exist for exploration and debug purposes.<object class="imageSettings" data="../assets/Integration_Guide_IP_XACT_FOM_SVG_23.svg" height="182.833293" style="max-width: 100% ;height: auto;display:block;align:left;" type="image/svg+xml" width="624.000000"></object></p><p class="Body" id="1048926">The directory <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">output&#47;rtl&#47;design</span> contains Verilog RTL which should be considered golden and consumed as is without modification. Prior to release 3.7 there is one caveat with respect to <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">cg_prim.v</span> that is described below. </p><p class="Body" id="1048928">The description of the design can contain relatively fine grain primitives for which precise mapping from RTL to technology specific gate(s) is desired. An example of this is cg_prim.v which can be instantiated in the design as an architectural clock&#x2D;gater. EDA tools may map to a discrete combinational gate and a latch (undesired) or to a monolithic ICG cells (desired). The directory <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">output&#47;rtl&#47;models&#47;cells</span> contains those Verilog RTL files for which a precise mapping may be desired. The exact collection of files varies based on design configuration and release.</p><p class="Body" id="1050572">The Verilog RTL description is suitable for verification, but the module should likely get mapped to technology specific cell(s) prior to executing an implementation flow.</p><p class="Body" id="1049142">The directory <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">output&#47;rtl&#47;models&#47;memories</span> contains those Verilog RTL files that represent functional memories. The exact collection of files varies based on design configuration and release. The Verilog RTL description is suitable for verification but needs to get mapped to technology specific SRAM(s) prior to executing an implementation flow. One functional memory (e.g., 512x16) may be implemented via several smaller pieces  (e.g., 4 256x8 SRAM, read mux, etc). See <a href="../EmbedMem/EmbedMem.htm#XREF_29252__Select_Maestro_Flow_Considerations4">Select Maestro Flow Considerations</a>for more details   </p><p class="Body" id="1048932">The directory <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">output&#47;rtl&#47;placeholders</span> contains RTL files that can be modified by the end&#x2D;user. Typically, modifications are for purposes of native interface protection.</p><p class="Body" id="1049903">The directory <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">output&#47;reports</span> is currently empty.</p></div>
+</body>
+</html>

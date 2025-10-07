@@ -1,0 +1,335 @@
+{
+  "name": "NC_DMI",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "strRtlNamePrefix",
+          "parameterTitle": "RTL prefix string",
+          "regex": "^[a-zA-Z](?:[a-zA-Z0-9]|_(?!_|$))*$",
+          "parameterType": "architecture",
+          "docID": 184,
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "fUnitId",
+          "parameterTitle": "fUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nUnitId",
+          "parameterTitle": "nUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wDpAux",
+          "parameterTitle": "wDpAux",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "useAtomic",
+          "parameterTitle": "Enable Atomic Engine",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "This option adds an atomic engien in DMI.\nIt must be enabled when an atomic capable master is present in the system and requires atleast a 4KB SMC.",
+          "docID": 185,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "useCache",
+          "parameterTitle": "Enable Cache",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "This option adds an SMC in DMI. Refer to the refrence manual to \nIt must be enabled when an atomic capable master is present in the system and requires atleast a 4KB SMC.",
+          "docID": 186,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "fnNativeInterface",
+          "parameterTitle": "fnNativeInterface",
+          "default": "AXI4",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "ImplementationParameters",
+          "parameterTitle": "Resources",
+          "parameterType": "architecture",
+          "docID": 187,
+          "type": "object",
+          "reference": "ImplParams"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "WrDataErrInfo",
+          "parameterTitle": "Write Data Error Info",
+          "default": "NONE",
+          "parameterType": "architecture",
+          "docID": 188,
+          "validValues": "NONE,PARITY,SECDED",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "Cache",
+          "parameterTitle": "Cache",
+          "parameterType": "architecture",
+          "docID": 189,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_CCP.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "Interfaces",
+          "parameterTitle": "Interfaces",
+          "parameterType": "architecture",
+          "docID": 190,
+          "type": "object",
+          "reference": "Interfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SmiPortMsgMap",
+          "parameterTitle": "Port Message Map",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_PortMsgMap.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "MemoryInterfaces",
+          "parameterTitle": "Memory Interfaces",
+          "parameterType": "architecture",
+          "docID": 191,
+          "type": "object",
+          "reference": "MemoryInterfaces"
+        }
+      ],
+      "baseName": "NC_BaseNcoreUnit"
+    },
+    {
+      "name": "ImplParams",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nRttCtrlEntries",
+          "parameterTitle": "Number of outstanding read transactions",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Number of outstanding read transactions",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nWttCtrlEntries",
+          "parameterTitle": "Number of outstanding write transactions",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Number of outstanding write transactions",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nDmiRbCredits",
+          "parameterTitle": "Number of DMI wirte buffers",
+          "minimum": 2,
+          "maximum": 64,
+          "default": 2,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "useMemRspIntrlv",
+          "parameterTitle": "Enable support for read response interleaving",
+          "default": false,
+          "parameterType": "architecture",
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nAddrTransRegisters",
+          "parameterTitle": "Number of Address Translation Registers",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Specifies the number of address transalation registers that are available within DMI. \nTheses registers add capability to translate address on the AXI bus from DMI.\nRefer to the address translation section of the reference manual.",
+          "docID": 1103,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nWayPartitioningRegisters",
+          "parameterTitle": "nWayPartitioningRegisters",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 0,
+          "parameterType": "architecture",
+          "guiDescription": "Specifies the number of cache way partitioning registers.\nEach register enables configuration capability to assign specific ways to a single agent.\nThe number of registers enabled here should be equal to maximum number of agents that will be configured for way paritioning",
+          "docID": 1105,
+          "type": "integer"
+        }
+      ]
+    },
+    {
+      "name": "MemoryInterfaces",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "TagMem",
+          "parameterTitle": "Tag Memory",
+          "parameterType": "architecture",
+          "docID": 1106,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "DataMem",
+          "parameterTitle": "Data Memory",
+          "parameterType": "architecture",
+          "docID": 1107,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "RpMem",
+          "parameterTitle": "Replacement Policy Memory",
+          "parameterType": "architecture",
+          "docID": 1108,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "WrDataMem",
+          "parameterTitle": "Write Data Memory",
+          "parameterType": "architecture",
+          "docID": 1109,
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/MemoryInterface.design.cpr"
+        }
+      ]
+    },
+    {
+      "name": "Interfaces",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "external",
+          "parameterTitle": "Interface AXI",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_InterfaceAXI.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "internal",
+          "parameterTitle": "Internal interfaces",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "IntInterfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "placeholders",
+          "parameterTitle": "Placeholder signals",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_LIB_DESIGN/postMap/InterfaceGeneric.design.cpr"
+        }
+      ],
+      "baseName": "ParamBase"
+    },
+    {
+      "name": "IntInterfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysIdInt",
+          "parameterTitle": "Interface System Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiTxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiRxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        }
+      ],
+      "baseName": "NC_IntInterfaces"
+    },
+    {
+      "name": "InterfaceSMI",
+      "params": [],
+      "baseName": "InterfaceSMI"
+    }
+  ]
+}

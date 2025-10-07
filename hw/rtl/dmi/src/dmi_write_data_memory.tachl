@@ -1,0 +1,412 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2020 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DMI Write Data Memory
+// Author: Tso-Wei Chang
+// Description: 
+//=============================================================================
+
+//=============================================================================
+// Variables
+//=============================================================================
+var u                   = obj.lib;
+var bundleFunctions     = obj.userLib.bundleFunctions;
+
+u.paramDefault('memEccBlocks',  'array',    []);
+u.paramDefault('assertOn',      'int',      0);
+u.paramDefault('nPorts',        'string',   'tp');
+
+
+var log2ceil            = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+var clkInterface        = u.getParam('clkInterface');
+var memoryInterface     = u.getParam('memoryInterface');     
+var nBanks              = u.getParam('nBanks');
+var width               = u.getParam('width');
+var wEcc                = u.getParam('wEcc');
+var widthWithEcc        = width + wEcc;
+var depth               = u.getParam('depth');
+var addr_w              = log2ceil(depth / nBanks);
+var wAddr               = Math.max(1, log2ceil(depth));
+var memType             = u.getParam('memType');
+var protType            = u.getParam('protType');
+var assertOn            = u.getParam('assertOn');
+var nPorts              = u.getParam('nPorts');
+var memEccBlocks        = u.getParam('memEccBlocks');
+var memParam            = u.getParam('memParam');
+
+//=============================================================================
+// Interfaces & Ports
+//=============================================================================
+
+obj.lib.interface('',                       'slave',       clkInterface);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// to external memory 
+//
+if ( memType !== 'NONE' ) {
+    for (var i = 0 ; i < nBanks ; i++) {
+u.port('output', 'int_address_'+i,                          addr_w);
+u.port('output', 'int_chip_en_'+i,                          1);
+u.port('output', 'int_write_en_'+i,                         1);
+u.port('output', 'int_data_in_'+i,                          widthWithEcc);
+u.port('input',  'int_data_out_'+i,                         widthWithEcc);
+    }  
+}
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// from write buffer logic 
+//
+for (var i = 0; i < nBanks ; i++) {
+u.port('input',  'data_bank'+i+'_address',                   addr_w);
+u.port('input',  'data_bank'+i+'_chip_en',                   1);
+u.port('input',  'data_bank'+i+'_write_en',                  1);
+u.port('input',  'data_bank'+i+'_data_in',                   width);
+u.port('output', 'data_bank'+i+'_data_out',                  width);
+}    
+
+for ( var i = 0 ; i < nBanks ; i++ ) {
+    if ( protType !== 'NONE') {
+u.port('output', 'data_bank'+i+'_uce',             1);
+        if ( protType === 'SECDED' ) {
+u.port('output', 'data_bank'+i+'_cor_data',        width);
+u.port('output', 'data_bank'+i+'_ce',              1);
+        }
+    }
+}
+
+for ( var i = 0 ; i < nBanks ; i++ ) {
+u.port('input',  'data_bank_'+i+'_chip_en_read',        1);
+u.port('input',  'rd_bank_sel_'+i,                      1);
+u.port('output', 'data_bank_'+i+'_chip_en_read_ack',    1);
+u.port('output', 'rd_bank_sel_ack_'+i,                  1);
+u.port('output', 'rd_index_ack_'+i,                addr_w);
+}
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+\js if ( memType === 'NONE' ) {
+\js     for (var i = 0; i < nBanks ; i++) {
+wire internal_mem_inst__clk_bank\=i=\;
+wire                        internal_mem_inst__write_enable_bank_\=i=\;
+wire                        internal_mem_inst__chip_enable_bank_\=i=\;
+wire [\=addr_w-1=\:0]       internal_mem_inst__address_bank_\=i=\;
+wire [\=widthWithEcc-1=\:0] internal_mem_inst__D_bank_\=i=\;
+wire [\=widthWithEcc-1=\:0] internal_mem_inst__Q_bank_\=i=\;
+\js     }
+\js }
+
+\js for (var i = 0; i < nBanks ; i++) {
+\js     if ( protType !== 'NONE' ) {
+wire [\=widthWithEcc-1=\:0] q_int_data_out_\=i=\;
+wire [\=widthWithEcc-1=\:0] q2_int_data_out_\=i=\;
+wire [\=widthWithEcc-1=\:0] int_data_in_edc\=i=\;
+\js         if ( protType === 'SECDED' ) {
+wire [\=wEcc-1=\:0]         check_err_index\=i=\;
+wire [\=wEcc-1=\:0]         q_check_err_index\=i=\;
+wire                        data_bank\=i=\_uce_int;
+wire                        data_bank\=i=\_ce_int;
+\js         }
+\js     }
+\js }
+
+\js for (var i = 0; i < nBanks ; i++) {
+wire data_bank_\=i=\_chip_en_read_d1, data_bank_\=i=\_chip_en_read_d2;
+wire rd_bank_sel_\=i=\_d1, rd_bank_sel_\=i=\_d2;
+wire [\=addr_w-1=\:0] rd_index_\=i=\_d1, rd_index_\=i=\_d2;
+
+\jsbegin 
+
+ if((memParam.sramAddressProtectionWidth !==0) && (protType !== 'NONE') ){
+\jsend
+wire [\=addr_w-1=\:0] rd_index_\=i=\_d3;
+wire                  addr_err\=i=\;
+wire [\=addr_w-1=\:0] rd_index_\=i=\_corr;
+\jsbegin 
+}
+\jsend
+
+\=u.dffre(1, 'data_bank_'+i+'_chip_en_read_d1',    'data_bank_'+i+'_chip_en_read',     "1'b0",          "1'b1",          'clk', 'reset_n')=\
+\=u.dffre(1, 'data_bank_'+i+'_chip_en_read_d2',    'data_bank_'+i+'_chip_en_read_d1',  "1'b0",          "1'b1",          'clk', 'reset_n')=\
+\=u.dffre(1, 'rd_bank_sel_'+i+'_d1',               'rd_bank_sel_'+i,                   "1'b0",          "1'b1",          'clk', 'reset_n')=\
+\=u.dffre(1, 'rd_bank_sel_'+i+'_d2',               'rd_bank_sel_'+i+'_d1',             "1'b0",          "1'b1",          'clk', 'reset_n')=\
+\=u.dffre(addr_w, 'rd_index_'+i+'_d1',             'data_bank'+i+'_address',           addr_w+"'b0",    "1'b1",          'clk', 'reset_n')=\
+\=u.dffre(addr_w, 'rd_index_'+i+'_d2',             'rd_index_'+i+'_d1',                addr_w+"'b0",    "1'b1",          'clk', 'reset_n')=\
+\jsbegin 
+    if((memParam.sramAddressProtectionWidth !==0) && (protType !== 'NONE') ){
+\jsend
+
+\=u.dffre(addr_w, 'rd_index_'+i+'_d3',             'rd_index_'+i+'_d2',                addr_w+"'b0",    "1'b1",          'clk', 'reset_n')=\
+
+\jsbegin 
+}
+\jsend
+
+\js     if ( protType === 'NONE' ) {
+    assign data_bank_\=i=\_chip_en_read_ack = data_bank_\=i=\_chip_en_read_d1;
+    assign rd_bank_sel_ack_\=i=\ = rd_bank_sel_\=i=\_d1;
+    assign rd_index_ack_\=i=\ = rd_index_\=i=\_d1;
+\js     } else {
+    assign data_bank_\=i=\_chip_en_read_ack = data_bank_\=i=\_chip_en_read_d2;
+    assign rd_bank_sel_ack_\=i=\ = rd_bank_sel_\=i=\_d2;
+    assign rd_index_ack_\=i=\ = rd_index_\=i=\_d2;
+
+\js     }
+\js }
+\jsbegin
+//=============================================================================
+// Internal Memory Instance
+//=============================================================================
+\jsend
+
+\js if ( memType === 'NONE' ) {
+\js     for (var i = 0; i < nBanks ; i++) {
+
+assign internal_mem_inst__clk_bank\=i=\ = clk;
+
+\js             if ( protType === 'NONE' ) {
+assign internal_mem_inst__address_bank_\=i=\       = data_bank\=i=\_address;
+assign internal_mem_inst__D_bank_\=i=\             = data_bank\=i=\_data_in;
+\js             } else {
+assign internal_mem_inst__D_bank_\=i=\             = int_data_in_edc\=i=\;
+\js             }
+assign internal_mem_inst__write_enable_bank_\=i=\  = data_bank\=i=\_write_en;
+assign internal_mem_inst__chip_enable_bank_\=i=\   = data_bank\=i=\_chip_en;
+\js     if ( protType !== 'NONE' ) {
+assign data_bank\=i=\_data_out                     = q_int_data_out_\=i=\[\=widthWithEcc-1=\:\=wEcc=\];
+\js } else {
+assign data_bank\=i=\_data_out                     = internal_mem_inst__Q_bank_\=i=\[\=widthWithEcc-1=\:\=wEcc=\];
+\js }
+
+\jsbegin
+    var internalMemParams = {
+        sverilog    : assertOn,
+        eccBlocks   : memEccBlocks,
+        ports       : nPorts,
+        bit_en      : 0,
+        width       : widthWithEcc,
+        depth       : depth/nBanks
+    };
+
+    var internalMemInstancePorts = {
+        clk : 'internal_mem_inst__clk_bank'+i
+    };
+
+        internalMemInstancePorts['D']             = 'internal_mem_inst__D'+'_bank_'+i;
+        internalMemInstancePorts['address']       = 'internal_mem_inst__address'+'_bank_'+i;
+        internalMemInstancePorts['write_enable']  = 'internal_mem_inst__write_enable'+'_bank_'+i;
+        internalMemInstancePorts['chip_enable']   = 'internal_mem_inst__chip_enable'+'_bank_'+i;
+        internalMemInstancePorts['Q']             = 'internal_mem_inst__Q'+'_bank_'+i;
+
+
+\jsend
+
+\=u.instance({
+    instanceName:'internal_mem_inst'+i,
+    moduleName  :'internal_mem',
+    params      : internalMemParams,
+    ports       : internalMemInstancePorts
+})=\
+\js     }
+\js } 
+
+\jsbegin
+if ( memType == 'SYNOPSYS') { \jsend
+
+    \jsbegin
+    for (var i = 0; i < nBanks ; i++) { \jsend
+    assign int_chip_en_\=i=\ = data_bank\=i=\_chip_en;
+    assign int_write_en_\=i=\= data_bank\=i=\_write_en;
+        \jsbegin
+        //SYNOPSYS mem always enables protection
+        /* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+        if ( protType === 'NONE' ) { \jsend
+    assign int_data_in_\=i=\ = data_bank\=i=\_data_in;
+    assign int_address_\=i=\ = data_bank\=i=\_address;
+        \jsbegin
+        } \jsend
+        \jsbegin
+        //SYNOPSYS mem always enables protection
+        /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7*/
+        if ( protType !== 'NONE' ) { \jsend
+    assign data_bank\=i=\_data_out = q_int_data_out_\=i=\[\=widthWithEcc-1=\:\=wEcc=\];
+        \jsbegin
+        } else { \jsend
+    assign data_bank\=i=\_data_out = int_data_out_\=i=\[\=widthWithEcc-1=\:\=wEcc=\];
+        \jsbegin
+        } \jsend
+    \jsbegin
+    } \jsend
+\jsbegin
+} \jsend
+
+\jsbegin
+// ECC Encode
+if ( protType !== 'NONE' ) {
+var errParam = {
+    mem_width          : width+memParam.sramAddressProtectionWidth,
+    fnErrDetectCorrect : protType
+};
+    for ( var i = 0 ; i < nBanks; i++ ) {
+    //Sram protection always enable
+    /* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+    if(memParam.sramAddressProtectionWidth){
+        var errEncodePorts = {
+            data_in                : '{data_bank'+i+'_address,data_bank'+i+'_data_in}'
+        }
+        if ( memType === 'SYNOPSYS' ) {
+            errEncodePorts['data_out_with_edc'] = '{int_address_'+i+',int_data_in_'+i+'}';
+        } else {
+            errEncodePorts['data_out_with_edc'] = '{internal_mem_inst__address_bank_'+i+',int_data_in_edc'+i+'}';
+        }
+
+        var errCheckPorts = {};
+
+        errCheckPorts['data_in_with_edc'] = '{rd_index_'+i+'_d2,q_int_data_out_'+i+'}';
+    
+        if ( protType === 'SECDED' ) {
+            
+            errCheckPorts['err_d']      = 'data_bank'+i+'_uce_int'
+            errCheckPorts['err_c']      = 'data_bank'+i+'_ce_int'
+            errCheckPorts['err_index']  = 'check_err_index'+i
+    
+        }
+        else{
+            errCheckPorts['err_d']      = 'data_bank'+i+'_uce';
+        }
+    
+    var errDecodePorts = {
+        data_in_with_edc       : '{rd_index_'+i+'_d3,q2_int_data_out_'+i+'}',
+        data_out               : '{rd_index_'+i+'_corr,data_bank'+i+'_cor_data}'
+    }
+        if ( protType === 'SECDED' ) {
+            errDecodePorts['err_c']     = 'data_bank'+i+'_ce',
+            errDecodePorts['err_index'] = 'q_check_err_index'+i
+        }
+    }
+    else{
+
+        var errEncodePorts = {
+            data_in                : 'data_bank'+i+'_data_in'
+        }
+        if ( memType === 'SYNOPSYS' ) {
+        \jsend
+            assign int_address_\=i=\ = data_bank\=i=\_address;
+        \jsbegin
+            errEncodePorts['data_out_with_edc'] ='int_data_in_'+i;
+        } else {
+        \jsend
+            assign internal_mem_inst__address_bank_\=i=\ = data_bank\=i=\_address;
+        \jsbegin
+            errEncodePorts['data_out_with_edc'] = 'int_data_in_edc'+i;
+        }
+
+        var errCheckPorts = {};
+
+        errCheckPorts['data_in_with_edc'] = 'q_int_data_out_'+i;
+    
+        if ( protType === 'SECDED' ) {
+            
+            errCheckPorts['err_d']      = 'data_bank'+i+'_uce_int';
+            errCheckPorts['err_c']      = 'data_bank'+i+'_ce_int';
+            errCheckPorts['err_index']  = 'check_err_index'+i;
+    
+        }
+        else{
+            errCheckPorts['err_d']      = 'data_bank'+i+'_uce';
+        }
+    
+    var errDecodePorts = {
+        data_in_with_edc       : 'q2_int_data_out_'+i,
+        data_out               : 'data_bank'+i+'_cor_data'
+    }
+        if ( protType === 'SECDED' ) {
+            errDecodePorts['err_c']     = 'data_bank'+i+'_ce',
+            errDecodePorts['err_index'] = 'q_check_err_index'+i
+        }
+    }
+
+
+\jsend
+\js if ( memType === 'SYNOPSYS' ) {
+\=u.dffre(widthWithEcc, 'q_int_data_out_'+i,    'int_data_out_'+i,              widthWithEcc+"'b0",   "1'b1",          'clk', 'reset_n')=\
+\js } else {
+\=u.dffre(widthWithEcc, 'q_int_data_out_'+i,    'internal_mem_inst__Q_bank_'+i, widthWithEcc+"'b0",   "1'b1",          'clk', 'reset_n')=\
+\js }
+
+
+\=obj.lib.instance({
+    instanceName:'dmi_write_data_mem_encode'+i,
+    moduleName  :'em_mem_encode',
+    params      : errParam,
+    ports       : errEncodePorts
+})=\
+
+\=u.instance({
+    instanceName: 'dmi_write_data_mem_check'+i,
+    moduleName  : 'em_mem_check',
+    params      : errParam,
+    ports       : errCheckPorts,
+})=\
+
+\js if ( protType === 'SECDED' ) {
+
+\jsbegin
+
+var addr_check_params={
+	                    "data_width" : width+memParam.sramAddressProtectionWidth, 
+                        "addr_width" : memParam.sramAddressProtectionWidth
+                        };
+
+var addr_check_ports={  "syndrome" : 'check_err_index'+i,
+                        "addr_err": 'addr_err'+i
+                    };
+//Sram protection always enable
+/* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+if(memParam.sramAddressProtectionWidth){
+\jsend
+\=u.instance({
+        instanceName: 'dmi_write_data_mem_adr_check'+i,
+        moduleName  : 'ecc_addr_err',
+        params      : addr_check_params ,
+        ports       : addr_check_ports
+    })=\
+
+
+assign data_bank\=i=\_uce = data_bank\=i=\_uce_int | addr_err\=i=\ ;
+assign data_bank\=i=\_ce = data_bank\=i=\_ce_int & (~addr_err\=i=\) ;
+
+\jsbegin
+} else {
+\jsend
+
+    assign data_bank\=i=\_uce = data_bank\=i=\_uce_int ;
+    assign data_bank\=i=\_ce = data_bank\=i=\_ce_int ;
+
+\jsbegin
+}
+\jsend
+
+\=u.instance({
+    instanceName: 'dmi_write_data_mem_decode'+i,
+    moduleName  : 'em_mem_decode',
+    params      : errParam,
+    ports       : errDecodePorts,
+})=\
+
+\=u.dffre(widthWithEcc, 'q2_int_data_out_'+i,   'q_int_data_out_'+i,            widthWithEcc+"'b0",   "1'b1",          'clk', 'reset_n')=\
+\=u.dffre(wEcc,         'q_check_err_index'+i,  'check_err_index'+i,            wEcc+"'b0",           "1'b1",          'clk', 'reset_n')=\
+\js }
+\jsbegin
+    } // nBanks
+} // protType !== 'NONE'
+\jsend
+
+endmodule

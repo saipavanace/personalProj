@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Functional_Safety_Overview</title>
+<meta content="Functional Safety Overview" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Reference_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "4.4.0_1";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Reference_Guide/Resiliency/Resiliency.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Reference_Guide/Resiliency/Functional_Safety_Elements_Description.htm">
+ <meta name="topic-breadcrumbs" content="Reference Guide > Resiliency" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="993776"><a id="1098_Heading1_993776" name="1098_Heading1_993776"></a>4.1 Functional Safety Overview</p><p class="BodyAfterHead" id="993777">Resiliency is a feature that enables Functional Safety, fault tolerance and other high reliability features in customer designs. It utilizes user configurable protection techniques and component duplication within the Ncore interconnect, with a fault controller to monitor and log faults detected. Also, supplied is a Built&#x2D;In Self Test (BIST) engine that enables checking of fault detection logic. This chapter discusses the architecture of the resiliency features provided in Ncore.</p><p class="Body" id="993778">The resiliency feature in Ncore is optional, and when enabled, is implemented in addition to other configured Ncore features. Furthermore, Resiliency does not interfere or integrate with other Ncore features. In particular, control and status registers related to resiliency are independent of Ncore units control and status registers and they can be read and written by a secure master through a dedicated APB interface. Similarly, the fault reporting feature in resiliency is independent of the error reporting mechanisms.</p><p class="Body" id="993779"><a  href="#XREF_61079__Figure%1116__Ncore_Elements_with_resiliency24" style="color:#0000ff;">Figure&#160;18</a> below illustrates a high&#x2D;level overview of the different elements of Ncore enabled with the resiliency option. There are six separate capabilities&#x3A;</p><p class="Step1" id="993780"><span class="StepNumber">1.  </span>Component logic duplication. This capability replicates the logic for all&#160;units inside a Ncore component (i.e., CAIU, NCAIU, DCE, DMI, DII, and DVE) but shares a common copy of all internal memory structures. The replicated logic operates in lock&#x2D;step with the original component logic and it can be configured to operate one to four clock cycles apart. Furthermore, additional &quot;checking&quot; logic &#x2D; known as a Checker &#x2D; is created to ensure that the original and replicated logic are operating in lock&#x2D;step. As shown in <a  href="#XREF_61079__Figure%1116__Ncore_Elements_with_resiliency24" style="color:#0000ff;">Figure&#160;18</a>, there is a&#160;checker implemented for each unit of the Ncore component.</p><p class="step_contd" id="993781"><span class="StepNumber">2.  </span>CDTI protection. Messages transported through the CDTI are protected. The protection type can be configured to either ECC or parity.</p><p class="step_contd" id="993782"><span class="StepNumber">3.  </span>External interface protection. This capability enables a designer to source or terminate data protection signals on selected external CAIU, NCAIU, DMI, and DII interfaces. There are two parts to this feature. The first is the capability to augment the signals on an existing external interface with additional user&#x2D;defined signals, and the second part is the creation of an &quot;in&#x2D;line&quot; RTL module, per interface, that may be custom modified with user&#x2D;created logic. This allows for the support of data and control signals protection schemes from third party IP providers. </p><p class="step_contd" id="995757"><span class="StepNumber">4.  </span>Timeout reporting. This capability reports a fault if a transaction does not complete within the configured number of clock cycles. </p><p class="step_contd" id="996518"><span class="StepNumber">5.  </span>SRAM memory protection. SRAM memory used by an Ncore component is protected for both address and data. The protection can be configured to be either ECC or parity.</p><p class="step_contd" id="996823"><span class="StepNumber">6.  </span>Fault controller instantiation. This component aggregates faults reported by component checkers and drives an interrupt signal to notify the host system that a fault in the coherent interconnect has occurred and all the fault controller Control and Status registers are protected by parity. The fault controller hosts a register interface which allows software to identify the source of detected faults. Additionally, the fault controller embeds BIST to verify periodically that the logic of the&#160;fault reporting unit in each Ncore component is fully functional to ensure all faults are captured and reported correctly.</p><p class="Figure" id="993797">Figure&#160;18. <a id="XREF_61079__Figure%1116__Ncore_Elements_with_resiliency24" name="XREF_61079__Figure%1116__Ncore_Elements_with_resiliency24">Ncore Elements with resiliency</a><img align="" alt="100052_011" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/100052_011.jpg" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="490.628021" x="8.000000" y="8.000163" /></p></div>
+</body>
+</html>

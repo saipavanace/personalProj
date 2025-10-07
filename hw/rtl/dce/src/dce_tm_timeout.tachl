@@ -1,0 +1,87 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE Transaction Manager Timeout
+//
+// Filename: dce_tm_timeout.tachl
+//=============================================================================
+
+var u = obj.lib;
+var m = obj.userLib;
+
+let ASSERT_ON    = m.ParamDefaultGet(u, 'ASSERT_ON', 'int', 0);
+let N_ATT        = m.ParamDefaultGet(u, 'N_ATT', 'int', 32);
+let W_ADDR       = m.ParamDefaultGet(u, 'W_ADDR', 'int', 32);
+let W_NS         = m.ParamDefaultGet(u, 'W_NS', 'int', 1);
+
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+
+u.port('input', 't_sv_timeout_bist', 1);
+
+u.port('input', 'att_timeout_overflow', N_ATT);
+u.port('input', 'att_timeout_overflow_event', 1);
+
+u.port('input', 'att_entry_req_addr', N_ATT * W_ADDR);
+u.port('input', 'att_entry_req_ns',   N_ATT * W_NS);
+
+u.port('output','tm_timeout_ue_valid', 1);
+u.port('output','tm_timeout_ue_addr',  W_ADDR);
+u.port('output','tm_timeout_ue_ns',    W_NS);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts()=\);
+
+localparam
+  N_ATT = \=N_ATT=\,
+  W_ADDR = \=W_ADDR=\,
+  W_NS = \=W_NS=\;
+
+wire dff_enable = 1'b1;
+
+//
+// Timeout select
+//
+
+
+wire [N_ATT-1:0] att_timeout_sel_one;
+
+\=obj.lib.instance({
+        instanceName:  'timeout_find_first',
+        moduleName: 'find_first_one',
+        params: {width: N_ATT  },
+        ports: {
+                invec : 'att_timeout_overflow',
+                outvec: 'att_timeout_sel_one'},
+        interfaces:[]
+})=\
+
+
+wire tm_timeout_ue_valid_in;
+wire [\=W_ADDR-1=\:0] tm_timeout_ue_addr_in;
+wire [\=W_NS-1=\:0] tm_timeout_ue_ns_in;
+
+assign tm_timeout_ue_valid_in = (att_timeout_overflow_event & (|att_timeout_overflow)) | t_sv_timeout_bist;
+
+assign tm_timeout_ue_addr_in = (
+    \js for (let i=0; i< N_ATT ; i++) {
+                              ({W_ADDR{att_timeout_sel_one[\=i=\]}} & att_entry_req_addr[W_ADDR*\=i=\ +: W_ADDR]) |
+    \js } 
+                               {W_ADDR{1'b0}});
+
+
+assign tm_timeout_ue_ns_in = (
+    \js for (let i=0; i< N_ATT ; i++) {
+                              ({W_NS{att_timeout_sel_one[\=i=\]}} & att_entry_req_ns[W_NS*\=i=\ +: W_NS]) |
+    \js } 
+                               {W_NS{1'b0}});
+
+
+\=u.dffre(1,      'tm_timeout_ue_valid','tm_timeout_ue_valid_in',         1+"'d0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(W_ADDR, 'tm_timeout_ue_addr', 'tm_timeout_ue_addr_in', "{W_ADDR{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(W_NS,   'tm_timeout_ue_ns',   'tm_timeout_ue_ns_in',     "{W_NS{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+endmodule

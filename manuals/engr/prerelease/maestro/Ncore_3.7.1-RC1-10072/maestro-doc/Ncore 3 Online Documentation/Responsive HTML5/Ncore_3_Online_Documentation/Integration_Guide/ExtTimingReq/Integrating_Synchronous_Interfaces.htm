@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Integrating_Synchronous_Interfaces</title>
+<meta content="Integrating Synchronous Interfaces" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Integration_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "2.1.0_3";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Integration_Guide/ExtTimingReq/Interface_Timing.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Integration_Guide/ExtTimingReq/Integrating_Asynchronous_Interfaces.htm">
+ <meta name="topic-breadcrumbs" content="Integration Guide > Interface Support" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1045379"><a id="964_Heading1_1045379" name="964_Heading1_1045379"></a>2.3 <a id="XREF_94224__2_1_Integrating_Synchronous_Interfaces3" name="XREF_94224__2_1_Integrating_Synchronous_Interfaces3">Integrating Synchronous Interfaces</a></p><p class="Body" id="1045556"><a id="964_Body_1045556" name="964_Body_1045556"></a>Each synchronous interface has a reference clock, a set of signals that are driven into Ncore, and a set of signals that are driven from Ncore.</p><p class="Body" id="1045871">The reference clock name for a given set of signals is in the IPXACT file, generated as part of the RTL export, in the Ncore project.</p><p class="Body" id="1045557">Ncore does not require the reference clock to have a specific duty cycle as it is designed using positive edge logic. The duty cycle is limited by the implementation technology.</p><p class="Body" id="1045559">Signals inside Ncore should be valid for at least 2&#x30;% of the clock period. That means that the signals driven from Ncore will be valid for a maximum of 8&#x30;% of the reference clock cycle period (this includes the clock uncertainty). Signals that are driven to Ncore will be valid for a maximum of 8&#x30;% of the reference clock cycle period (this includes the clock uncertainty).</p></div>
+</body>
+</html>

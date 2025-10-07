@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Synopsys_RTLA</title>
+<meta content="Synopsys RTLA" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Integration_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "2.5.2";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Global_Synthesis_Options.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Cadence_Genus.htm">
+ <meta name="topic-breadcrumbs" content="Integration Guide > Implementation Flows" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1053312"><a id="974_Heading1_1053312" name="974_Heading1_1053312"></a>6.2 Synopsys RTLA</p><p class="Heading2" id="1053926"><a id="974_Heading2_1053926" name="974_Heading2_1053926"></a>6.2.1 Scripts</p><p class="Body" id="1053927">Inside the <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">scripts</span> directory are directories for each unit in the design. There will be a subdirectory for each Ncore unit along with a subdirectory named <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">gen_wrapper</span> which is the top level of the design.</p><p class="Body" id="1053929">Prior to running the synthesis flow, you must configure the <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">flow_setup.tcl</span> file. This includes items like library pointers, tech file, TLU+ files, min&#47;max layer, etc.</p><p class="Heading2" id="1053930"><a id="974_Heading2_1053930" name="974_Heading2_1053930"></a>6.2.2 Flow Steps</p><p class="Bullet_1" id="1053931"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">flow_setup.tcl</span> &#x2013; Edit to include required  technology and design specific information.</p><p class="Bullet_1" id="1053932"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">block_setup.tcl</span> &#x2013; Used to override any flow_setup information for this design.</p><p class="Bullet_1" id="1053933"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">initDesign.tcl</span> &#x2013; Reads the RTL and links the design.</p><p class="Bullet_1" id="1053934"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">rtlCond.tcl</span> &#x2013; elaborate and prepare the design for virtual optimization.</p><p class="Bullet_1" id="1053935"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">rtlOpt.tcl</span> &#x2013; completes virtual optimization such that the design is ready for analysis.</p><p class="Bullet_1" id="1053936"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">metrics.tcl</span> &#x2013; write out a defined set of reports.</p><p class="Bullet_1" id="1053937"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">viewCopy.tcl</span> &#x2013;open a design view and copy it to a different design name.</p><p class="Bullet_1" id="1053938"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">viewInPlace.tcl</span> &#x2013; open a design view for analysis.</p></div>
+</body>
+</html>

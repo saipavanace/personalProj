@@ -1,0 +1,3 @@
+source merged_hw_cfg_7_all_ecc_exclude.do
+source dve_hw_cfg_7_all_ecc_exclusion.do
+source hw_cfg_7_all_ecc_waiver.do

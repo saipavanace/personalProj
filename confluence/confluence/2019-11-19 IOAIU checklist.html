@@ -1,0 +1,112 @@
+<h2 id="id-2019-11-19IOAIUchecklist-Date">Date</h2><p><time datetime="2019-11-19" class="date-past">19 Nov 2019</time></p><h2 id="id-2019-11-19IOAIUchecklist-Attendees">Attendees</h2><ul><li><p><a class="confluence-userlink user-mention" data-account-id="624674b5f40798007056fc6f" href="https://arterisip.atlassian.net/wiki/people/624674b5f40798007056fc6f?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Steve Kromer (Deactivated)</a></p></li><li><p><a class="confluence-userlink user-mention" data-account-id="624b37c6f6a26900695fd15e" href="https://arterisip.atlassian.net/wiki/people/624b37c6f6a26900695fd15e?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Stella Yang (Deactivated)</a></p></li></ul><h2 id="id-2019-11-19IOAIUchecklist-Goals">Goals</h2><ul><li>Start list of items left to do for NXP EA</li></ul><h2 id="id-2019-11-19IOAIUchecklist-Discussionitems">Discussion items</h2><div class="table-wrap"><table class="confluenceTable"><tbody><tr><th class="confluenceTh">Area</th><th class="confluenceTh">Item</th><th class="confluenceTh">Notes</th></tr><tr><td rowspan="8" class="confluenceTd">Design<br/><br/></td><td class="confluenceTd">Parameter Passing in Wrapper</td><td class="confluenceTd"><p>Make sure all parameter passing has been implemented. For example, last time I checked, nsets/nways were still fixed</p></td></tr><tr><td colspan="1" class="confluenceTd">More Configuration</td><td colspan="1" class="confluenceTd">According to <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16167611/Ncore+Unit+Configuration" data-linked-resource-id="16167611" data-linked-resource-version="32" data-linked-resource-type="page">Ncore Unit Configuration</a> and <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16170846/NXP+Configurations" data-linked-resource-id="16170846" data-linked-resource-version="11" data-linked-resource-type="page">NXP Configurations</a>, add necessary parameters</td></tr><tr><td class="confluenceTd">Report Config in Sim</td><td class="confluenceTd"><p>After build, each unit reports configuration parameters. For example, see dmi show_config</p></td></tr><tr><td colspan="1" class="confluenceTd">QOS</td><td colspan="1" class="confluenceTd">Implement QOS scheme to match RTL. Not needed for 1/31, but needed for 3/30</td></tr><tr><td colspan="1" class="confluenceTd">Multiline support</td><td colspan="1" class="confluenceTd">This feature was put in ncore2 after ncore3 code was copied. However, I wouldn't necessarily recommend copying ncore2 since it's been very buggy. May want to just talk to RTL about how to implement. 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="AN-259" >
+                <a href="https://arterisip.atlassian.net/browse/AN-259?src=confmacro" class="jira-issue-key">AN-259</a>
+                            </span>
+</td></tr><tr><td colspan="1" class="confluenceTd">multbank select</td><td colspan="1" class="confluenceTd">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="AN-342" >
+                <a href="https://arterisip.atlassian.net/browse/AN-342?src=confmacro" class="jira-issue-key">AN-342</a>
+                            </span>
+</td></tr><tr><td colspan="1" class="confluenceTd">Data width</td><td colspan="1" class="confluenceTd">Is there data width conversion between IAOU AXI and IOAIU legato? - No</td></tr><tr><td colspan="1" class="confluenceTd">ACE, coherent atomics</td><td colspan="1" class="confluenceTd">I've implemented ACE-lite and non-coherent atomics and some stash code. But ACE/atomics/stash/ are not necessary for NXP I think, so lower priority.</td></tr><tr><td rowspan="4" class="confluenceTd">Verification</td><td colspan="1" class="confluenceTd">NXP Bringup</td><td colspan="1" class="confluenceTd">Go through all bringup steps with each IOAIU in NXP config. See <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16155906/Model+Verification+Stimulus" data-linked-resource-id="16155906" data-linked-resource-version="4" data-linked-resource-type="page">Model Verification Stimulus</a></td></tr><tr><td colspan="1" class="confluenceTd">Test all Features</td><td colspan="1" class="confluenceTd">Using STL or PRF files, test all IOAIU features</td></tr><tr><td colspan="1" class="confluenceTd">Copy Ncore2 Bug fixes</td><td colspan="1" class="confluenceTd">Need to account for all bug fixes done in ncore2 since ncore3 was copied. There is a list as of June at 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="AN-278" >
+                <a href="https://arterisip.atlassian.net/browse/AN-278?src=confmacro" class="jira-issue-key">AN-278</a>
+                            </span>
+ but there have been more bugs found since then.</td></tr><tr><td colspan="1" class="confluenceTd">Dump Tempo checker to IOAIU</td><td colspan="1" class="confluenceTd">Check with Kjeld first</td></tr><tr><td colspan="1" class="confluenceTd">Correlation</td><td colspan="1" class="confluenceTd">IOAIU delay</td><td colspan="1" class="confluenceTd">Work with Rocco to correlate delay through IOAIU unit with RTL. You can start with the single read and write tests in the bringup group, run them with and without ccp.</td></tr><tr><td colspan="1" class="confluenceTd">Code Cleanup</td><td colspan="1" class="confluenceTd"> </td><td colspan="1" class="confluenceTd">For example, the IOAIU prints every pending transaction every cycle. This should be changed to use SCCTRACE so that it only prints with -v 7.</td></tr></tbody></table></div><h2 id="id-2019-11-19IOAIUchecklist-Actionitems">Action items</h2><ul class="inline-task-list" data-inline-tasks-content-id="16169280"><li data-inline-task-id="1"><span>&nbsp;</span></li></ul>

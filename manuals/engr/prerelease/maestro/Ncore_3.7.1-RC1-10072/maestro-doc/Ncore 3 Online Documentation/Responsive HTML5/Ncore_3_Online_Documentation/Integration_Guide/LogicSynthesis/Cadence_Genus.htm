@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Cadence_Genus</title>
+<meta content="Cadence Genus" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../Integration_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "2.5.3";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Synopsys_RTLA.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/Integration_Guide/Replication/Replication.htm">
+ <meta name="topic-breadcrumbs" content="Integration Guide > Implementation Flows" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1053598"><a id="974_Heading1_1053598" name="974_Heading1_1053598"></a>6.3 Cadence Genus</p><p class="Heading2" id="1053980"><a id="974_Heading2_1053980" name="974_Heading2_1053980"></a>6.3.1 Scripts</p><p class="Bullet_1" id="1053981"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">flow_setup.tcl</span> &#x2013; Edit to include required information</p><p class="Bullet_1" id="1053982"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">block_setup.tcl</span> &#x2013; Used to override any flow_setup information for this design</p><p class="Bullet_1" id="1053983"><span class="BulletSymbol">&#x2022; </span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">genus.tcl</span> &#x2013; Defines flow from reading RTL to generating reports</p><p class="Heading2" id="1053984"><a id="974_Heading2_1053984" name="974_Heading2_1053984"></a>6.3.2 Timing Scenarios</p><p class="Body" id="1053985">The synthesis flows are set up to use two timing scenarios (aka views).</p><p class="Bullet_1" id="1054227"><span class="BulletSymbol">&#x2022; </span>First scenario &#x2014; represents the functional mode of operation and is <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;design&#x3E;.func.sdc</span>.</p><p class="Bullet_1" id="1054236"><span class="BulletSymbol">&#x2022; </span>Second scenario  &#x2014; is a special check associated with Clock Domain Crossing (CDC) circuitry and is <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;design&#x3E;.cdc.sdc</span>. The CDC constraints (i.e., <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">s</span><span class="code" style="font-family : Courier New ; font-size : 9.00pt;">et_max_delay</span>) help ensure proper functionality. For blocks without CDC circuitry, the <span class="code" style="font-family : Courier New ; font-size : 9.00pt;">&#x3C;design&#x3E;.cdc.sdc</span> will be essentially empty.</p></div>
+</body>
+</html>

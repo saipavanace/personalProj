@@ -1,0 +1,131 @@
+{
+  "name": "DVE",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "strRtlNamePrefix",
+          "parameterTitle": "RTL prefix string",
+          "parameterType": "architecture",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "fUnitId",
+          "parameterTitle": "fUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nUnitId",
+          "parameterTitle": "nUnitId",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "wDpAux",
+          "parameterTitle": "wDpAux",
+          "minimum": 0,
+          "default": 0,
+          "parameterType": "architecture",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "Interfaces",
+          "parameterTitle": "Interfaces",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "Interfaces"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SmiPortMsgMap",
+          "parameterTitle": "Port Message Map",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/NC_PortMsgMap.design.cpr"
+        }
+      ],
+      "baseName": "NC_BaseNcoreUnit"
+    },
+    {
+      "name": "Interfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "internal",
+          "parameterTitle": "Internal interfaces",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "IntInterfaces"
+        }
+      ],
+      "baseName": "ParamBase"
+    },
+    {
+      "name": "IntInterfaces",
+      "params": [
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysIdInt",
+          "parameterTitle": "Interface Sys Unit ID",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "uSysNodeIdInt",
+          "parameterTitle": "Interface Sys Node Unit Id",
+          "parameterType": "architecture",
+          "type": "object",
+          "reference": "$HW_NCR_DESIGN/postMap/InterfaceSysNodeUnitId.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiTxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "smiRxInt",
+          "parameterTitle": "Interface SMI",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "InterfaceSMI"
+        }
+      ],
+      "baseName": "NC_IntInterfaces"
+    },
+    {
+      "name": "InterfaceSMI",
+      "params": [],
+      "baseName": "InterfaceSMI"
+    }
+  ]
+}

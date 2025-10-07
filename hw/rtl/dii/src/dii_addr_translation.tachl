@@ -1,0 +1,60 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Dmi address translation Unit
+// Author: Tso-Wei Chang
+// 
+//=========================================================================
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+var wAddr = obj.lib.getParam('wAddr');
+var useAddrTranslation = obj.lib.getParam('useAddrTranslation');
+var nAddrTransRegisters = useAddrTranslation? obj.lib.getParam('nAddrTransRegisters') : 0;
+var csrAddrTransInterface = obj.lib.getParam('csrAddrTransInterface');
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+obj.lib.interface('', 'slave', csrAddrTransInterface);
+
+u.port('input',  'in_addr'          , wAddr );
+u.port('output', 'out_addr'         , wAddr );
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+
+var instance_ports_for_addr_trans = {};
+
+if (useAddrTranslation) {
+    for (var i=0; i < nAddrTransRegisters; i++) {
+instance_ports_for_addr_trans['csr_ATER_'+i+'_Valid'] = 'csr_ATER_'+i+'_Valid';
+instance_ports_for_addr_trans['csr_ATER_'+i+'_Mask']  = 'csr_ATER_'+i+'_Mask';
+instance_ports_for_addr_trans['csr_RFAR_'+i+'_FromAddr'] = 'csr_RFAR_'+i+'_FromAddr';
+instance_ports_for_addr_trans['csr_RTAR_'+i+'_ToAddr'] = 'csr_RTAR_'+i+'_ToAddr';
+    }
+}
+instance_ports_for_addr_trans['addr_in'] = 'in_addr';
+instance_ports_for_addr_trans['addr_out'] = 'out_addr';
+
+\jsend
+
+    \=obj.lib.instance( {
+        instanceName: 'u_addr_trans',
+        moduleName: 'ncore3_addr_translation',
+        params: {
+            wAddr               : wAddr,
+            useAddrTranslation  : useAddrTranslation,
+            nAddrTransRegisters : nAddrTransRegisters
+        },
+        ports: instance_ports_for_addr_trans
+    })=\
+
+endmodule

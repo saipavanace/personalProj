@@ -1,0 +1,137 @@
+//=============================================================================
+// Copyright (C) 2025 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Filename: ncore3_addr_translation.tachl
+// Author: Boon Chuan
+// Description: Ncore3 Address Translation
+//
+// Minimum block size for translation/compaction is 1MB (2^20 bytes).
+// If an incoming address matches with multiple From Addresses, the result is unpredictable.
+//
+//mask bit field         52-bit address mask (1 means the address bit is passed thru, excluded from compare)
+//===================    ===================================================================================
+//  0 :     1 MB mask => 0000 0000 0000 0000 0000 0000 0000 0000  1111 1111 1111 1111 1111
+//  1 :     2 MB mask => 0000 0000 0000 0000 0000 0000 0000 0001  1111 1111 1111 1111 1111
+//  2 :     4 MB mask => 0000 0000 0000 0000 0000 0000 0000 0011  1111 1111 1111 1111 1111
+//  3 :     8 MB mask => 0000 0000 0000 0000 0000 0000 0000 0111  1111 1111 1111 1111 1111
+//  4 :    16 MB mask => 0000 0000 0000 0000 0000 0000 0000 1111  1111 1111 1111 1111 1111
+//  5 :    32 MB mask => 0000 0000 0000 0000 0000 0000 0001 1111  1111 1111 1111 1111 1111
+//  6 :    64 MB mask => 0000 0000 0000 0000 0000 0000 0011 1111  1111 1111 1111 1111 1111
+//  7 :   128 MB mask => 0000 0000 0000 0000 0000 0000 0111 1111  1111 1111 1111 1111 1111
+//  8 :   256 MB mask => 0000 0000 0000 0000 0000 0000 1111 1111  1111 1111 1111 1111 1111
+//  9 :   512 MB mask => 0000 0000 0000 0000 0000 0001 1111 1111  1111 1111 1111 1111 1111
+// 10 :     1 GB mask => 0000 0000 0000 0000 0000 0011 1111 1111  1111 1111 1111 1111 1111
+// 11 :     2 GB mask => 0000 0000 0000 0000 0000 0111 1111 1111  1111 1111 1111 1111 1111
+// 12 :     4 GB mask => 0000 0000 0000 0000 0000 1111 1111 1111  1111 1111 1111 1111 1111
+// 13 :     8 GB mask => 0000 0000 0000 0000 0001 1111 1111 1111  1111 1111 1111 1111 1111
+// 14 :    16 GB mask => 0000 0000 0000 0000 0011 1111 1111 1111  1111 1111 1111 1111 1111
+// 15 :    32 GB mask => 0000 0000 0000 0000 0111 1111 1111 1111  1111 1111 1111 1111 1111
+// 16 :    64 GB mask => 0000 0000 0000 0000 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 17 :   128 GB mask => 0000 0000 0000 0001 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 18 :   256 GB mask => 0000 0000 0000 0011 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 19 :   512 GB mask => 0000 0000 0000 0111 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 20 :     1 TB mask => 0000 0000 0000 1111 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 21 :     2 TB mask => 0000 0000 0001 1111 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 22 :     4 TB mask => 0000 0000 0011 1111 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 23 :     8 TB mask => 0000 0000 0111 1111 1111 1111 1111 1111  1111 1111 1111 1111 1111
+// 24 :    16 TB mask => 0000 0000 1111 1111 1111 1111 1111 1111  1111 1111 1111 1111 1111
+//
+//                       5544 4444 4444 3333 3333 3322 2222 2222  1111 1111 1100 0000 0000
+//                       1098 7654 3210 9876 5432 1098 7654 3210  9876 5432 1098 7654 3210
+//
+// NOTE: AMBA CHI address width is minimum 44 bits, covering 16 TB address space.
+//=========================================================================
+
+var wAddr               = obj.lib.getParam('wAddr');
+var useAddrTranslation  = obj.lib.getParam('useAddrTranslation');
+var nAddrTransRegisters = obj.lib.getParam('nAddrTransRegisters');
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+if (useAddrTranslation) {
+    for (var i=0; i < nAddrTransRegisters; i++) {
+obj.lib.port('input', 'csr_ATER_'+i+'_Valid', 1);     //Address Translation Enable Register: Valid
+obj.lib.port('input', 'csr_ATER_'+i+'_Mask', 5);      //Address Translation Enable Register: Mask (binary number 0 to 24)
+obj.lib.port('input', 'csr_RFAR_'+i+'_FromAddr', 32); //Relocate From Address Register: From Address [51:20]
+obj.lib.port('input', 'csr_RTAR_'+i+'_ToAddr', 32);   //Relocate To Address Register: To Address [51:20]
+    }
+}
+obj.lib.port('input',  'addr_in',  wAddr);
+obj.lib.port('output', 'addr_out', wAddr);
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\js if (useAddrTranslation) {
+
+
+    \js for (var i=0; i < nAddrTransRegisters; i++) {
+
+wire [\=wAddr-20-1=\:0] mask\=i=\ =
+                                    ({\=wAddr-20-1=\'b0, {1{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd1}})
+                                  | ({\=wAddr-20-2=\'b0, {2{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd2}})
+                                  | ({\=wAddr-20-3=\'b0, {3{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd3}})
+                                  | ({\=wAddr-20-4=\'b0, {4{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd4}})
+                                  | ({\=wAddr-20-5=\'b0, {5{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd5}})
+                                  | ({\=wAddr-20-6=\'b0, {6{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd6}})
+                                  | ({\=wAddr-20-7=\'b0, {7{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd7}})
+                                  | ({\=wAddr-20-8=\'b0, {8{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd8}})
+                                  | ({\=wAddr-20-9=\'b0, {9{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd9}})
+                                  | ({\=wAddr-20-10=\'b0, {10{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd10}})
+                                  | ({\=wAddr-20-11=\'b0, {11{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd11}})
+                                  | ({\=wAddr-20-12=\'b0, {12{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd12}})
+                                  | ({\=wAddr-20-13=\'b0, {13{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd13}})
+                                  | ({\=wAddr-20-14=\'b0, {14{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd14}})
+                                  | ({\=wAddr-20-15=\'b0, {15{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd15}})
+                                  | ({\=wAddr-20-16=\'b0, {16{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd16}})
+                                  | ({\=wAddr-20-17=\'b0, {17{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd17}})
+                                  | ({\=wAddr-20-18=\'b0, {18{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd18}})
+                                  | ({\=wAddr-20-19=\'b0, {19{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd19}})
+                                  | ({\=wAddr-20-20=\'b0, {20{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd20}})
+                                  | ({\=wAddr-20-21=\'b0, {21{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd21}})
+                                  | ({\=wAddr-20-22=\'b0, {22{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd22}})
+                                  | ({\=wAddr-20-23=\'b0, {23{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd23}})
+                            \js if (wAddr == 44) {
+                                  | (                                   {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd24}})
+                            \js } else {
+                                  | ({\=wAddr-20-24=\'b0, {24{1'b1}}} & {\=wAddr-20=\{csr_ATER_\=i=\_Mask == 5'd24}})
+                            \js }
+                                  ;
+
+wire [\=wAddr-20-1=\:0] to_addr_masked\=i=\ = (addr_in[\=wAddr-1=\:20] & mask\=i=\) | (csr_RTAR_\=i=\_ToAddr[\=wAddr-20-1=\:0] & ~mask\=i=\);
+
+    \js }
+
+
+wire [\=nAddrTransRegisters-1=\:0] from_addr_match_vec;
+
+    \js for (var i=0; i < nAddrTransRegisters; i++) {
+
+assign from_addr_match_vec[\=i=\] = ((addr_in[\=wAddr-1=\:20] & ~mask\=i=\) == (csr_RFAR_\=i=\_FromAddr[\=wAddr-20-1=\:0] & ~mask\=i=\)) & csr_ATER_\=i=\_Valid;
+
+    \js }
+
+wire matched = {|{from_addr_match_vec}};
+
+
+assign addr_out = ({\=wAddr=\{~matched}} & addr_in)
+    \js for (var i=0; i < nAddrTransRegisters; i++) {
+                | ({\=wAddr=\{from_addr_match_vec[\=i=\]}} & {to_addr_masked\=i=\, addr_in[19:0]})
+    \js }
+                ;
+
+
+\js } else {
+
+assign addr_out = addr_in;
+
+\js }
+
+endmodule

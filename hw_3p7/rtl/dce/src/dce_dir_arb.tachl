@@ -1,0 +1,80 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2021 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//BOON: This module is logically equivalent to ioaiu_arbiter configured with BE=1'b0
+//=============================================================================
+
+var u = obj.lib;
+
+var DW = u.getParam('DW');
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+u.port('input',  'clk',     1);
+u.port('input',  'reset_n', 1);
+u.port('input',  'ready_i', 1);
+u.port('input',  'bv_i',    DW); //multihot0
+u.port('output', 'wbv_o',   DW); //onehot0
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+\js if (DW == 1) {
+
+assign wbv_o = bv_i;
+
+\js } else {
+
+wire [\=DW-1=\:0] q_round_vec;
+wire [\=DW-1=\:0] t_n0_bv    = bv_i & q_round_vec;
+wire [\=DW-1=\:0] t_n1_bv    = bv_i;
+wire [\=DW-1=\:0] w_n0_wbv;
+wire [\=DW-1=\:0] w_n1_wbv;
+wire              w_n0_valid;
+wire              dff_enable = 1'b1;
+
+assign wbv_o = w_n0_valid ? w_n0_wbv : w_n1_wbv;
+
+    \=u.instance({
+        instanceName: 'u_or_tree_t_n0_bv',
+        moduleName:   'logic_tree',
+        params: {'width' : DW,
+                 'logic' : '|'},
+        ports: { 'din'  : 't_n0_bv',
+                 'dout' : 'w_n0_valid' }
+    })=\
+
+    \=u.instance({
+        instanceName: 'u_find_first_one_t_n0_bv',
+        moduleName: 'find_first_one', //from LSB to MSB
+        params: { width : DW },
+        verilogParams: { WIDTH : DW },
+        ports: {
+            invec : 't_n0_bv', outvec : 'w_n0_wbv'
+        }
+    })=\
+
+    \=u.instance({
+        instanceName: 'u_find_first_one_t_n1_bv',
+        moduleName: 'find_first_one', //from LSB to MSB
+        params: { width : DW },
+        verilogParams: { WIDTH : DW },
+        ports: {
+            invec : 't_n1_bv', outvec : 'w_n1_wbv'
+        }
+    })=\
+
+wire [\=DW-1=\:0] term_q_round_vec = \=DW=\'b1 << \=DW-1=\;
+wire [\=DW-1=\:0] next_q_round_vec = ~(ready_i & (| bv_i)) ? q_round_vec : (q_round_vec == term_q_round_vec) ? {\=DW=\{1'b1}} : (q_round_vec << 1);
+
+\=u.dffre(DW, 'q_round_vec', 'next_q_round_vec', "{"+DW+"{1'b1}}", 'dff_enable', 'clk', 'reset_n')=\
+
+\js }
+
+endmodule

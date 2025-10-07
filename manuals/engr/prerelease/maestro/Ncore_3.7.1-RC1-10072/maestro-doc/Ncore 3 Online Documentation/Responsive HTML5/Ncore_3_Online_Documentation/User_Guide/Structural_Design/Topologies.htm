@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Topologies</title>
+<meta content="Topologies" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../User_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "3.5.2";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/User_Guide/Structural_Design/Automation_Tool_Overview.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/User_Guide/Structural_Design/Merging_Two_Switches.htm">
+ <meta name="topic-breadcrumbs" content="User Guide > Structural Design (Architecture, Phase 3)" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1059898"><a id="1020_Heading1_1059898" name="1020_Heading1_1059898"></a>5.3 &#160;<a id="index_1059896" name="index_1059896"></a><a data-indexterm="Topologies" id="Topologies" name="Topologies"></a><a id="XREF_25161__5_3_Topologies12" name="XREF_25161__5_3_Topologies12">Topologies</a></p><p class="Body" id="1059899"><a id="1020_Body_1059899" name="1020_Body_1059899"></a>The following topologies are supported&#x3A;</p><p class="Bullet_1" id="1060255"><span class="BulletSymbol">&#x2022; </span><a  href="#XREF_15901__5_3_1_Crossbar_topology12" style="color:#0000ff;">“Crossbar topology”</a></p><p class="Bullet_1" id="1059903"><span class="BulletSymbol">&#x2022; </span><a  href="#XREF_17475__5_3_1_Mesh_topology12" style="color:#0000ff;">“Mesh topology”</a></p><p class="Heading2" id="1060190">5.3.1 <a id="index_1060217" name="index_1060217"></a><a data-indexterm="Crossbar%20topology" id="Crossbar_topology" name="Crossbar_topology"></a><a id="XREF_15901__5_3_1_Crossbar_topology12" name="XREF_15901__5_3_1_Crossbar_topology12">Crossbar topolo</a><span style="font-size : 12.00pt;"><a id="index_1060651" name="index_1060651"></a><a data-indexterm="Crossbar%20Topology" id="Crossbar_Topology" name="Crossbar_Topology"></a><a data-indexterm="topologies:Crossbar" id="Topologies_Crossbar" name="Topologies_Crossbar"></a></span>gy</p><p class="Body" id="1060230">This topology consists of a single switch. All ports of all units (of the same network) will be connected to this switch.<img align="" alt="" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/User_Guide_Structural_Design_image176.jpg" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="499.373749" x="81.572144" y="7.999674" /></p><p class="Body" id="1060234" style="margin-top : 2.00pt;margin-bottom : 10.00pt;line-height : 10.00pt;font-style:Italic;font-size : 9.00pt;">Circles indicate switches, squares indicate the Ncore units</p><p class="Heading2" id="1059926"><a id="1020_Heading2_1059926" name="1020_Heading2_1059926"></a>5.3.2 <a id="XREF_17475__5_3_1_Mesh_topology12" name="XREF_17475__5_3_1_Mesh_topology12">Mesh topolo</a><span style="font-size : 12.00pt;"><a id="index_1060634" name="index_1060634"></a><a data-indexterm="Mesh%20Topology" id="Mesh_Topology" name="Mesh_Topology"></a><a data-indexterm="topologies:Mesh" id="Topologies_Mesh" name="Topologies_Mesh"></a></span>gy</p><p class="Body" id="1059994">In this topology, the switches are arranged as a mesh and the routes are generated based on X, then Y routing from source to the destination. The switches with 1 input and 1 output port are deleted after the generation of the routes and replaced with a wire in&#x2D;place. </p><p class="Body" id="1060053">The size of the mesh is defined by the parameters &apos;meshx&apos; and &apos;meshy&apos;. The maximum number of nodes supported is 25. The bandwidth for routing the data in the data network is specified by the parameter &apos;datawidth&apos;. The frequency for routing is defined by the clock subdomain passed in the parameter &apos;clock&apos;.<img align="" alt="" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/User_Guide_Structural_Design_image178.jpg" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="384.467499" x="22.047343" y="8.173421" /></p><p class="Body" id="1059932" style="margin-top : 2.00pt;margin-bottom : 10.00pt;line-height : 10.00pt;font-style:Italic;font-size : 9.00pt;">Circles indicate switches, squares indicate the Ncore units</p><p class="Body" id="1060848">XY ordering can be used to maximize tiling options for the CSR networks by routing one with X&#x2D;Y ordering and the second with Y&#x2D;X ordering.</p><p class="Body" id="1060844"><span style="font-weight:Bold;">Copy Location&#x3A;</span> After assigning Ncore Units to a mesh network, the remaining networks can be created by copying the node location information for a previously created network. This ensures that nodes of the same mesh connect to the same Ncore Units assisting in maximizing tiling of the design.</p><p class="Body" id="1059933">Note the following&#x3A;</p><p class="Bullet_1" id="1060359"><span class="BulletSymbol">&#x2022; </span>Prior to generating routes, each Ncore unit needs to set a position on how the Ncore unit is attached to the mesh.</p><p class="Bullet_1" id="1060365"><span class="BulletSymbol">&#x2022; </span>Mesh supports CSR networks.</p></div>
+</body>
+</html>

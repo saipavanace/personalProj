@@ -1,0 +1,138 @@
+<h2 id="MesssageRepo-HowtoaddanewMessageRepointoacomponent">How to add a new Message Repo into a component</h2><ol><li>Create a new PkgTag for a module within <em>msg.h</em> in <em>libmsg/libmsg/msg.h</em> or use<br/>existent package tag, but keep in mind that one component can use only one tag.</li><li>If a new PkgTag has been created, add string representation of a new PkgTag<br/>into <em>pkg_tag_names</em> inside <em>libmsg/src/<a class="external-link" href="http://msg.cc" rel="nofollow">msg.cc</a></em></li><li>Create .h and .cc files inside reworked module.<br/>A separate .cc file for debug messages has to be created<br/>For example<br/><em>libmymodule/libmymodule/msg/ComponentMsg.h</em><br/><em>libmymodule/src/msg/<a class="external-link" href="http://ComponentMsg.cc" rel="nofollow">ComponentMsg.cc</a></em><br/><em>libmymodule/src/msg/<a class="external-link" href="http://DbgComponentMsg.cc" rel="nofollow">DbgComponentMsg.cc</a></em></li><li>include<em> libmsg/libmsg/msg_repo.h</em> into the created header file.</li><li><p class="auto-cursor-target">Declare an enumeration of Message Phrases within module namespace.<br/>Enumeration values are used as a message id. Based on that we have to prevent<br/>value shift when a new enum value has been added in the middle of enumeration.<br/>For that purpose an explicit value assignment should be used, to easier spot<br/>such a situation at a review.<br/>Also, during a first rework, a value gap of 10 can be placed between enum<br/>values in order to have an ability to add new values close to their group.<br/>Enumeration values should be formed according to this rule:<br/><em>'k' + Message type + name</em><br/>For example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Phrase enumeration</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// libmymodule/libmymodule/msg/ComponentMsg.h
+#pragma once
+#include &quot;libmsg/msg_repo.h&quot;
+namespace maestro {
+namespace my_module {
+enum class MessagePhrase
+{
+  kInfoSomethingInformative = 0,
+  kErrorSomethingBad = 10,
+  kDebugSomethingDiagnostic = 20,
+}
+...
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div></li><li><p class="auto-cursor-target">An alias in the created header can be introduced to have an easier access<br/>to <em>MsgRepo&lt;&gt;</em>.<br/><em>MsgRepo</em> is parameterized by the created enumeration and PkgTag for this module<br/>For example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Messages alias declaration</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// libmymodule/libmymodule/msg/ComponentMsg.h
+#pragma once
+#include &quot;libmsg/msg_repo.h&quot;
+namespace maestro {
+namespace my_module {
+...
+using Messages = maestro::msg::MsgRepo&lt;MessagePhrase, maestro::msg::PkgTag::MY_TAG&gt;;
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div></li><li><p class="auto-cursor-target">Define <em>msg_descriptors_</em> and <em>dbg_msg_descriptors_</em> members from appropriate<br/><em>MsgRepo&lt;&gt;</em> within the corresponding .cc files.<br/>For example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Regular messages definitions</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// libmymodule/src/msg/ComponentMsg.cc
+#include &quot;msg/ComponentMsg.h&quot;
+namespace maestro {
+namespace my_module {
+template&lt;&gt;
+const Messages::RegularDescriptorsMap
+Messages::Container::msg_descriptors_ =
+{
+  { maestro::my_module::MessagePhrase::kInfoSomethingInformative,
+    RegularDescriptor(MsgType::INFO, &quot;Test msg with some info&quot;) },
+  { maestro::my_module::MessagePhrase::kErrorSomethingBad,
+    RegularDescriptor(MsgType::ERROR, &quot;Test msg with some error &#39;%1%&#39;&quot;) },
+};
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Debug messages definitions</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// libmymodule/src/msg/DbgComponentMsg.cc
+#include &quot;msg/ComponentMsg.h&quot;
+namespace maestro {
+namespace my_module {
+template&lt;&gt;
+const Messages::DebugDescriptorsMap
+Messages::Container::dbg_msg_descriptors_ =
+{
+  { maestro::my_module::MessagePhrase::kDebugSomethingDiagnostic,
+    DebugDescriptor(&quot;MyModuleDebugTopic&quot;, kDbgMsgVerbosity, &quot;Test msg with some debug(&#39;%1%&#39;) (&#39;%2%&#39;)&quot;) },
+};
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div></li><li><p class="auto-cursor-target">Update cmake files to compile debug messages in debug builds only to<br/>prevent internal/confidential strings leakage into the release binary</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>CMake changes</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">...
+set(SRCS
+src/MyImportantClass.cc
+src/msg/ComponentMsg.cc
+)
+if_debug_add_to_var(SRCS &quot;src/msg/DbgComponentMsg.cc&quot;)
+...</pre>
+</div></div></li></ol><h2 id="MesssageRepo-HowtoaddamessageintoanexistingMessageRepo">How to add a message into an existing Message Repo</h2><ol><li><p class="auto-cursor-target">A new enumeration value has to be added into an existing enumeration of<br/>Message Phrases. Usually this enumeration exists within ComponentMsg.h file<br/>inside a module.<br/>Enumeration value number has to be explicitly assigned to prevent a value shift<br/>when a new enum value has been added in the middle of enumeration.<br/>A new enumeration value name should be formed according to this rule:<br/><em>'k' + Message type + name</em><br/>For example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Phrase enumeration new entries</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// libmymodule/libmymodule/msg/ComponentMsg.h
+#pragma once
+#include &quot;libmsg/msg_repo.h&quot;
+namespace maestro {
+namespace my_module {
+enum class MessagePhrase
+{
+  kInfoSomethingInformative = 0,
+  kErrorSomethingBad = 10,
+  kErrorOneMoreError = 11, // New Error msg
+  kDebugSomethingDiagnostic = 20,
+  kDebugOneMoreDbg = 21, // New Debug msg
+};
+...
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div></li><li><p class="auto-cursor-target">If a new msg is being added, an appropriate message descriptor has to<br/>be added.<br/>- Regular messages<br/>This group includes all non-debug messages.<br/>For this group a message descriptor is placed into msg_descriptors_ map which<br/>is usually defined within <em><a class="external-link" href="http://ComponentMsg.cc" rel="nofollow">ComponentMsg.cc</a></em> file. This map entry associates<br/>Message phrase enum with a <em>RegularMessageDescriptor</em>.<br/>A message type and a format string have to be passed into<br/><em>RegularMessageDescriptor</em> constructor.<br/>For example:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Regular messages new definitions</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// libmymodule/src/msg/ComponentMsg.cc
+#include &quot;msg/ComponentMsg.h&quot;
+namespace maestro {
+namespace my_module {
+template&lt;&gt;
+const Messages::RegularDescriptorsMap
+Messages::Container::msg_descriptors_ =
+{
+  { maestro::my_module::MessagePhrase::kInfoSomethingInformative,
+    RegularDescriptor(MsgType::INFO, &quot;Test msg with some info&quot;) },
+  { maestro::my_module::MessagePhrase::kErrorSomethingBad,
+    RegularDescriptor(MsgType::ERROR, &quot;Test msg with some error &#39;%1%&#39;&quot;) },
+  // New Error msg
+  { maestro::my_module::MessagePhrase::kErrorOneMoreError,
+    RegularDescriptor(MsgType::ERROR, &quot;One more error&quot;) },
+};
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div><p class="auto-cursor-target">- Debug messages<br/>For this group a message descriptor is placed into dbg_msg_descriptors_ map<br/>which is usually defined within <em><a class="external-link" href="http://DbgComponentMsg.cc" rel="nofollow">DbgComponentMsg.cc</a></em> file.<br/>This map entry associates Message phrase enum with a <em>DebugMessageDescriptor</em>.<br/>Topic, verbosity and format string have to be passed into <em>DebugMessageDescriptor</em> constructor.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>Debug messages new definitions</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// libmymodule/src/msg/DbgComponentMsg.cc
+#include &quot;msg/ComponentMsg.h&quot;
+namespace maestro {
+namespace my_module {
+template&lt;&gt;
+const Messages::DebugDescriptorsMap
+Messages::Container::dbg_msg_descriptors_ =
+{
+  { maestro::my_module::MessagePhrase::kDebugSomethingDiagnostic,
+    DebugDescriptor(&quot;MyModuleDebugTopic&quot;, kDbgMsgVerbosity, &quot;Test msg with some debug(&#39;%1%&#39;) (&#39;%2%&#39;)&quot;) },
+  // New Debug msg
+  { maestro::my_module::MessagePhrase::kDebugOneMoreDbg,
+    DebugDescriptor(&quot;NewTopic&quot;, 5, &quot;One more dbg&quot;) },
+};
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div></li></ol><h2 id="MesssageRepo-Howtouse">How to use</h2><p>Example of <em>MsgRepo&lt;&gt;</em> usage inside a module:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeHeader panelHeader pdl" style="border-bottom-width: 1px;"><b>How to use</b></div><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: cpp; gutter: false; theme: Confluence" data-theme="Confluence">// MyImportantClass.cc
+#include &quot;msg/ComponentMsg.h&quot;
+#include &quot;MyImportantClass.h&quot;
+namespace maestro {
+namespace my_module {
+void MyImportantClass::DoSmth()
+{
+  ...
+  Messages::Send(MessagePhrase::kInfoSomethingInformative, context);
+  ...
+  Messages::Send(MessagePhrase::kErrorSomethingBad, context, &quot;Bad error!!!&quot;);
+  ...
+  Messages::Send(MessagePhrase::kDebugSomethingDiagnostic, context, kUsefulIntegerValue, &quot;Useful debug msg&quot;);
+  ...
+  Messages::Send(MessagePhrase::kErrorOneMoreError);
+  ...
+  Messages::Send(MessagePhrase::kDebugOneMoreDbg);
+}
+} // namespace my_module
+} // namespace maestro</pre>
+</div></div><p><br/></p>

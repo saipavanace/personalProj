@@ -1,0 +1,149 @@
+<h2 id="Ncore3.6DMI:2024w37:09/09/24-09/13/24-Highlights:">Highlights:</h2><h2 id="Ncore3.6DMI:2024w37:09/09/24-09/13/24-Activities:">Activities:</h2><ul><li><p>Out sick 1/2 day 09/10</p></li><li><p>3.6.4</p><ul><li><p>Release regression triaged and waivers added:</p></li><li><p>Reopened and fixed some cases for this JIRA, specifically pertaining to config8_random and slow SRAM. Changes have been turned in.</p><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14856" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14856?src=confmacro" class="jira-issue-key">CONC-14856</a>
+                            </span>
+</p></li></ul></li></ul></li><li><p>3.7</p><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-15379" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-15379?src=confmacro" class="jira-issue-key">CONC-15379</a>
+                            </span>
+</p><ul><li><p>Both DTW and RB are sequence item based objects now, randomized/dispatched from a virtual sequence</p></li><li><p>BFM to model DCE was added, this arbitrates the RbReq/Rsp along with DtwReq</p></li><li><p>Was able to stream a 1000 coherent transactions successfully while upholding credit per skid buffer/RBID/Address per AIU/DCE on config1. Test ends without any abnormal failures</p></li><li><p>Will be testing this on some other configs and clean-up a bit before checking it in.</p></li><li><p>So far, non-coherent read/write and coherent writes are functioning.</p></li><li><p>Next, coherent reads (MrdReq).</p></li></ul></li></ul></li></ul><h2 id="Ncore3.6DMI:2024w37:09/09/24-09/13/24-Amee:">Amee:</h2><ul><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-12284" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-12284?src=confmacro" class="jira-issue-key">CONC-12284</a>
+                            </span>
+</p><ul><li><p>Done</p></li></ul></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-14608" >
+                <a href="https://arterisip.atlassian.net/browse/CONC-14608?src=confmacro" class="jira-issue-key">CONC-14608</a>
+                            </span>
+</p><ul><li><p>Reopened because WTT timeout tests weren’t correctly modeled and also timeout threshold CSR programming was hardcoded to 2 instead of being randomized.</p></li><li><p>Amee was able to achieve modeling these tests </p><ul><li><p>But the requisite for it to function is increasing the default defines for AXI delay to very high timeout values.</p></li><li><p>This conflicts with normal operation and messing up randomization of delays for regular sequences causing very long test times, hangs and timeouts.</p></li><li><p>With our test topology, since defines are added at compile time and there is no way to selectively provide defines per test(all tests use same top test). It’s impossible to use VIP for these tests. </p></li><li><p>I’ve asked her to forward this data to synopsys and ask for pointers if this is even remotely possible. The last option is to duplicate configurations specifically for this test but I’m not considering that.</p></li></ul></li></ul></li></ul><p />

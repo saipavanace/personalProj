@@ -1,0 +1,7 @@
+#!/bin/csh
+
+rm -rf ../../../debug/dce/syn
+node ../../../dv/scripts/rsim.js -m -e dce -ad RTL_DUT -s ../../../dv/common/config/sw/evalConfigAchlParams.js -n syn
+make clean
+make dc TCL=dce FILELIST=../../../../debug/dce/syn/rtl/top.f TECHNODE=CLN28HPM LIBRARY=tcbn28hpmbwp35 REVISION=120a FFCORNER=ff0p88vm40c SSCORNER=ss0p72v125c WIRELOAD=ZeroWireload SCAN=no COMPILE=yes PERIOD=0.800
+

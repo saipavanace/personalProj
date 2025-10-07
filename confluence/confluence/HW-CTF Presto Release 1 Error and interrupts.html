@@ -1,0 +1,482 @@
+<div class="table-wrap"><table class="wrapped confluenceTable"><colgroup><col style="width: 168.0px;"/></colgroup><colgroup><col/><col style="width: 1871.0px;"/></colgroup><colgroup><col style="width: 163.0px;"/></colgroup><tbody><tr><th class="confluenceTh">Block</th><th colspan="1" class="confluenceTh">Priority</th><th class="confluenceTh">Functionality to test</th><th colspan="1" class="confluenceTh">Bugs</th></tr><tr><td class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156329/HW-CTF+sym_firewall_adapter" data-linked-resource-id="16156329" data-linked-resource-version="5" data-linked-resource-type="page">HW-CTF sym_firewall_adapter</a></td><td colspan="1" class="confluenceTd"><br/></td><td class="confluenceTd"><div class="content-wrapper"><p>The User Defined Block (UDV) implements the CSR registers as below:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Enable Register @ offset=0
+[0] enable firewall check. 1 indicates firewall check is enabled. 0 indicates firewall check is disabled. 0 is default value.</pre>
+</div></div><p><span class="confluence-embedded-file-wrapper"><img class="confluence-embedded-image confluence-external-resource" src="https://confluence.arteris.com/download/attachments/9110831/fireWall.svg?version=4&amp;modificationDate=1572892472387&amp;api=v2" data-image-src="https://confluence.arteris.com/download/attachments/9110831/fireWall.svg?version=4&amp;modificationDate=1572892472387&amp;api=v2" loading="lazy"></span></p><p><br/></p></div></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2149" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2149?src=confmacro" class="jira-issue-key">SYM-2149</a>
+                            </span>
+</div></td></tr><tr><td class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156510/HW-CTF+sym_multicast" data-linked-resource-id="16156510" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF sym_multicast</a></td><td colspan="1" class="confluenceTd"><br/></td><td class="confluenceTd"><div class="content-wrapper"><p>This block does not exist in Symphony R1. Multicast block fires an interrupt when buffering is enabled and a target returns an error. Verify that this causes an interrupt to fire.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Error Status Register @ offset=0
+[0] EarlyResponseErrVld. If this bit is set, then an error for early response has occurred. Writing a one to this bit clears this bit.
+[1] EarlyResponseErrMultiple. If this bit is set, then multiple errors for early response have occurred. Writing a one to this bit clears this bit. In case of multiple errors for early response, only the first error for early response is logged.</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Error Location Register 0 @ offset=4
+[wSrcId-1:0] EarlyResponseSrcId. This field indicates the multicast request packet&#39;s Source ID in for the early response error.</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Error Location Register 1 @ offset=8
+[wMsgSeqnum-1:0] EarlyResponseMsgSeqnum. This field indicates the multicast request packet&#39;s Message Sequence Number for the early response error.</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Error Location Register 2 @ offset=12
+[wMultiLabel-1:0] EarlyResponseMultiLabel. This field indicates the multicast request packet&#39;s Multicast Label for the early response error.</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Error Location Register 3 @ offset=16
+[wMultiMask-1:0] EarlyResponseMultiMask. This field indicates the multicast request packet&#39;s Multicast Mask for the early response error.</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Error Location Register 4 @ offset=20
+[wTargPortVec-1:0] EarlyResponseTargPortVec. This field indicates the Target Port Vector for the early response error. Bit 0 corresponds to the Multicast Egress Port 0, bit 1 corresponds to the Multicast Egress Port 1, etc.</pre>
+</div></div><p><br/></p><p>Note: The diagram in the section “Presto 1.0” shows the various functional blocks and their connections.</p><p>The &quot;Per Label Context Block&quot; generates error interrupt for any bufferable transaction that has error indicated in the its late response in <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156510/HW-CTF+sym_multicast" data-linked-resource-id="16156510" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF sym_multicast</a></p><p>The number of targets per Multicast Block is limited to maximum 32 if the LABEL mask register is implemented and the number of mask bits is the same as the number of targets. Note that the number of mask bits can be the same or greater than the number of targets.</p><p><br/></p><p>When the &quot;noRegs&quot; parameter passed into sym_multicast is true or 1, the following registers are not created, otherwise created:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Label Valid Register @ offset=64. This is an optional register.
+[0] Valid. The label is valid.</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Label Value Register @ offset=68. This is an optional register.
+[wLabel-1:0]. The label value (i.e. the label ID).</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Label Mask Register @ offset=72. This is an optional register.
+[wMask-1:0]. The label mask.</pre>
+</div></div><p><br/><br/></p></div></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2150" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2150?src=confmacro" class="jira-issue-key">SYM-2150</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16160510/interrupt" data-linked-resource-id="16160510" data-linked-resource-version="22" data-linked-resource-type="page">interrupt</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><div class="content-wrapper"><p>Interrupt Accumulator</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Interrupt Valid Register @ offset=0
+[N-1:0] valid : One status bit for every interrupt valid bit. Interrupt valid bit goes to 1 when state is 0, and input is 1. Interrupts are cleared by writing 0 to bit corresponding to that interrupt valid bit. 0 is default value.</pre>
+</div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">Interrupt Mask Register @ offset=4
+[N-1:0] mask : One mask bit for every interrupt valid bit. 1 indicates interrupt is enabled. 0 indicates interrupt is disabled. 0 is default value.</pre>
+</div></div></div></td><td colspan="1" class="confluenceTd"><br/></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156655/HW-CTF+sym_vc_firewall_adapter" data-linked-resource-id="16156655" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF sym_vc_firewall_adapter</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><p>This block does not exist in Symphony R1. VC version of Firewall Adapter.</p><p>csr.spaceBlock[0].registers = registers of <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156329/HW-CTF+sym_firewall_adapter" data-linked-resource-id="16156329" data-linked-resource-version="5" data-linked-resource-type="page">HW-CTF sym_firewall_adapter</a>.</p><p>...</p><p>csr.spaceBlock[nVc-1:0].registers = registers of <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156329/HW-CTF+sym_firewall_adapter" data-linked-resource-id="16156329" data-linked-resource-version="5" data-linked-resource-type="page">HW-CTF sym_firewall_adapter</a>.</p><p>csr.spaceBlock[nVc].registers = registers of <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16160510/interrupt" data-linked-resource-id="16160510" data-linked-resource-version="22" data-linked-resource-type="page">interrupt</a>.</p><p>NOTE: csr.spaceBlock[i].baseAddress = i * 256</p></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2149" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2149?src=confmacro" class="jira-issue-key">SYM-2149</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16157980/HW-CTF+sym_vc_multicast" data-linked-resource-id="16157980" data-linked-resource-version="24" data-linked-resource-type="page">HW-CTF sym_vc_multicast</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><p>This block does not exist in Symphony R1. VC version of Multicast</p><p>csr.spaceBlock[0].registers = registers of <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156510/HW-CTF+sym_multicast" data-linked-resource-id="16156510" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF sym_multicast</a>.</p><p>...</p><p>csr.spaceBlock[1].registers = registers of <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16156510/HW-CTF+sym_multicast" data-linked-resource-id="16156510" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF sym_multicast</a>.</p><p>csr.spaceBlock[nVc].registers = registers of <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16160510/interrupt" data-linked-resource-id="16160510" data-linked-resource-version="22" data-linked-resource-type="page">interrupt</a>.</p><p><span>NOTE: csr.spaceBlock[i].baseAddress = i * 256</span></p></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2150" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2150?src=confmacro" class="jira-issue-key">SYM-2150</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16170074/HW-CTF+clk_pwr_adapter" data-linked-resource-id="16170074" data-linked-resource-version="15" data-linked-resource-type="page">HW-CTF clk_pwr_adapter</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><p>Doesn't have config registers or interrupts.</p></td><td colspan="1" class="confluenceTd"><br/></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16163549/HW-CTF+pmon_probe" data-linked-resource-id="16163549" data-linked-resource-version="43" data-linked-resource-type="page">HW-CTF pmon_probe</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd">This does not exist for Symphony R1. A PMON Probe or Link Probe fires an interrupt for occurrences of events defined in <em>evtDefines</em> parameter for which <em>interrupt</em> flag is set to true.</td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2147" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2147?src=confmacro" class="jira-issue-key">SYM-2147</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16161134/HW-CTF+Performance+Monitoring+PMON" data-linked-resource-id="16161134" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF Performance Monitoring (PMON)</a> Stats</td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><span>For Symphony R1, this block exists only as a sub-block within atui_axi and atut_axi. A PMON Stats block fires a &quot;<em>done</em>&quot; interrupt whenever the global timer reaches the value programmed in the limit register. Refer atui_axi and atut_axi below for the 'done' interrupt.</span></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2147" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2147?src=confmacro" class="jira-issue-key">SYM-2147</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16157127/HW-CTF+atui_axi" data-linked-resource-id="16157127" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF atui_axi</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><div>There can be two types of errors: (All internal errors can generate an interrupt if enabled)</div><div><ul><li>Internally Generated Errors<ul><li>RW Error - This means that a PAM entry indicated a target can only receive Writes and or Reads and the incoming transaction is the opposite.</li><li>Timeout Error - This means a transaction hasn't seen a completed response within a timeout to 2*timeout amount of cycles. In this case, the sequence number of the timed-out transaction will be poisoned.</li><li>Buffered Write - Error seen inside the response of a buffered write. Since the response has already been made an interrupt will be set and the context will be cleared.</li><li>Decode Error - Error occurs when there is not a match to the PAM table and decode errors are enabled. (If not enabled the packet will match the default entry)</li><li><span class="legacy-color-text-blue3">Exclusive Error - Error occurs when there is an exclusive transaction that is split.</span></li><li><span class="legacy-color-text-blue3">Power Domain Error - Error occurs when a transaction is sent to a target through a domain which is off as indicated by pamTargDomain and domainInt</span></li></ul></li><li>Externally Generated Errors - Errors show up inside the packet.<ul><li><span class="legacy-color-text-blue3">Transport Error - Error seen in the transport. This mostly applies to poison and errors in the CSR network.<br/></span></li></ul></li><li><span class="legacy-color-text-blue3">In addition, when a PMON exists inside this initiator, the PMON also generates an interrupt:</span><ul><li><span class="legacy-color-text-blue3">Done - Indicates that the global timer inside PMON reached the programmed limit.</span></li></ul></li></ul></div></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2151" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2151?src=confmacro" class="jira-issue-key">SYM-2151</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16157109/HW-CTF+atui_apb" data-linked-resource-id="16157109" data-linked-resource-version="2" data-linked-resource-type="page">HW-CTF atui_apb</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><div>There can be two types of errors: (All internal errors can generate an interrupt if enabled)</div><div><ul><li>Internally Generated Errors<ul><li>RW Error - This means that a PAM entry indicated a target can only receive Writes and or Reads and the incoming transaction is the opposite.</li><li>Timeout Error - This means a transaction hasn't seen a completed response within a timeout to 2*timeout amount of cycles. In this case, the sequence number of the timed-out transaction will be poisoned.</li><li>Decode Error - Error occurs when there is not a match to the PAM table and decode errors are enabled. (If not enabled the packet will match the default entry)</li><li><span class="legacy-color-text-blue3">Power Domain Error - Error occurs when a transaction is sent to a target through a domain which is off as indicated by pamTargDomain and domainInt</span></li></ul></li><li>Externally Generated Errors - Errors show up inside the packet.<ul><li><span class="legacy-color-text-blue3">Transport Error - Error seen in the transport. This mostly applies to poison and errors in the CSR network.</span></li></ul></li></ul></div></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2152" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2152?src=confmacro" class="jira-issue-key">SYM-2152</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16157105/HW-CTF+atui_ctl" data-linked-resource-id="16157105" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF atui_ctl</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><div>There can be two types of errors: (All internal errors can generate an interrupt if enabled)</div><div><ul><li>Internally Generated Errors<ul><li>RW Error - This means that a PAM entry indicated a target can only receive Writes and or Reads and the incoming transaction is the opposite.</li><li>Timeout Error - This means a transaction hasn't seen a completed response within a timeout to 2*timeout amount of cycles. In this case, the sequence number of the timed-out transaction will be poisoned.</li><li>Buffered Write - Error seen inside the response of a buffered write. Since the response has already been made an interrupt will be set and the context will be cleared.</li><li>Decode Error - Error occurs when there is not a match to the PAM table and decode errors are enabled. (If not enabled the packet will match the default entry)</li><li><span class="legacy-color-text-blue3">Exclusive Error - Error occurs when there is an exclusive transaction that is split.</span></li><li><span class="legacy-color-text-blue3">Power Domain Error - Error occurs when a transaction is sent to a target through a domain which is off as indicated by pamTargDomain and domainInt</span></li></ul></li><li>Externally Generated Errors - Errors show up inside the packet.<ul><li><span class="legacy-color-text-blue3">Transport Error - Error seen in the transport. This mostly applies to poison and errors in the CSR network.</span></li></ul></li></ul><p>RAL Programming</p><ol><li>Each error type has its own unique interrupt register using the naming convention CTL*IR.</li><li>Set the CTL*IR field 'E' to 0x1 to enable interrupt generation for the error.</li><li><span>The CTL*IR field 'I' will be set to a 1 when the interrupt triggers.</span></li><li><span><span>Writing 0x1 to CTL</span></span>*<span><span>IR field 'I'</span></span><span><span> will clear the interrupt.</span></span></li><li><span><span>Please refer &quot;Error Generation&quot; section in below confluence page for behaviour</span></span><br/><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16161575/HW-CTF+Common+Transaction+Layer+Microarchitecture+Specification#HW-CTFCommonTransactionLayerMicroarchitectureSpecification-ErrorGeneration" data-linked-resource-id="16161575" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF Common Transaction Layer Microarchitecture Specification#ErrorGeneration</a></li><li><span>At the system level the ATUI will only send a single interrupt out. If multiple ATUis exist there will have to be an interrupt block to accumulate these single interrupts. So at an ATUi level the verification can stop at making sure the single interrupt asserts/clears</span></li><li>See Chapter 16 of the <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16169110/Symphony+Architecture+Spec" data-linked-resource-id="16169110" data-linked-resource-version="18" data-linked-resource-type="page">Symphony Architecture Spec</a> to see some interrupt diagrams at a high level.</li></ol></div></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2153" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2153?src=confmacro" class="jira-issue-key">SYM-2153</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><p><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16164118/HW-CTF+atut_axi" data-linked-resource-id="16164118" data-linked-resource-version="25" data-linked-resource-type="page">HW-CTF atut_axi</a></p><p><br/></p></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><p>ATUT AXI used in a non-config network.</p><ul><li>Exclusive Monitor Timeout Error - If the exclusive monitor does not receive a corresponding exclusive write before 2*timeout amount of cycles &amp; the exclusive monitor is enabled, the entry will be cleared and an interrupt will be asserted.</li><li>Buffered Write - If a target receives a buffered write and receives an error response from the slave &amp; enabled, an interrupt will be asserted.</li><li>Timeout Error - This means a transaction hasn't seen a completed response within a timeout to 2*timeout amount of cycles. In this case, the sequence number of the timed-out transaction will be poisoned.</li><li><span class="legacy-color-text-blue3">In addition, when a PMON exists inside this target, the PMON also generates an interrupt:</span><ul><li><span class="legacy-color-text-blue3">Done - Indicates that the global timer inside PMON reached the programmed limit.</span></li></ul></li></ul></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2154" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2154?src=confmacro" class="jira-issue-key">SYM-2154</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16166673/HW-CTF+atut_apb" data-linked-resource-id="16166673" data-linked-resource-version="39" data-linked-resource-type="page">HW-CTF atut_apb</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><div><span>ATUT APB used in non-config network.</span></div><div><ul><li>Exclusive Monitor Timeout Error - If the exclusive monitor does not receive a corresponding exclusive write before 2*timeout amount of cycles &amp; the exclusive monitor is enabled, the entry will be cleared and an interrupt will be asserted.</li><li>Timeout Error - This means a transaction hasn't seen a completed response within a timeout to 2*timeout amount of cycles. In this case, the sequence number of the timed-out transaction will be poisoned.</li></ul></div></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2155" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2155?src=confmacro" class="jira-issue-key">SYM-2155</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16157084/HW-CTF+atut_ctl" data-linked-resource-id="16157084" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF atut_ctl</a></td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><div><p>ATUT CTL used in a non-config network.</p><ul><li>Buffered Write - If a target receives a buffered write and receives an error response from the slave &amp; enabled, an interrupt will be asserted.</li></ul><div><ul><li>Timeout Error - This means a transaction hasn't seen a completed response within a timeout to 2*timeout amount of cycles. In this case, the sequence number of the timed-out transaction will be poisoned.</li></ul></div><p>RAL Programming</p><ol><li>Each error type has its own unique interrupt register using the naming convention CTL*IR.</li><li>Set the CTL*IR field 'E' to 0x1 to enable interrupt generation for the error.</li><li>The CTL*IR field 'I' will be set to a 1 when the interrupt triggers.</li><li>Writing 0x1 to CTL*IR field 'I' will clear the interrupt.</li><li>Please refer &quot;Error Generation&quot; section in below confluence page for behaviour<br/><a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16161575/HW-CTF+Common+Transaction+Layer+Microarchitecture+Specification#HW-CTFCommonTransactionLayerMicroarchitectureSpecification-ErrorGeneration" data-linked-resource-id="16161575" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF Common Transaction Layer Microarchitecture Specification#ErrorGeneration</a></li><li>At the system level the ATUT will only send a single interrupt out. If multiple ATUts exist there will have to be an interrupt block to accumulate these single interrupts. So at an ATUt level the verification can stop at making sure the single interrupt asserts/clears</li><li>See Chapter 16 of the <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16169110/Symphony+Architecture+Spec" data-linked-resource-id="16169110" data-linked-resource-version="18" data-linked-resource-type="page">Symphony Architecture Spec</a> to see some interrupt diagrams at a high level.</li></ol></div></td><td colspan="1" class="confluenceTd"><div class="content-wrapper">
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="SYM-2156" >
+                <a href="https://arterisip.atlassian.net/browse/SYM-2156?src=confmacro" class="jira-issue-key">SYM-2156</a>
+                            </span>
+</div></td></tr><tr><td colspan="1" class="confluenceTd"> atut_excl</td><td colspan="1" class="confluenceTd"><br/></td><td colspan="1" class="confluenceTd"><p>ATUT Exclusive Monitor used in a non-config network</p><ul><li> Exclusive Monitor Timeout Error - If the exclusive monitor does not receive a corresponding exclusive write before 2*timeout amount of cycles &amp; the exclusive monitor is enabled, the entry will be cleared and an interrupt will be asserted.</li></ul><p>RAL Programming</p><ol><li>Each error type has its own unique interrupt register using the naming convention EXCL*IR.</li><li>Set the EXCL*IR field 'E' to 0x1 to enable interrupt generation for the error.</li><li>The EXCL*IR field 'I' will be set to a 1 when the interrupt triggers.</li><li>Writing 0x1 to EXCL*IR field 'I' will clear the interrupt.</li><li>Please refer to the &quot;Errors&quot; section and &quot;Registers&quot; section in the following confluence page for behavior: <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16161733/HW-CTF+Exclusive+Monitor+Micro-architecture+Specification" data-linked-resource-id="16161733" data-linked-resource-version="1" data-linked-resource-type="page">HW-CTF Exclusive Monitor Micro-architecture Specification</a></li><li>At the system level the ATUT will only send a single interrupt out. If multiple ATUts exist there will have to be an interrupt block to accumulate these single interrupts. So at an ATUt level the verification can stop at making sure the single interrupt asserts/clears</li><li>See Chapter 16 of the <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16169110/Symphony+Architecture+Spec" data-linked-resource-id="16169110" data-linked-resource-version="18" data-linked-resource-type="page">Symphony Architecture Spec</a> to see some interrupt diagrams at a high level.</li></ol></td><td colspan="1" class="confluenceTd"><br/></td></tr></tbody></table></div><p><br/></p><p>P.S: Hidden ATUT APB can have config/APB and interrupt interfaces, when it sees an error it will send packet to initiator and initiator will raise transport error.</p>

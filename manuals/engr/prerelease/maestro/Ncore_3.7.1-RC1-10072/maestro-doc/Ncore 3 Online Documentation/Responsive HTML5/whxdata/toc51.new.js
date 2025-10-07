@@ -1,0 +1,4 @@
+(function() {
+var toc =  [{"name":"2.1.1  Coherent Read Request","type":"item","url":"Ncore_3_Online_Documentation/Reference_Guide/Protocols_and_Interfaces/Cache_Coherency_Protocol.htm#1009841bc-1"},{"name":"2.1.2  Coherent Clean Request","type":"item","url":"Ncore_3_Online_Documentation/Reference_Guide/Protocols_and_Interfaces/Cache_Coherency_Protocol.htm#1009862bc-2"},{"name":"2.1.3  Coherent Write Request","type":"item","url":"Ncore_3_Online_Documentation/Reference_Guide/Protocols_and_Interfaces/Cache_Coherency_Protocol.htm#1009905bc-3"},{"name":"2.1.4  Non-Coherent Read and Write Requests","type":"item","url":"Ncore_3_Online_Documentation/Reference_Guide/Protocols_and_Interfaces/Cache_Coherency_Protocol.htm#1009928bc-4"}];
+window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
+})();

@@ -1,0 +1,42 @@
+<p> </p><p>ColorPaletteHandler is a singleton class that provides api for getting uniform colors throughout gui.</p><p> </p><p>Color names for widget are stored by string key (widget name or anything else) in ColorPaletteHandler.</p><p>To use this api a widget first should define which color names it uses and their corresponding colors from default palette and pass it to ColorPaletteHandler.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">#include &quot;colorpalettehandler.h&quot;
+
+MyWidget::MyWidget()
+{
+  CorrelationTable cTable;
+  cTable.insert(&quot;selection&quot;, 3);
+  cTable.insert(&quot;background&quot;, 1);
+  ColorPaletteHandler::instance()-&gt;setDefaultCorrelationTable(&quot;MyWidget&quot;, cTable);
+}</pre>
+</div></div><p> </p><p>To receive color updates widget should connect to colorsChanged() signal</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">QObject::connect(ColorPaletteHandler::instance(), SIGNAL(colorsChanged()), this, SLOT(onColorsChanged()));</pre>
+</div></div><p> </p><p>To get color from ColorPaletteHandler:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">QColor bg =  ColorPaletteHandler::instance()-&gt;getColor(&quot;MyWidget&quot;, &quot;background&quot;);</pre>
+</div></div><p>To get font color for specific background color</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">QColor bg = ColorPaletteHandler::instance()-&gt;getColor(&quot;MyWidget&quot;, &quot;background&quot;);
+QColor fg = ColorPaletteHandler::instance()-&gt;getForegrondColor(bg);</pre>
+</div></div><p> </p><p>Palette and colors can be changed on color settings tab in properties dialog.</p><p>Correspondence between color names known to widget and palette colors are stored in settings file .maestro.ini between maestro launches.</p><p>If default color names are changed/removed/added in widget ColorPaletteHandler will automatically modify settings accordingly.</p><p> </p><p>Sample of onColorsChanged() slot:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">void MTree::onColorsChanged()
+{
+    ColorPaletteHandler *h = ColorPaletteHandler::instance();
+    QColor bg = h-&gt;getColor(&quot;ADMTree&quot;, &quot;background&quot;);
+    QColor abg = h-&gt;getColor(&quot;ADMTree&quot;, &quot;altBackground&quot;);
+    QColor sel = h-&gt;getColor(&quot;ADMTree&quot;, &quot;selection&quot;);
+    QColor hov = h-&gt;getColor(&quot;ADMTree&quot;, &quot;hover&quot;);
+    QColor fg = h-&gt;getForegrondColor(bg);
+    QColor fsel = h-&gt;getForegrondColor(sel);
+    QColor fhov = h-&gt;getForegrondColor(hov);
+    QString stylesheet(&quot;QTreeWidget {&quot;
+            &quot;background: &quot; + bg.name() + &quot;; &quot;
+            &quot;alternate-background-color: &quot; + abg.name() + &quot;; &quot;
+            &quot;color: &quot; + fg.name() + &quot;; &quot;
+            &quot;selection-color: &quot; + fsel.name() + &quot;; &quot;
+            &quot;selection-background-color: &quot; + sel.name() + &quot;; &quot;
+            &quot;} &quot;
+            &quot;QTreeView::item:hover {&quot;
+            &quot;background: &quot; + hov.name() + &quot;; &quot;
+            &quot;color: &quot; + fhov.name() + &quot;; &quot;
+            &quot;}&quot;);
+    setStyleSheet(stylesheet);
+}</pre>
+</div></div>

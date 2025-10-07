@@ -1,0 +1,470 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DVE Snoop Transaction Table Manager
+// Author: Boon Chuan
+// Filename: dve_stt.tachl
+//=============================================================================
+\jsend
+
+\jsbegin
+
+var u = obj.lib;
+
+var assertOn           = obj.lib.getParam('assertOn');
+var wDvmReqAddr        = obj.lib.getParam('wDvmReqAddr');    // AMBA 5 CHI DVM requires 44,45,46..52
+var wDvmReqData        = obj.lib.getParam('wDvmReqData');    // Always 64 as DVM data payload is always lower 64 bits.
+var wDvmReqAttr        = obj.lib.getParam('wDvmReqAttr');
+var wDvmReqAiuId       = obj.lib.getParam('wDvmReqAiuId');
+var wDvmReqMsgId       = obj.lib.getParam('wDvmReqMsgId');
+var wDvmReqQos         = obj.lib.getParam('wDvmReqQos');
+var wDvmReqPriority    = obj.lib.getParam('wDvmReqPriority');
+var wDvmSnpCntr        = obj.lib.getParam('wDvmSnpCntr');
+var nSttEntries        = obj.lib.getParam('nSttEntries');
+var wSttId             = obj.lib.getParam('wSttId');
+var wTraceMe           = obj.lib.getParam('wTraceMe');
+
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+\jsend
+
+\jsbegin
+
+obj.lib.port('input',  'clk',      1);
+obj.lib.port('input',  'reset_n',  1);
+obj.lib.port('input',  'csr_DeallocEarly',  1);
+obj.lib.port('input',  'flm_sttid', wSttId);
+obj.lib.port('output', 'flm_sttid_collision', 1);
+
+obj.lib.port('input',  'dvm_snpreq_valid',      1);
+obj.lib.port('input',  'dvm_snpreq_sttid',      wSttId);
+obj.lib.port('input',  'dvm_snprsp_valid',      1);
+obj.lib.port('input',  'dvm_snprsp_sttid',      wSttId);
+obj.lib.port('input',  'dvm_cmp_valid',         1);
+obj.lib.port('input',  'dvm_cmp_sttid',         wSttId);
+obj.lib.port('input',  'dvm_strrsp_valid',      1);
+obj.lib.port('input',  'dvm_strrsp_sttid',      wSttId);
+
+obj.lib.port('output', 'stt_index_flm__deallocate0', nSttEntries);
+
+obj.lib.port('input',  'stt_init_vec',          nSttEntries);
+obj.lib.port('input',  'stt_deinit_vec',        nSttEntries);
+obj.lib.port('input',  'update_snpreq_counter', 1);
+obj.lib.port('input',  'update_snprsp_counter', 1);
+obj.lib.port('input',  'dvm_snprsp_cmstatus',   8);
+obj.lib.port('input',  'state_is_TERMINATE',    1);
+obj.lib.port('input',  'dtf_ready',             1);
+obj.lib.port('input',  'dtf_addr_sync_decode',  1);
+obj.lib.port('input',  'dtf_dbad',       1);
+obj.lib.port('input',  'dtf_aiuid',      wDvmReqAiuId);
+obj.lib.port('input',  'dtf_msgid',      wDvmReqMsgId);
+obj.lib.port('input',  'dtf_sttid',      wSttId);
+    if (wDvmReqQos > 0) {
+obj.lib.port('input',  'dtf_qos',        wDvmReqQos);
+    }
+    if (wDvmReqPriority > 0) {
+obj.lib.port('input',  'dtf_priority',   wDvmReqPriority);
+    }
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+obj.lib.port('input',  'dtf_tm',   wTraceMe);
+    }
+
+obj.lib.port('output', 'stt_valid_vec',             nSttEntries);
+obj.lib.port('output', 'stt_sync_active_vec',       nSttEntries);
+
+obj.lib.port('output', 'snprsp_stt_entry_valid',          1);
+obj.lib.port('output', 'snprsp_stt_entry_terminate',      1);
+obj.lib.port('output', 'snprsp_stt_entry_snprsp_counter', wDvmSnpCntr);
+obj.lib.port('output', 'snprsp_stt_entry_snpreq_counter', wDvmSnpCntr);
+obj.lib.port('output', 'snprsp_stt_entry_snpreq_pending', 1);
+
+obj.lib.port('output', 'dvm_cmp_aiuid',             wDvmReqAiuId);
+obj.lib.port('output', 'dvm_cmp_msgid',             wDvmReqMsgId);
+    if (wDvmReqPriority > 0) {
+obj.lib.port('output', 'dvm_cmp_priority',          wDvmReqPriority);
+    }
+obj.lib.port('output', 'dvm_cmp_cmstatus',          8);
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if (wTraceMe > 0) {
+obj.lib.port('output', 'dvm_cmp_tm',                wTraceMe);
+    }
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+wire [2:0] DVM_OPCODE_SYNC = 3'b100;
+wire [7:0] cmstatus_protocol_data_err = 8'b10000011;
+
+    \js for (var i=0; i < nSttEntries; i++) {
+wire stt\=i=\_dvm_msg_dbad;
+wire [\=wDvmReqAiuId-1=\:0] stt\=i=\_dvm_msg_aiuid;
+wire [\=wDvmReqMsgId-1=\:0] stt\=i=\_dvm_msg_msgid;
+wire [\=wSttId-1=\:0] stt\=i=\_dvm_msg_sttid;
+\js     if ( wDvmReqQos > 0 ) {
+wire [\=wDvmReqQos-1=\:0] stt\=i=\_dvm_msg_qos;
+\js }
+\js     if ( wDvmReqPriority > 0 ) {
+wire [\=wDvmReqPriority-1=\:0] stt\=i=\_dvm_msg_priority;
+\js }
+\jsbegin
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+        if ( wTraceMe > 0 ) { \jsend
+wire [\=wTraceMe-1=\:0] stt\=i=\_dvm_msg_tm;
+\js }
+wire stt\=i=\_valid;
+wire stt\=i=\_valid_in;
+wire stt\=i=\_valid_en;
+wire stt\=i=\_sync_active;
+wire stt\=i=\_sync_active_in;
+wire stt\=i=\_sync_active_en;
+wire stt\=i=\_snpreq_pending;
+wire stt\=i=\_snpreq_pending_in;
+wire stt\=i=\_snpreq_pending_en;
+wire stt\=i=\_terminate;
+wire stt\=i=\_terminate_in;
+wire stt\=i=\_terminate_en;
+wire [\=wDvmSnpCntr-1=\:0] stt\=i=\_snpreq_counter;
+wire [\=wDvmSnpCntr-1=\:0] stt\=i=\_snpreq_counter_in;
+wire [\=wDvmSnpCntr-1=\:0] stt\=i=\_snprsp_counter;
+wire [\=wDvmSnpCntr-1=\:0] stt\=i=\_snprsp_counter_in;
+wire [7:0] stt\=i=\_snprsp_cmstatus;
+wire [7:0] stt\=i=\_snprsp_cmstatus_in;
+    \js }
+
+wire dff_enable = 1'b1;
+
+wire [\=nSttEntries-1=\:0] stt_init_v = stt_init_vec;
+wire [\=nSttEntries-1=\:0] stt_deinit_v = stt_deinit_vec;
+wire [\=nSttEntries-1=\:0] snpreq_sttid_onehot_v;
+wire [\=nSttEntries-1=\:0] snprsp_sttid_onehot_v;
+wire [\=nSttEntries-1=\:0] dvmcmp_sttid_onehot_v;
+wire [\=nSttEntries-1=\:0] strrsp_sttid_onehot_v;
+
+wire [\=nSttEntries-1=\:0] stt_valid_v;
+wire [\=nSttEntries-1=\:0] stt_sync_active_v;
+
+\jsbegin
+//=============================================================================
+// STTID Matching
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+assign snpreq_sttid_onehot_v[\=i=\] = (dvm_snpreq_sttid == stt\=i=\_dvm_msg_sttid) & dvm_snpreq_valid & stt\=i=\_valid;
+\js }
+\js for (var i=0; i < nSttEntries; i++) {
+assign snprsp_sttid_onehot_v[\=i=\] = (dvm_snprsp_sttid == stt\=i=\_dvm_msg_sttid) & dvm_snprsp_valid & stt\=i=\_valid;
+\js }
+\js for (var i=0; i < nSttEntries; i++) {
+assign dvmcmp_sttid_onehot_v[\=i=\] = (dvm_cmp_sttid == stt\=i=\_dvm_msg_sttid) & dvm_cmp_valid & stt\=i=\_valid;
+\js }
+\js for (var i=0; i < nSttEntries; i++) {
+assign strrsp_sttid_onehot_v[\=i=\] = (dvm_strrsp_sttid == stt\=i=\_dvm_msg_sttid) & dvm_strrsp_valid & stt\=i=\_valid;
+\js }
+
+assign stt_index_flm__deallocate0 = csr_DeallocEarly ? dvmcmp_sttid_onehot_v : strrsp_sttid_onehot_v;
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entries that are static
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+\=u.dffre(1,            'stt' + i + '_dvm_msg_dbad',  'dtf_dbad',  "1'b0",                     'stt_init_v[' + i + ']', 'clk', 'reset_n')=\
+
+\=u.dffre(wDvmReqAiuId, 'stt' + i + '_dvm_msg_aiuid', 'dtf_aiuid', '{'+wDvmReqAiuId+"{1'b0}}", 'stt_init_v[' + i + ']', 'clk', 'reset_n')=\
+
+\=u.dffre(wDvmReqMsgId, 'stt' + i + '_dvm_msg_msgid', 'dtf_msgid', '{'+wDvmReqMsgId+"{1'b0}}", 'stt_init_v[' + i + ']', 'clk', 'reset_n')=\
+
+\=u.dffre(wSttId,       'stt' + i + '_dvm_msg_sttid', 'dtf_sttid', '{'+wSttId+"{1'b0}}",       'stt_init_v[' + i + ']', 'clk', 'reset_n')=\
+
+\js     if ( wDvmReqQos > 0 ) {
+\=u.dffre(wDvmReqQos,   'stt' + i + '_dvm_msg_qos',   'dtf_qos',   '{'+wDvmReqQos+"{1'b0}}",   'stt_init_v[' + i + ']', 'clk', 'reset_n')=\
+\js     }
+
+\js     if ( wDvmReqPriority > 0 ) {
+\=u.dffre(wDvmReqPriority, 'stt' + i + '_dvm_msg_priority', 'dtf_priority', '{'+wDvmReqPriority+"{1'b0}}", 'stt_init_v[' + i + ']', 'clk', 'reset_n')=\
+\js     }
+
+\jsbegin
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+        if ( wTraceMe > 0 ) { \jsend
+\=u.dffre(wTraceMe, 'stt' + i + '_dvm_msg_tm', 'dtf_tm', '{'+wTraceMe+"{1'b0}}", 'stt_init_v[' + i + ']', 'clk', 'reset_n')=\
+\js     }
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entries that are dynamic
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+\=u.dffre(1, 'stt' + i + '_valid', 'stt' + i + '_valid_in', '{'+1+"{1'b0}}", 'stt' + i + '_valid_en', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'stt' + i + '_sync_active', 'stt' + i + '_sync_active_in', '{'+1+"{1'b0}}", 'stt' + i + '_sync_active_en', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'stt' + i + '_terminate', 'stt' + i + '_terminate_in', '{'+1+"{1'b0}}", 'stt' + i + '_terminate_en', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'stt' + i + '_snpreq_pending', 'stt' + i + '_snpreq_pending_in', '{'+1+"{1'b0}}", 'stt' + i + '_snpreq_pending_en', 'clk', 'reset_n')=\
+
+\=u.dffre(wDvmSnpCntr, 'stt' + i + '_snpreq_counter', 'stt' + i + '_snpreq_counter_in', '{'+wDvmSnpCntr+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(wDvmSnpCntr, 'stt' + i + '_snprsp_counter', 'stt' + i + '_snprsp_counter_in', '{'+wDvmSnpCntr+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(8, 'stt' + i + '_snprsp_cmstatus', 'stt' + i + '_snprsp_cmstatus_in', '{'+8+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entry Valid Bits
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt\=i=\_valid_en = stt_init_v[\=i=\] | stt_deinit_v[\=i=\];
+assign stt\=i=\_valid_in = stt_init_v[\=i=\];
+
+\js }
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt_valid_v[\=i=\] = stt\=i=\_valid;
+
+\js }
+
+assign stt_valid_vec = stt_valid_v;
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entry Sync Active Bits
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt\=i=\_sync_active_en = (snpreq_sttid_onehot_v[\=i=\] & dvm_snpreq_valid & dtf_addr_sync_decode) | stt_deinit_v[\=i=\];
+assign stt\=i=\_sync_active_in = (snpreq_sttid_onehot_v[\=i=\] & dvm_snpreq_valid & dtf_addr_sync_decode);
+
+\js }
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt_sync_active_v[\=i=\] = stt\=i=\_sync_active;
+
+\js }
+
+assign stt_sync_active_vec = stt_sync_active_v;
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entry Terminate Bits
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt\=i=\_terminate_en = (state_is_TERMINATE & snpreq_sttid_onehot_v[\=i=\]) | stt_init_v[\=i=\];
+assign stt\=i=\_terminate_in = (state_is_TERMINATE & snpreq_sttid_onehot_v[\=i=\]);
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entry SNPreq Pending Bits
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt\=i=\_snpreq_pending_en = (snpreq_sttid_onehot_v[\=i=\] & dvm_snpreq_valid) | (dtf_ready & snpreq_sttid_onehot_v[\=i=\]);
+assign stt\=i=\_snpreq_pending_in = (snpreq_sttid_onehot_v[\=i=\] & dvm_snpreq_valid) & ~(dtf_ready & snpreq_sttid_onehot_v[\=i=\]);
+
+\js }
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entry SNPreq Counters
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt\=i=\_snpreq_counter_in = stt_init_v[\=i=\] | stt_deinit_v[\=i=\]        ? \=wDvmSnpCntr=\'b0 :
+                                    update_snpreq_counter & snpreq_sttid_onehot_v[\=i=\] ? stt\=i=\_snpreq_counter + \=wDvmSnpCntr=\'b1 :
+                                                                                         stt\=i=\_snpreq_counter;
+\js }
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entry SNPrsp Counters
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt\=i=\_snprsp_counter_in = stt_init_v[\=i=\] | stt_deinit_v[\=i=\]        ? \=wDvmSnpCntr=\'b0 :
+                                    update_snprsp_counter & snprsp_sttid_onehot_v[\=i=\] ? stt\=i=\_snprsp_counter + \=wDvmSnpCntr=\'b1 :
+                                                                                         stt\=i=\_snprsp_counter;
+\js }
+
+\jsbegin
+//=============================================================================
+// Transaction Table Entry SNPrsp Error Codes : any error is captured as Address Error as per Ncore3 Error Arch Spec Update
+//=============================================================================
+\jsend
+
+\js for (var i=0; i < nSttEntries; i++) {
+
+assign stt\=i=\_snprsp_cmstatus_in = stt_init_v[\=i=\] | stt_deinit_v[\=i=\]        ? 8'b0 :
+      update_snprsp_counter & snprsp_sttid_onehot_v[\=i=\] ? (stt\=i=\_snprsp_cmstatus[7] ? stt\=i=\_snprsp_cmstatus : dvm_snprsp_cmstatus[7] ? 8'b10000100 : 8'b0) :
+                                                                                          stt\=i=\_snprsp_cmstatus;
+
+\js }
+
+
+\jsbegin
+//=============================================================================
+// Selecting Transaction Table Entry for SnpRsp
+//=============================================================================
+\jsend
+
+assign snprsp_stt_entry_valid = (snprsp_sttid_onehot_v[0] & stt0_valid)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                              | (snprsp_sttid_onehot_v[\=i=\] & stt\=i=\_valid)
+            \js }
+                              ;
+
+assign snprsp_stt_entry_terminate = (snprsp_sttid_onehot_v[0] & stt0_terminate)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                                  | (snprsp_sttid_onehot_v[\=i=\] & stt\=i=\_terminate)
+            \js }
+                                  ;
+assign snprsp_stt_entry_snprsp_counter = ({\=wDvmSnpCntr=\{snprsp_sttid_onehot_v[0]}} & stt0_snprsp_counter)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                                       | ({\=wDvmSnpCntr=\{snprsp_sttid_onehot_v[\=i=\]}} & stt\=i=\_snprsp_counter)
+            \js }
+                                       ;
+assign snprsp_stt_entry_snpreq_counter = ({\=wDvmSnpCntr=\{snprsp_sttid_onehot_v[0]}} & stt0_snpreq_counter)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                                       | ({\=wDvmSnpCntr=\{snprsp_sttid_onehot_v[\=i=\]}} & stt\=i=\_snpreq_counter)
+            \js }
+                                       ;
+assign snprsp_stt_entry_snpreq_pending = (snprsp_sttid_onehot_v[0] & stt0_snpreq_pending)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                                       | (snprsp_sttid_onehot_v[\=i=\] & stt\=i=\_snpreq_pending)
+            \js }
+                                       ;
+
+\jsbegin
+//=============================================================================
+// Selecting Transaction Table Entry for DVM Completion
+//=============================================================================
+\jsend
+
+assign dvm_cmp_aiuid = ({\=wDvmReqAiuId=\{dvmcmp_sttid_onehot_v[0]}} & stt0_dvm_msg_aiuid)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                     | ({\=wDvmReqAiuId=\{dvmcmp_sttid_onehot_v[\=i=\]}} & stt\=i=\_dvm_msg_aiuid)
+            \js }
+                     ;
+
+assign dvm_cmp_msgid = ({\=wDvmReqMsgId=\{dvmcmp_sttid_onehot_v[0]}} & stt0_dvm_msg_msgid)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                     | ({\=wDvmReqMsgId=\{dvmcmp_sttid_onehot_v[\=i=\]}} & stt\=i=\_dvm_msg_msgid)
+            \js }
+                     ;
+
+assign dvm_cmp_cmstatus = ({8{dvmcmp_sttid_onehot_v[0]}} & (stt0_dvm_msg_dbad ? cmstatus_protocol_data_err : stt0_snprsp_cmstatus))
+            \js for (var i = 1; i < nSttEntries; i++) {
+                        | ({8{dvmcmp_sttid_onehot_v[\=i=\]}} & (stt\=i=\_dvm_msg_dbad ? cmstatus_protocol_data_err : stt\=i=\_snprsp_cmstatus))
+            \js }
+                        ;
+
+\js if ( wDvmReqPriority > 0) {
+assign dvm_cmp_priority = ({\=wDvmReqPriority=\{dvmcmp_sttid_onehot_v[0]}} & stt0_dvm_msg_priority)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                     | ({\=wDvmReqPriority=\{dvmcmp_sttid_onehot_v[\=i=\]}} & stt\=i=\_dvm_msg_priority)
+            \js }
+                     ;
+\js }
+
+\jsbegin
+// Ncore3.2 always has a trace bit
+/* istanbul ignore else env ncore_3p2,ncore_3p4,ncore_3p6,ncore_3p7 */
+    if ( wTraceMe > 0) { \jsend
+assign dvm_cmp_tm = ({\=wTraceMe=\{dvmcmp_sttid_onehot_v[0]}} & stt0_dvm_msg_tm)
+            \js for (var i = 1; i < nSttEntries; i++) {
+                     | ({\=wTraceMe=\{dvmcmp_sttid_onehot_v[\=i=\]}} & stt\=i=\_dvm_msg_tm)
+            \js }
+                     ;
+\js }
+
+\jsbegin
+//=============================================================================
+// flm_sttid_collision
+//=============================================================================
+\jsend
+
+wire [\=nSttEntries-1=\:0] flm_sttid_collision_v;
+
+\js for (var i=0; i < nSttEntries; i++) {
+assign flm_sttid_collision_v[\=i=\] = (flm_sttid == stt\=i=\_dvm_msg_sttid) & stt\=i=\_valid;
+\js }
+
+assign flm_sttid_collision = {|{flm_sttid_collision_v}};
+
+\jsbegin
+//=============================================================================
+// Assertion
+//=============================================================================
+\jsend
+
+\js if (assertOn) {
+`ifdef OVL_ASSERT_ON
+
+    property p_vec_onehot0(v);
+        @(posedge clk) disable iff (~reset_n)
+        ($onehot0(v));
+    endproperty
+
+    assert_snpreq_sttid_onehot: assert property (p_vec_onehot0(snpreq_sttid_onehot_v))
+        else begin $error("snpreq_sttid_onehot_v must be onehot0 !"); #100 $finish; end
+
+    assert_snprsp_sttid_onehot: assert property (p_vec_onehot0(snprsp_sttid_onehot_v))
+        else begin $error("snprsp_sttid_onehot_v must be onehot0 !"); #100 $finish; end
+
+    assert_dvmcmp_sttid_onehot: assert property (p_vec_onehot0(dvmcmp_sttid_onehot_v))
+        else begin $error("dvmcmp_sttid_onehot_v must be onehot0 !"); #100 $finish; end
+
+    assert_strrsp_sttid_onehot: assert property (p_vec_onehot0(strrsp_sttid_onehot_v))
+        else begin $error("strrsp_sttid_onehot_v must be onehot0 !"); #100 $finish; end
+
+    STT_DEALLOC_STRRSP: cover property ( @(posedge clk) (|stt_index_flm__deallocate0));
+
+`endif
+\js }
+
+endmodule

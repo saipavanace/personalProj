@@ -1,0 +1,211 @@
+{
+  "name": "NC_CCP",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nSets",
+          "parameterTitle": "Number of Sets",
+          "default": 16,
+          "parameterType": "architecture",
+          "guiDescription": "Number of Sets/entries in the cache.",
+          "docID": 1056,
+          "validValues": "16,32,64,128,256,512,1024,2048,4096,8192",
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 8192
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nWays",
+          "parameterTitle": "Number of Ways",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Number of ways/associativity of the cache.",
+          "docID": 1057,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "useScratchpad",
+          "parameterTitle": "Enable Scratchpad",
+          "default": false,
+          "parameterType": "architecture",
+          "guiDescription": "Enables scratch pad capbility, avaialble only for SMC in DMI",
+          "docID": 1058,
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nTagBanks",
+          "parameterTitle": "Number of Tag Banks",
+          "minimum": 1,
+          "maximum": 2,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "Number of tag banks. \nThis can improve cache BW depending on the traffic pattern and interleaving bits selected.",
+          "docID": 1059,
+          "validValues": "1,2",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDataBanks",
+          "parameterTitle": "Number of Data Banks",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 1,
+          "parameterType": "architecture",
+          "guiDescription": "Number of data banks. \nThis can improve cache BW depending on the traffic pattern and interleaving bits selected.",
+          "docID": 1060,
+          "validValues": "1,2,4",
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "TagErrInfo",
+          "parameterTitle": "TagErrInfo",
+          "default": "NONE",
+          "parameterType": "architecture",
+          "validValues": "NONE,PARITY,SECDED",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "DataErrInfo",
+          "parameterTitle": "DataErrInfo",
+          "default": "NONE",
+          "parameterType": "architecture",
+          "validValues": "NONE,PARITY,SECDED",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "useDinBuffer",
+          "parameterTitle": "useDinBuffer",
+          "default": false,
+          "parameterType": "architecture",
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "useDoutBuffer",
+          "parameterTitle": "useDoutBuffer",
+          "default": true,
+          "parameterType": "architecture",
+          "type": "boolean"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "SelectInfo",
+          "parameterTitle": "SelectInfo",
+          "parameterType": "architecture",
+          "docID": 1061,
+          "type": "object",
+          "reference": "SelectInfoParams",
+          "guiDescription": ""
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "ImplementationParameters",
+          "parameterTitle": "ImplementationParameters",
+          "parameterType": "architecture",
+          "docID": 1062,
+          "type": "object",
+          "reference": "ImplParams"
+        }
+      ]
+    },
+    {
+      "name": "SelectInfoParams",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "PriSubDiagAddrBits",
+          "parameterTitle": "Primary Set Selection Bits",
+          "parameterType": "architecture",
+          "guiDescription": "Address bits to be used as primary set selection bits",
+          "docID": 1064,
+          "type": "array",
+          "arrayType": "integer"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "SecSubRows",
+          "parameterTitle": "Secondary Set Selection Bits",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "string"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "TagBankSelBits",
+          "parameterTitle": "Tag Bank Selection Bits",
+          "parameterType": "architecture",
+          "guiDescription": "Tag bank selection bit. This bit must be one of the bits from the primary selection bits.",
+          "docID": 1065,
+          "type": "array",
+          "arrayType": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "DataBankSelBits",
+          "parameterTitle": "Data Bank Selection Bits",
+          "parameterType": "architecture",
+          "guiDescription": "Data bank selection bit. These bits must be from the primary selection bits.",
+          "docID": 1066,
+          "type": "array",
+          "arrayType": "integer"
+        }
+      ]
+    },
+    {
+      "name": "ImplParams",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "RepPolicy",
+          "parameterTitle": "Replacment Policy",
+          "default": "RANDOM",
+          "parameterType": "architecture",
+          "guiDescription": "Cache replacment policy. available options are NRU (Not Recnetly Used) or random",
+          "docID": 1063,
+          "validValues": "RANDOM,NRU",
+          "type": "string"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "nRPPorts",
+          "parameterTitle": "nRPPorts",
+          "minimum": 1,
+          "maximum": 2,
+          "default": 1,
+          "parameterType": "architecture",
+          "validValues": "1,2",
+          "type": "integer"
+        }
+      ]
+    }
+  ]
+}

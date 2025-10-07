@@ -1,0 +1,37 @@
+<div class="contentLayout2">
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="SettingUpArterisServerforMaestroDevelopment-ConnecttoArterisVPN">Connect to Arteris VPN</h1><p>In order to have access to Arteris resources (development server, Jira, Confluence, Jenkins, ect.) one should be connected to the Arteris VPN. Detailed instructions should be sent to a newcomer in the welcome e-mail.</p><p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="SettingUpArterisServerforMaestroDevelopment-LogintoArterisDevelopmentServer">Login to Arteris Development Server</h1><p>Maestro is built on the <code>gr6-3.arteris.com</code> server.</p><p>To login to the Arteris development server use <code>ssh</code>:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ ssh username@gr6-3.arteris.com</pre>
+</div></div>If prompted something like the following, type <code>yes</code>.<br/><blockquote><pre><code>The authenticity of host 'gr6-3.arteris.com (192.168.10.175)' can't be established.
+ECDSA key fingerprint is SHA256:(a bunch of stuff...).
+Are you sure you want to continue connecting (yes/no)? yes</code></pre></blockquote><p>Then enter your UNIX/Linux environment password (from the welcome e-mail) and you should be logged in to the server (with your default shell, e.g. <code>bash</code>).</p><p>You can also use any suitable SSH client (e.g. PuTTY on Windows).</p><p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout single" data-layout="single">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h1 id="SettingUpArterisServerforMaestroDevelopment-ConfigureArterisServerforMaestroBuild">Configure Arteris Server for Maestro Build</h1><p>Arteris development server has almost all the libraries required for Maestro build. However, a couple of things should be configured manually.</p><h2 id="SettingUpArterisServerforMaestroDevelopment-SetupConan">Setup Conan</h2><p>Install Conan configuration for your user. It needs to be done only once.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ conan config install /scratch3/maestro/conan/config/conan_config_arteris.tar.gz</pre>
+</div></div><h2 class="auto-cursor-target" id="SettingUpArterisServerforMaestroDevelopment-LoadMaestroModules">Load Maestro Modules</h2><p>In order to build and run Maestro, a server user needs to initialize the environment. Environment modules are used on the Arteris server for this purpose. You can load modules manually every time you log in using the commands below or you can add this commands to your shell init script (e.g. <code>~/.bashrc</code> for <code>bash</code>):</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># Loads environment variables for Maestro build.
+module load maestro
+
+# Loads Maestro license (to run Maestro).
+module load license/arteris
+
+# Loads the latest NodeJS required for tests.
+module load node/lts</pre>
+</div></div><p class="auto-cursor-target">Please note, that any changes you make to <code>.bashrc</code> will be applied next time you launch terminal. If you want to apply them immediately, run the command below:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ source ~/.bashrc</pre>
+</div></div></div>
+</div>
+</div>
+</div>

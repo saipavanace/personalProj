@@ -1,0 +1,1059 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2019 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// Ncore 3 Address Map
+// Author: Boon Chuan
+// ============================================================================
+// Ncore 3 Address Map top-level block diagram
+//
+//                   +------------+         +----------+
+// address -------+->| NRS        | hit     |          | addressing error (multihit, nohit)
+//                |  | Region     |-------->|          |--------------------->
+// NRSBAR  -------|->| Decode     |         | Region   | nrs_selfidr_hit
+//                |  +------------+         | Matching |--------------------->
+//                |                         | Priority |
+//                |  +------------+         |          | dii_{nid,fid,valid}
+//                +->| GP Address | hit[n]  | Unique   |--------------------->
+//                |  | Region [n] |-------->| Matching | dmi_{nid,fid,valid}
+// GPRAR, GPRBAR -|->| Decode     |         | Region   |--------------------->
+//  [n]     [n]   |  +------------+         |          | dce_{nid,fid,valid}
+//                |    n=0..63              |          |--------------------->
+//                |                         |          |
+//                |  +------------+         |          | Note:
+// address        +->| Boot       | hit     |          | dii_nid=0..nDiis-1
+//                   | Region     |-------->|          | dmi_nid=0..nDmis-1
+// BRAR, BRBAR ----->| Decode     |         |          | dce_nid=0..nDces-1
+//                   +------------+         |          |
+//                                          | Address  |
+//                                          | Select   |
+//                                          | Hashing  |
+//                                          |          |
+// FUnitIdArray(DMI,DII,DCE)--------------->| FUnitId  |
+//                                          | Select   |
+//                                          +----------+
+// If for DCE, exclude DCE and DII, and NRS, and nrs_idr_hit.
+// If for AIU, then include everything in.
+// We don't support Directory Interleaving, so no ADIGR.
+// ============================================================================
+// Address map is implemented as described in 014 version of Ncore3SysArch document
+// (Chapter 4 Storage Architecture) with following exceptions:
+//
+// Only CSR configurable Address map option will be implemented.
+// DMI grouping interleaving functions will support only 2 options per grouping selectable via CSRs
+// 2 options each for interleave 2, 3 & 4
+// Parameter:
+// DmiIntvFunc2PrimaryBits [
+// [<bit0>],
+// [<bit0>]
+// ]
+// DmiIntvFunc2SecondaryBits[
+// ['h0],
+// ['h0],
+// ]
+// DmiIntvFunc3PrimaryBits [
+// [<bit0>, <bit1>],
+// [<bit0>, <bit1>]
+// ]
+// DmiIntvFunc3SecondaryBits[
+// ['h0, 'h0],
+// ['h0, 'h0],
+// ]
+// DmiIntvFunc4PrimaryBits [
+// [<bit0>, <bit1>],
+// [<bit0>, <bit1>]
+// ]
+// DmiIntvFunc4SecondaryBits[
+// ['h0, 'h0],
+// ['h0, 'h0],
+// ]
+//
+//
+// DCE will use Ncore 2.X style fixed interleaving
+//
+// DcePrimaryBits [
+// <bit0>,<bit1>, <bit2> ...
+// ]
+// DceSecondaryBits [
+// 'h0,
+// 'h0,
+// 'h0,
+// ... ]
+//
+// ============================================================================
+
+var u = obj.lib;
+
+var utilFunctions = obj.userLib;
+
+// ============================================================================
+// Parameters
+// ============================================================================
+
+u.paramDefault('useCsrAccess', 'int', 0);
+u.paramDefault('usePcieOrder', 'int', 0);
+u.paramDefault('useNc',        'int', 0);
+u.paramDefault('useNsx',       'int', 0);
+u.paramDefault('useAMIFR_A16W_A8W', 'int', 0);
+
+u.paramDefault('instantiator', 'string', 'aiu'); // 'aiu', 'dce'
+
+u.paramDefault('wSysAddr', 'int', 52);
+u.paramDefault('nGPRA',    'int', 4);
+u.paramDefault('wFUnitId', 'int', 6);
+u.paramDefault('nDmis', 'int', 1);
+u.paramDefault('nDiis', 'int', 1);
+u.paramDefault('nDces', 'int', 1);
+
+//
+// The dmiIGSV is a vector (i.e. array) of Interleave Group Set (IGS).
+// Each Interleave Group Set contains one or more Interleave Groups (IG).
+// Each Interleave Group is a vector of DMIIDs.
+//
+u.paramDefault('dmiIGSV', 'array',
+    [ {IGV : [ {DMIIDV:[0]}, {DMIIDV:[1,2]}, {DMIIDV:[3,4,5]}, {DMIIDV:[6,7,8,9]} ] },
+      {IGV : [ {DMIIDV:[0,1,2]}, {DMIIDV:[3,4,5,6]}, {DMIIDV:[7]}, {DMIIDV:[8,9]} ] }
+    ] );
+
+//
+// The dmi2WIFV is a vector (i.e. array) of 2-Way Interleave Functions.
+// Each Interleave Function comprises an array of integer for primary bits, and an array of string for secondary bits.
+//
+u.paramDefault('dmi2WIFV', 'array',
+    [ {PrimaryBits : [7], SecondaryBits: ["'h10000000"]},
+      {PrimaryBits : [9], SecondaryBits: ["'h40000000"]}
+    ] );
+
+//
+// The dmi3WIFV is a vector (i.e. array) of 3-Way Interleave Functions.
+// Each Interleave Function comprises an array of integer for primary bits, and an array of string for secondary bits.
+//
+u.paramDefault('dmi3WIFV', 'array',
+    [ {PrimaryBits : [7,  8], SecondaryBits: ["'h10000000", "'h20000000"]},
+      {PrimaryBits : [9, 10], SecondaryBits: ["'h40000000", "'h80000000"]}
+    ] );
+
+//
+// The dmi4WIFV is a vector (i.e. array) of 4-Way Interleave Functions.
+// Each Interleave Function comprises an array of integer for primary bits, and an array of string for secondary bits.
+//
+u.paramDefault('dmi4WIFV', 'array',
+    [ {PrimaryBits : [7,  8], SecondaryBits: ["'h10000000", "'h20000000"]},
+      {PrimaryBits : [9, 10], SecondaryBits: ["'h40000000", "'h80000000"]}
+    ] );
+
+//
+// The dmi8WIFV is a vector (i.e. array) of 8-Way Interleave Functions.
+// Each Interleave Function comprises an array of integer for primary bits, and an array of string for secondary bits.
+//
+u.paramDefault('dmi8WIFV', 'array',
+    [ {PrimaryBits : [7,  8,  9], SecondaryBits: ["'h10000000", "'h20000000", "'h40000000"]},
+      {PrimaryBits : [9, 10, 11], SecondaryBits: ["'h40000000", "'h80000000", "'h20000000"]}
+    ] );
+
+//
+// The dmi16WIFV is a vector (i.e. array) of 16-Way Interleave Functions.
+// Each Interleave Function comprises an array of integer for primary bits, and an array of string for secondary bits.
+//
+u.paramDefault('dmi16WIFV', 'array',
+    [ {PrimaryBits : [6,  7,  8,  9], SecondaryBits: ["'h10000000", "'h20000000", "'h40000000", "'h04000000"]},
+      {PrimaryBits : [9, 10, 11, 12], SecondaryBits: ["'h40000000", "'h80000000", "'h20000000", "'h08000000"]}
+    ] );
+
+//
+// Only support one interleaved group for DCE.
+// ===========================================
+// Array of integers for primary bits for DCE.
+//
+u.paramDefault('DcePrimaryBits', 'array', [7, 8]);
+//
+// Array of strings for secondary bits for DCE.
+//
+u.paramDefault('DceSecondaryBits', 'array', ["'h80000000", "'h80000000"]);
+
+var useNc        = u.getParam('useNc');
+var useNsx       = u.getParam('useNsx');
+var useCsrAccess = u.getParam('useCsrAccess');
+var usePcieOrder = u.getParam('usePcieOrder');
+
+var useAMIFR_A16W_A8W = u.getParam('useAMIFR_A16W_A8W');
+
+var instantiator = u.getParam('instantiator');
+
+var wSysAddr = u.getParam('wSysAddr');
+var nGPRA    = u.getParam('nGPRA');
+var wFUnitId = u.getParam('wFUnitId');
+var nDmis    = u.getParam('nDmis');
+var nDiis    = u.getParam('nDiis');
+var nDces    = u.getParam('nDces');
+
+var dmiIGSV  = u.getParam('dmiIGSV');
+
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (u.getParam('dmi2WIFV') === undefined) {
+var dmi2WIFV = [];
+} else {
+var dmi2WIFV = u.getParam('dmi2WIFV');
+}
+
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (u.getParam('dmi3WIFV') === undefined) {
+var dmi3WIFV = [];
+} else {
+var dmi3WIFV = u.getParam('dmi3WIFV');
+}
+
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (u.getParam('dmi4WIFV') === undefined) {
+var dmi4WIFV = [];
+} else {
+var dmi4WIFV = u.getParam('dmi4WIFV');
+}
+
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (u.getParam('dmi8WIFV') === undefined) {
+var dmi8WIFV = [];
+} else {
+var dmi8WIFV = u.getParam('dmi8WIFV');
+}
+
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (u.getParam('dmi16WIFV') === undefined) {
+var dmi16WIFV = [];
+} else {
+var dmi16WIFV = u.getParam('dmi16WIFV');
+}
+
+var dce_PriSubDiagAddrBits = u.getParam('DcePrimaryBits');
+var dce_SecSubRows         = u.getParam('DceSecondaryBits');
+
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (dmiIGSV.length > 0) {
+    for (var s=0; s < dmiIGSV.length; s++) {
+        /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+        if (dmiIGSV[s].IGV.length > nDmis) {
+            console.log("Error: "+u.getModuleName()+" - dmiIGSV[s].IGV.length cannot be greater than nDmis !");
+            throw "ERROR - "+u.getModuleName();
+        }
+        for (var i=0; i < dmiIGSV[s].IGV.length; i++) {
+            /* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+            if (dmiIGSV[s].IGV[i].DMIIDV.length < 1) {
+                console.log("Error: "+u.getModuleName()+" - dmiIGSV[s].IGV[i].DMIIDV.length cannot be less than 1 !");
+                throw "ERROR - "+u.getModuleName();
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Ports
+// ============================================================================
+
+u.port('input',  'address_valid',   1);
+u.port('input',  'address',         wSysAddr);
+
+    if (instantiator == 'dce') {
+
+u.port('input',  'hexDceDmiVec', nDmis);
+u.port('output', 'unconnected_dmi_access', 1);
+
+    } else {
+
+u.port('input', 'hexAiuDceVec', nDces);
+u.port('input', 'hexAiuDmiVec', nDmis);
+u.port('input', 'hexAiuDiiVec', nDiis);
+u.port('output', 'unconnected_dce_access', 1);
+u.port('output', 'unconnected_dmi_access', 1);
+u.port('output', 'unconnected_dii_access', 1);
+
+    }
+
+    if (useCsrAccess) {
+u.port('input',  'csr_access_nrs_valid', 1);
+u.port('output', 'csr_access_nrs_error', 1);
+    }
+
+    if (instantiator == 'dce') {
+
+    } else {
+u.port('input',  'NRSBAR_BaseAddr', 32);
+u.port('input',  'NRSBAR_DiiId',    4);
+    }
+
+    for (var i = 0; i < nGPRA; i++) {
+u.port('input',  'GPRAR'+i+'_Valid',      1);
+u.port('input',  'GPRAR'+i+'_HUT',        1);
+u.port('input',  'GPRAR'+i+'_Size',       6);
+u.port('input',  'GPRAR'+i+'_HomeUnitId', 5);
+    if (usePcieOrder) {
+u.port('input',  'GPRAR'+i+'_Order_Policy', 2);
+u.port('input',  'GPRAR'+i+'_Order_WriteID', 1);
+u.port('input',  'GPRAR'+i+'_Order_ReadID', 1);
+u.port('input',  'GPRAR'+i+'_Order_Hazard', 1);
+    }
+    if (useNc) {
+u.port('input',  'GPRAR'+i+'_NC', 1);
+    }
+    if (useNsx) {
+u.port('input',  'GPRAR'+i+'_NSX', 2);
+    }
+//u.port('input',  'GPRAR'+i+'_DIGId',      3);
+u.port('input',  'GPRBAR'+i+'_AddrLo',    32);
+u.port('input',  'GPRBAR'+i+'_AddrHi',    8);
+    }
+    if (usePcieOrder) {
+u.port('output',  'Order_Policy', 2);
+u.port('output',  'Order_WriteID', 1);
+u.port('output',  'Order_ReadID', 1);
+u.port('output',  'Order_Hazard', 1);
+    }
+    if (useNc) {
+u.port('output',  'GPRAR_NC', 1);
+    }
+    if (useNsx) {
+u.port('output',  'GPRAR_NSX', 2);
+    }
+
+u.port('input',  'BRAR_Valid',      1);
+u.port('input',  'BRAR_Size',       6);
+u.port('input',  'BRAR_HUT',        1);
+u.port('input',  'BRAR_HomeUnitId', 5);
+//u.port('input',  'BRAR_DIGId',      3);
+u.port('input',  'BRBAR_AddrLo',    32);
+u.port('input',  'BRBAR_AddrHi',    8);
+
+u.port('input',  'AMIGR_AMIGS',     4);
+u.port('input',  'AMIGR_Valid',     1);
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (useAMIFR_A16W_A8W) {
+u.port('input',  'AMIFR_A16WIFId',  3);
+u.port('input',  'AMIFR_A8WIFId',   3);
+    }
+u.port('input',  'AMIFR_A4WIFId',   3);
+u.port('input',  'AMIFR_A3WIFId',   3);
+u.port('input',  'AMIFR_A2WIFId',   3);
+
+    for (var i = 0; i < nDmis; i++) {
+u.port('input',  'dmi'+i+'_f_unit_id', wFUnitId);
+    }
+
+if (instantiator == 'dce') {
+
+} else {
+    for (var i = 0; i < nDiis; i++) {
+u.port('input',  'dii'+i+'_f_unit_id', wFUnitId);
+    }
+    for (var i = 0; i < nDces; i++) {
+u.port('input',  'dce'+i+'_f_unit_id', wFUnitId);
+    }
+}
+
+u.port('output', 'addressing_error_hit_multi', 1);
+u.port('output', 'addressing_error_hit_none',  1);
+
+u.port('output', 'dmi_f_unit_id',    wFUnitId);
+u.port('output', 'dmi_id',           5);
+u.port('output', 'dmi_id_valid',     1);
+u.port('output', 'dmi_mig',          5);
+
+u.port('output', 'size_of_ig',       4);
+
+if (instantiator == 'dce') {
+
+} else {
+
+u.port('output', 'dii_f_unit_id',    wFUnitId);
+u.port('output', 'dii_id',           5);
+u.port('output', 'dii_id_valid',     1);
+
+u.port('output', 'dce_f_unit_id',    wFUnitId);
+u.port('output', 'dce_id',           5);
+u.port('output', 'dce_id_valid',     1);
+
+u.port('output', 'nrs_selfidr_hit',  1);
+
+}
+u.port('output', 'nrs_region_hit',  1);
+u.port('output', 'gpr_region_hit',  1);
+u.port('output', 'bra_region_hit',  1);
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+// =======================================================
+// Wires
+// =======================================================
+\jsend
+
+wire dmi_id_valid_m, dmi_id_valid_conn;
+    \js if (instantiator == 'dce') {
+    \js } else {
+wire dii_id_valid_m, dii_id_valid_conn;
+wire dce_id_valid_m, dce_id_valid_conn;
+wire [31:0] dce_id_onehot;
+    \js }
+
+wire [51:0] in_address;
+
+\js if (instantiator == 'dce') {
+
+\js } else {
+
+wire [51:0] nrs_compare_address_lo;
+wire [51:0] nrs_compare_address_hi;
+
+\js }
+
+    \js for (var i = 0; i < nGPRA; i++) {
+
+wire [51:0] gpra\=i=\_compare_address_lo;
+wire [51:0] gpra\=i=\_compare_address_hi;
+wire gpra\=i=\_region_hit;
+
+    \js }
+
+wire [\=nGPRA-1=\:0] gpra_region_hit_vec;
+wire [\=nGPRA-1=\:0] gpra_region_hit_vec_onehot;
+wire [\=nGPRA-1=\:0] gpra_region_hit_vec_rev;
+wire [\=nGPRA-1=\:0] gpra_region_hit_vec_rev_onehot;
+wire [\=nGPRA-1=\:0] gpra_region_hit_vec_rev_onehot_rev;
+wire gpra_region_hit_err;
+
+wire [\=nGPRA-1=\:0] gpra_hut_vec;
+wire [3:0] gpra_size_of_ig;
+
+wire [51:0] bra_compare_address_lo;
+wire [51:0] bra_compare_address_hi;
+
+wire [3:0] bra_size_of_ig;
+
+\jsbegin
+// =======================================================
+// Input Address and Size in bytes
+// =======================================================
+\jsend
+
+assign in_address[\=wSysAddr-1=\:0] = address[\=wSysAddr-1=\:0];
+
+    \js if (wSysAddr < 52) {
+assign in_address[51:\=wSysAddr=\] = \=51-wSysAddr+1=\'b0;
+    \js }
+
+\jsbegin
+// =======================================================
+// General Purpose Address Region's Size of IG
+// =======================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (dmiIGSV.length > 0) {
+\jsend
+
+    \js for (var s=0; s < dmiIGSV.length; s++) {
+        \js for (var t=0; t < nGPRA; t++) {
+
+reg [3:0] igs\=s=\_gpra\=t=\_size_of_ig;
+
+always @* begin
+    case (GPRAR\=t=\_HomeUnitId[4:0])
+    \js for (var i=0; i < dmiIGSV[s].IGV.length; i++) {
+        5'd\=i=\ : igs\=s=\_gpra\=t=\_size_of_ig = 4'd\=dmiIGSV[s].IGV[i].DMIIDV.length-1=\;
+    \js }
+        default: igs\=s=\_gpra\=t=\_size_of_ig = 4'b0;
+    endcase
+end
+        \js }
+    \js }
+
+\js } else {
+
+        \js for (var t=0; t < nGPRA; t++) {
+wire [3:0] igs0_gpra\=t=\_size_of_ig = 4'b0;
+        \js }
+\js }
+
+    \js for (var t=0; t < nGPRA; t++) {
+
+wire [3:0] gpra\=t=\_size_of_ig;
+
+assign gpra\=t=\_size_of_ig[3:0] = ( {4{~AMIGR_Valid | (AMIGR_AMIGS[3:0] == 4'd0)}} & igs0_gpra\=t=\_size_of_ig )
+                        \js for (var s=1; s < dmiIGSV.length; s++) {
+                                 | ( {4{AMIGR_Valid & (AMIGR_AMIGS[3:0] == 4'd\=s=\)}} & igs\=s=\_gpra\=t=\_size_of_ig )
+                        \js }
+                                 ;
+    \js }
+
+\jsbegin
+// =======================================================
+// Boot Region's Size of IG
+// =======================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (dmiIGSV.length > 0) {
+\jsend
+
+    \js for (var s=0; s < dmiIGSV.length; s++) {
+
+reg [3:0] igs\=s=\_bra_size_of_ig;
+
+always @* begin
+    case (BRAR_HomeUnitId[4:0])
+    \js for (var i=0; i < dmiIGSV[s].IGV.length; i++) {
+        5'd\=i=\ : igs\=s=\_bra_size_of_ig = 4'd\=dmiIGSV[s].IGV[i].DMIIDV.length-1=\;
+    \js }
+        default: igs\=s=\_bra_size_of_ig = 4'b0;
+    endcase
+end
+
+    \js }
+
+\js } else {
+
+wire [3:0] igs0_bra_size_of_ig = 4'b0;
+
+\js }
+
+assign bra_size_of_ig[3:0] = ( {4{~AMIGR_Valid | (AMIGR_AMIGS[3:0] == 4'd0)}} & igs0_bra_size_of_ig )
+    \js for (var s=1; s < dmiIGSV.length; s++) {
+                   | ( {4{AMIGR_Valid & (AMIGR_AMIGS[3:0] == 4'd\=s=\)}} & igs\=s=\_bra_size_of_ig )
+    \js }
+                   ;
+
+\jsbegin
+// =======================================================
+// NRS Region decode
+// =======================================================
+\jsend
+
+\js if (instantiator == 'dce') {
+
+assign nrs_region_hit = 1'b0;
+
+\js } else {
+
+assign nrs_compare_address_lo[51:20] = NRSBAR_BaseAddr[31:0];
+assign nrs_compare_address_lo[19:0]  = 20'b0;
+
+assign nrs_compare_address_hi[51:20] = NRSBAR_BaseAddr[31:0];
+assign nrs_compare_address_hi[19:0]  = {20{1'b1}};
+
+assign nrs_region_hit = (in_address[\=wSysAddr-1=\:20] == NRSBAR_BaseAddr[\=wSysAddr-21=\:0]);
+
+\js }
+
+\jsbegin
+// =======================================================
+// General Purpose Address Region decode
+// =======================================================
+\jsend
+
+assign gpr_region_hit = {|{gpra_region_hit_vec}};
+
+    \js for (var i = 0; i < nGPRA; i++) {
+
+        \=obj.lib.instance({
+            instanceName: 'u_gpra'+i+'_compare_address',
+            moduleName: 'ncore3_addr_map_compare',
+            params: {},
+            verilogParams: {},
+            ports: {
+                Valid           : 'GPRAR'+i+'_Valid',
+                HUT             : 'GPRAR'+i+'_HUT',
+                SizeOfIG        : 'gpra'+i+'_size_of_ig',
+                Size            : 'GPRAR'+i+'_Size',
+                BAR_AddrLo      : 'GPRBAR'+i+'_AddrLo',
+                BAR_AddrHi      : 'GPRBAR'+i+'_AddrHi',
+                address         : 'in_address',
+                region_hit      : 'gpra'+i+'_region_hit',
+                compare_addr_lo : 'gpra'+i+'_compare_address_lo',
+                compare_addr_hi : 'gpra'+i+'_compare_address_hi'
+            }
+        })=\
+
+assign gpra_region_hit_vec[\=i=\] = gpra\=i=\_region_hit;
+
+    \js }
+
+    \js for (var i = 0; i < nGPRA; i++) {
+assign gpra_region_hit_vec_rev[\=i=\] = gpra_region_hit_vec[\=nGPRA-1-i=\];
+    \js }
+
+
+    \js for (var i = 0; i < nGPRA; i++) {
+assign gpra_hut_vec[\=i=\] = GPRAR\=i=\_HUT;
+    \js }
+
+\jsbegin
+// =======================================================
+// Boot Region decode
+// =======================================================
+\jsend
+
+    \=obj.lib.instance({
+        instanceName: 'u_bra_compare_address',
+        moduleName: 'ncore3_addr_map_compare',
+        params: {},
+        verilogParams: {},
+        ports: {
+            Valid           : 'BRAR_Valid',
+            HUT             : 'BRAR_HUT',
+            SizeOfIG        : 'bra_size_of_ig',
+            Size            : 'BRAR_Size',
+            BAR_AddrLo      : 'BRBAR_AddrLo',
+            BAR_AddrHi      : 'BRBAR_AddrHi',
+            address         : 'in_address',
+            region_hit      : 'bra_region_hit',
+            compare_addr_lo : 'bra_compare_address_lo',
+            compare_addr_hi : 'bra_compare_address_hi'
+        }
+    })=\
+
+\jsbegin
+// =======================================================
+// Addressing Error
+// =======================================================
+\jsend
+
+assign addressing_error_hit_none = address_valid & ~(nrs_region_hit | {|{gpra_region_hit_vec}} | bra_region_hit);
+
+assign addressing_error_hit_multi = address_valid & gpra_region_hit_err & ~nrs_region_hit;
+
+
+assign gpra_region_hit_err = (gpra_region_hit_vec_onehot != gpra_region_hit_vec_rev_onehot_rev);
+
+    \=obj.lib.instance({
+        instanceName: 'u_find_first_gpra_region_hit_vec',
+        moduleName: 'find_first_one',
+        params: { width : nGPRA },
+        verilogParams: { WIDTH : nGPRA },
+        ports: {
+            invec : 'gpra_region_hit_vec', outvec : 'gpra_region_hit_vec_onehot'
+        }
+    })=\
+
+    \=obj.lib.instance({
+        instanceName: 'u_find_first_gpra_region_hit_vec_rev',
+        moduleName: 'find_first_one',
+        params: { width : nGPRA },
+        verilogParams: { WIDTH : nGPRA },
+        ports: {
+            invec : 'gpra_region_hit_vec_rev', outvec : 'gpra_region_hit_vec_rev_onehot'
+        }
+    })=\
+
+    \js for (var i = 0; i < nGPRA; i++) {
+assign gpra_region_hit_vec_rev_onehot_rev[\=i=\] = gpra_region_hit_vec_rev_onehot[\=nGPRA-1-i=\];
+    \js }
+
+\jsbegin
+// =======================================================
+// Output valid and hit
+// NOTE: nrs_region_hit is involved in dii_id_valid, dii_id because IO device register space access goes through DII.
+// =======================================================
+\jsend
+
+assign dmi_id_valid = dmi_id_valid_m & dmi_id_valid_conn;
+
+assign dmi_id_valid_m = ( address_valid & ~nrs_region_hit & {|{ gpra_region_hit_vec & ~gpra_hut_vec }} & ~gpra_region_hit_err ) |
+                       ( address_valid & ~nrs_region_hit & ~{|{ gpra_region_hit_vec }} & bra_region_hit & ~BRAR_HUT);
+
+\js if (instantiator == 'dce') {
+
+\js } else {
+
+assign dii_id_valid = dii_id_valid_m & dii_id_valid_conn;
+
+assign dii_id_valid_m  = ( address_valid & ~nrs_region_hit & {|{ gpra_region_hit_vec & gpra_hut_vec }} & ~gpra_region_hit_err ) |
+                         ( address_valid & ~nrs_region_hit & ~{|{ gpra_region_hit_vec }} & bra_region_hit & BRAR_HUT) |
+    \jsbegin 
+     /* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */ 
+    if (useCsrAccess) { \jsend
+                         ( address_valid & nrs_region_hit & csr_access_nrs_valid);
+    \js } else {
+                         ( address_valid & nrs_region_hit);
+    \js }
+
+assign dce_id_valid = dce_id_valid_m & dce_id_valid_conn;
+
+assign dce_id_valid_m  = dmi_id_valid_m;
+
+assign nrs_selfidr_hit = address_valid & nrs_region_hit & (address[19:12] == 8'hff) & (address[11:0] == 12'h000);
+
+\js }
+
+    \js if (useCsrAccess) { 
+assign csr_access_nrs_error = address_valid & nrs_region_hit & ~csr_access_nrs_valid;
+    \js } 
+
+\jsbegin
+// =======================================================
+// DMI 2-Way Interleave Functions
+// DMI 3-Way Interleave Functions
+// DMI 4-Way Interleave Functions
+// =======================================================
+\jsend
+
+wire [4:0] f2_dmi_id_offset;
+wire [4:0] f3_dmi_id_offset;
+wire [4:0] f4_dmi_id_offset;
+wire [4:0] f8_dmi_id_offset;
+wire [4:0] f16_dmi_id_offset;
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (useAMIFR_A16W_A8W) {
+    \jsend
+    \js } else {
+wire [2:0] AMIFR_A16WIFId = 3'b000;
+wire [2:0] AMIFR_A8WIFId  = 3'b000;
+    \js }
+
+    \=u.instance({
+        instanceName: 'u_ncore3_addr_map_ifn',
+        moduleName: 'ncore3_addr_map_ifn',
+        params : {
+                     wSysAddr           : wSysAddr,
+                     unit2WIFV          : dmi2WIFV,
+                     unit3WIFV          : dmi3WIFV,
+                     unit4WIFV          : dmi4WIFV,
+                     unit8WIFV          : dmi8WIFV,
+                     unit16WIFV         : dmi16WIFV,
+                 },
+        verilogParams: {},
+        ports: {
+                   address             : 'address',
+                   AMIFR_A16WIFId      : 'AMIFR_A16WIFId',
+                   AMIFR_A8WIFId       : 'AMIFR_A8WIFId',
+                   AMIFR_A4WIFId       : 'AMIFR_A4WIFId',
+                   AMIFR_A3WIFId       : 'AMIFR_A3WIFId',
+                   AMIFR_A2WIFId       : 'AMIFR_A2WIFId',
+                   f2_unit_id_offset   : 'f2_dmi_id_offset',
+                   f3_unit_id_offset   : 'f3_dmi_id_offset',
+                   f4_unit_id_offset   : 'f4_dmi_id_offset',
+                   f8_unit_id_offset   : 'f8_dmi_id_offset',
+                   f16_unit_id_offset  : 'f16_dmi_id_offset',
+               },
+        portsDelimiter: '\n    '
+    })=\
+
+\jsbegin
+// =======================================================
+// Output DMI NUnit ID with a value range of 0 .. nDmis-1.
+// =======================================================
+\jsend
+
+wire [4:0] dmi_home_unit_id;
+wire [4:0] dmi_id_offset;
+wire f2_dmi_id_offset_sel;
+wire f3_dmi_id_offset_sel;
+wire f4_dmi_id_offset_sel;
+wire f8_dmi_id_offset_sel;
+wire f16_dmi_id_offset_sel;
+
+assign dmi_home_unit_id[4:0] =
+                       ({5{gpra_region_hit_vec[0]}} & GPRAR0_HomeUnitId[4:0])
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({5{gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_HomeUnitId[4:0])
+            \js }
+                     | ({5{ ( ~{|{ gpra_region_hit_vec }} & bra_region_hit ) }} & BRAR_HomeUnitId[4:0])
+                     ;
+
+assign gpra_size_of_ig[3:0] = ({4{gpra_region_hit_vec[0]}} & gpra0_size_of_ig[3:0])
+            \js for (var i = 1; i < nGPRA; i++) {
+                            | ({4{gpra_region_hit_vec[\=i=\]}} & gpra\=i=\_size_of_ig[3:0])
+            \js }
+                            ;
+
+assign f2_dmi_id_offset_sel = {|{ gpra_region_hit_vec }} ? (gpra_size_of_ig == 4'b0001) : (bra_size_of_ig == 4'b0001);
+assign f3_dmi_id_offset_sel = {|{ gpra_region_hit_vec }} ? (gpra_size_of_ig == 4'b0010) : (bra_size_of_ig == 4'b0010);
+assign f4_dmi_id_offset_sel = {|{ gpra_region_hit_vec }} ? (gpra_size_of_ig == 4'b0011) : (bra_size_of_ig == 4'b0011);
+assign f8_dmi_id_offset_sel = {|{ gpra_region_hit_vec }} ? (gpra_size_of_ig == 4'b0111) : (bra_size_of_ig == 4'b0111);
+assign f16_dmi_id_offset_sel= {|{ gpra_region_hit_vec }} ? (gpra_size_of_ig == 4'b1111) : (bra_size_of_ig == 4'b1111);
+
+assign dmi_id_offset[4:0] = ( f2_dmi_id_offset & {5{f2_dmi_id_offset_sel}} )
+                          | ( f3_dmi_id_offset & {5{f3_dmi_id_offset_sel}} )
+                          | ( f4_dmi_id_offset & {5{f4_dmi_id_offset_sel}} )
+                          | ( f8_dmi_id_offset & {5{f8_dmi_id_offset_sel}} )
+                          | ( f16_dmi_id_offset & {5{f16_dmi_id_offset_sel}} )
+                          ;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (dmiIGSV.length > 0) {
+\jsend
+
+    \js for (var s=0; s < dmiIGSV.length; s++) {
+
+reg [4:0] igs\=s=\_dmi_id_out;
+
+always @* begin
+    case (dmi_home_unit_id[4:0])
+    \js for (var i=0; i < dmiIGSV[s].IGV.length; i++) {
+        5'd\=i=\ : begin
+            case (dmi_id_offset[4:0])
+        \js for (var j=0; j < dmiIGSV[s].IGV[i].DMIIDV.length; j++) {
+                5'd\=j=\ : igs\=s=\_dmi_id_out = 5'd\=dmiIGSV[s].IGV[i].DMIIDV[j]=\;
+        \js }
+                default  : igs\=s=\_dmi_id_out = 5'b0;
+            endcase
+        end
+    \js }
+        default: igs\=s=\_dmi_id_out = 5'b0;
+    endcase
+end
+
+    \js }
+
+\js } else {
+
+wire [4:0] igs0_dmi_id_out = 5'b0;
+
+\js }
+
+assign dmi_id[4:0] = ( {5{~AMIGR_Valid | (AMIGR_AMIGS[3:0] == 4'd0)}} & igs0_dmi_id_out )
+\js for (var s=1; s < dmiIGSV.length; s++) {
+                   | ( {5{AMIGR_Valid & (AMIGR_AMIGS[3:0] == 4'd\=s=\)}} & igs\=s=\_dmi_id_out )
+\js }
+                   ;
+
+
+assign dmi_mig[4:0] = dmi_home_unit_id[4:0];
+
+assign size_of_ig[3:0] = {|{ gpra_region_hit_vec }} ? gpra_size_of_ig : bra_size_of_ig;
+
+\jsbegin
+// =======================================================
+// Output DMI FUnit ID
+// =======================================================
+\jsend
+
+wire [31:0] dmi_id_onehot;
+
+assign dmi_id_onehot = 32'b1 << dmi_id[4:0];
+
+assign dmi_f_unit_id[\=wFUnitId-1=\:0] =
+                       ({\=wFUnitId=\{dmi_id_onehot[0]}} & dmi0_f_unit_id)
+            \js for (var i = 1; i < nDmis; i++) {
+                     | ({\=wFUnitId=\{dmi_id_onehot[\=i=\]}} & dmi\=i=\_f_unit_id)
+            \js }
+                     ;
+
+\jsbegin
+// =======================================================
+// Output DII NUnit ID with a value range of 0 .. nDiis-1.
+// Output DII FUnit ID.
+// =======================================================
+\jsend
+
+\js if (instantiator == 'dce') {
+
+\js } else {
+
+assign dii_id[4:0] =
+                       ({5{~nrs_region_hit & gpra_region_hit_vec[0]}} & GPRAR0_HomeUnitId[4:0])
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({5{~nrs_region_hit & gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_HomeUnitId[4:0])
+            \js }
+                     | ({5{ (~nrs_region_hit & ~{|{ gpra_region_hit_vec }} & bra_region_hit ) }} & BRAR_HomeUnitId[4:0])
+                     | ({5{ (                                                nrs_region_hit ) }} & 5'd\=nDiis-1=\)
+                     ;
+
+
+wire [31:0] dii_id_onehot;
+
+assign dii_id_onehot = 32'b1 << dii_id[4:0];
+
+assign dii_f_unit_id[\=wFUnitId-1=\:0] =
+                       ({\=wFUnitId=\{dii_id_onehot[0]}} & dii0_f_unit_id)
+            \js for (var i = 1; i < nDiis; i++) {
+                     | ({\=wFUnitId=\{dii_id_onehot[\=i=\]}} & dii\=i=\_f_unit_id)
+            \js }
+                     ;
+
+\js }
+
+\jsbegin
+// =======================================================
+// Output DCE NUnit ID with a value range of 0 .. nDces-1.
+// Output DCE FUnit ID.
+// =======================================================
+\jsend
+
+\js if (instantiator == 'dce') {
+
+\jsbegin
+} else /* istanbul ignore else env ncore_3p2 */ if (dce_PriSubDiagAddrBits.length > 0) {
+\jsend
+
+
+wire [\=dce_PriSubDiagAddrBits.length-1=\:0] dce_set_select__index_out;
+reg  [\=dce_PriSubDiagAddrBits.length-1=\:0] dce_unit_id;
+
+    \=u.instance({
+        instanceName: 'u_dce_set_select',
+        moduleName: 'set_select',
+        params : {
+                     PriSubDiagAddrBits : dce_PriSubDiagAddrBits,
+                     SecSubRows         : dce_SecSubRows,
+                     wAddr              : wSysAddr
+                 },
+        verilogParams: {},
+        ports: {
+                   addr_in             : 'address',
+                   index_out           : 'dce_set_select__index_out'
+               },
+        portsDelimiter: '\n    '
+    })=\
+
+    \js var nInterfaces = u.getParam('nDces');
+    \js var nSelectBits = dce_PriSubDiagAddrBits.length;
+    \jsbegin
+    /* istanbul ignore else env ncore_3p4, ncore_3p6, ncore_3p7 */
+     if ((nInterfaces & (nInterfaces-1)) == 0) { // Power-of-Two
+    \jsend
+always@(*) begin
+        dce_unit_id = dce_set_select__index_out;
+end
+    \js } else {
+always@(*) begin
+    case (dce_set_select__index_out)
+            \js for (var i = 0; i < Math.pow(2, nSelectBits); i++) {
+            \js     var id = (i % nInterfaces);
+        \=nSelectBits=\'d\=i=\: dce_unit_id = \=nSelectBits=\'d\=id=\;
+            \js }
+        default: dce_unit_id = \=nSelectBits=\'d0;
+    endcase
+end
+    \js }
+
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (dce_PriSubDiagAddrBits.length < 5) {
+    \jsend
+
+assign dce_id[\=dce_PriSubDiagAddrBits.length-1=\:0] = dce_unit_id;
+assign dce_id[4:\=dce_PriSubDiagAddrBits.length=\]   = \=4-dce_PriSubDiagAddrBits.length+1=\'b0;
+
+    \js } else {
+
+assign dce_id[4:0] = dce_unit_id[4:0];
+
+    \js } 
+
+assign dce_id_onehot = 32'b1 << dce_id[4:0];
+
+assign dce_f_unit_id[\=wFUnitId-1=\:0] =
+                       ({\=wFUnitId=\{dce_id_onehot[0]}} & dce0_f_unit_id)
+            \js for (var i = 1; i < nDces; i++) {
+                     | ({\=wFUnitId=\{dce_id_onehot[\=i=\]}} & dce\=i=\_f_unit_id)
+            \js }
+                     ;
+
+\js } else {
+
+assign dce_id[4:0] = 5'b0;
+
+assign dce_id_onehot = 32'b1 << dce_id[4:0];
+
+assign dce_f_unit_id[\=wFUnitId-1=\:0] = dce0_f_unit_id;
+
+\js }
+
+// ============================================================================
+// GPRAR Order bits MUX
+// ============================================================================
+
+    \js if (usePcieOrder) {
+
+assign Order_Policy =
+                       ({2{gpra_region_hit_vec[0]}} & GPRAR0_Order_Policy)
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({2{gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_Order_Policy)
+            \js }
+                     ;
+assign Order_WriteID =
+                       ({1{gpra_region_hit_vec[0]}} & GPRAR0_Order_WriteID)
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({1{gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_Order_WriteID)
+            \js }
+                     ;
+assign Order_ReadID =
+                       ({1{gpra_region_hit_vec[0]}} & GPRAR0_Order_ReadID)
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({1{gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_Order_ReadID)
+            \js }
+                     ;
+assign Order_Hazard =
+                       ({1{gpra_region_hit_vec[0]}} & GPRAR0_Order_Hazard)
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({1{gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_Order_Hazard)
+            \js }
+                     ;
+
+    \js }
+
+// ============================================================================
+// GPRAR NC bit, NSX bits
+// ============================================================================
+
+    \js if (useNc) {
+
+wire   gpra_region_nc =({1{gpra_region_hit_vec[0]}} & GPRAR0_NC)
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({1{gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_NC)
+            \js }
+                     ;
+
+assign GPRAR_NC = nrs_region_hit ? 1'b1 :
+                  (|gpra_region_hit_vec) ? gpra_region_nc :
+                  bra_region_hit ? 1'b1 : 1'b0;
+    \js }
+
+    \js if (useNsx) {
+
+assign GPRAR_NSX =
+                       ({2{gpra_region_hit_vec[0]}} & GPRAR0_NSX)
+            \js for (var i = 1; i < nGPRA; i++) {
+                     | ({2{gpra_region_hit_vec[\=i=\]}} & GPRAR\=i=\_NSX)
+            \js }
+                     ;
+
+    \js }
+
+// ============================================================================
+// System Connnectivity
+// ============================================================================
+
+\js if (instantiator == 'dce') {
+
+wire [\=nDmis-1=\:0] hexDceDmiVec_sig = hexDceDmiVec;
+
+assign dmi_id_valid_conn = {|{dmi_id_onehot[\=nDmis-1=\:0] & hexDceDmiVec_sig[\=nDmis-1=\:0]}};
+
+assign unconnected_dmi_access = dmi_id_valid_m & ~dmi_id_valid_conn;
+
+\js } else {
+
+wire [\=nDmis-1=\:0] hexAiuDmiVec_sig = hexAiuDmiVec;
+wire [\=nDiis-1=\:0] hexAiuDiiVec_sig = hexAiuDiiVec;
+wire [\=nDces-1=\:0] hexAiuDceVec_sig = hexAiuDceVec;
+
+assign dmi_id_valid_conn = {|{dmi_id_onehot[\=nDmis-1=\:0] & hexAiuDmiVec_sig[\=nDmis-1=\:0]}};
+
+assign dii_id_valid_conn = {|{dii_id_onehot[\=nDiis-1=\:0] & hexAiuDiiVec_sig[\=nDiis-1=\:0]}};
+
+assign dce_id_valid_conn = {|{dce_id_onehot[\=nDces-1=\:0] & hexAiuDceVec_sig[\=nDces-1=\:0]}};
+
+assign unconnected_dmi_access = dmi_id_valid_m & ~dmi_id_valid_conn;
+assign unconnected_dii_access = dii_id_valid_m & ~dii_id_valid_conn;
+assign unconnected_dce_access = dce_id_valid_m & ~dce_id_valid_conn;
+
+\js }
+
+endmodule

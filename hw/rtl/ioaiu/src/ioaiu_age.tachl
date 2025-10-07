@@ -1,0 +1,265 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU age.
+//
+//////////////////////////////////////////////////////////////////////////
+var u = obj.lib;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var assertOn = u.getParam('assertOn');
+var ARB = u.getParam('ARB');
+var NUM = u.getParam('NUM');
+var ATOMIC = u.getParam('ATOMIC');
+var HP = u.getParam('HP');
+var VAL = u.getParam('VAL');
+var DRST = u.getParam('DRST');
+
+var TOT = NUM*(NUM-1)/2;
+var NR0 = TOT-(((NUM-1)*(NUM-2)/2));
+var NW = log2ceil(NUM);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+	clk_i,
+	reset_ni,
+	alloc_i,
+	ready_i,
+	bv_i,
+	lv_i,
+	winner_o,
+	wbv_o
+);
+
+input			clk_i;
+input			reset_ni;
+input [\=NUM-1=\:0]		alloc_i;
+input [\=ARB-1=\:0]		ready_i;
+input [\=ARB*NUM-1=\:0]	bv_i, lv_i;
+output [\=ARB*NW-1=\:0]	winner_o;
+output [\=ARB*NUM-1=\:0]	wbv_o;
+
+wire [\=ARB-1=\:0]		t_atomic;
+wire [\=NW-1=\:0]		t_hid[\=ARB-1=\:0];
+wire [\=NUM-1=\:0]		t_lv[\=ARB-1=\:0], t_bv[\=ARB-1=\:0], t_hbv[\=ARB-1=\:0],
+			t_wbv[\=ARB-1=\:0];
+wire [\=NW-1=\:0]		t_winner[\=ARB-1=\:0];
+wire [\=NUM-1=\:1]		t_set_r[\=NUM-2=\:0],	t_clr_r[\=NUM-2=\:0];
+wire [\=NUM-1=\:1]		t_qr[\=NUM-1=\:0]; //bit set indicates col is older than row
+wire  [\=NUM-2=\:0]		t_vr[\=NUM-1=\:0];
+wire [\=TOT*(NUM-1)-1=\:0]	n_qr;
+wire [\=TOT-1=\:0]		n_matrix;
+
+wire [\=TOT-1=\:0]		q_matrix;
+
+\js for (let gi=0; gi<ARB; gi=gi+1) {
+    assign t_hbv[\=gi=\] = bv_i[\=NUM*gi=\ +: \=NUM=\] & \=HP=\;
+    assign t_bv[\=gi=\] = (| t_hbv[\=gi=\]) ? t_hbv[\=gi=\] : bv_i[\=NUM*gi=\ +: \=NUM=\];
+    assign t_lv[\=gi=\] = lv_i[\=NUM*gi=\ +: \=NUM=\];
+
+\js for (let gj=0; gj<NUM; gj=gj+1) {
+      assign t_wbv[\=gi=\][\=gj=\] = t_bv[\=gi=\][\=gj=\] & 
+		       (~| (t_bv[\=gi=\] & {t_qr[\=gj=\], 1'b0} & 
+						       ({\=NUM=\{1'b1}}<<\=(gj+1)=\))) &
+		       (~| (t_bv[\=gi=\] & {1'b0, t_vr[\=gj=\]} & ~({\=NUM=\{1'b1}}<<\=gj=\)));
+\js }
+
+\=u.instance({
+	moduleName: 'ioaiu_ohenc',
+	instanceName: 'winner'+gi,
+	params: {
+		VW:		NUM,
+		BW:		NW
+        },
+	ports: {
+		vec_i:		't_wbv['+gi+']',
+		bin_o:		't_winner['+gi+']'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+  assign winner_o[\=NW*gi=\ +: \=NW=\] = t_atomic[\=gi=\] ? t_hid[\=gi=\] : t_winner[\=gi=\];
+  wire [\=NUM=\:0] wbv_o_tmp\=gi=\ = {{\=NUM=\{1'b0}},1'b1} << t_hid[\=gi=\];
+  assign wbv_o[\=NUM*gi=\ +: \=NUM=\] = t_atomic[\=gi=\] ? (\=VAL=\ ? bv_i[\=NUM*gi=\ +: \=NUM=\] : {\=NUM=\{1'b1}}) & wbv_o_tmp\=gi=\[\=NUM-1=\:0] : t_wbv[\=gi=\];
+  
+\jsbegin
+// ioaiu_age only used for snoops which does not use ATOMIC
+/* istanbul ignore if env ncore_3p7 */
+    if (ATOMIC) { \jsend
+    wire		t_start, t_end;
+    wire		q_atomic;
+    wire [\=NW-1=\:0]	q_hid;
+
+    assign t_start = t_bv[\=gi=\][t_winner[\=gi=\]] & (~t_lv[\=gi=\][t_winner[\=gi=\]] | ~ready_i[\=gi=\]);
+    assign t_end = t_bv[\=gi=\][q_hid] & t_lv[\=gi=\][q_hid] & ready_i[\=gi=\];
+
+    wire q_atomic_ns = q_atomic ? ~t_end : t_start & ~t_lv[\=gi=\][t_winner[\=gi=\]];
+    \=u.dffre(1, `q_atomic`, `q_atomic_ns`, `1'b0`, `1'b1`, `clk_i`, `reset_ni`)=\
+    wire [\=NW=\-1:0] q_hid_ns = (~q_atomic & t_start) ? t_winner[\=gi=\] : q_hid;
+    \=u.dffre(NW, `q_hid`, `q_hid_ns`, `{`+NW+`{1'b0}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+    assign t_atomic[\=gi=\] = q_atomic;
+    assign t_hid[\=gi=\] = q_hid;
+\js } else {
+    assign t_atomic[\=gi=\] = 1'b0;
+    assign t_hid[\=gi=\] = {\=NW=\{1'b0}};
+\js }
+\js }
+
+assign t_qr[\=NUM-1=\] = {\=NUM-1=\{1'b0}};
+\js for (let gi=0; gi<NUM-1; gi=gi+1) {
+wire [\=TOT-1=\:0] t_qr_tmp\=gi=\;
+\jsbegin
+// only used for STN, and STN is minimum 4 for 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if(NUM>2) { \jsend
+  		assign t_qr_tmp\=gi=\ = (((q_matrix >> \=(TOT-(((NUM-gi)*(NUM-gi-1)/2)))=\) & ~({{\=TOT-NUM=\{1'b0}},{\=NUM=\{1'b1}}} << \=(NUM-1-gi)=\)) << \=gi=\);
+\js } else {
+		assign t_qr_tmp\=gi=\ = (((q_matrix >> \=(TOT-(((NUM-gi)*(NUM-gi-1)/2)))=\) & ~({\=TOT=\{1'b1}} << \=(NUM-1-gi)=\)) << \=gi=\);
+\js }
+  assign t_qr[\=gi=\] = t_qr_tmp\=gi=\[\=NUM-2=\:0];
+  // set all bits for new row
+\js if(NUM-1-(NR0-gi)>0) {
+	assign t_set_r[\=gi=\] = {{\=(NUM-1-(NR0-gi))=\{1'b0}},{\=(NR0-gi)=\{alloc_i[\=gi=\]}}};	
+\js } else {
+    assign t_set_r[\=gi=\] = {\=(NR0-gi)=\{alloc_i[\=gi=\]}};
+\js }
+  // clr all bits for new row
+  wire [\=NUM-1=\:0] t_clr_r_tmp\=gi=\ = (alloc_i >> \=(gi+1)=\);
+  assign t_clr_r[\=gi=\] = t_clr_r_tmp\=gi=\[\=NUM-2=\:0];
+  wire [\=TOT+NUM-2=\:0] n_qr_tmp\=gi=\ = {{\=TOT=\{1'b0}}, (t_set_r[\=gi=\] | (~t_clr_r[\=gi=\] & (t_qr[\=gi=\]>>\=gi=\)))}<<\=(TOT-(((NUM-gi)*(NUM-gi-1)/2)))=\;
+  assign n_qr[\=gi*TOT=\ +: \=TOT=\] = n_qr_tmp\=gi=\[\=TOT-1=\:0];
+\js }
+
+		assign t_vr[0] = {\=NUM-1=\{1'b0}};
+\js for (let i=1; i<NUM; i=i+1) {
+\js	for (let j=0; j<NUM-1; j=j+1) {
+		assign t_vr[\=i=\][\=j=\] = ~t_qr[\=j=\][\=i=\];
+\js     }
+\js }
+
+\=u.instance({
+	moduleName: 'ioaiu_ror',
+	instanceName: 'ror',
+	params: {
+		NUM:		NUM-1,
+		DW:		TOT
+        },
+	ports: {
+		vec_i:		'n_qr',
+		ror_o:		'n_matrix'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+wire [\=TOT=\-1:0] q_matrix_ns = (| alloc_i) ? n_matrix : q_matrix;
+\=u.dffre(TOT, `q_matrix`, `q_matrix_ns`, `{`+TOT+`{1'b0}}`, `1'b1`, `clk_i`, `reset_ni`)=\
+
+////////////////////////////////////////////////////////////////////////////
+\jsbegin
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off
+// coverage off
+
+assert_never_unknown #(0, \=NUM+ARB*NUM*2=\) assert_unknown_control(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(reset_ni),
+	.test_expr	({alloc_i, bv_i, wbv_o})
+);
+
+\js for (let gi=0; gi<ARB; gi=gi+1) {
+assert_never #(0) assert_port\=gi=\(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	(((\=VAL=\>0) & (| wbv_o[\=gi*NUM=\ +: \=NUM=\]) & 
+				    (~| bv_i[\=gi*NUM=\ +: \=NUM=\])) |
+			 ((t_atomic[\=gi=\] ? bv_i[\=gi*NUM=\+t_hid[\=gi=\]] : 
+					  (| bv_i[\=gi*NUM=\ +: \=NUM=\])) & 
+					  ~wbv_o[\=gi*NUM=\+winner_o[\=gi*NW=\ +: \=NW=\]])|
+			 ((t_atomic[\=gi=\] ? bv_i[\=gi*NUM=\+t_hid[\=gi=\]] : 
+					  (| bv_i[\=gi*NUM=\ +: \=NUM=\])) & 
+					  (~| wbv_o[\=gi*NUM=\ +: \=NUM=\])) |
+			 ((t_atomic[\=gi=\] ? bv_i[\=gi*NUM=\+t_hid[\=gi=\]] : 
+					  (| bv_i[\=gi*NUM=\ +: \=NUM=\])) &
+					  (| (wbv_o[\=gi*NUM=\ +: \=NUM=\] ^ 
+			     ({{\=NUM=\{1'b0}}, 1'b1} << winner_o[\=gi*NW=\ +: \=NW=\])))))
+);
+
+assert_zero_one_hot #(0, \=NUM=\) assert_port\=gi=\_one_hot(
+        .clk            (clk_i),
+        .reset_n        (reset_ni),
+        .test_expr      (wbv_o[\=gi*NUM=\ +: \=NUM=\])
+);
+\js }
+
+wire [\=NUM-1=\:0]	a_oldest, a_youngest;
+
+\js for (let gi=0; gi<NUM; gi=gi+1) {
+assign a_oldest[\=gi=\] = (~| ({t_qr[\=gi=\], 1'b0} &  ({\=NUM=\{1'b1}}<<(\=gi+1=\)))) &
+		      (~| ({1'b0, t_vr[\=gi=\]} & ~({\=NUM=\{1'b1}}<<\=gi=\) ));
+assign a_youngest[\=gi=\] = ((\=gi=\==\=(NUM-1)=\) | 
+			 (& (({\=NUM-1=\{1'b1}}>>(\=NUM-1-gi=\)) | t_qr[\=gi=\]))) &
+			((\=gi=\==0) | (& (({\=NUM-1=\{1'b1}}<<\=gi=\) | t_vr[\=gi=\])));
+\js }
+
+assert_never #(0) assert_age(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((\=NUM=\<2) | (\=ARB=\<1) |
+			 ((| wbv_o[\=NUM-1=\:0]) & (~| bv_i[\=NUM-1=\:0]) & (\=VAL=\>0)) |
+			 ((t_atomic[0] ? bv_i[t_hid[0]] : 
+					 (| bv_i[\=NUM-1=\:0])) & 
+					 ~wbv_o[winner_o[\=NW-1=\:0]])|
+			 ((t_atomic[0] ? bv_i[t_hid[0]] :
+					 (| bv_i[\=NUM-1=\:0])) & 
+					 (~| wbv_o[\=NUM-1=\:0])) |
+			 ((t_atomic[0] ? bv_i[t_hid[0]]: 
+					 (| bv_i[\=NUM-1=\:0])) &
+					 (| (wbv_o[\=NUM-1=\:0] ^ 
+				  ({{\=NUM=\{1'b0}}, 1'b1} << winner_o[\=NW-1=\:0])))) |
+			 (a_oldest == a_youngest) |
+			 (a_oldest == 0) |
+			 (a_youngest == 0))
+);
+
+assert_zero_one_hot #(0, \=NUM=\) assert_age_one_hot0(
+        .clk            (clk_i),
+        .reset_n        (reset_ni),
+        .test_expr      (a_oldest)
+);
+
+assert_zero_one_hot #(0, \=NUM=\) assert_age_one_hot1(
+        .clk            (clk_i),
+        .reset_n        (reset_ni),
+        .test_expr      (a_youngest)
+);
+
+assert_zero_one_hot #(0, \=NUM=\) assert_age_one_hot2(
+        .clk            (clk_i),
+        .reset_n        (reset_ni),
+        .test_expr      (wbv_o[\=NUM=\-1:0])
+);
+
+assert_zero_one_hot #(0, \=NUM=\) assert_age_one_hot3(
+        .clk            (clk_i),
+        .reset_n        (reset_ni),
+        .test_expr      (alloc_i)
+);
+
+// coverage on
+// synopsys translate_on
+// pragma synthesis_on
+`endif
+\js }
+
+endmodule

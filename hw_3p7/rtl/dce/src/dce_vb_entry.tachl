@@ -1,0 +1,129 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2022 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE Victim Buffer Entry
+// Filename: dce_vb_entry.tachl
+//=============================================================================
+
+var u = obj.lib;
+
+u.paramDefault('useVictimBufferRecallTimingFix', 'int', 0);
+
+var useVictimBufferRecallTimingFix = u.getParam('useVictimBufferRecallTimingFix'); 
+
+var FCN = u.getParam('FCN');
+var FCW = u.getParam('FCW');
+var KW  = u.getParam('KW');
+var SW  = u.getParam('SW');
+
+u.port('input',  'clk_i', 1);
+u.port('input',  'reset_ni', 1);
+
+u.port('input',  'p2_stall_i', 1);
+
+// vb entry clear
+u.port('input',  't_vb_clrs', 1);    // clear vb entry
+
+// vb entry upd invalidate
+u.port('input',  't_vb_ups', 1);     // update invalidate vb entry by clearing the initiator bit
+u.port('input',  't_p2_abv', FCN);   // initiator caching agent bit vector
+u.port('input',  't_vb_uowns', 1);   // initiator is vb owner
+
+// vb entry write
+u.port('input',  't_vb_wes', 1);     // write vb entry
+u.port('input',  'n_vb_sbv', FCN);
+u.port('input',  'n_vb_oval', 1);
+u.port('input',  'n_vb_owner', FCW);
+u.port('input',  'n_vb_rtag', KW);
+u.port('input',  'q_p2_rindex', SW);
+
+// vb entry output
+u.port('output', 'q_vb_valid', 1);
+u.port('output', 'q_vb_sbv', FCN);
+u.port('output', 'q_vb_oval', 1);
+u.port('output', 'q_vb_owner', FCW);
+u.port('output', 'q_vb_tag', KW);
+u.port('output', 'q_vb_index', SW);
+
+if (useVictimBufferRecallTimingFix) {
+
+u.port('output', 'qq_vb_sbv', FCN);
+u.port('output', 'qq_vb_oval', 1);
+u.port('output', 'qq_vb_owner', FCW);
+u.port('output', 'qq_vb_tag', KW);
+u.port('output', 'qq_vb_index', SW);
+
+}
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+localparam FCN = \=FCN=\;
+localparam FCW = \=FCW=\;
+localparam KW  = \=KW=\;
+localparam SW  = \=SW=\;
+
+wire dff_enable = 1'b1;
+wire           vb_valid_in, q_vb_valid_org, t_vb_clrs_undo, q_vb_clrs_undo; 
+wire [KW-1:0]  vb_tag_in;
+wire [SW-1:0]  vb_index_in;
+wire [FCN-1:0] vb_sbv_in, q_vb_sbv_org;
+wire           vb_oval_in, q_vb_oval_org;
+wire [FCW-1:0] vb_owner_in, q_vb_owner_org;
+
+\=u.dffre(FCN, 'q_vb_sbv_org',   'vb_sbv_in',   "{"+FCN+"{1'b0}}",  'dff_enable', 'clk_i', 'reset_ni')=\
+\=u.dffre(1,   'q_vb_oval_org',  'vb_oval_in',  "1'b0",             'dff_enable', 'clk_i', 'reset_ni')=\
+\=u.dffre(FCW, 'q_vb_owner_org', 'vb_owner_in', "{"+FCW+"{1'b0}}",  'dff_enable', 'clk_i', 'reset_ni')=\
+
+\=u.dffre(KW,  'q_vb_tag',   'vb_tag_in',   "{"+KW+"{1'b0}}",   'dff_enable', 'clk_i', 'reset_ni')=\
+\=u.dffre(SW,  'q_vb_index', 'vb_index_in', "{"+SW+"{1'b0}}",   'dff_enable', 'clk_i', 'reset_ni')=\
+
+assign vb_sbv_in = // t_vb_clrs ? {FCN{1'b0}} :
+                   t_vb_ups ? q_vb_sbv & ~t_p2_abv :
+                   t_vb_wes ? n_vb_sbv : 
+                              q_vb_sbv;
+
+assign vb_oval_in = // t_vb_clrs ? 1'b0 :
+                    t_vb_ups ? q_vb_oval & ~t_vb_uowns :
+                    t_vb_wes ? n_vb_oval : 
+                               q_vb_oval;
+
+assign vb_owner_in = // t_vb_clrs ? {FCW{1'b0}} :
+                     t_vb_ups ? q_vb_owner & {FCW{~t_vb_uowns}} :
+                     t_vb_wes ? n_vb_owner : 
+                                q_vb_owner;
+
+assign vb_tag_in = t_vb_wes ? n_vb_rtag : q_vb_tag;
+
+assign vb_index_in = t_vb_wes ? q_p2_rindex : q_vb_index;
+
+
+assign vb_valid_in = t_vb_clrs ? 1'b0 : (t_vb_ups | t_vb_wes) ? 1'b1 : q_vb_valid_org;
+
+\=u.dffre(1, 'q_vb_valid_org', 'vb_valid_in', "1'b0", 'dff_enable', 'clk_i', 'reset_ni')=\
+
+assign q_vb_valid = q_vb_valid_org | q_vb_clrs_undo;
+
+assign q_vb_sbv   = q_vb_valid ? q_vb_sbv_org   : {FCN{1'b0}};
+assign q_vb_oval  = q_vb_valid ? q_vb_oval_org  : 1'b0;
+assign q_vb_owner = q_vb_valid ? q_vb_owner_org : {FCW{1'b0}};
+
+assign t_vb_clrs_undo = t_vb_clrs & p2_stall_i;
+
+\=u.dffre(1, 'q_vb_clrs_undo', 't_vb_clrs_undo', "1'b0", 'dff_enable', 'clk_i', 'reset_ni')=\
+
+
+\js if (useVictimBufferRecallTimingFix) {
+
+\=u.dffre(FCN, 'qq_vb_sbv',   'q_vb_sbv',   "{"+FCN+"{1'b0}}",  'dff_enable', 'clk_i', 'reset_ni')=\
+\=u.dffre(1,   'qq_vb_oval',  'q_vb_oval',  "1'b0",             'dff_enable', 'clk_i', 'reset_ni')=\
+\=u.dffre(FCW, 'qq_vb_owner', 'q_vb_owner', "{"+FCW+"{1'b0}}",  'dff_enable', 'clk_i', 'reset_ni')=\
+\=u.dffre(KW,  'qq_vb_tag',   'q_vb_tag',   "{"+KW+"{1'b0}}",   'dff_enable', 'clk_i', 'reset_ni')=\
+\=u.dffre(SW,  'qq_vb_index', 'q_vb_index', "{"+SW+"{1'b0}}",   'dff_enable', 'clk_i', 'reset_ni')=\
+
+\js }
+
+endmodule

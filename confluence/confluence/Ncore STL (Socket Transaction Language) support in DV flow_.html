@@ -1,0 +1,334 @@
+<h2 id="NcoreSTL(SocketTransactionLanguage)supportinDVflow:-SynopsysDocument:"><style>[data-colorid=jyza64gx24]{color:#0747a6} html[data-color-mode=dark] [data-colorid=jyza64gx24]{color:#5999f8}[data-colorid=cbuonj10sq]{color:#0747a6} html[data-color-mode=dark] [data-colorid=cbuonj10sq]{color:#5999f8}[data-colorid=ve23cijgiq]{color:#0747a6} html[data-color-mode=dark] [data-colorid=ve23cijgiq]{color:#5999f8}[data-colorid=kuid8v1a70]{color:#6554c0} html[data-color-mode=dark] [data-colorid=kuid8v1a70]{color:#503fab}[data-colorid=v4woqratzk]{color:#0747a6} html[data-color-mode=dark] [data-colorid=v4woqratzk]{color:#5999f8}[data-colorid=cfl4axo76l]{color:#6554c0} html[data-color-mode=dark] [data-colorid=cfl4axo76l]{color:#503fab}[data-colorid=c84wngqo98]{color:#6554c0} html[data-color-mode=dark] [data-colorid=c84wngqo98]{color:#503fab}</style><u>Synopsys Document:</u></h2><p style="margin-left: 30.0px;"> <a class="createlink" href="/wiki/pages/createpage.action?spaceKey=ENGR&amp;title=NCore%203%20-%20Performance%20Modeling%20Blocks%20-%20Infrastructure&amp;linkCreation=true&amp;fromPageId=36044955">NCore 3 - Performance Modeling Blocks - Infrastructure</a> </p><h2 id="NcoreSTL(SocketTransactionLanguage)supportinDVflow:-Requirements:"><u>Requirements:</u></h2><ol><li><p>Capability to send traffic to AXI, ACE-Lite, ACE, CHI agents from&nbsp;STL. So far, we are performing only register write operation through&nbsp;STL. (CHI agent traffic can be deprioritized, as ME config does not use this) --- <strong>DV rough estimate : 11 Person-Weeks</strong></p></li><li><p>Capability to understand different types of commands from&nbsp;STL. At least these ones&nbsp;&agrave;&nbsp;burst read, burst write, idle, wait, comments. So far, we are capable of parsing single beat write.&nbsp;--- <strong>Need to add support for burst-read, burst-write, and comments (4 MW)</strong></p></li><li><p>Capability to run regression &ndash; we already have 60+ cases running through customer TB which would be extended to 100s. Considering the time it takes to run a single testcase on large ME configuration, we would need regression support. --- <strong>After talking with Junie, no extra support is required. Just need a session to show how to do this (1 day)</strong></p></li><li><p>Integrate agent BW measurement code by Cyrille to&nbsp;STL&nbsp;testcase. We care just about measured BW, not comparing it to anything. My understanding is, we should be able to reuse Cyrille&rsquo;s code in newperf_test scoreboard. --- <strong>Not sure it works for all configs or specific configs</strong></p><ol><li><p><strong>If this is generic solution and works for every configs &ndash; (1 day</strong>).</p></li><li><p><strong>If this is not generic solution &ndash; (3 MW per each type of monitor).</strong></p></li></ol></li></ol><h2 id="NcoreSTL(SocketTransactionLanguage)supportinDVflow:-Howtocheck-outandrunsimulations:"><u>How to check-out and run simulations:</u></h2><p><strong>Steps to take checkout :</strong></p><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Step 1: mkdir &lt;your_work_dir&gt;; cd &lt;your_work_dir&gt;;</p><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Step 2:&nbsp;&nbsp;/engr/dev/tools/script/setup_concerto</p><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Step 3:&nbsp;source SOURCEME.csh ncore3.4 (or 'source SOURCEME ncore3.4'&nbsp;if your $SHELL=bash)</p><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Step 4:&nbsp;cd $WORK_TOP</p><p>&nbsp;</p><p><strong>To run simulation :</strong></p><p><span data-colorid="kuid8v1a70">Runcmd : runsim -e fsys -c hw_cfg_43 -t ioaiu_random -co &quot;'+define+USE_STL_TRACE +define+STL_FILE_FULL_PATH=/scratch/pzare/stl_files_path/'&quot; -w</span></p><p>Defines :</p><p><span data-colorid="ve23cijgiq">USE_STL_TRACE</span> &nbsp;: Enables STL flow in the TB</p><p><span data-colorid="jyza64gx24">STL_FILE_FULL_PATH=/scratch/pzare/stl_files_path/</span> &nbsp;: This define will give user control for directory of stl files.&nbsp;Required to provide directory path for reg.stl and accX.stl { axi0_if -&gt; acc0.stl, axi1_if -&gt; acc1.stl&hellip;&hellip;} </p><p>Plusargs : These plusargs added to give support for  enable/disable register or traffic by stl</p><p><span data-colorid="cbuonj10sq">-so &quot;disable_stl_csr&quot;</span></p><p>Provide in cmd line to disable register configurations through the stl</p><p><span data-colorid="v4woqratzk">-so &quot;+normal_axi_txn&quot;</span></p><p>Provide in cmd line to disable stl traffic/stimulus on the axi interface.</p><h2 id="NcoreSTL(SocketTransactionLanguage)supportinDVflow:-DVTestbenchEnvironmentDetails:"><u>DV Testbench Environment Details:</u></h2><p><span data-colorid="cfl4axo76l">Register configurations :</span></p><p>DV has support of register configurations through the reg.stl file</p><p>Task for stl paraser - concerto_fullsys_test::stl_csr_write();</p><p>It will read complete reg.stl file and will write the csr model on the ioaiu0_axi_if.</p><p>It will take reg.stl file provided by +define+STL_FILE_FULL_PATH from the cmdline.</p><p>Reg config file : $WORK_TOP/dv/full_sys/tests/concerto_fullsys_test.svh&nbsp;</p><p><span data-colorid="c84wngqo98">Stimulus Drive :&nbsp;</span></p><p>After completion of the register configurations, DV has support of STL parser to read the &nbsp;stimulus from provided stl file in the form of burst read, burst write, idle, wait and comments.</p><p>There will be one parser associate to the single channel.</p><p>It will read all the information from stl file and will store in the variables.</p><p>There is support in the axi_master_pipelined_seq to collect the data from these variables and to drive it on the respective interface, channel with no input stl file will not be driving any traffic.</p><p>User has to provide stl files from cmd lines +define+STL_FILE_FULL_PATH</p><p>Naming conventions in the parser are as suggested &ndash; acc0.stl,acc1.stl,acc2.stl,acc3.stl&hellip;&hellip;</p><p>Parser Files : $WORK_TOP/dv/common/lib_tb/axi_stl_traffic.sv</p><p>Stimulus driving sequence :$WORK_TOP/dv/common/lib_tb/axi_seq.sv (axi_master_pipelined_seq)</p><h2 id="NcoreSTL(SocketTransactionLanguage)supportinDVflow:-ListofJIRA:"><u>List of JIRA:</u></h2><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9856">
+                <a href="https://arterisip.atlassian.net/browse/CONC-9856?src=confmacro" class="jira-issue-key">CONC-9856</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9864">
+                <a href="https://arterisip.atlassian.net/browse/CONC-9864?src=confmacro" class="jira-issue-key">CONC-9864</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-9919">
+                <a href="https://arterisip.atlassian.net/browse/CONC-9919?src=confmacro" class="jira-issue-key">CONC-9919</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10071">
+                <a href="https://arterisip.atlassian.net/browse/CONC-10071?src=confmacro" class="jira-issue-key">CONC-10071</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10101">
+                <a href="https://arterisip.atlassian.net/browse/CONC-10101?src=confmacro" class="jira-issue-key">CONC-10101</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10102">
+                <a href="https://arterisip.atlassian.net/browse/CONC-10102?src=confmacro" class="jira-issue-key">CONC-10102</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10137">
+                <a href="https://arterisip.atlassian.net/browse/CONC-10137?src=confmacro" class="jira-issue-key">CONC-10137</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10147">
+                <a href="https://arterisip.atlassian.net/browse/CONC-10147?src=confmacro" class="jira-issue-key">CONC-10147</a>
+                            </span>
+ </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="CONC-10150">
+                <a href="https://arterisip.atlassian.net/browse/CONC-10150?src=confmacro" class="jira-issue-key">CONC-10150</a>
+                            </span>
+ </p><h2 id="NcoreSTL(SocketTransactionLanguage)supportinDVflow:-Limitations:"><u>Limitations:</u></h2><ul><li><p>As of now, For STL parser and Stimulus driving, we have followed input txn provided from /scratch/pzare/stl_files_path/acc0.stl &nbsp;(as of now there is limited support on cmdtypes)</p></li><li><p>Wait for response on one last transaction can be supported in the TB</p></li></ul><p /><p /><p /><p />

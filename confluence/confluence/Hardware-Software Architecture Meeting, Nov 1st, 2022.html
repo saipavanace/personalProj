@@ -1,0 +1,112 @@
+<p>Attendees: <a class="confluence-userlink user-mention" data-account-id="624b37ffad6b7e006aa7d897" href="https://arterisip.atlassian.net/wiki/people/624b37ffad6b7e006aa7d897?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Mohammed Khaleeluddin (Deactivated)</a> , <a class="confluence-userlink user-mention" data-account-id="624b36daed4d6b0070161eea" href="https://arterisip.atlassian.net/wiki/people/624b36daed4d6b0070161eea?ref=confluence" target="_blank" data-linked-resource-id="754406" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Federico Angiolini</a> , <a class="confluence-userlink user-mention" data-account-id="624b374545ece00069cca858" href="https://arterisip.atlassian.net/wiki/people/624b374545ece00069cca858?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Ben Chen (Deactivated)</a> , <a class="confluence-userlink user-mention" data-account-id="624b37684fe01d006ba96e15" href="https://arterisip.atlassian.net/wiki/people/624b37684fe01d006ba96e15?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Michael Frank (Deactivated)</a> , <a class="confluence-userlink user-mention" data-account-id="622a20dea1245000688ba084" href="https://arterisip.atlassian.net/wiki/people/622a20dea1245000688ba084?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Akarsh Hebbar (Deactivated)</a>  </p><p /><ul><li><p>Federico reminds the attendees that meeting minutes for this meeting series are posted at <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/59507005/Hardware-Software+Architecture+Meetings" data-linked-resource-id="59507005" data-linked-resource-version="2" data-linked-resource-type="page">Hardware-Software Architecture Meetings</a>.</p></li><li><p>Federico brings up the subject of Maestro’s “Coherent Network Interfaces”, a SW-only container which groups Ncore units, packetizers, depacketizers, and potentially also SMI clock adapters.</p><ul><li><p>They were introduced for symmetry with the non-coherent version of these objects (ATUs), which are a single entity in RTL. (ATUs are obviously not used anymore for the Symphony product, but they still show up in the CSR network.) These containers try to hide details and simplify handling of multiple objects at once, reducing screen clutter and TCL complexity.</p></li><li><p>But, they are now running out of steam for some scenarios: grouping (as packetizers etc. could be grouped differently from their Ncore unit), floorplanning (maybe the inner units should be separately placeable), clocking, etc.. We did support some workarounds for MobilEye to be able to meet immediate needs.</p></li><li><p>Discussion ensues about which way to go for the future. Michael and Khaleel confirm that at the RTL level, no changes are immediately planned, except that one day, further macro-blocks (e.g. the Concerto C Mux) may also be split out. So, Maestro just needs to handle the asymmetry between Ncore and ex-Symphony. It is suggested by Michael that Maestro support two similar but independent concepts:</p><ul><li><p>Grouping, which we do have today, as a way to flexibly rearrange building blocks into hierarchical containers. This rearrangement will then be directly reflected in the hierarchy of the generated RTL.</p></li><li><p>But also, a UI-level grouping capability of some kind, allowing objects to be clustered for ease of use and reduction of clutter. This UI-level feature would be purely for UX and would have no impact on the generated RTL.</p></li></ul></li></ul></li></ul><ul class="decision-list"><li>The SW team will evaluate how this concept can be put into practice.</li></ul><ul><li><p>Federico brings up the subject of system simulation, following the recent demo of the gem5-based simulation environment. This new simulator seems to have a different set of benefits/downsides compared to archsim, but both seem useful. Federico asks for Michael’s input on the vision.</p><ul><li><p>Michael and Khaleel explain that the gem5 environment is principally intended for internal Arteris use, e.g. in the phase of quick architecture exploration, while archsim is intended principally to be customer-oriented. The former is more focused on quick design iteration and system-level accuracy (e.g. thanks to the availability of proper memory controller models and real OS/benchmark code), while the latter on NoC-level feature and timing accuracy, akin to a Verilated model (but faster.)</p></li><li><p>In followup discussion, it is agreed that integration of the new gem5 environment with Maestro at some level is desirable. There is one aspect of design configuration instantiation, where Maestro may be the most efficient way to feed complex topologies into the simulator, and another aspect of result visualization, since existing standard tools would not be able to comprehend the “topology” part of the simulation. Michael mentions that there is already some functioning code to populate a gem5 testbench from JSON. This topic will need further discussions.</p></li><li><p>The simulation dumping format is also discussed. CTF is used by the gem5 environment, and has the benefit of preserving “transactions”. archsim is currently using VCD. No resolution to this divergence has been identified yet.</p></li><li><p>It is generally agreed that as an IP vendor, providing a virtual model of our IP should be a major priority for us and a key part of our offering - which isn’t currently quite the case.</p></li></ul></li><li><p>The discussion move to a set of HW/SW Jiras and feedback items:</p><ul><li><p><a class="confluence-userlink user-mention" data-account-id="624b36bff6a26900695fd0a5" href="https://arterisip.atlassian.net/wiki/people/624b36bff6a26900695fd0a5?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">David Peart (Deactivated)</a> has pointed out that the choice of the address width of Sockets is tricky, due to the way each Socket should be individually configured, but there is a constraint that all Sockets should have the same address width (a “temporary” constraint that has been in place for years.) Further, some Socket types have extra constraints (e.g. CHI-A only supports the value 44) which makes this even harder. Federico points out that with current infrastructure, Maestro cannot help much as it is only executing the rule checks specified by HW. Khaleel and Michael explain that these relief will come in Ncore 3.8, for which it is planned to provide proper address extension rules that will allow non-uniform address widths to be used.</p></li><li><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-5372" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-5372?src=confmacro" class="jira-issue-key">MAES-5372</a>
+                            </span>
+  and 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-5371" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-5371?src=confmacro" class="jira-issue-key">MAES-5371</a>
+                            </span>
+ are discussed. It is agreed that both Jiras are about parameters that have been removed. The real issue however is that a full parameter spec isn’t available, so these discrepancies can occur. Khaleel and Michael expect a full specification to become available in the Ncore 3.8 timeframe.</p></li><li><p>For 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-5340" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-5340?src=confmacro" class="jira-issue-key">MAES-5340</a>
+                            </span>
+ , Khaleel explains that the meaning of the parameter was different from the way Maestro has been interpreting it. Maestro will need to be fixed.</p></li><li><p>Ben brings up the appearance of a new QoS parameter in the latest Ncore 3.4 HW specification, with a very complex derivation rule that is subject to implementation mistakes.</p></li></ul></li></ul><ul class="decision-list"><li>It is agreed that Khaleel will improve the document with more details and examples.</li></ul><ul><li><p>Federico proposes to make the meeting series more frequent as it seems useful. Michael and the others agree. A weekly schedule is potentially desirable.</p></li></ul><ul class="decision-list"><li>Federico shall propose a more frequent schedule.</li></ul>

@@ -1,0 +1,72 @@
+<div class="contentLayout2">
+<div class="columnLayout three-equal" data-layout="three-equal">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-HowToUse:"><span class="legacy-color-text-blue4"><strong>How To Use:</strong></span></h2><pre><span class="legacy-color-text-default">$WORK_TOP/tcl_gen.v3/randomizer.tcl -h</span><br/><br/><span class="legacy-color-text-default">Usage :  randomizer.tcl -n &lt;number_of_configs&gt; -b &lt;base version&gt; -s &lt;user_suffix&gt;</span><br/><br/><span class="legacy-color-text-default">-n : number of configurations that user want to create (optional, default value is 5).</span><br/><span class="legacy-color-text-default">-b : base version (optional, default value is picked randomly from available bases).</span><br/><span class="legacy-color-text-default">-s : user suffix added at the end of configuration name (optional).</span><br/><span class="legacy-color-text-default">-h : print this message.</span><br/><br/><span class="legacy-color-text-default">example : tclsh randomizer.tcl -n 10 -b base2 -s striping</span><br/><span class="legacy-color-text-default">          tclsh randomizer.tcl -b base3</span><br/><span class="legacy-color-text-default">          tclsh randomizer.tcl -h</span></pre></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<p><br/></p></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-References:"><span class="legacy-color-text-blue4"><strong>References:</strong></span></h2><ol><li><span class="legacy-color-text-default">More bases details are at $WORK_TOP/parameters/features_base_x.xlsx</span></li><li><span class="legacy-color-text-default">User settable parameters are at $WORK_TOP/parameters/user_params.csv</span></li></ol><p><br/></p><p><br/></p></div>
+</div>
+</div>
+<div class="columnLayout three-equal" data-layout="three-equal">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE0:"><span class="legacy-color-text-blue4"><strong>BASE 0:</strong></span></h2><p><span class="legacy-color-text-default">Features:</span></p><ol><li><strong>4x4 Ring</strong> topology with 4 switches.</li><li>Randomize memory map </li><li>With the exception of Striping, the followings are supported: Sram Fifo, Fifo Rate, Reordering Buffer and Firewall are all supported.</li><li>CSR support has also been added.</li></ol><p>Randomization scope:</p><p>       Randomization support will <strong>soon</strong> be added for the following</p><ol><li>ATU block Sram fifo parameters.</li><li>Support of reordering buffer</li></ol><p><br/></p></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE1:"><span class="legacy-color-text-blue4"><strong>BASE 1:</strong></span></h2><p>Features:</p><ol><li><strong>4x7 xbar </strong>topology with 2 switches</li><li>Memory map :fixed</li><li>No special features (no striping, no pmon...)</li></ol><p>Randomization scope:</p><ol><li>Socket parameters</li><li>ATU block pipe parameters.</li></ol></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE2:"><span class="legacy-color-text-blue4"><strong>BASE 2:</strong></span></h2><p>Features:</p><ol><li><strong>4x7 mesh</strong> topology with randomized nodes position</li><li>Memory map :fixed</li><li>No striping</li><li>Support of reordering buffer</li></ol><p>Randomization scope:</p><ol><li>Socket parameters</li><li>ATU block perf parameters.</li><li>ATU block pipe parameters.</li></ol></div>
+</div>
+</div>
+<div class="columnLayout three-equal" data-layout="three-equal">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE3:"><span class="legacy-color-text-blue4"><strong>BASE 3:</strong></span></h2><p>Features<strong>:</strong></p><ol><li><strong>4x7 Xbar</strong> topology with 4 switches</li><li>Randomize memory map with base/offset and memory constraints integration.</li><li>Stripping, interrupt, and CSR enabled.</li><li>Support of reordering buffer</li></ol><p>Randomization scope:</p><ol><li>Socket parameters</li><li>ATU block perf parameters.</li><li>ATU block pipe parameters.</li><li>Buffered switch parameters.</li><li>Switch type randomized (buffered , non-buffered)</li><li>timeout errors and exclusive enabled.</li></ol></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE4:"><span class="legacy-color-text-blue4"><strong>BASE 4:</strong></span></h2><p>Features:</p><ol><li><strong>4x9 mesh</strong> topology.</li><li>Randomize memory map with base/offset and memory constraints integration.</li><li>Support multiple clocks (6clocks).</li><li>Stripping, interrupt, and CSR enabled.</li><li>Support of reordering buffer</li></ol><p>Randomization scope:</p><ol><li>Socket parameters</li><li>ATU block perf parameters.</li><li>ATU block pipe parameters.</li><li>Buffered switch parameters.</li><li>Switch type randomized (only buffered switch )</li><li>timeout errors and exclusive enabled.</li><li>ATP parameters (only in ATUs)</li><li>Clock Async adapter param</li><li>Dw adapter params</li><li>Header network (only parallel and serial)</li></ol></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE5:"><span class="legacy-color-text-blue4"><strong>BASE 5:</strong></span></h2><p>Features:</p><ol><li><span><span><strong>5x25 mesh</strong> topology.</span></span><span> </span></li><li><span><span>Enable Stripping, interrupt, and CSR features.</span></span><span> </span></li><li>Memory Map randomization with overlapping region</li><li><span><span>Striping group configurations are implemented (2, 4 , 8)</span></span><span> </span></li><li><span><span>8 memory modes supporting</span></span><span> </span></li><li><span><span>Many interleaving group created</span></span><span> </span></li></ol><p>Randomization scope:</p><ol><li>Socket parameters</li><li>Memory Map params with large ATUS (Base Addr and memory size) taking into account all the constraints (see Symphony R1 Parameter and Specification 4.5.9 Memory map constraints )</li><li>“memoryBaseOffset” randomization to address larger target address region than initiator. (This parameter will be applied to initiator)</li></ol><p><strong style="font-size: 20.0px;letter-spacing: -0.008em;" class="legacy-color-text-blue4">BASE 5p1:</strong></p><p>Features:</p><ol><li><span><strong>5x5 mesh</strong> topology.</span><span> </span></li><li><span>Enable Stripping, interrupt, and CSR features.</span><span> </span></li><li>Support 2 memory modes</li><li>Memory Map concatenation feature (if user would want to have larger address map size then the base address, it must be partitioned into small parts and then should be concatenated.)</li></ol><p>Randomization scope:</p><ol><li>Socket parameters (with Psel &gt; 1)</li></ol></div>
+</div>
+</div>
+<div class="columnLayout three-equal" data-layout="three-equal">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE6:"><span class="legacy-color-text-blue4"><strong>BASE 6:</strong></span></h2><p>Features:</p><ol><li><strong>3x9 double C</strong> topology.</li><li>Randomize memory map with base/offset and memory constraints integration.</li><li>Support single clocks.</li><li>Interrupt, and CSR enabled.</li><li>Support of reordering buffer</li></ol><p>Randomization scope:</p><ol><li>Socket parameters</li><li>ATU block perf parameters.</li><li>ATU block pipe parameters.</li><li>Buffered switch parameters.</li><li>Switch type randomized (only buffered switch )</li><li>timeout errors and exclusive enabled.</li><li>ATP parameters (only in ATUs)</li><li>Dw adapter params</li><li>Header network (only parallel and serial)</li></ol></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE7:"><span class="legacy-color-text-blue4"><strong>BASE 7:</strong></span></h2><p>Features:</p><ol><li><strong>4x9 mesh </strong>topology.</li><li>Randomize memory map with base/offset and memory constraints integration.</li><li>Support multiple clocks (6clocks).</li><li>Support multiple clocks (2 power domaines with random gating).</li><li>Support grouping (2 groups)</li><li>Stripping, interrupt, and CSR enabled.</li><li>Pmon and Firewall enabled.</li><li>Support of reordering buffer</li><li>support UPF/PMA</li><li>support Qos/Priority mapping</li><li>support Rate Limiter</li></ol><p>Randomization scope:</p><ol><li>Socket parameters</li><li>ATU block perf parameters.</li><li>ATU block pipe parameters.</li><li>Buffered switch parameters.</li><li>Switch type randomized (only buffered switch )</li><li>timeout errors and exclusive enabled.</li><li>ATP parameters (only in ATUs)</li><li>Clock Async adapter param</li><li>Dw adapter params</li><li>Header network (only parallel and serial)</li><li>Network params</li><li>Firwall params</li><li>ATP params of switches</li><li>network params for CSR </li></ol></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE8:"><span class="legacy-color-text-blue4"><strong>BASE 8:</strong></span></h2></div>
+</div>
+</div>
+<div class="columnLayout three-equal" data-layout="three-equal">
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE9:"><span class="legacy-color-text-blue4"><strong>BASE 9:</strong></span></h2><p><br/></p></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE10:"><span class="legacy-color-text-blue4"><strong>BASE 10:</strong></span></h2><p><br/></p></div>
+</div>
+<div class="cell normal" data-type="normal">
+<div class="innerCell">
+<h2 id="Randomizerv3ScopeandUserGuide:-BASE11:"><span class="legacy-color-text-blue4"><strong>BASE 11:</strong></span></h2><p><br/></p></div>
+</div>
+</div>
+</div>

@@ -1,0 +1,437 @@
+\jsbegin
+//////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 4.0
+// Author : Kjeld Svendsen
+// Date   : May 2021
+//
+// Description : DII skid-buffer with triple-linked-list.
+//
+// The buffer is built as a linked-list of entries, where each entry can be a read or a write. 
+// Each entry points to the next entry to be scheduled in FIFO-order, and the previous entry, for a regular 2-linked list.
+// A 3rd pointer keeps track of writes only. This pointer points to the next write, if any.
+// A set of list-pointers track: the listhead, the listtail, the writehead, the writetail and the readtail. The latter is used for a special cornercase only.
+// Buffer entry allocation is done by a regular freelist.
+// When the buffer is not stalled by the rtt_full (read transaction table full) signal, entries are scheduled in FIFO-order.
+// But if the rtt_full is asserted, writes can bypass out of the buffer. This is done in FIFO-order for the writes.
+// When a write is bypassed out, it is extracted from the linked-list by moving the scheduled write's previous entry's next-pointer to the scheduled write's next-pointer,
+// and the scheduled write's next entry's previous-pointer to the scheduled write's previous-pointer. 
+// The next write to schedule is determined from the scheduled writes next write pointer.
+// This allows writes to be freed up so incoming requests can keep flowing.
+// To keep things neat the validbit of scheduled entries are cleared on issue.
+//
+//         Tail                                    Head
+//          |                                       |
+//          \/                                      \/
+//      next ENTRY(C)     scheduled WRITE(A)     previous ENTRY(B)                         
+//     previous ptr A ->   previous ptr B  ->   previous ptr  -> NULL
+//     next ptr       <-   next ptr C       <-  next ptr A
+//     nextwrite ptr       nextwrite ptr        nextwrite ptr
+//
+//                        \Write Bypass/ (entry A freed op)
+//
+//         Tail                                    Head
+//          |                                       |
+//          \/                                      \/
+//      next ENTRY(C)                             previous ENTRY(B)                         
+//     previous ptr B  --------------------->    previous ptr  -> NULL
+//     next ptr        <---------------------    next ptr C
+//     nextwrite ptr                             nextwrite ptr
+//
+// CMOs are treated like reads, however, when a CMO enters the buffer, no new incoming writes can be marked for bypassing.
+// This assures that CMOs are never bypassed.
+// Writes with OR=11 are treated like reads, in that they cannot bypass, but they can be bypassed.
+//////////////////////////////////////////////////////////////////////////
+// Reads are: CmdRdNC
+// Writes are: CmdWrNCPtl, CmdWrNCFull
+//////////////////////////////////////////////////////////////////////////
+
+   var u = obj.lib;
+   u.paramDefault('assertOn','int',0);
+   var assertOn                     = obj.lib.getParam('assertOn');
+
+   var WIDTH                        = u.getParam('WIDTH'); 
+   var ENTRIES                      = u.getParam('ENTRIES');
+   var addr_msb                     = u.getParam('addr_msb')+3; 
+   var addr_lsb                     = u.getParam('addr_lsb')+3; 
+   var init_id_msb                  = u.getParam('init_id_msb')+3; 
+   var init_id_lsb                  = u.getParam('init_id_lsb')+3; 
+   
+   var log2ceil                     = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+   
+   var log2entries                  = log2ceil(ENTRIES);
+
+   var bypassEnable                 = "1'b1";
+
+//=============================================================================
+// ports
+//=============================================================================
+
+    u.port('input',  'clk'                 , 1);
+    u.port('input',  'reset_n'               , 1);
+    u.port('input',  'vldin'               , 1);
+    u.port('input',  'readin'              , 1);
+    u.port('input',  'cmo'                 , 1);
+    u.port('input',  'din'                 , WIDTH);
+    u.port('output', 'readyin'             , 1);
+    u.port('input',  'rtt_full'            , 1);
+    u.port('input',  'ready'               , 1);
+    u.port('output', 'vldout'              , 1);
+    u.port('output', 'readout'             , 1);
+    u.port('output', 'dout'                , WIDTH);
+    u.port('output', 'empty'               , 1);
+\jsend
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+\jsbegin
+var name = u.getModuleName();
+var suffex = name.slice(-1);
+\jsend
+
+localparam WIDTH   = \=WIDTH=\;
+localparam ENTRIES = \=ENTRIES=\;
+localparam SIZE    = 2**\=log2ceil(ENTRIES)=\; // power of 2 roundup of entries
+
+\js let size = Math.pow(2, log2ceil(ENTRIES))
+\js let freecnt_width = 1 + log2ceil(size);
+\js let wSize = log2ceil(size);
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+// Declarations
+//////////////////////////////////////////////////////////////////////////
+
+   // heads and tails   
+   wire [\=log2ceil(ENTRIES)-1=\:0] listhead;
+   wire [ENTRIES-1:0]         listhead_vec;
+   wire [\=log2ceil(ENTRIES)-1=\:0] listtail;
+   wire [\=log2ceil(ENTRIES)-1=\:0] whead;
+   wire [ENTRIES-1:0]         whead_vec;   
+   wire [\=log2ceil(ENTRIES)-1=\:0] wtail;
+   wire [\=log2ceil(ENTRIES)-1=\:0] rtail;
+
+   // head and tail updates
+   reg  [\=log2ceil(ENTRIES)-1=\:0]  listhead_upd;
+   reg  [\=log2ceil(ENTRIES)-1=\:0]  listtail_upd;
+   wire [ENTRIES-1:0]          listhead_upd_vec;
+   reg  [\=log2ceil(ENTRIES)-1=\:0]  whead_upd;
+   wire [ENTRIES-1:0]          whead_upd_vec;   
+
+   // write counter 
+   wire [\=log2ceil(ENTRIES)=\:0]   rcnt;
+   wire [\=log2ceil(ENTRIES)=\:0]   wcnt;
+   wire 		      nowrib;
+
+   // CMO counter 
+   wire [\=log2ceil(ENTRIES)=\:0]   cmocnt;
+   wire 		      nocmoib;
+   wire 		      cmoout;
+
+   // entries
+   wire [WIDTH-1+3:0] 	      entry [ENTRIES-1:0]; // {data, cmo, read, valid}
+   wire [WIDTH-1+3:0] 	      lentry, wentry;
+
+   // entry pointers
+   wire [\=log2ceil(ENTRIES)-1=\:0] nxtptr [ENTRIES-1:0];
+   wire [\=log2ceil(ENTRIES)-1=\:0] prvptr [ENTRIES-1:0];
+   wire [\=log2ceil(ENTRIES)-1=\:0] nxtwptr [ENTRIES-1:0];
+
+   // freelist signals
+   wire [\=log2ceil(ENTRIES)-1=\:0] freeptr;
+   wire [\=log2ceil(ENTRIES)-1=\:0] newptr;
+   wire 		      flfull;
+   wire 		      flempty;
+   wire 		      free;
+      
+   // buffer read and write signal cases   
+   wire 		      reading_read;
+   wire 		      reading_write;
+   wire 		      reading_writebypass;
+   wire 		      writing_read;
+   wire 		      writing_write;
+
+   wire			      int_readin;
+
+   wire                       cmo_input_stall;
+
+\jsbegin
+/* istanbul ignore if env ncore_3p7 */
+if (assertOn) { \jsend
+//////////////////////////////////////////////////////////////////////////
+// Assertions
+// OVL_SVA should be on.
+//////////////////////////////////////////////////////////////////////////
+`ifdef OVL_ASSERT_ON
+// synopsys translate_off   
+//////////////////////////////////////////////////////////////////////////
+// Instrumentation for order checker
+   wire [\=log2ceil(ENTRIES)-1=\:0] rseqptr [ENTRIES-1:0];
+   wire [\=log2ceil(ENTRIES)-1=\:0] rseqcnt;
+   wire [\=log2ceil(ENTRIES)-1=\:0] rseqcnt_in;
+   wire                       rseqbad;		      
+   wire [\=log2ceil(ENTRIES)-1=\:0] rseqout_prv;
+   wire [\=log2ceil(ENTRIES)-1=\:0] rseqout_prv_pt;
+   wire [\=log2ceil(ENTRIES)-1=\:0] rseqout;
+
+   wire [\=log2ceil(ENTRIES)-1=\:0] wseqptr [ENTRIES-1:0];
+   wire [\=log2ceil(ENTRIES)-1=\:0] wseqcnt;
+   wire [\=log2ceil(ENTRIES)-1=\:0] wseqcnt_in;
+   wire                       wseqbad;		      
+   wire [\=log2ceil(ENTRIES)-1=\:0] wseqout_prv;
+   wire [\=log2ceil(ENTRIES)-1=\:0] wseqout_prv_pt;
+   wire [\=log2ceil(ENTRIES)-1=\:0] wseqout;
+
+   wire [ENTRIES-1:0] write_match_read_same_address;
+   wire [ENTRIES-1:0] entry_write_match_read_same_address [ENTRIES-1:0];
+  
+\js for (let i=0; i<ENTRIES; i=i+1) {
+wire [\=log2ceil(ENTRIES)-1=\:0] rseqptr\=i=\;
+assign rseqptr[\=i=\] = rseqptr\=i=\;
+\=u.dffre( log2ceil(ENTRIES), 'rseqptr'+i , 'rseqcnt' , log2ceil(ENTRIES)+"'b0" , "vldin && readyin &&  int_readin && ("+(log2ceil(ENTRIES))+"'d"+i+"==newptr)" , 'clk' , 'reset_n')=\
+wire [\=log2ceil(ENTRIES)-1=\:0] wseqptr\=i=\;
+assign wseqptr[\=i=\] = wseqptr\=i=\;
+\=u.dffre( log2ceil(ENTRIES), 'wseqptr'+i , 'wseqcnt' , log2ceil(ENTRIES)+"'b0" , "vldin && readyin && ~int_readin && ("+(log2ceil(ENTRIES))+"'d"+i+"==newptr)" , 'clk' , 'reset_n')=\
+
+\js }
+
+// seq counts
+assign rseqcnt_in = rseqcnt + \=log2ceil(ENTRIES)=\'d1;
+\=u.dffre( log2ceil(ENTRIES), 'rseqcnt' , 'rseqcnt_in' , log2ceil(ENTRIES)+"'b0" , "vldin && readyin &&   int_readin" , 'clk' , 'reset_n')=\
+assign wseqcnt_in = wseqcnt + \=log2ceil(ENTRIES)=\'d1;
+\=u.dffre( log2ceil(ENTRIES), 'wseqcnt' , 'wseqcnt_in' , log2ceil(ENTRIES)+"'b0" , "vldin && readyin &&  ~int_readin" , 'clk' , 'reset_n')=\
+
+// checks
+  assign rseqout = rseqptr[freeptr];
+\=u.dffre( log2ceil(ENTRIES), 'rseqout_prv' , 'rseqout' , log2ceil(ENTRIES)+"'d"+(size-1) , "vldout && ready &&   readout" , 'clk' , 'reset_n')=\
+  assign rseqout_prv_pt = rseqout_prv+1;
+  assign rseqbad = ((rseqout != rseqout_prv_pt) && vldout && ready && readout);
+
+  assign wseqout = wseqptr[freeptr];
+\=u.dffre( log2ceil(ENTRIES), 'wseqout_prv' , 'wseqout' , log2ceil(ENTRIES)+"'d"+(size-1) , "vldout && ready &&  ~readout" , 'clk' , 'reset_n')=\
+  assign wseqout_prv_pt = wseqout_prv+1;
+  assign wseqbad = ((wseqout != wseqout_prv_pt) && vldout && ready && (~readout));
+
+// Check that no write coming in will collide with a read to any cacheline from the same initiator.
+\js for (let i=0; i<ENTRIES; i=i+1) {
+\js   for (let j=0; j<ENTRIES; j=j+1) {
+        assign entry_write_match_read_same_address[\=i=\][\=j=\] = ~entry[\=i=\][1] && entry[\=j=\][1] &&
+	                                                   (entry[\=i=\][\=addr_msb=\:\=addr_lsb=\]       == entry[\=j=\][\=addr_msb=\:\=addr_lsb=\]) &&
+							   (entry[\=i=\][\=init_id_msb=\:\=init_id_lsb=\] == entry[\=j=\][\=init_id_msb=\:\=init_id_lsb=\]);
+\js   }
+
+      assign write_match_read_same_address[\=i=\] = (|entry_write_match_read_same_address[\=i=\]);
+\js }
+
+// AIUs should ensure this condition never occurs
+ovl_never never_write_read_address_collision(.enable(1'b1), .test_expr((|write_match_read_same_address)), .fire(), .clock(clk), .reset(~reset_n));
+ovl_never never_bad_write_seqeuence(.enable(1'b1), .test_expr(wseqbad), .fire(), .clock(clk), .reset(~reset_n));
+ovl_never never_bad_read_seqeuence(.enable(1'b1), .test_expr(rseqbad), .fire(), .clock(clk), .reset(~reset_n));
+//////////////////////////////////////////////////////////////////////////
+ovl_never_unknown #(.width(1)) vldin_never_x(.enable(1'b1), .qualifier(1'b1), .test_expr(vldin), .fire(), .clock(clk), .reset(~reset_n));
+ovl_never_unknown #(.width(1)) readin_never_x(.enable(vldin), .qualifier(1'b1), .test_expr(readin), .fire(), .clock(clk), .reset(~reset_n));
+ovl_never_unknown #(.width(1)) ready_never_x(.enable(1'b1), .qualifier(1'b1), .test_expr(ready), .fire(), .clock(clk), .reset(~reset_n));
+ovl_never_unknown #(.width(1)) rtt_full_never_x(.enable(1'b1), .qualifier(1'b1), .test_expr(rtt_full), .fire(), .clock(clk), .reset(~reset_n));
+// Assert that we can't issue read as writebypass, when rtt_full is asserted
+wire issue_read_as_bypass; // we need to flop this to get the timing right for the assertion
+\=u.dffre( 1, 'issue_read_as_bypass' , 'rtt_full && vldout && readout && ready' , "1'b0" , "1'b1" , 'clk' , 'reset_n')=\
+ovl_never never_issue_read_as_bypass(.enable(1'b1), .test_expr(issue_read_as_bypass), .fire(), .clock(clk), .reset(~reset_n));
+ovl_never never_fill_when_full(.enable(1'b1), .test_expr(vldin && flempty), .clock(clk), .fire(), .reset(~reset_n)); // shouldn't overrun buffer
+ovl_never never_poop_when_empty(.enable(1'b1), .test_expr(vldout && flfull), .clock(clk), .fire(), .reset(~reset_n)); // shouldn't underrun buffer
+// synopsys translate_on
+`endif //  `ifdef OVL_ASSERT_ON
+\js }
+
+//////////////////////////////////////////////////////////////////////////
+// Logic
+//////////////////////////////////////////////////////////////////////////
+// Freelist
+// flfull means no entries in use. flempty means all entries in use.
+//  dii_Freelist4\=suffex=\ #(ENTRIES) skidflist(.freeid(newptr), .allocate(vldin && readyin), .freeup(free), .freeupid(freeptr), .full(flfull), .empty(flempty), .clk(clk), .reset_n(reset_n));
+
+// counter to track number of bypass writes in buffer.
+  wire [\=log2ceil(ENTRIES)=\:0] nxt_wcnt;
+  assign nxt_wcnt = (free && ~readout) ? wcnt-\=log2entries=\'h1 : wcnt+\=log2entries=\'h1; // synth fix
+\=u.dffre( log2ceil(ENTRIES)+1, 'wcnt' , 'nxt_wcnt' , (log2ceil(ENTRIES)+1)+"'b0" , "((vldin && readyin && ~int_readin) ^ (free && ~readout))" , 'clk' , 'reset_n')=\
+
+  wire [\=log2ceil(ENTRIES)=\:0] nxt_rcnt;
+  assign nxt_rcnt = (free && readout) ? rcnt-\=log2entries=\'h1 : rcnt+\=log2entries=\'h1; // synth fix
+\=u.dffre( log2ceil(ENTRIES)+1, 'rcnt' , 'nxt_rcnt' , (log2ceil(ENTRIES)+1)+"'b0" , "((vldin && readyin && int_readin) ^ (free && readout))" , 'clk' , 'reset_n')=\
+
+\=obj.lib.instance ({
+                instanceName: 'skidflist',
+                moduleName: 'dii_freelist',
+                params : {
+                             assertOn   : assertOn,
+                             size       : ENTRIES
+                         },
+                ports:   {
+                             "clk"      : 'clk',
+                             "reset_n"  : 'reset_n',
+                             "freeid"   : 'newptr',
+                             "allocate" : 'vldin && readyin',
+                             "freeup"   : 'free',
+                             "freeupid" : 'freeptr',
+                             "full"     : 'flfull',
+                             "empty"    : 'flempty'
+                         },
+                verilogParams : {}
+})=\
+
+  assign empty = flfull; // the queue/buffer is empty when the freelist is full...
+  assign readyin = readin ? ((rcnt < \=log2ceil(ENTRIES)+1=\'d\=(ENTRIES-1)=\) & ~(flempty)) : ~(flempty); // || cmo_input_stall);
+
+  assign nowrib = (wcnt==0);
+
+\js // counter to track number of CMOs in buffer. ((not used)
+\js //  dii_ff_reset_en #(\=log2ceil(ENTRIES)+1=\) cmocnt_ff(.q(cmocnt), .d((free && cmoout) ? cmocnt-1 : cmocnt+1), .en(((vldin && readyin && cmo) ^ (free && cmoout))), .reset_n(reset_n), .clk(clk));
+\js //  assign nocmoib = (cmocnt==0);
+
+  assign int_readin = \=bypassEnable=\ ? readin : 1'b1; // consider all inputs reads if bypass not enabled. (readin || ~nocmoib)
+
+\js // CMO input stall (not used)
+\js //  dii_ff_reset_en cmo_stall_ff(.q(cmo_input_stall), .d(cmo && vldin && ~flempty && ~cmo_input_stall ? 1:0), .en(cmo && vldin && ~flempty || empty), .reset_n(reset_n), .clk(clk));
+
+// Entries
+\js for (let i=0; i<ENTRIES; i=i+1) {
+    // entry
+
+    wire en\=i=\ = vldin && readyin && (\=log2ceil(ENTRIES)=\'d\=i=\==newptr);
+    wire clr\=i=\ = free && (\=log2ceil(ENTRIES)=\'d\=i=\==freeptr);
+
+wire [\=WIDTH+3-2=\:0] entry\=i=\_rest;
+assign entry[\=i=\][\=WIDTH+3-1=\:1] = entry\=i=\_rest;
+wire [\=WIDTH+3-2=\:0] entry\=i=\_rest_in = {din, cmo, int_readin};
+\=u.dffre( WIDTH+3-1, 'entry'+i+'_rest' , 'entry'+i+'_rest_in' , (WIDTH+3-1)+"'b0" , "en"+i , 'clk' , 'reset_n')=\
+
+wire entry\=i=\_0;
+assign entry[\=i=\][0] = entry\=i=\_0;
+wire entry\=i=\_0_in = clr\=i=\ ? 1'b0 : vldin;
+\=u.dffre( 1, 'entry'+i+'_0' , 'entry'+i+'_0_in' , "1'b1" , "en"+i+" || clr"+i , 'clk' , 'reset_n')=\
+
+    // pointers
+    // Update the next ptr on a write or on a bypass of the previous next pointer, if the bypass is not from the listhead.
+    wire nxtptr_wr\=i=\     = vldin && readyin && (\=log2ceil(ENTRIES)=\'d\=i=\==listtail);
+    wire nxtptr_bypass\=i=\ = free && rtt_full && (\=log2ceil(ENTRIES)=\'d\=i=\==prvptr[whead]);
+wire [\=log2ceil(ENTRIES)-1=\:0] nxtptr\=i=\;
+assign nxtptr[\=i=\] = nxtptr\=i=\;
+wire [\=log2ceil(ENTRIES)-1=\:0] nxtptr_in\=i=\ = nxtptr_wr\=i=\ || nxtptr_bypass\=i=\ && (whead==listtail) ? newptr : nxtptr[whead];
+\=u.dffre( log2ceil(ENTRIES), 'nxtptr'+i , 'nxtptr_in'+i , log2ceil(ENTRIES)+"'b0" , "nxtptr_wr"+i+" || (nxtptr_bypass"+i+" && ~(whead==listhead))" , 'clk' , 'reset_n')=\
+
+    // If the bypassed write is at the end of the list then don't update the previous pointer of the next element, since it doesn't exist...
+    // unless an element is being added at that same time in which case the added elements previous pointer needs to be updated with the bypassed elements previous pointer....
+    wire prvptr_wr\=i=\         = vldin && readyin && (\=log2ceil(ENTRIES)=\'d\=i=\==newptr);
+    wire prvptr_bypass\=i=\     = free && rtt_full && (\=log2ceil(ENTRIES)=\'d\=i=\==nxtptr[whead]);
+    wire prvptr_bypass_end\=i=\ = free && rtt_full && (whead==listtail);
+wire [\=log2ceil(ENTRIES)-1=\:0] prvptr\=i=\;
+assign prvptr[\=i=\] = prvptr\=i=\;
+wire [\=log2ceil(ENTRIES)-1=\:0] prvptr_in\=i=\ = (prvptr_wr\=i=\ && ~prvptr_bypass_end\=i=\) ? listtail : prvptr[whead];
+\=u.dffre( log2ceil(ENTRIES), 'prvptr'+i , 'prvptr_in'+i , log2ceil(ENTRIES)+"'b0" , "prvptr_wr"+i+" || (prvptr_bypass"+i+" && ~(whead==listtail))" , 'clk' , 'reset_n')=\
+    
+wire [\=log2ceil(ENTRIES)-1=\:0] nxtwptr\=i=\;
+assign nxtwptr[\=i=\] = nxtwptr\=i=\;
+\=u.dffre( log2ceil(ENTRIES), 'nxtwptr'+i , 'newptr' , log2ceil(ENTRIES)+"'b0" , "vldin && readyin && ~int_readin && ("+log2ceil(ENTRIES)+"'d"+i+"==wtail)" , 'clk' , 'reset_n')=\
+\js }
+
+// Heads and tail
+  assign reading_read        = free && readout;   
+  assign reading_write       = free && ~readout && ~rtt_full; 
+  assign reading_writebypass = free && ~readout && rtt_full; 
+  assign writing_read        = vldin && int_readin && readyin; 
+  assign writing_write       = vldin && ~int_readin && readyin;
+   
+// Head over tail updates   
+always @* begin 
+  casez ({reading_read, reading_write, reading_writebypass, writing_read, writing_write})    
+    5'b00001: begin listhead_upd = flfull ? newptr : listhead; listtail_upd = newptr; whead_upd = nowrib ? newptr : whead; end
+    5'b00101: begin listhead_upd = (whead==listhead) ? ((listhead==listtail) ? newptr : nxtptr[whead]) : listhead; listtail_upd = newptr; whead_upd = (whead==wtail) ? newptr : nxtwptr[whead]; end // bypass read write, writing write
+    5'b01001: begin listhead_upd = (listhead==listtail) ? newptr : nxtptr[listhead]; listtail_upd = newptr; whead_upd = (whead==wtail) || nowrib ? newptr : nxtwptr[listhead]; end // reading write, writing write
+    5'b10001: begin listhead_upd = (listhead==listtail) ? newptr : nxtptr[listhead]; listtail_upd = newptr; whead_upd = nowrib ? newptr : whead; end                               // reading read, writing write
+    5'b00010: begin listhead_upd = flfull ? newptr : listhead; listtail_upd = newptr; whead_upd = whead; end
+    5'b00110: begin listhead_upd = (whead==listhead) ? ((listhead==listtail) ? newptr : nxtptr[whead]) : listhead; listtail_upd = newptr; whead_upd = nxtwptr[whead]; end          // bypass reading write, writing read
+    5'b01010: begin listhead_upd = (listhead==listtail) ? newptr : nxtptr[listhead]; listtail_upd = newptr; whead_upd = nxtwptr[listhead]; end                                     // reading write, writing read
+    5'b10010: begin listhead_upd = (listhead==listtail) ? newptr : nxtptr[listhead]; listtail_upd = newptr; whead_upd = whead; end                                                 // reading read, writing read
+    // If we read out the tail on a write bypass then the tail needs to move to the last read (rtail).
+    5'b00100: begin listhead_upd = (whead==listhead) ? nxtptr[whead] : listhead; listtail_upd = (whead==listtail) ? rtail : listtail; whead_upd = nxtwptr[whead]; end
+    5'b01000: begin listhead_upd = nxtptr[listhead]; listtail_upd = listtail; whead_upd = nxtwptr[listhead]; end
+    5'b10000: begin listhead_upd = nxtptr[listhead]; listtail_upd = listtail; whead_upd = whead; end
+    default : begin listhead_upd = listhead; listtail_upd = listtail; whead_upd = whead; end // this can be removed by making the above case the default. (for speedpath improvement)
+  endcase // casez ({reading_read, reading_write, reading_writebypass, writing_read, writing_write})   
+end // always_comb
+    
+// head and tail regs
+
+  \js for ( let i = 0; i < ENTRIES; i++) {
+  assign listhead_upd_vec[\=i=\] = (listhead_upd == \=i=\);
+  assign whead_upd_vec[\=i=\]    = (whead_upd == \=i=\);  
+  \js }
+
+\=u.dffre( log2ceil(ENTRIES), 'listhead' , 'listhead_upd' , log2ceil(ENTRIES)+"'b0" , "(vldin || free)" , 'clk' , 'reset_n')=\
+
+\=u.dffre( ENTRIES, 'listhead_vec' , 'listhead_upd_vec' , ENTRIES+"'b0" , "(vldin || free)" , 'clk' , 'reset_n')=\
+    
+\=u.dffre( log2ceil(ENTRIES), 'listtail' , 'listtail_upd' , log2ceil(ENTRIES)+"'b0" , "(vldin || free)" , 'clk' , 'reset_n')=\
+  
+\=u.dffre( log2ceil(ENTRIES), 'whead' , 'whead_upd' , log2ceil(ENTRIES)+"'b0" , "(vldin || free)" , 'clk' , 'reset_n')=\
+\=u.dffre( ENTRIES, 'whead_vec' , 'whead_upd_vec' , ENTRIES+"'b0" , "(vldin || free)" , 'clk' , 'reset_n')=\
+
+\=u.dffre( log2ceil(ENTRIES), 'wtail' , 'newptr' , log2ceil(ENTRIES)+"'b0" , "(vldin && readyin && ~int_readin)" , 'clk' , 'reset_n')=\
+\=u.dffre( log2ceil(ENTRIES), 'rtail' , 'newptr' , log2ceil(ENTRIES)+"'b0" , "(vldin && readyin &&  int_readin)" , 'clk' , 'reset_n')=\
+
+// output
+  //assign lentry = entry[listhead];
+  //assign wentry = entry[whead];
+
+  \jsbegin
+  var lentry_ports = {};
+  var wentry_ports = {};
+
+  for (var i=0; i<ENTRIES ;i++) {
+         lentry_ports['in'+i] = "entry["+i+"]";
+         wentry_ports['in'+i] = "entry["+i+"]";	 
+  }
+
+  lentry_ports['sel']   = "listhead_vec";
+  lentry_ports['out']   = "lentry";
+
+  wentry_ports['sel']   = "whead_vec";
+  wentry_ports['out']   = "wentry";
+  \jsend
+  
+  \=u.instance({
+        instanceName: 'u_lentry',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : ENTRIES,
+                        wMux             : WIDTH+3
+        },
+        verilogParams: {},
+        ports: lentry_ports
+  })=\
+
+  \=u.instance({
+        instanceName: 'u_wentry',
+        moduleName: 'ao_mux',
+        params: {
+                        nInputs          : ENTRIES,
+                        wMux             : WIDTH+3
+        },
+        verilogParams: {},
+        ports: wentry_ports
+  })=\
+
+  assign vldout  = rtt_full ? wentry[0] && ~nowrib : lentry[0];
+  assign dout    = rtt_full ? wentry[WIDTH+2:3] : lentry[WIDTH+2:3];
+  assign readout = rtt_full ? wentry[1] : lentry[1];
+  assign cmoout  = rtt_full ? wentry[2] : lentry[2];
+
+// freelist control
+  assign free    = vldout && ready;
+  assign freeptr = rtt_full ? whead : listhead;
+
+endmodule // skidbuffer

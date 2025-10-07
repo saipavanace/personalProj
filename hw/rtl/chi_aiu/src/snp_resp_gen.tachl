@@ -1,0 +1,358 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines single transaction table entry
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+var cm_type  = u.getParam('cm_type');
+var chi_cmd  = u.getParam('chi_cmd');
+var chi_e    = u.getParam('chi_e');
+var dat_flit_interface = u.getParam('dat_flit_interface');
+var rsp_flit_interface = u.getParam('rsp_flit_interface');
+
+u.port('input',"snprsp_in_sel",1);
+
+u.port('input',"snp_wrdata_sel",1);
+u.port('input',"stash_target",1);
+u.port('input',"snp_req_cm_type",8);
+u.port('input',"snp_req_slv_up",2);
+u.port('input',"chi_req",1);
+u.port('input',"ace_req",1);
+u.port('input',"aiu_dtr_provider",1);
+u.port('output','snp_rsp_status',6);
+obj.lib.interface('RXDAT_' , 'slave', dat_flit_interface, ['Poison', 'Data', 'BE', 'TraceTag', 'DataID', 'CCID', 'RespErr', 'Homenode_ID', 'SrcID', 'TgtID', 'QoS', 'TxnID', 'DBID']);
+obj.lib.interface('RXRSP_' , 'slave', rsp_flit_interface, ['Data', 'BE', 'TraceTag', 'DataID', 'CCID', 'RespErr', 'Homenode_ID', 'SrcID', 'TgtID', 'QoS', 'TxnID', 'DBID', 'PCrdType']);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+wire [4:0] snp_rsp_status_snp_once;
+wire [4:0] snp_rsp_status_snp_cln;
+wire [4:0] snp_rsp_status_snp_shared;
+wire [4:0] snp_rsp_status_snp_unique;
+wire [4:0] snp_rsp_status_snp_readnosd;
+wire [4:0] snp_rsp_status_snp_clnshared;
+wire [4:0] snp_rsp_status_snp_clninvalid;
+wire [4:0] snp_rsp_status_snp_makeinvalid;
+wire [4:0] snp_rsp_status_snp_unique_nitc_clninv_chi;
+wire [4:0] snp_rsp_status_snp_unique_nitc_clninv_ace;
+wire [4:0] snp_rsp_status_snp_unique_nitc_mkinv_chi;
+wire [4:0] snp_rsp_status_snp_unique_nitc_mkinv_ace;
+wire [4:0] snp_rsp_status_snp_makeinvalid_stsh;
+wire [4:0] snp_rsp_status_snp_unique_stsh_chi;
+wire [4:0] snp_rsp_status_snp_unique_stsh_ace;
+wire [4:0] snp_rsp_status_snp_stsh_unique_target_chi;
+wire [4:0] snp_rsp_status_snp_unique_stsh_target_chi;
+wire [4:0] snp_rsp_status_snp_unique_stsh_non_target_chi;
+wire [4:0] snp_rsp_status_snp_stsh_unique_non_target_chi;
+wire [4:0] snp_rsp_status_snp_stsh_unique_ace;
+wire [4:0] snp_rsp_status_snp_stsh_shared_target_chi;
+wire [4:0] snp_rsp_status_snp_stsh_shared_non_target_chi;
+wire [4:0] snp_rsp_status_snp_stsh_shared_ace;
+wire [4:0] snp_rsp_status_5_1;
+
+wire aiu_unique_presence = (snp_req_slv_up == 2'b01);
+
+wire SnpResp_I             =   snprsp_in_sel &  ( RXRSP_OpCode == \=rsp_flit_interface.OpCode=\\=chi_cmd.SnpResp=\)      &    (RXRSP_Resp == \=chi_cmd.Comp_I=\ ) ;
+wire SnpResp_SC            =   snprsp_in_sel &  ( RXRSP_OpCode == \=rsp_flit_interface.OpCode=\\=chi_cmd.SnpResp=\)      &    (RXRSP_Resp == \=chi_cmd.Comp_SC=\ ) ;
+wire SnpResp_UC            =   snprsp_in_sel &  ( RXRSP_OpCode == \=rsp_flit_interface.OpCode=\\=chi_cmd.SnpResp=\)      &    (RXRSP_Resp == \=chi_cmd.Comp_UC=\ ) ;  
+wire SnpResp_SD            =   snprsp_in_sel &  ( RXRSP_OpCode == \=rsp_flit_interface.OpCode=\\=chi_cmd.SnpResp=\)      &    (RXRSP_Resp == \=chi_cmd.Comp_SD=\ ) ;
+wire SnpResp_UD            =   snprsp_in_sel &  ( RXRSP_OpCode == \=rsp_flit_interface.OpCode=\\=chi_cmd.SnpResp=\)      &    (RXRSP_Resp == \=chi_cmd.Comp_UD=\ ) ;
+wire SnpRespData_I         =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b000 ) ;       
+wire SnpRespData_SC        =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b001 ) ;       
+wire SnpRespData_UC        =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b010 ) ;     
+wire SnpRespData_UD        =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b010 ) ;   
+wire SnpRespData_SD        =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b011 ) ;   
+wire SnpRespData_I_PD      =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b100 ) ;   
+wire SnpRespData_SC_PD     =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b101 ) ;       
+wire SnpRespData_UC_PD     =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\ ) &    (RXDAT_Resp ==  3'b110 ) ;       
+wire SnpRespDataPtl_I_PD   =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespDataPtl=\ ) & (RXDAT_Resp ==  3'b100 ) ;           
+wire SnpRespDataPtl_UD     =   snp_wrdata_sel & ( RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespDataPtl=\ ) & (RXDAT_Resp ==  3'b010 ) ;       
+
+
+
+assign snp_rsp_status_snp_once      =   {5{SnpResp_I          }} & 5'b00000   
+                                      | {5{SnpResp_SC         }} & 5'b11000 
+                                      | {5{SnpResp_UC         }} & 5'b10000 
+                                      | {5{SnpRespData_I      }} & 5'b00010 
+                                      | {5{SnpRespData_SC     }} & 5'b11010 
+                                      | {5{SnpRespData_UC     }} & 5'b10010 
+                                      | {5{SnpRespData_UD     }} & 5'b10010 
+                                      | {5{SnpRespData_SD     }} & 5'b10010 
+                                      | {5{SnpRespData_I_PD   }} & 5'b00011 
+                                      | {5{SnpRespData_SC_PD  }} & 5'b11011 
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000 
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00011
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b10011 ; 
+
+
+assign snp_rsp_status_snp_cln      =    {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b11000
+                                      | {5{SnpResp_UC         }} & 5'b00000
+                                      | {5{SnpRespData_I & (snp_req_slv_up == 2'b01) }} & 5'b00110
+                                      | {5{SnpRespData_I & (snp_req_slv_up != 2'b01) }} & 5'b00010
+                                      | {5{SnpRespData_SC     }} & 5'b11010
+                                      | {5{SnpRespData_UC     }} & 5'b00000
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b10010
+                                      | {5{SnpRespData_I_PD  & ~aiu_unique_presence}} & 5'b00011
+                                      | {5{SnpRespData_I_PD  &  aiu_unique_presence}} & 5'b00111
+                                      | {5{SnpRespData_SC_PD  }} & 5'b11011
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00111
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+
+
+assign snp_rsp_status_snp_shared      = {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b11000
+                                      | {5{SnpResp_UC         }} & 5'b00000
+                                      | {5{SnpRespData_I & (snp_req_slv_up == 2'b01) }} & 5'b00110
+                                      | {5{SnpRespData_I & (snp_req_slv_up != 2'b01) }} & 5'b00010
+                                      | {5{SnpRespData_SC     }} & 5'b11010
+                                      | {5{SnpRespData_UC     }} & 5'b00000
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b10010
+                                      | {5{SnpRespData_I_PD   }} & 5'b00110
+                                      | {5{SnpRespData_SC_PD  }} & 5'b11110
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00111
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000;
+
+assign snp_rsp_status_snp_unique      = {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b00000
+                                      | {5{SnpResp_UC         }} & 5'b00000
+                                      | {5{SnpRespData_I & (snp_req_slv_up == 2'b01)}}                    & 5'b00110
+                                      | {5{SnpRespData_I & (snp_req_slv_up == 2'b11) & aiu_dtr_provider}} & 5'b00001
+                                      | {5{SnpRespData_SC     }} & 5'b00000
+                                      | {5{SnpRespData_UC     }} & 5'b00000
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b00000
+                                      | {5{SnpRespData_I_PD & (snp_req_slv_up == 2'b01)}}                    & 5'b00110
+                                      | {5{SnpRespData_I_PD & (snp_req_slv_up == 2'b11) & aiu_dtr_provider}} & 5'b00001
+                                      | {5{SnpRespData_SC_PD  }} & 5'b00000
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00111
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000; 
+
+
+assign snp_rsp_status_snp_readnosd    = {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b11000
+                                      | {5{SnpResp_UC         }} & 5'b00000
+                                      | {5{SnpRespData_I & (snp_req_slv_up == 2'b01) }} & 5'b00110
+                                      | {5{SnpRespData_I & (snp_req_slv_up != 2'b01) }} & 5'b00010
+                                      | {5{SnpRespData_SC     }} & 5'b11010
+                                      | {5{SnpRespData_UC     }} & 5'b00000
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b10010
+                                      | {5{SnpRespData_I_PD  & ~aiu_unique_presence}} & 5'b00011
+                                      | {5{SnpRespData_I_PD  &  aiu_unique_presence}} & 5'b00110
+                                      | {5{SnpRespData_SC_PD  }} & 5'b11011
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00111
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+
+assign snp_rsp_status_snp_clnshared   = {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b11000
+                                      | {5{SnpResp_UC         }} & 5'b10000
+                                      | {5{SnpRespData_I      }} & 5'b00000
+                                      | {5{SnpRespData_SC     }} & 5'b00000
+                                      | {5{SnpRespData_UC     }} & 5'b00000
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b00000
+                                      | {5{SnpRespData_I_PD   }} & 5'b00001
+                                      | {5{SnpRespData_SC_PD  }} & 5'b11001
+                                      | {5{SnpRespData_UC_PD  }} & 5'b10001
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00001
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+
+assign snp_rsp_status_snp_clninvalid  = {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b00000
+                                      | {5{SnpResp_UC         }} & 5'b00000
+                                      | {5{SnpRespData_I      }} & 5'b00000
+                                      | {5{SnpRespData_SC     }} & 5'b00000
+                                      | {5{SnpRespData_UC     }} & 5'b00000 
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b00000
+                                      | {5{SnpRespData_I_PD   }} & 5'b00001
+                                      | {5{SnpRespData_SC_PD  }} & 5'b00000
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00001
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+
+assign snp_rsp_status_snp_unique_nitc_clninv_chi      = 
+                                        {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b00000
+                                      | {5{SnpResp_UC         }} & 5'b00000
+                                      | {5{SnpRespData_I      }} & 5'b00010
+                                      | {5{SnpRespData_SC     }} & 5'b00000
+                                      | {5{SnpRespData_UC     }} & 5'b00000
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b00000
+                                      | {5{SnpRespData_I_PD   }} & 5'b00011
+                                      | {5{SnpRespData_SC_PD  }} & 5'b00000
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00011
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000;
+
+assign snp_rsp_status_snp_unique_nitc_clninv_ace = 5'b0;
+
+assign snp_rsp_status_snp_unique_nitc_mkinv_chi      = 
+                                        {5{SnpResp_I          }} & 5'b00000
+                                      | {5{SnpResp_SC         }} & 5'b00000
+                                      | {5{SnpResp_UC         }} & 5'b00000
+                                      | {5{SnpRespData_I      }} & 5'b00010
+                                      | {5{SnpRespData_SC     }} & 5'b00000
+                                      | {5{SnpRespData_UC     }} & 5'b00000
+                                      | {5{SnpRespData_UD     }} & 5'b00000
+                                      | {5{SnpRespData_SD     }} & 5'b00000
+                                      | {5{SnpRespData_I_PD   }} & 5'b00010
+                                      | {5{SnpRespData_SC_PD  }} & 5'b00000
+                                      | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                      | {5{SnpRespDataPtl_I_PD}} & 5'b00011
+                                      | {5{SnpRespDataPtl_UD  }} & 5'b00000;
+
+assign snp_rsp_status_snp_unique_nitc_mkinv_ace = 5'b0;
+
+assign snp_rsp_status_snp_makeinvalid       = 5'b0;
+assign snp_rsp_status_snp_makeinvalid_stsh  = 5'b0;
+
+assign snp_rsp_status_snp_unique_stsh_target_chi       = 
+                                              {5{SnpResp_I          }} & 5'b00000
+                                            | {5{SnpResp_SC         }} & 5'b00000
+                                            | {5{SnpResp_UC         }} & 5'b00000
+                                            | {5{SnpRespData_I      & ~aiu_unique_presence}} & 5'b00000 
+                                            | {5{SnpRespData_I      &  aiu_unique_presence}} & 5'b00001
+                                            | {5{SnpRespData_SC     }} & 5'b00000
+                                            | {5{SnpRespData_UC     }} & 5'b00000
+                                            | {5{SnpRespData_UD     }} & 5'b00000
+                                            | {5{SnpRespData_SD     }} & 5'b00000
+                                            | {5{SnpRespData_I_PD   }} & 5'b00001
+                                            | {5{SnpRespData_SC_PD  }} & 5'b00000
+                                            | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                            | {5{SnpRespDataPtl_I_PD}} & 5'b00001
+                                            | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+assign snp_rsp_status_snp_unique_stsh_non_target_chi       = 
+                                              {5{SnpResp_I          }} & 5'b00000
+                                            | {5{SnpResp_SC         }} & 5'b00000
+                                            | {5{SnpResp_UC         }} & 5'b00000
+                                            | {5{SnpRespData_I      }} & 5'b00001 
+                                            | {5{SnpRespData_SC     }} & 5'b00000
+                                            | {5{SnpRespData_UC     }} & 5'b00000
+                                            | {5{SnpRespData_UD     }} & 5'b00000
+                                            | {5{SnpRespData_SD     }} & 5'b00000
+                                            | {5{SnpRespData_I_PD   }} & 5'b00001
+                                            | {5{SnpRespData_SC_PD  }} & 5'b00000
+                                            | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                            | {5{SnpRespDataPtl_I_PD}} & 5'b00001
+                                            | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+assign snp_rsp_status_snp_unique_stsh_ace       = 5'b0;
+     
+assign snp_rsp_status_snp_stsh_unique_non_target_chi      
+                                            = {5{SnpResp_I          }} & 5'b00000
+                                            | {5{SnpResp_SC         }} & 5'b00000
+                                            | {5{SnpResp_UC         }} & 5'b00000
+                                            | {5{SnpResp_SD         }} & 5'b00000
+                                            | {5{SnpResp_UD         }} & 5'b00000 
+                                            | {5{SnpRespData_I      }} & 5'b00001
+                                            | {5{SnpRespData_SC     }} & 5'b00000
+                                            | {5{SnpRespData_UC     }} & 5'b00000
+                                            | {5{SnpRespData_UD     }} & 5'b00000
+                                            | {5{SnpRespData_SD     }} & 5'b00000
+                                            | {5{SnpRespData_I_PD   }} & 5'b00001
+                                            | {5{SnpRespData_SC_PD  }} & 5'b00000
+                                            | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                            | {5{SnpRespDataPtl_I_PD}} & 5'b00001
+                                            | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+
+assign snp_rsp_status_snp_stsh_unique_target_chi      
+                                            = {5{SnpResp_I          }} & 5'b00000
+                                            | {5{SnpResp_SC         }} & 5'b11000
+                                            | {5{SnpResp_SD         }} & 5'b10000
+                                            | {5{SnpResp_UC         }} & 5'b10000
+                                            | {5{SnpResp_UD         }} & 5'b10000 ;
+
+assign snp_rsp_status_snp_stsh_unique_ace = 5'b0;
+
+
+assign snp_rsp_status_snp_stsh_shared_non_target_chi       
+                                            = {5{SnpResp_I          }} & 5'b00000
+                                            | {5{SnpResp_SC         }} & 5'b11000
+                                            | {5{SnpResp_UC         }} & 5'b00000
+                                            | {5{SnpRespData_I      }} & 5'b00001 
+                                            | {5{SnpRespData_SC     }} & 5'b11001 
+                                            | {5{SnpRespData_UC     }} & 5'b00000
+                                            | {5{SnpRespData_UD     }} & 5'b00000
+                                            | {5{SnpRespData_SD     }} & 5'b10001
+                                            | {5{SnpRespData_I_PD   }} & 5'b00001
+                                            | {5{SnpRespData_SC_PD  }} & 5'b11001
+                                            | {5{SnpRespData_UC_PD  }} & 5'b00000
+                                            | {5{SnpRespDataPtl_I_PD}} & 5'b00001
+                                            | {5{SnpRespDataPtl_UD  }} & 5'b00000 ;
+
+
+assign snp_rsp_status_snp_stsh_shared_target_chi      
+                                            = {5{SnpResp_I          }} & 5'b00000
+                                            | {5{SnpResp_SC         }} & 5'b11000
+                                            | {5{SnpResp_SD         }} & 5'b10000
+                                            | {5{SnpResp_UC         }} & 5'b10000
+                                            | {5{SnpResp_UD         }} & 5'b10000 ;
+
+assign snp_rsp_status_snp_stsh_shared_ace = 5'b0;
+
+
+assign snp_rsp_status_5_1             = ({5{snp_req_cm_type  == \=cm_type.SnpNitc=\}} & snp_rsp_status_snp_once ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpClnDtr=\}} & snp_rsp_status_snp_cln ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpVldDtr=\}} & snp_rsp_status_snp_shared ) |
+                                        ({5{snp_req_cm_type == \=cm_type.SnpInvDtr=\}} & snp_rsp_status_snp_unique ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpNoSDInt=\}} & snp_rsp_status_snp_readnosd ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpClnDtw=\}}  & snp_rsp_status_snp_clnshared ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpInvDtw=\}}  & snp_rsp_status_snp_clninvalid ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpInv=\}}     & snp_rsp_status_snp_makeinvalid ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpNitcCI=\}}  & snp_rsp_status_snp_unique_nitc_clninv_chi  & {5{chi_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpNitcCI=\}}  & snp_rsp_status_snp_unique_nitc_clninv_ace  & {5{ace_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpNitcMI=\}}  & snp_rsp_status_snp_unique_nitc_mkinv_chi & {5{chi_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpNitcMI=\}}  & snp_rsp_status_snp_unique_nitc_mkinv_ace & {5{ace_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpInvStsh=\}} & snp_rsp_status_snp_makeinvalid_stsh ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpUnqStsh=\}} & {5{stash_target}}  & snp_rsp_status_snp_unique_stsh_target_chi & {5{chi_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpUnqStsh=\}} & {5{~stash_target}} & snp_rsp_status_snp_unique_stsh_non_target_chi & {5{chi_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpUnqStsh=\}} & snp_rsp_status_snp_unique_stsh_ace & {5{ace_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpStshUnq=\}} & {5{stash_target}} & snp_rsp_status_snp_stsh_unique_target_chi & {5{chi_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpStshUnq=\}} & {5{~stash_target}} & snp_rsp_status_snp_stsh_unique_non_target_chi & {5{chi_req}} ) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpStshUnq=\}} & snp_rsp_status_snp_stsh_unique_ace & {5{ace_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpStshShd=\}} & {5{stash_target}} & snp_rsp_status_snp_stsh_shared_target_chi & {5{chi_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpStshShd=\}} & {5{~stash_target}} & snp_rsp_status_snp_stsh_shared_non_target_chi & {5{chi_req}}) |
+                                        ({5{snp_req_cm_type  == \=cm_type.SnpStshShd=\}} & {5{~stash_target}} & snp_rsp_status_snp_stsh_shared_ace & {5{ace_req}}) ;
+
+\js if (chi_e) {
+wire datapull = ((RXRSP_OpCode == \=rsp_flit_interface.OpCode=\\=chi_cmd.SnpResp=\) & RXRSP_FwdState[0] & snprsp_in_sel) |
+                  ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & RXDAT_DataSource[0] & snp_wrdata_sel) |
+                  ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespDataPtl=\) & RXDAT_DataSource[0] & snp_wrdata_sel);
+\js } else {
+   \jsbegin
+	/* istanbul ignore else env ncore_3p7 */
+   	if (dat_flit_interface.FwdState > 0) { \jsend
+wire datapull = ((RXRSP_OpCode == \=rsp_flit_interface.OpCode=\\=chi_cmd.SnpResp=\) & RXRSP_FwdState[0] & snprsp_in_sel) |
+                  ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespData=\) & RXDAT_FwdState[0] & snp_wrdata_sel) |
+                  ((RXDAT_OpCode == \=dat_flit_interface.OpCode=\\=chi_cmd.SnpRespDataPtl=\) & RXDAT_FwdState[0] & snp_wrdata_sel);
+   \js } else  {
+wire datapull = 1'b0;
+   \js }
+\js }
+assign snp_rsp_status[5:0]            = {snp_rsp_status_5_1, datapull};
+
+endmodule

@@ -1,0 +1,62 @@
+<html lang="en-US">
+<head>
+<meta content="IE=edge" http-equiv="X-UA-Compatible" />
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+<title>Setting_the_Safety_Configuration</title>
+<meta content="Setting the Safety Configuration" name="title_original" />
+<link href="../../../rhstylemapping.css" rel="stylesheet" type="text/css" />
+<link href="../User_Guide.css" rel="stylesheet" type="text/css" />
+<link href="../../../editstyle.css" rel="stylesheet" type="text/css" /><script type="text/javascript" language="JavaScript">
+//<![CDATA[
+function reDo() {
+  if (innerWidth != origWidth || innerHeight != origHeight)
+     location.reload();
+}
+if ((parseInt(navigator.appVersion) == 4) && (navigator.appName == "Netscape")) {
+	origWidth = innerWidth;
+	origHeight = innerHeight;
+	onresize = reDo;
+}
+onerror = null; 
+//]]>
+</script>
+<style type="text/css">
+<!--
+div.WebHelpPopupMenu { position:absolute;
+left:0px;
+top:0px;
+z-index:4;
+visibility:hidden; }
+p.WebHelpNavBar { text-align:right; }
+-->
+</style>
+ <meta name="generator" content="Adobe FrameMaker v17.0" />
+<script type="text/javascript" src="../../../template/scripts/rh.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/common.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/topic.min.js"></script>
+<script type="text/javascript" src="../../../template/scripts/constants.js"></script>
+<script type="text/javascript" src="../../../template/scripts/utils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhutils.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhlang.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhver.js"></script>
+<script type="text/javascript" src="../../../template/scripts/settings.js"></script>
+<script type="text/javascript" src="../../../template/scripts/XmlJsReader.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadparentdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadscreen.js"></script>
+<script type="text/javascript" src="../../../template/scripts/loadprojdata.js"></script>
+<script type="text/javascript" src="../../../template/scripts/mhtopic.js"></script>
+ <link rel="stylesheet" type="text/css" href="../../../template/styles/topic.min.css">
+<script type="text/javascript" >
+gRootRelPath = "../../..";
+gCommonRootRelPath = "../../..";
+gTopicId = "3.3.1.0_1";
+</script>
+ <meta name="brsprev" value="Ncore_3_Online_Documentation/User_Guide/SOC_Specification/SoC_Specification_Overview.htm">
+ <meta name="brsnext" value="Ncore_3_Online_Documentation/User_Guide/System_Assembly/System_Assembly.htm">
+ <meta name="topic-breadcrumbs" content="User Guide > SoC Specification (Phase 1) > 3.2  Domains > 3.2.16  Create a System and a Subsystem" />
+</head>
+<body dir="ltr">
+<script type="text/javascript" src="../../../ehlpdhtm.js"></script>
+<div><p class="Heading1" id="1060106"><a id="1016_Heading1_1060106" name="1016_Heading1_1060106"></a>3.3 <a id="XREF_24699__3_4_Setting_the_Safety_Configuration10" name="XREF_24699__3_4_Setting_the_Safety_Configuration10">Setting the </a><a id="index_1061370" name="index_1061370"></a><a data-indexterm="Safety%20Configuration" id="Safety_Configuration" name="Safety_Configuration"></a>Safety Configuration</p><p class="Body" id="1060229">After running checks in SoC Specification&#47;Domains, the next step is to move forward to SoC Specification&#47;Safety.</p><p class="Body" id="1060585">Tasks for this phase&#x3A;<img align="" alt="tasks_safety_37" class="imageSettings" height="auto" preserveAspectRatio="none" src="../assets/tasks_safety_37.png" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="292.660553" x="35.973612" y="5.703532" /></p><p class="Body" id="1060583">Click &#x201c;Set Safety Configuration&#x201d; to select resiliency and functional safety setting levels. Safety settings in Ncore can be set for designs in which those features are required (e.g., automotive chips). Ncore 3 supports three different ASIL levels&#x3A; ASIL_A, ASIL_B, and ASIL_D.</p><p class="Body" id="1061337">The following are the safety configurations which can be chosen. Each configuration has a set of parameters. If a parameter is listed as user&#x2D;settable, then the value picked by the ASIL setting can be later changed by the user.</p><p class="Bullet_1" id="1061191"><span class="BulletSymbol">&#x2022; </span>NO_ASIL &#x3A; resilienceEnabled is false, duplicationEnabled is false, memoryProtectionType is NONE and user&#x2D;settable, resiliencyProtectionType is NONE and user&#x2D;settable.</p><p class="Bullet_1" id="1061192"><span class="BulletSymbol">&#x2022; </span>ASIL_A &#x3A; resilienceEnabled is true, duplicationEnabled is false, memoryProtectionType is PARITY and user&#x2D;settable, resiliencyProtectionType PARITY is user&#x2D;settable.</p><p class="Bullet_1" id="1061193"><span class="BulletSymbol">&#x2022; </span>ASIL_B &#x3A; resilienceEnabled is true, duplicationEnabled is true, memoryProtectionType is PARITY and user&#x2D;settable, resiliencyProtectionType PARITY is user&#x2D;settable.</p><p class="Bullet_1" id="1060186"><span class="BulletSymbol">&#x2022; </span>ASIL_D &#x3A; resilienceEnabled is true, duplicationEnabled is true, memoryProtectionType is SECDED only (i.e., Single Error Correction, Double Error Detection), resiliencyProtectionType is SECDED only.</p><p class="Bullet_1" id="1062333"><span class="BulletSymbol">&#x2022; </span>NOT_SET &#x3A; No ASIL set.<div align="left"><table class="note" style="max-width: 100% ;height: auto;"><col width="67.13px"/><col width="403.12px"/><tr height="22.67px"><td><p class="aaNote" id="1061475">Note</p></td><td><p class="CellBody" id="1061477">If no safety features are required, then select NO_ASIL.</p></td></tr></table></div></p><p class="Body" id="1061291">Values that are mandatory for a particular ASIL level are not allowed to be changed. For ASIL&#x2D;D, for example, all the values are hard&#x2D;coded and frozen to the highest safety settings.</p><p class="Body" id="1060787">Safety Configuration parameters can be edited  in the Object Editor or by selection from the Project Tree. The following example shows the ASIL_D selection selection by the Object Editor.<img align="" alt="" class="imageSettings" height="41.241291" preserveAspectRatio="none" src="../assets/User_Guide_SOC_Specification_image149.png" style="max-width: 100% ;height: auto;display:block;margin:auto;" width="615.987122" x="8.000000" y="8.000000" /></p></div>
+</body>
+</html>

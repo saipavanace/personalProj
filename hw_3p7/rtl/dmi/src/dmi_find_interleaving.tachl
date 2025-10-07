@@ -1,0 +1,96 @@
+\jsbegin
+var u = obj.lib;
+
+var InterleaveInfo = u.getParam("InterleaveInfo");
+var wNUnitId = u.getParam("wNUnitId")
+
+//input that is used to know which interleaving set is selected
+u.port('input',  'AMIGR_AMIGS',     4);
+u.port('input',  'AMIGR_Valid',     1);
+
+//Node unit Id of this dmi
+u.port("input", "Unit_Id",wNUnitId);
+
+u.port('input',  'AMIFR_A16WIFId',  3);
+u.port('input',  'AMIFR_A8WIFId',   3);
+u.port('input',  'AMIFR_A4WIFId',   3);
+u.port('input',  'AMIFR_A2WIFId',   3);
+    
+
+//Return 1,2,4,8,16 depending on the interleaving function thtat the dmi is using (no interleaving, 2-way, 4-way, 8-way, 16-way)
+u.port("output","interleaving_function_type",5);
+//returns 0 or 1 depending on which interleaving fucntion is being used.
+u.port("output","interleaving_function_id",3);
+\jsend
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+for(let i=0;i<InterleaveInfo["dmiIGSV"].length;i++){
+\jsend
+reg [4:0] interleaving_function_type_set_\=i=\;
+\jsbegin
+}
+\jsend
+
+
+
+wire [\=InterleaveInfo["dmiIGSV"].length-1=\ : 0] set_select;
+
+
+assign set_select[0]= ~AMIGR_Valid | (AMIGR_Valid & (AMIGR_AMIGS == 4'd0));
+
+\jsbegin
+for(let i=1;i<InterleaveInfo["dmiIGSV"].length;i++){
+\jsend
+   assign set_select[\=i=\]=(AMIGR_Valid & (AMIGR_AMIGS == 4'd\=i=\));
+\jsbegin
+}
+\jsend
+
+\jsbegin
+for(let i=0;i<InterleaveInfo["dmiIGSV"].length;i++){
+\jsend
+
+always @ (*) begin
+    case (Unit_Id)
+    \jsbegin
+    for(let j=0; j<InterleaveInfo["dmiIGSV"][i]["IGV"].length;j++){
+            for(let k=0;k<InterleaveInfo["dmiIGSV"][i]["IGV"][j]["DMIIDV"].length; k++){
+    \jsend
+            \=wNUnitId=\'d\=InterleaveInfo["dmiIGSV"][i]["IGV"][j]["DMIIDV"][k]=\ : interleaving_function_type_set_\=i=\ = 5'd\=InterleaveInfo["dmiIGSV"][i]["IGV"][j]["DMIIDV"].length=\;
+    \jsbegin
+        }
+    }
+    \jsend
+
+    default : interleaving_function_type_set_\=i=\ = 5'd1;
+    endcase
+
+end
+\jsbegin
+}
+\jsend
+
+assign interleaving_function_type = 
+                                \jsbegin
+                                for(let i=0;i<InterleaveInfo["dmiIGSV"].length;i++){
+                                \jsend
+                                    \= i==0? "":"|" =\ interleaving_function_type_set_\=i=\ & {5{set_select[\=i=\]}} 
+                                \jsbegin
+                                }
+                                \jsend
+                                    ;
+
+assign interleaving_function_id = AMIFR_A16WIFId & {3{interleaving_function_type[4]}} |
+                                  AMIFR_A8WIFId  & {3{interleaving_function_type[3]}} |
+                                  AMIFR_A4WIFId  & {3{interleaving_function_type[2]}} | 
+                                  AMIFR_A2WIFId  & {3{interleaving_function_type[1]}}
+                                  ;
+
+\jsbegin
+ //to do assertion : set_select, interleaving_function_type are 1 hot, interleaving_function_type_set_ 1 hot, set_select 1 hot.
+ \jsend
+ 
+endmodule
+
+

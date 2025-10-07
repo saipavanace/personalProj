@@ -1,0 +1,105 @@
+<h1 id="TopLevelIntegrationandConfigurationOld-TopLevelDiagram">Top Level Diagram</h1><p> </p><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" height="400" src="https://arterisip.atlassian.net/wiki/download/attachments/16171870/image2019-5-22%2017:25:49.png?api=v2"></span></p><h1 id="TopLevelIntegrationandConfigurationOld-PerformanceModel">Performance Model</h1><p>All Ncore units will communicate with Legato through common smi_flit. The Ncore units will reference a common Concerto mux (CMUX TLM) which will handle the multiple ports to each unit, in the same way as the RTL Concerto Mux.</p><p>DII will initially be modelled by DMI without ccp.</p><p>DVE will not be modelled, but still need to create a DVE stub so that the number of units, legato ports, and id assignment is consistent between RTL and performance model. However, it is not expected that any traffic will be sent to the DVE; the stub should have a warning/assertion if this happens.</p><h1 id="TopLevelIntegrationandConfigurationOld-VerificationIP">Verification IP</h1><p>STL readers already exists. AXI driver and slave are in development. This will us the ability to run all existing STL files.</p><p>CHI driver is in development. Though current STL definition has not been extended for CHI, we can make our STL reader take basic reads and writes and put them into CHI TLM format. For special case of stashes and atomics, we can look at extending STL definition to account for the new fields. It may be just a matter of appending additional field:value columns to the STL line.</p><h1 id="TopLevelIntegrationandConfigurationOld-Configuration">Configuration</h1><p>The top level provides several ways to configure the test bench.</p><h2 id="TopLevelIntegrationandConfigurationOld-CommandLineInterface(CLI)">Command Line Interface (CLI)</h2><p>Invoking the toplevel with the -h switch yields the following help output:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false; theme: Confluence" data-theme="Confluence">        SystemC 2.3.1-Accellera --- Dec 17 2015 15:45:37
+        Copyright (c) 1996-2014 by all Contributors,
+        ALL RIGHTS RESERVED
+Arteris IP NCore3 architectural simulator version 0.1.0, Build: SNAPSHOT
+
+Standard options:
+  -h [ --help ]                   Produce help message
+  -v [ --verbose ] arg (=4)       Debug output level (0-7 == NONE, FATAL, 
+                                  ERROR, WARNING, INFO, DEBUG, TRACE, TRACEALL)
+  -V [ --Verbose ] arg (=4)       Debug output level as with --verbose but 
+                                  print non-colored
+  -D [ --debug-level ] arg        Debug output level (textual) as with 
+                                  --verbose
+  -l [ --log-file ] arg           log file name
+  --log-filter arg                log filter regular expression name
+  --log-sync                      Disable asynchronous logging
+  --tpu                           Use TPU instead of STL reader (deprecated)
+  --olstl                         Use osci-lib STL reader instead of perf_vc 
+                                  units (deprecated)
+  -t [ --trace ]                  Enable tracing
+  --gen_stl                       generate STL trace from ATP profile
+  --dump-config arg               dump simulation configuration to JSON file
+  -r [ --random-seed ] arg (=42)  seed value of random generator, default: 42
+  --randomize                     randomize the seed value of the random 
+                                  generator
+  -s [ --scenario-file ] arg      scenario file name allowing to provide fixed 
+                                  sets of maestro-config, input-file, duration 
+                                  and config-file settings
+  --force-clkfreq                 forces all clock to run at 100MHz/10ns clock 
+                                  period
+  --disable-qos                   disables QoS handling in all units
+  -y [ --cycles ]                 print all timestamps as cycles relative to 
+                                  the fastest clock. Can also be enabled the 
+                                  the environment variable NCORE3_PRINT_CYCLES
+  --gen-wrapper                   generate static SystemC wrapper
+  --en-dce-interleave             enables DCE interleaving
+  -b [ --heart-beat ]             enables heartbeat printing
+  --version                       print the version number
+
+Scenario Options:
+  -f [ --input-file ] arg         input file names for STL or TPU. It can be 
+                                  specified either as a plain file name, in the
+                                  format &lt;interface name&gt;:&lt;file name&gt; or as 
+                                  &lt;interface name&gt;:&lt;format override&gt;:&lt;file 
+                                  name&gt;
+  -d [ --duration ] arg (=10)     Timeout of the simulation in ms. Might also 
+                                  be fractions
+  -c [ --config-file ] arg        read simulation configuration from file
+  -m [ --maestro-config ] arg     MAESTRO config file name
+  --csr-config arg                CSR config file name
+</pre>
+</div></div><p>Some of the more complex options will be described in more detail.</p><h2 id="TopLevelIntegrationandConfigurationOld---config-file">--config-file</h2><p>This option allows to specify a JSON file configuring the testbench components. A template can be generated using the '<code>--dump-config &lt;file name&gt;</code>' options listing all available parameters. Since the --trace and --olstl as well as the --maestro-config switches define the hierarchy of modules the should be used in conjunction. A configuration could look like:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">{
+        &quot;tb&quot;: 
+        {
+                &quot;caiu0_drv&quot;: 
+                {
+                        &quot;filename&quot;: &quot;&quot;,
+                        &quot;gen_stl&quot;: false,
+                        &quot;home_node_id&quot;: 0,
+                        &quot;num_sets&quot;: 8,
+                        &quot;num_ways&quot;: 4,
+                        &quot;src_id&quot;: 1,
+                        &quot;use_tpu&quot;: false
+                },
+                &quot;dii0_pe&quot;: 
+                {
+                        &quot;rd_addr_accept_delay&quot;: 0,
+                        &quot;rd_data_beat_delay&quot;: 0,
+                        &quot;rd_resp_delay&quot;: 0,
+                        &quot;wr_data_accept_delay&quot;: 0,
+                        &quot;wr_resp_delay&quot;: 0
+                },
+                &quot;dmi0_pe&quot;: 
+                {
+                        &quot;rd_addr_accept_delay&quot;: 0,
+                        &quot;rd_data_beat_delay&quot;: 0,
+                        &quot;rd_resp_delay&quot;: 0,
+                        &quot;wr_data_accept_delay&quot;: 0,
+                        &quot;wr_resp_delay&quot;: 0
+                },
+                &quot;ncaiu0_drv&quot;: 
+                {
+                        &quot;filename&quot;: &quot;&quot;,
+                        &quot;master&quot;: 
+                        {
+                                &quot;cache_active&quot;: false
+                        },
+                        &quot;pe&quot;: 
+                        {
+                                &quot;rd_data_accept_delay&quot;: 0,
+                                &quot;wr_data_beat_delay&quot;: 0,
+                                &quot;wr_resp_accept_delay&quot;: 0
+                        },
+                        &quot;use_tpu&quot;: false
+                }
+}</pre>
+</div></div><p>The input files of the driver and their format can be configured via the 'filename' and 'use_tpu' parameters of the JSON file.</p><p>All AXI targets in the are represented by a *_pe entry. This way it is possible to alter the timing behavior of the targets. The settings have the following meaning:</p><ul style="list-style-type: square;"><li>rd_addr_accept_delay: the delay before from ARVALID to ARREADY</li><li>wr_data_accept_delay: the delay between AWVALID to AWREADY</li><li>rd_resp_delay: the delay between request and response phase for read accesses</li><li>wr_resp_delay: the delay between request and response phase for write accesses</li><li>rd_data_beat_delay: the delay between RREADY to RVALID</li></ul><h2 id="TopLevelIntegrationandConfigurationOld---input-file">--input-file</h2><p>This option can be specified multiple times to configure inputs of the drivers. The simulator will figure out the type of input file based on the file extension. For STL files it has to be '.stl' (case sensitive), all other files are treated as ATP input files. The specification of the files can be done in 2 different ways:</p><ul><li>sequential<br/>The filenames can be given plain or with a format specifier overwriting the format detection. The assignement of filename to driver happens in the sequence the interfaces are specified in the Maestro JSON file. The format can be specified as :stl: or :atp: preceding the filename: <code>-f :stl:perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.stl</code></li></ul><ul><li>associative<br/>The filenames are given in the form of &lt;instance name&gt;:&lt;file name&gt; or &lt;instance name&gt;:&lt;file format&gt;:&lt;file name&gt;. E.g. <code>-f caiu0:perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.stl</code> will configure the CHI driver of the CAIU0 unit with an STL parser (based on the file extension) while <code>-f caiu0:atp:perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.txt</code> will force the use if the TPU to read the .txt file.</li></ul><div class="confluence-information-macro confluence-information-macro-note"><span class="aui-icon aui-icon-small aui-iconfont-warning confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>Don't mix the two styles, this will produce unpredictable results!</p></div></div><p> </p><h2 id="TopLevelIntegrationandConfigurationOld---scenario-file">--scenario-file</h2><p>This option allows to specify the input files in a separate file. It supports the following options:</p><ul><li>line end comments starting with '#'</li><li>maestro-config</li><li>input-file</li><li>duration</li><li>config-file</li></ul><p>The values have to be specified as &lt;option name&gt;=&lt;option value&gt; where the option values conform to the description above:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">maestro-config=hw-test-projects/ncore_v3.0_configs/fsys_config/hw_cfg_1/output/debug/top.level.rtl.json
+# this is a comment
+input-file=perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.stl
+input-file=perf-vc/tests/stl/bringup/ncore3_bringup_wr0ch.stl
+duration=0.1</pre>
+</div></div><p>If input files are specified as relative paths they are searched first from the current working directory and then from the directory of the scenario file. In case of the Maestro file the search order is opposite (first scenario file directory and then current working directory).</p><h2 id="TopLevelIntegrationandConfigurationOld---scenario(tbd)">--scenario (tbd)</h2><p> </p>

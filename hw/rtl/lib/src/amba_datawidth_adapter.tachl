@@ -1,0 +1,154 @@
+// Copyright (C) 2024 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines an AMBA data widith adapter.
+// - Can handle any AXI/ACE Style interface defined in InterfaceAXI CPR
+//
+//
+// IMPORTANT ASSUMPTIONS
+// - From big to small. The small interface must not interleave on boundaries not aligned with the wide data width.
+//     - For example a 512 to 256 converter means the 256 interface can only interleave on beats of 2.
+//     - One exeption would be transactions whose transfer ends at the top of the wide data width
+//     - So for a large unaligned transaction it will be split into a sub cacheline, and multiple cacheline transactions.
+//            -- That first sub cacheline will end on the cacheline boundary, so it would end at the end of the wide beat.
+//            -- Then the IOAIU cannot interleave within a cacheline so it will always get back pairs of beats forming a full wide beat.
+//     - This can be remedied with a large read data buffer.
+// - Writes cant interleave so that channel is fine
+//
+// Designer: Eric Taylor
+//
+//=============================================================================
+
+var u                    = obj.lib;
+var memFunctions         = obj.userLib;
+var bundleFunctions      = obj.userLib.bundleFunctions;
+var utilFunctions        = obj.userLib;
+var cloneDeep            = utilFunctions.deepCopy;
+var log2ceil             = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+var newToOldStyleInterface      = obj.userLib.newToOldStyleInterface.bind( null, obj.userLib )
+
+
+u.paramDefault('depth', 'int', 0);
+
+u.paramDefault('protectionStyle', 'object', null);
+u.paramDefault('interfaces', 'object', {});
+
+//=============================================================================
+// Top Level Parameters
+//=============================================================================
+var interfaces       = obj.lib.getParam('interfaces');
+var depth            = obj.lib.getParam('depth');
+var protectionStyle = utilFunctions.hierGetParam('protectionStyle',u.getParam);
+
+let inProtectionInterface = Object.assign({}, interfaces.inProtectionInterface);
+let outProtectionInterface = Object.assign({}, interfaces.outProtectionInterface);
+
+//=============================================================================
+// Interface Generation
+//=============================================================================
+
+// In AXI interface params generation
+var interfaceFunc         = new obj.userLib[interfaces.inInterface.interface];
+var inInterface           = interfaceFunc.getSignals(interfaces.inInterface.params);
+var inInterfaceBundle     = interfaceFunc.getSignalsBundle(interfaces.inInterface.params);
+var inInterfaceName       = interfaces.inInterface.name;
+
+// Out AXI interface params generation
+var interfaceFunc         = new obj.userLib[interfaces.outInterface.interface];
+var outInterface          = interfaceFunc.getSignals(interfaces.outInterface.params);
+var outInterfaceBundle    = interfaceFunc.getSignalsBundle(interfaces.outInterface.params);
+var outInterfaceName      = interfaces.outInterface.name;
+
+//  CLK interface params generation
+var interfaceFunc         = new obj.userLib[interfaces.clkInterface.interface];
+var clkInterface        = interfaceFunc.getSignals(interfaces.clkInterface.params);
+var clkInterfaceBundle  = interfaceFunc.getSignalsBundle(interfaces.clkInterface.params);
+var clkInterfaceName    = interfaces.clkInterface.name;
+
+//=============================================================================
+// Interface Declarations
+//=============================================================================
+u.nInterfaces(interfaces);
+
+let mInterfaces = ["ar_","aw_","w_","cr_","cd_"];
+let sInterfaces = ["r_","b_","ac_"];
+
+// Maps to Interface CPR Object. The InterfaceAXI file in hw-lib/cpr/interfaces defines these
+//  sub interface objects.
+
+objectMap = {
+   "ar_" : 'InterfaceAXIar',
+   "r_" : 'InterfaceAXIr',
+   "aw_" : 'InterfaceAXIaw',
+   "w_" : 'InterfaceAXIw',
+   "b_" : 'InterfaceAXIb',
+   "ac_" : 'InterfaceAXIac',
+   "cr_" : 'InterfaceAXIcr',
+   "cd_" : 'InterfaceAXIcd'
+};
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+\jsbegin
+let params = interfaces.inInterface.params;
+
+if ((params.eAc == 1) ||  (params.wCdData >= 0)) {
+     console.log("Error: "+u.getModuleName()+" - only supports an AXI Interface.");
+     throw("ERROR - amba_datawidth_adapter.tachl");
+}
+\jsend
+
+//=============================================================================
+// axi_shim
+//=============================================================================
+
+\jsbegin
+var shim_interfaces = [];
+var num = 0
+
+shim_interfaces[num] = {
+            modulePrefix  : '',
+            localPrefix   : clkInterfaceName,
+            interface     : clkInterfaceBundle
+} ;
+
+   num++
+
+shim_interfaces[num] = {
+            modulePrefix  : 'out_',
+            localPrefix   : outInterfaceName,
+            interface     : outInterfaceBundle
+} ;
+
+   num++
+
+shim_interfaces[num] = {
+            modulePrefix  : 'in_',
+            localPrefix   : inInterfaceName,
+            interface     : inInterfaceBundle
+};
+
+   num++
+\jsend
+
+\=u.instance({
+            instanceName : 'datawidth_axi_shim' ,
+            moduleName   : 'axi_shim',
+            params: {
+               inWidth              : interfaces.inInterface.params.wData,
+               outWidth             : interfaces.outInterface.params.wData,
+               maxOutstanding       : depth,
+               clkInterface         : clkInterfaceBundle,
+               outInterface         : inInterfaceBundle,
+               inInterface          : outInterfaceBundle,
+	       multiBeat            : true
+            } ,
+            verilogParams: {},
+            interfaces      : shim_interfaces,
+            portsDelimiter  : '\n    '
+})=\
+
+
+endmodule

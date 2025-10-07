@@ -1,0 +1,289 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2023 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// Pseudo LRU Controller
+// Author: Boon Chuan
+// Filename: plru_ctrl.tachl
+//=============================================================================
+
+// Variables
+
+var u = obj.lib;
+
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+//=============================================================================
+// Top Level Parameters
+//=============================================================================
+var assertOn = u.getParam("assertOn");
+
+var nWays = u.getParam("nWays");
+var nSets = u.getParam("nSets");
+
+var wSets = log2ceil(nSets);
+
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input',  'clk',     1);
+u.port('input',  'reset_n', 1);
+
+u.port('input',  'p2_stall_i', 1); //CONC-12917
+
+u.port('input',  'p1_valid_flop_en', 1);
+u.port('input',  'p2_valid_flop_en', 1);
+u.port('input',  'p3_valid_flop_en', 1);
+u.port('input',  'p4_valid_flop_en', 1);
+u.port('input',  'p5_valid_flop_en', 1);
+
+u.port('input',  'p1_data_flop_en', 1);
+u.port('input',  'p2_data_flop_en', 1);
+u.port('input',  'p3_data_flop_en', 1);
+u.port('input',  'p4_data_flop_en', 1);
+u.port('input',  'p5_data_flop_en', 1);
+
+u.port('input',  'lookup_valid_p0', 1);
+u.port('input',  'lookup_index_p0', wSets);
+u.port('input',  'hit_way_p2',      nWays);
+u.port('input',  'valid_ways_p2',   nWays);
+u.port('output', 'victim_way_p2',   nWays);
+u.port('output', 'result_valid_p2', 1);
+u.port('input',  'result_commit_p2', 1);
+
+u.port('input',  'busy_ways_p2',   nWays);
+
+// Memory Interface 1 Read 1 Write
+
+u.port('input',  'mem_init', 1);
+u.port('input',  'mem_init_addr', wSets);
+
+u.port('output', 'mem_read_en',    1);     // p0
+u.port('output', 'mem_read_addr',  wSets); // p0
+u.port('input',  'mem_read_data',  nWays); // p1
+
+u.port('output', 'mem_write_en',   1);     // p3
+u.port('output', 'mem_write_addr', wSets); // p3
+u.port('output', 'mem_write_data', nWays); // p3
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+//=============================================================================
+// Wires
+//=============================================================================
+wire [\=nWays-2=\:0] cur_state_p2;
+wire [\=nWays-2=\:0] nxt_state_p2;
+wire [\=nWays-2=\:0] nxt_state_p3;
+wire [\=nWays-2=\:0] nxt_state_p4;
+wire [\=nWays-2=\:0] nxt_state_p5;
+wire [\=wSets-1=\:0] mem_read_addr_p1, mem_read_addr_q;
+wire [\=wSets-1=\:0] mem_read_addr_p2, mem_read_addr_p2_org;
+wire [\=wSets-1=\:0] mem_read_addr_p3;
+wire [\=wSets-1=\:0] mem_read_addr_p4;
+wire [\=wSets-1=\:0] mem_read_addr_p5;
+wire mem_read_en_p1, mem_read_en_q;
+wire mem_read_en_p2, mem_read_en_p2_org;
+wire mem_read_en_p3;
+wire mem_read_en_p4;
+wire mem_read_en_p5;
+wire [\=nWays-1=\:0] mem_read_data_p1, mem_read_data_fwd;
+wire [\=nWays-1=\:0] mem_read_data_p2, w_p2_mem_read_data;
+wire [\=nWays-1=\:0] mem_read_data_p2_mux;
+wire result_commit_p3;
+wire result_commit_p4;
+wire result_commit_p5;
+wire p3_to_p2;
+wire p4_to_p2;
+wire p5_to_p2;
+
+wire dff_enable = 1'b1;
+
+\jsbegin
+//=============================================================================
+// Instances
+//=============================================================================
+\jsend
+
+    \jsbegin
+        var plru_params = {
+            ways      : nWays
+        };
+        var instance_ports_for_plru = {
+            hit_way    : 'hit_way_p2',
+            valid_ways : 'valid_ways_p2',
+            cur_state  : 'cur_state_p2',
+            nxt_state  : 'nxt_state_p2',
+            victim_way : 'victim_way_p2'
+        };
+    \jsend
+        \=u.instance({
+            instanceName: 'u_plru',
+            moduleName: 'ccp_plru',
+            params: plru_params,
+            ports: instance_ports_for_plru
+        })=\
+
+assign cur_state_p2 = mem_read_data_p2_mux[\=nWays-2=\:0];
+
+assign result_valid_p2 = mem_read_en_p2;
+
+\jsbegin
+//=============================================================================
+// Memory Read @ p0
+//=============================================================================
+\jsend
+
+assign mem_read_en = lookup_valid_p0;
+
+assign mem_read_addr = lookup_index_p0;
+
+\jsbegin
+//=============================================================================
+// Memory Write @ p3
+//=============================================================================
+\jsend
+
+assign mem_write_en = mem_init | (mem_read_en_p3 & result_commit_p3);
+
+assign mem_write_addr = mem_init ? mem_init_addr : mem_read_addr_p3;
+
+assign mem_write_data = mem_init ? \=nWays=\'h0 : {1'b0, nxt_state_p3};
+
+\jsbegin
+//=============================================================================
+// Pipelines
+//=============================================================================
+\jsend
+
+\=u.dffre(1, 'mem_read_en_p1', 'mem_read_en',    "1'b0", 'p1_valid_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'mem_read_en_p2_org', 'mem_read_en_p1', "1'b0", 'p2_valid_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'mem_read_en_p3', 'mem_read_en_p2', "1'b0", 'p3_valid_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'mem_read_en_p4', 'mem_read_en_p3', "1'b0", 'p4_valid_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'mem_read_en_p5', 'mem_read_en_p4', "1'b0", 'p5_valid_flop_en', 'clk', 'reset_n')=\
+
+\=u.dffre(wSets, 'mem_read_addr_p1', 'mem_read_addr',    wSets+"'b0", 'p1_data_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(wSets, 'mem_read_addr_p2_org', 'mem_read_addr_p1', wSets+"'b0", 'p2_data_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(wSets, 'mem_read_addr_p3', 'mem_read_addr_p2', wSets+"'b0", 'p3_data_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(wSets, 'mem_read_addr_p4', 'mem_read_addr_p3', wSets+"'b0", 'p4_data_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(wSets, 'mem_read_addr_p5', 'mem_read_addr_p4', wSets+"'b0", 'p5_data_flop_en', 'clk', 'reset_n')=\
+
+\=u.dffre(nWays-1, 'nxt_state_p3', 'nxt_state_p2', (nWays-1)+"'b0", 'p3_data_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(nWays-1, 'nxt_state_p4', 'nxt_state_p3', (nWays-1)+"'b0", 'p4_data_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(nWays-1, 'nxt_state_p5', 'nxt_state_p4', (nWays-1)+"'b0", 'p5_data_flop_en', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'result_commit_p3', 'result_commit_p2', "1'b0", 'p3_valid_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'result_commit_p4', 'result_commit_p3', "1'b0", 'p4_valid_flop_en', 'clk', 'reset_n')=\
+\=u.dffre(1, 'result_commit_p5', 'result_commit_p4', "1'b0", 'p5_valid_flop_en', 'clk', 'reset_n')=\
+
+\jsbegin
+//=============================================================================
+// P2 Forwarding MUX. result in p2, result write in p3, previous one result write in p4, previous two result write in p5
+//=============================================================================
+\jsend
+
+assign mem_read_data_p1 = mem_read_data;
+
+\=u.dffre(nWays, 'mem_read_data_p2', 'mem_read_data_p1', nWays+"'b0", 'mem_read_en_p1', 'clk', 'reset_n')=\
+
+assign mem_read_data_p2_mux = p3_to_p2 ? {1'b0, nxt_state_p3} :
+                              p4_to_p2 ? {1'b0, nxt_state_p4} :
+                              p5_to_p2 ? {1'b0, nxt_state_p5} :
+                                         w_p2_mem_read_data; //mem_read_data_p2;  
+
+assign p3_to_p2 = mem_read_en_p3 & mem_read_en_p2 & (mem_read_addr_p3 == mem_read_addr_p2) & result_commit_p3;
+assign p4_to_p2 = mem_read_en_p4 & mem_read_en_p2 & (mem_read_addr_p4 == mem_read_addr_p2) & result_commit_p4;
+assign p5_to_p2 = mem_read_en_p5 & mem_read_en_p2 & (mem_read_addr_p5 == mem_read_addr_p2) & result_commit_p5;
+
+\jsbegin
+//=============================================================================
+// CONC-12917
+//=============================================================================
+
+
+var SW   = wSets;
+var WAYS = nWays;
+var NW   = nWays + wSets + 1;
+
+\jsend
+
+localparam SW   = \=SW=\;
+localparam WAYS = \=WAYS=\;
+localparam NW   = \=NW=\;
+ 
+wire [SW-1:0] t_p0_rindex = lookup_index_p0;
+wire [SW-1:0] w_p1_rindex;
+wire [SW-1:0] w_p2_rindex;
+wire t_p0_res = lookup_valid_p0;
+wire w_p1_res;
+wire w_p2_res;
+wire w_p2_ready;
+wire w_p1_ready;
+wire n_p1_valid = t_p0_res;
+wire n_p1_ready = w_p2_ready & ~p2_stall_i;
+wire w_p1_valid;
+wire w_p2_valid;
+wire [NW-1:0] n_p2_rentry, w_p2_rentry_raw, q_p2_rentry;
+wire n_p2_valid = (w_p1_valid & w_p1_res) | (w_p2_valid & p2_stall_i);
+wire n_p2_ready = 1'b1;
+
+assign n_p2_rentry = p2_stall_i ? q_p2_rentry : {mem_read_data_fwd, w_p1_rindex, w_p1_res};
+ 
+assign { w_p2_mem_read_data, w_p2_rindex, w_p2_res } = w_p2_rentry_raw;
+
+    \=u.instance({
+        moduleName: 'dce_stage_type0',
+        instanceName: 'p1',
+        params: {
+            assertOn: assertOn,
+            WIDTH : SW+1
+        },
+        ports: {
+            clk_i:      'clk',
+            reset_ni:   'reset_n',
+            wr_ready_o: 'w_p1_ready',
+            wr_valid_i: 'n_p1_valid',
+            wr_wdata_i: '{t_p0_rindex, t_p0_res}',
+            rd_ready_i: 'n_p1_ready',
+            rd_valid_o: 'w_p1_valid',
+            rd_rdata_o: '{w_p1_rindex, w_p1_res}'
+        }
+    })=\
+
+    \=u.instance({
+        moduleName: 'dce_stage_type0',
+        instanceName: 'p2',
+        params: {
+            assertOn: assertOn,
+            WIDTH : NW
+        },
+        ports: {
+            clk_i:      'clk',
+            reset_ni:   'reset_n',
+            wr_ready_o: 'w_p2_ready',
+            wr_valid_i: 'n_p2_valid',
+            wr_wdata_i: 'n_p2_rentry',
+            rd_ready_i: 'n_p2_ready',
+            rd_valid_o: 'w_p2_valid',
+            rd_rdata_o: 'w_p2_rentry_raw'
+        }
+    })=\
+
+assign mem_read_addr_p2 = w_p2_rindex;
+
+assign mem_read_en_p2 = w_p2_valid & n_p2_ready;
+
+\=u.dffre(NW, 'q_p2_rentry', 'n_p2_rentry', NW+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+
+
+assign mem_read_data_fwd = mem_read_en_q & mem_write_en & (mem_read_addr_q == mem_write_addr) ? mem_write_data : mem_read_data;
+
+\=u.dffre(1, 'mem_read_en_q', 'mem_read_en', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(wSets, 'mem_read_addr_q', 'mem_read_addr',    wSets+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+endmodule

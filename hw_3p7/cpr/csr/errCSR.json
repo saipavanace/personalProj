@@ -1,0 +1,846 @@
+[
+  {
+    "name": "xCECR",
+    "fields": [
+      {
+        "name": "ErrDetEn",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "If this bit is set, then correctable error detection and logging is enabled; otherwise, correctable error detection and logging is disabled."
+      },
+      {
+        "name": "ErrIntEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "If this bit is set, the Correctable Error Interrupt output signal is asserted when the number of correctable errors corrected equals the value in ErrThreshold field; otherwise, the correctable error interrupt signal is never asserted."
+      },
+      {
+        "name": "ErrThreshold",
+        "bitOffset": 4,
+        "bitWidth": "8",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field determines the number of correctable errors that must be corrected before the Correctable Error Interrupt output signal is asserted."
+      }
+    ]
+  },
+  {
+    "name": "xCESR",
+    "fields": [
+      {
+        "name": "ErrVld",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "If this bit is set, Error information is logged in status and location registers. Writing a one to the Correctable Error Valid bit clears the Correctable Error Valid bit."
+      },
+      {
+        "name": "ErrCountOverflow",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This bit indicates that the number of correctable errors detected by the unit overflowed the Correctable Error Count field"
+      },
+      {
+        "name": "ErrCount",
+        "bitOffset": 2,
+        "bitWidth": "8",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates the number of correctable errors detected by the unit. The field stops incrementing if the Correctable Error Count Overflow bit is set"
+      },
+      {
+        "name": "ErrType",
+        "bitOffset": 12,
+        "bitWidth": "4",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates the logged error type, if the Correctable Error Valid bit is set.\n0x00: Data SRAM correctable error\n0x01: Cache SRAM correctable error\nAll other encodings are reserved"
+      },
+      {
+        "name": "ErrInfo",
+        "bitOffset": 16,
+        "bitWidth": "16",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates additional information about logged error type, if the Correctable Error Valid bit is set.\nIf it is a Memory correctable error then\nbits 1:0  2'b11 represent snoop filter (2'b00, 2'b01 and 2'b10: reserved)\nbits 7:2  Reserved\nbits 15:8 Represents the snoop filter number\n"
+      }
+    ]
+  },
+  {
+    "name": "xCESAR",
+    "fields": [
+      {
+        "name": "ErrVld",
+        "bitOffset": 0,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrVld",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias bit for setting error valid field of xCESR",
+        "bitWidth": "1"
+      },
+      {
+        "name": "ErrCountOverflow",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrCountOverflow",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias bit for setting Error Count Overflow field of xCESR"
+      },
+      {
+        "name": "ErrCount",
+        "bitOffset": 2,
+        "bitWidth": "8",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrCount",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias field for setting error Count field of xCESR"
+      },
+      {
+        "name": "ErrType",
+        "bitOffset": 12,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrType",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias bit for setting error type field of xCESR ",
+        "bitWidth": "4"
+      },
+      {
+        "name": "ErrInfo",
+        "bitOffset": 16,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrInfo",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias bit for setting error info field of xCESR",
+        "bitWidth": "16"
+      }
+    ]
+  },
+  { 
+    "name": "xUESR",
+    "fields": [
+      {
+        "name": "ErrVld",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "W1C",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "If this bit is set, Error information is logged in status and location registers. Writing a one to the Uncorrectable Error Valid bit clears the Correctable Error Valid bit."
+      },
+      {
+        "name": "ErrType",
+        "bitOffset": 4,
+        "bitWidth": "4",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates the logged error type, if the Uncorrectable Error Valid bit is set.\n0x00: Data SRAM uncorrectable error\n0x01: Cache SRAM uncorrectable error\n0x02: Native interface write response error\n0x03: Native interface read response error \n0x04: Native interface snoop response error\n0x07: Decode error\n0x08: Transport error \n0x09: Timeout error\nAll other encodings are reserved"
+      },
+      {
+        "name": "ErrInfo",
+        "bitOffset": 12,
+        "bitWidth": "20",
+        "access": "RO",
+        "hardware": "RW",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "This field indicates additional information about logged error"
+      }
+    ]
+  },
+  {
+    "name": "xUESAR",
+    "fields": [
+      {
+        "name": "ErrVld",
+        "bitOffset": 0,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrVld",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias bit for setting error valid field of xUESR",
+        "bitWidth": "1"
+      },
+      {
+        "name": "ErrType",
+        "bitOffset": 4,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrType",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias bit for setting error type field of xUESR ",
+        "bitWidth": "4"
+      },
+      {
+        "name": "ErrInfo",
+        "bitOffset": 12,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "link": "xESR.ErrInfo",
+        "linkOp": "SOW",
+        "opOrder": "HW",
+        "scope": "All",
+        "description": "Alias bit for setting error info field of xUESR",
+        "bitWidth": "20"
+      }
+    ]
+  },
+  {
+    "name": "xCRTR",
+    "fields": [
+      {
+        "name": "ResThreshold",
+        "bitOffset": 0,
+        "bitWidth": "8",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x1",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Threshold for the correctable error indication to the functional safety controller."
+      }
+    ]
+  },
+  {
+    "name": "xUEDR",
+    "fields": [
+      {
+        "name": "ProtErrDetEn",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Protocol error detect enable: When set, errors will be detected from the protocol interface.",
+        "scope": "All"
+      },
+      {
+        "name": "TransErrDetEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+      },
+      {
+        "name": "MemErrDetEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+      },
+      {
+        "name": "DecErrDetEn",
+        "bitOffset": 3,
+        "bitWidth": 1,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Enable. When set, this bit enables detection of address map uncorrectable error"
+      },
+      {
+        "name": "TimeoutErrDetEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout protection error detection enable: When set, timeout errors will be detected."
+      }
+    ]
+  },
+  {
+    "name": "xUEDRnoProt",
+    "fields": [
+      {
+        "name": "TransErrDetEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+      },
+      {
+        "name": "MemErrDetEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+      },
+      {
+        "name": "DecErrDetEn",
+        "bitOffset": 3,
+        "bitWidth": 1,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Enable. When set, this bit enables detection of address map uncorrectable error"
+      },
+      {
+        "name": "TimeoutErrDetEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout protection error detection enable: When set, timeout errors will be detected."
+      }
+    ]
+  },
+  {
+    "name": "xUEDR2",
+    "fields": [
+      {
+        "name": "ProtErrDetEn",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Protocol error detect enable: When set, errors will be detected from the protocol interface.",
+        "scope": "All"
+      },
+      {
+        "name": "TransErrDetEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+      },
+      {
+        "name": "MemErrDetEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+      },
+      {
+        "name": "DecErrDetEn",
+        "bitOffset": 3,
+        "bitWidth": 1,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Enable. When set, this bit enables detection of address map uncorrectable error"
+      },
+      {
+        "name": "TimeoutErrDetEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout protection error detection enable: When set, timeout errors will be detected."
+      },
+      {
+        "name": "SoftwareProgConfigErrDetEn",
+        "bitOffset": 5,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Software Programming or Configuration Error Enable. When set to 1, this bit enables the detection and logging of Software Programming or Configuration Error."
+      }
+    ]
+  },
+  {
+    "name": "xUEDR2noProt",
+    "fields": [
+      {
+        "name": "TransErrDetEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport error detect enable: When set, errors will be detected from the Concerto Transport."
+      },
+      {
+        "name": "MemErrDetEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Memory protection error detection enable: When set,errors will be detected from any RAM memory arrays."
+      },
+      {
+        "name": "DecErrDetEn",
+        "bitOffset": 3,
+        "bitWidth": 1,
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Enable. When set, this bit enables detection of address map uncorrectable error"
+      },
+      {
+        "name": "TimeoutErrDetEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout protection error detection enable: When set, timeout errors will be detected."
+      },
+      {
+        "name": "SoftwareProgConfigErrDetEn",
+        "bitOffset": 5,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Software Programming or Configuration Error Enable. When set to 1, this bit enables the detection and logging of Software Programming or Configuration Error."
+      }
+    ]
+  },
+  {
+    "name": "xUEIR",
+    "fields": [
+      {
+        "name": "ProtErrIntEn",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Protocol uncorrectable error interrupt enable.",
+        "scope": "All"
+      },
+      {
+        "name": "TransErrIntEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport uncorrectable error interrupt enable."
+      },
+      {
+        "name": "MemErrIntEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "RAM memory uncorrectable error interrupt enable."
+      },
+      {
+        "name": "DecErrIntEn",
+        "bitOffset": 3,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Interrupt Enable. When set, this bit enables the assertion of address map Uncorrectable Error Interrupt signal."
+      },
+      {
+        "name": "TimeoutErrIntEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout uncorrectable error interrupt enable."
+      }
+    ]
+  },
+  {
+    "name": "xUEIRnoProt",
+    "fields": [
+      {
+        "name": "ProtErrIntEn",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Protocol uncorrectable error interrupt enable.",
+        "scope": "All"
+      },
+      {
+        "name": "TransErrIntEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport uncorrectable error interrupt enable."
+      },
+      {
+        "name": "MemErrIntEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "RAM memory uncorrectable error interrupt enable."
+      },
+      {
+        "name": "DecErrIntEn",
+        "bitOffset": 3,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Interrupt Enable. When set, this bit enables the assertion of address map Uncorrectable Error Interrupt signal."
+      },
+      {
+        "name": "TimeoutErrIntEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout uncorrectable error interrupt enable."
+      }
+    ]
+  },
+  {
+    "name": "xUEIR2",
+    "fields": [
+      {
+        "name": "ProtErrIntEn",
+        "bitOffset": 0,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "Protocol uncorrectable error interrupt enable.",
+        "scope": "All"
+      },
+      {
+        "name": "TransErrIntEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport uncorrectable error interrupt enable."
+      },
+      {
+        "name": "MemErrIntEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "RAM memory uncorrectable error interrupt enable."
+      },
+      {
+        "name": "DecErrIntEn",
+        "bitOffset": 3,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Interrupt Enable. When set, this bit enables the assertion of address map Uncorrectable Error Interrupt signal."
+      },
+      {
+        "name": "TimeoutErrIntEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout uncorrectable error interrupt enable."
+      },
+      {
+        "name": "SoftwareProgConfigErrIntEn",
+        "bitOffset": 5,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Software Programming or Configuration Error Interrupt Enable. When set to 1, this bit enables the assertion of Software Programming or Configuration Error Interrupt signal"
+      }
+    ]
+  },
+  {
+    "name": "xUEIR2noProt",
+    "fields": [
+      {
+        "name": "TransErrIntEn",
+        "bitOffset": 1,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Concerto Transport uncorrectable error interrupt enable."
+      },
+      {
+        "name": "MemErrIntEn",
+        "bitOffset": 2,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "RAM memory uncorrectable error interrupt enable."
+      },
+      {
+        "name": "DecErrIntEn",
+        "bitOffset": 3,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Decode Error Interrupt Enable. When set, this bit enables the assertion of address map Uncorrectable Error Interrupt signal."
+      },
+      {
+        "name": "TimeoutErrIntEn",
+        "bitOffset": 4,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Timeout uncorrectable error interrupt enable."
+      },
+      {
+        "name": "SoftwareProgConfigErrIntEn",
+        "bitOffset": 5,
+        "bitWidth": "1",
+        "access": "RW",
+        "hardware": "RO",
+        "reset": "0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "scope": "All",
+        "description": "Software Programming or Configuration Error Interrupt Enable. When set to 1, this bit enables the assertion of Software Programming or Configuration Error Interrupt signal"
+      }
+    ]
+  },
+  {
+    "name": "xELR0",
+    "fields": [
+      {
+        "name": "ErrAddr",
+        "bitOffset": 0,
+        "bitWidth": "32",
+        "access": "RW",
+        "hardware": "WO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "This field contains the low-order address bits of the transaction that encountered the error",
+        "scope": "All"
+      }
+    ]
+  },
+  {
+    "name": "xELR1",
+    "fields": [
+      {
+        "name": "ErrAddr",
+        "bitOffset": 0,
+        "bitWidth": "20",
+        "access": "RW",
+        "hardware": "WO",
+        "reset": "0x0",
+        "linkOp": "NULL",
+        "opOrder": "NULL",
+        "description": "This field contains the high-order address bits of the transaction that encountered the error",
+        "scope": "All"
+      }
+    ]
+  }
+]

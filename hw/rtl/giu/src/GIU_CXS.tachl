@@ -1,0 +1,371 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU
+// Author: Ronak Salamat
+//=============================================================================
+
+
+var utilFunctions     = obj.userLib.lib_utils;
+var u			=obj.lib;
+var m			= obj.userLib;
+var p 		= u.getParam();
+
+var newToOldStyleInterface	= m.newToOldStyleInterface.bind( null, m );
+
+//=============================================================================
+// Default Parameter Declarations
+//=============================================================================
+
+//=============================================================================
+// Parameters
+//=============================================================================
+var NumberOfGranulePerBeat    = 2;
+//var wDataCxs    = p.interfaces ["cxsInt"].params.wData;
+var wDataCxs = 512;
+var wDataFramerout = p.interfaces["cxs_in_"].params.wData;
+var wDeactTimeout           = 2; //need to come from a register
+
+
+//=============================================================================
+// Instantiate Interfaces
+//=============================================================================
+
+u.nInterfaces(p.interfaces);
+
+function wire(prefix,NewInterface,exclude){
+  return m.bundleFunctions.wiresFromInterface(prefix+NewInterface.name,        newToOldStyleInterface(NewInterface).signals,       exclude,  u.bundle)
+
+}
+
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);  
+
+//=============================================================================
+// Wire declaration
+//=============================================================================
+wire [1:0] TX_cur_ST_Ret;
+wire [1:0] RX_cur_ST_Ret;
+
+wire [1:0] TX_cur_ST_Ret_q;
+wire [1:0] RX_cur_ST_Ret_q;
+
+wire tx_state_is_STOP;
+wire tx_state_is_ACTIVATE;
+wire tx_state_is_RUN;
+wire tx_state_is_DEACTIVATE;
+
+wire rx_state_is_STOP;
+wire rx_state_is_ACTIVATE;
+wire rx_state_is_RUN;
+wire rx_state_is_DEACTIVATE;
+
+wire dff_enable = 1'b1;
+
+wire credit_increment_tx, credit_decrement_tx, rcvd_credit_inc_tx, rcvd_credit_dec_tx, rcvd_credit_en_tx;
+wire [3:0] current_rcvd_credit_tx;
+wire [3:0] current_rcvd_credit_tx_in;
+
+wire credit_increment_rx_crdrtn, credit_increment_rx_fifo, credit_decrement_rx, rcvd_credit_inc_rx, rcvd_credit_dec_rx, rcvd_credit_en_rx;
+wire current_credit_en;
+wire [3:0] current_credit_rx;
+wire [3:0] current_credit_rx_in;
+wire current_credit_rx_in_overflow;
+wire [3:0] current_rcvd_credit_tx_rx;
+
+wire ret_credit_val_set, ret_credit_val_dec, ret_credit_val_en;
+wire [3:0] ret_credit_val_in;
+wire [3:0] ret_credit_val;
+
+\jsbegin
+//=============================================================================
+// TX fifo instanciation
+//=============================================================================
+      var tx_fifo_params = { width: 512,
+                             depth: 5,
+                             zerodepth: 0,
+                             bypass_mode: 0
+      };
+      
+      
+      tx_fifo_ports= {
+        clk: p.interfaces["clkInt"].name+'clk',
+        reset_n: p.interfaces["clkInt"].name+'reset_n',
+        push_valid: 'cxs_in_valid',
+        push_ready: 'cxs_in_ready',
+        push_data: 'cxs_in_data',
+        pop_valid: 'fifo_to_cxs_valid',
+        pop_ready: 'fifo_to_cxs_ready',
+        pop_data: 'fifo_to_cxs_data'
+      }
+
+      \jsend
+
+      wire  fifo_to_cxs_valid;
+      wire  fifo_to_cxs_ready;
+      wire [511:0] fifo_to_cxs_data;
+
+      \=u.instance({
+        instanceName:'tx_fifo',
+        moduleName: 'fifo',
+        params : tx_fifo_params,
+        ports :tx_fifo_ports,
+        portsDelimiter: '\n      ',
+
+      }
+      )=\
+              
+
+\jsbegin
+  
+//=============================================================================
+// State Machine TX
+//=============================================================================
+var REQ_ACK_interfaces = {};
+REQ_ACK_interfaces["clkInt"]  = p.interfaces["clkInt"];  
+
+\jsend
+
+\=u.nInstance({
+  instanceName: 'req_ack_state_machine_ctl_tx',
+  moduleName: 'req_ack_state_machine_ctl',
+  params: {interfaces : REQ_ACK_interfaces}, 
+  interfaceObj: {
+  interfaces: REQ_ACK_interfaces,
+  prefixes: REQ_ACK_interfaces
+  },
+  ports:{
+    st_req              : p.interfaces["cxsTxInt"].name+"activereq",
+    st_ack              : p.interfaces["cxsTxInt"].name+"activeack",
+    state_is_STOP       : "tx_state_is_STOP",
+    state_is_ACTIVATE   : "tx_state_is_ACTIVATE",
+    state_is_RUN        : "tx_state_is_RUN",
+    state_is_DEACTIVATE : "tx_state_is_DEACTIVATE",
+    cur_state           : "TX_cur_ST_Ret"    
+  }
+})=\
+
+
+//=============================================================================
+// Credit Value TX
+//=============================================================================
+assign credit_increment_tx = \=p.interfaces["cxsTxInt"].name=\crdgnt && ~\=p.interfaces["cxsTxInt"].name=\valid; 
+assign credit_decrement_tx = (~\=p.interfaces["cxsTxInt"].name=\crdgnt && \=p.interfaces["cxsTxInt"].name=\valid) | (tx_state_is_DEACTIVATE && (current_rcvd_credit_tx != 4'd0)); 
+
+assign rcvd_credit_inc_tx = credit_increment_tx && (tx_state_is_ACTIVATE | tx_state_is_RUN);
+assign rcvd_credit_dec_tx = credit_decrement_tx;
+assign rcvd_credit_en_tx = rcvd_credit_inc_tx | rcvd_credit_dec_tx;
+assign current_rcvd_credit_tx_in = rcvd_credit_inc_tx ? (current_rcvd_credit_tx + 4'd1) : (rcvd_credit_dec_tx ? current_rcvd_credit_tx - 4'd1 : current_rcvd_credit_tx);
+
+\=u.dffre(4, 'current_rcvd_credit_tx', 'current_rcvd_credit_tx_in', "4'b0", 'rcvd_credit_en_tx', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\   
+
+//=============================================================================
+// Timeout TX
+//=============================================================================
+
+wire tx_deactivation_err_timeout_clr, tx_deactivation_err_timeout_inc, tx_deactivation_err_timeout_en;
+wire [\=wDeactTimeout-1=\:0] tx_deactivation_err_timeout_in;
+wire [\=wDeactTimeout-1=\:0] tx_deactivation_err_timeout;
+wire [\=wDeactTimeout-1=\:0] tx_deactivation_err_timeout_value;
+
+\=u.dffre(wDeactTimeout, 'tx_deactivation_err_timeout', 'tx_deactivation_err_timeout_in', wDeactTimeout+"'b0", 'tx_deactivation_err_timeout_en', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\
+
+assign tx_deactivation_err_timeout_clr = \=p.interfaces["cxsTxInt"].name=\activeack;
+
+assign tx_deactivation_err_timeout_inc = tx_state_is_ACTIVATE;
+
+assign tx_deactivation_err_timeout_en = tx_deactivation_err_timeout_clr | tx_deactivation_err_timeout_inc;
+
+assign tx_deactivation_err_timeout_in = tx_deactivation_err_timeout_clr ? \=wDeactTimeout=\'b0 :
+                                        tx_deactivation_err_timeout_inc ? tx_deactivation_err_timeout + \=wDeactTimeout=\'b1 :    
+                                                                          tx_deactivation_err_timeout;
+
+assign tx_deactivation_err_timeout_value = \=wDeactTimeout=\'b1; //need to come from a register
+                                                                          
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_deactivation_Error_in = 1'b1;
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_deactivation_Error_wr = (tx_deactivation_err_timeout == tx_deactivation_err_timeout_value);
+
+//=============================================================================
+// Driving CXS
+//=============================================================================
+assign \=p.interfaces["cxsTxInt"].name=\data = fifo_to_cxs_data; 
+
+wire [1:0] beat_num;
+wire [1:0] beat_num_in;
+wire beat_num_en;
+\=u.dffre(2, 'beat_num', 'beat_num_in', "2'b0", 'beat_num_en', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\
+
+assign beat_num_in = fifo_to_cxs_valid ? ((beat_num == 2'd3) ? 2'd0 : beat_num + 2'd1 ) : beat_num;
+assign beat_num_en = fifo_to_cxs_ready & fifo_to_cxs_ready;
+assign fifo_to_cxs_ready = (tx_state_is_RUN) && (((beat_num == 2'd0) && (current_rcvd_credit_tx >= 4'd4)) | 
+                            ((beat_num == 2'd1) && (current_rcvd_credit_tx >= 4'd3)) | 
+                            ((beat_num == 2'd2) && (current_rcvd_credit_tx >= 4'd2)) | 
+                            ((beat_num == 2'd3) && (current_rcvd_credit_tx >= 4'd1)));
+
+
+assign \=p.interfaces["cxsTxInt"].name=\valid = fifo_to_cxs_valid && fifo_to_cxs_ready ;
+
+
+assign \=p.interfaces["cxsTxInt"].name=\cntl[0] = (beat_num_in == 2'd1 | beat_num_in == 2'd3);
+assign \=p.interfaces["cxsTxInt"].name=\cntl[1] = 1'b0;
+assign \=p.interfaces["cxsTxInt"].name=\cntl[5:2] = 4'b0; //STARTPTR
+assign \=p.interfaces["cxsTxInt"].name=\cntl[6] = (beat_num_in == 2'd2 | beat_num_in == 2'd0) && fifo_to_cxs_valid;
+assign \=p.interfaces["cxsTxInt"].name=\cntl[7] = 1'b0;
+assign \=p.interfaces["cxsTxInt"].name=\cntl[9:8] =  2'b0;
+assign \=p.interfaces["cxsTxInt"].name=\cntl[13:10] =  {4{(beat_num_in == 2'd1 || beat_num_in == 2'd3)}} & 4'hf;
+assign \=p.interfaces["cxsTxInt"].name=\cntl[17:14] =  4'd0;
+assign \=p.interfaces["cxsTxInt"].name=\last =  beat_num == 2'd3;
+
+assign \=p.interfaces["cxsTxInt"].name=\prcltype = \=p.interfaces["cxsTxInt"].params["wPrcltype"]=\'d0;
+
+
+\=u.dffre(2, 'RX_cur_ST_Ret_q', 'RX_cur_ST_Ret', "2'b0", 'dff_enable', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_status_in = RX_cur_ST_Ret;
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_status_wr = (RX_cur_ST_Ret != RX_cur_ST_Ret_q);  //state transition
+
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_en_in = (~\=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_REFUSE_DEACTHINT_out & \=p.interfaces["cxsTxInt"].name=\deacthint)? 1'b0 : 1'b1;
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_en_wr = ~\=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_REFUSE_DEACTHINT_out & \=p.interfaces["cxsTxInt"].name=\deacthint;
+
+assign \=p.interfaces["cxsTxInt"].name=\activereq = \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_TX_en_out;
+
+assign \=p.interfaces["cxsTxInt"].name=\crdrtn = (current_rcvd_credit_tx != 4'd0) & tx_state_is_DEACTIVATE;
+
+
+//=============================================================================
+// State Machine RX
+//TODO: the receiver must only exit from DEACTIVATE to STOP when all credits have been returned
+//=============================================================================
+\jsbegin
+var REQ_ACK_interfaces = {};
+REQ_ACK_interfaces["clkInt"]  = p.interfaces["clkInt"]; 
+\jsend
+
+\=u.nInstance({
+  instanceName: 'req_ack_state_machine_ctl_rx',
+  moduleName: 'req_ack_state_machine_ctl',
+  params: {interfaces : REQ_ACK_interfaces}, 
+  interfaceObj: {
+  interfaces: REQ_ACK_interfaces,
+  prefixes: REQ_ACK_interfaces
+  },
+  ports:{
+    st_req              : p.interfaces["cxsRxInt"].name+"activereq",
+    st_ack              : p.interfaces["cxsRxInt"].name+"activeack",
+    state_is_STOP       : "rx_state_is_STOP",
+    state_is_ACTIVATE   : "rx_state_is_ACTIVATE",
+    state_is_RUN        : "rx_state_is_RUN",
+    state_is_DEACTIVATE : "rx_state_is_DEACTIVATE",
+    cur_state           : "RX_cur_ST_Ret"
+  }
+})=\
+
+//CXS RX Fifo wires
+wire cxs_rx_dat_fifo_push_valid;
+wire [511:0] cxs_rx_dat_fifo_push_data;  //needs to be parameter
+wire cxs_rx_dat_fifo_push_ready;
+wire cxs_rx_dat_fifo_pop_valid;
+wire [511:0] cxs_rx_dat_fifo_pop_data;   //needs to be parameter
+wire cxs_rx_dat_fifo_pop_ready;
+
+//=============================================================================
+// Timeout RX
+//=============================================================================
+
+wire rx_deactivation_err_timeout_clr, rx_deactivation_err_timeout_inc, rx_deactivation_err_timeout_en;
+wire [\=wDeactTimeout-1=\:0] rx_deactivation_err_timeout_in;
+wire [\=wDeactTimeout-1=\:0] rx_deactivation_err_timeout;
+wire [\=wDeactTimeout-1=\:0] rx_deactivation_err_timeout_value;
+
+\=u.dffre(wDeactTimeout, 'rx_deactivation_err_timeout', 'rx_deactivation_err_timeout_in', wDeactTimeout+"'b0", 'rx_deactivation_err_timeout_en', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\
+
+assign rx_deactivation_err_timeout_clr = \=p.interfaces["cxsRxInt"].name=\activeack;
+
+assign rx_deactivation_err_timeout_inc = rx_state_is_ACTIVATE;
+
+assign rx_deactivation_err_timeout_en = rx_deactivation_err_timeout_clr | rx_deactivation_err_timeout_inc;
+
+assign rx_deactivation_err_timeout_in = rx_deactivation_err_timeout_clr ? \=wDeactTimeout=\'b0 :
+                                        rx_deactivation_err_timeout_inc ? rx_deactivation_err_timeout + \=wDeactTimeout=\'b1 :    
+                                                                          rx_deactivation_err_timeout;
+
+assign rx_deactivation_err_timeout_value = \=wDeactTimeout=\'b1; //need to come from a register
+                                                                          
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_RX_deactivation_Error_in = 1'b1;
+assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_RX_deactivation_Error_wr = (rx_deactivation_err_timeout == rx_deactivation_err_timeout_value);
+
+
+
+
+//=============================================================================
+// Credit Value RX
+//=============================================================================
+assign \=p.interfaces["cxsRxInt"].name=\crdgnt = (current_credit_rx != 4'b0) && (rx_state_is_RUN ) && cxs_rx_dat_fifo_push_ready; //removed rx_state_is_DEACTIVATE 
+
+assign credit_increment_rx_crdrtn = \=p.interfaces["cxsRxInt"].name=\crdrtn;
+assign credit_increment_rx_fifo = cxs_rx_dat_fifo_pop_valid && cxs_rx_dat_fifo_pop_ready; //increment is either coming from crdrtn or fifo pop- what if we have both at the same time?
+assign credit_decrement_rx = \=p.interfaces["cxsRxInt"].name=\crdgnt; 
+
+assign rcvd_credit_inc_rx = credit_increment_rx_crdrtn && (rx_state_is_RUN | rx_state_is_DEACTIVATE);
+assign rcvd_credit_dec_rx = credit_decrement_rx && (rx_state_is_RUN | rx_state_is_DEACTIVATE);
+assign rcvd_credit_en_rx = rcvd_credit_inc_rx | rcvd_credit_dec_rx;
+
+
+assign {current_credit_rx_in_overflow,current_credit_rx_in} = (credit_increment_rx_crdrtn + credit_increment_rx_fifo - credit_decrement_rx) + current_credit_rx;
+
+assign current_credit_en = credit_increment_rx_crdrtn | credit_increment_rx_fifo |credit_decrement_rx;
+
+
+//TODO: current_credit_rx_in needs to be CXS_MAX_CREDIT
+\=u.dffre(4, 'current_credit_rx', 'current_credit_rx_in', "4'd8", 'current_credit_en', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\       
+
+
+  assign cxs_rx_dat_fifo_push_valid = \=p.interfaces["cxsRxInt"].name=\valid;
+  assign cxs_rx_dat_fifo_push_data  = \=p.interfaces["cxsRxInt"].name=\data;
+  assign cxs_rx_dat_fifo_pop_ready  = \=p.interfaces["cxs_out_"].name=\ready;
+
+
+\jsbegin
+ var cxsRxDatFifoParams = {
+     width            : 512,
+     depth            : 8
+ };
+
+ var instance_ports_for_cxs_rx_dat_fifo = {
+  clk                 :  p.interfaces["clkInt"].name+"clk",
+  reset_n             :  p.interfaces["clkInt"].name+"reset_n",
+  push_data           : 'cxs_rx_dat_fifo_push_data',
+  push_valid          : 'cxs_rx_dat_fifo_push_valid',
+  push_ready          : 'cxs_rx_dat_fifo_push_ready',
+  pop_data            : 'cxs_rx_dat_fifo_pop_data',
+  pop_valid           : 'cxs_rx_dat_fifo_pop_valid',
+  pop_ready           : 'cxs_rx_dat_fifo_pop_ready'
+ };
+\jsend
+
+\=obj.lib.instance({
+  instanceName: 'cxs_rx_data_fifo',
+  moduleName: 'fifo',
+  params : cxsRxDatFifoParams,
+  verilogParams: {},
+  ports: instance_ports_for_cxs_rx_dat_fifo,
+  portsDelimiter: '\n    '
+})=\
+
+ assign \=p.interfaces["cxs_out_"].name=\valid = cxs_rx_dat_fifo_pop_valid;
+ assign \=p.interfaces["cxs_out_"].name=\data = cxs_rx_dat_fifo_pop_data;
+
+ \=u.dffre(2, 'TX_cur_ST_Ret_q', 'TX_cur_ST_Ret', "2'b0", 'dff_enable', p.interfaces["clkInt"].name+"clk", p.interfaces["clkInt"].name+"reset_n")=\
+ assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_RX_status_in = TX_cur_ST_Ret_q;
+ assign \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_RX_status_wr = (TX_cur_ST_Ret_q != TX_cur_ST_Ret);
+
+ assign \=p.interfaces["cxsRxInt"].name=\activeack = (\=p.interfaces["cxsRxInt"].name=\activereq  & \=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_RX_en_out & rx_state_is_ACTIVATE) | rx_state_is_RUN | (rx_state_is_DEACTIVATE & ~(current_credit_rx == 4'h8));
+
+ assign \=p.interfaces["cxsRxInt"].name=\deacthint = ~\=p.interfaces["GIUCXSLR"].name=\GIUCXSLR_CXS_RX_en_out & rx_state_is_RUN;
+
+
+assign \=p.interfaces["active"].name=\active = 1'b1;
+endmodule

@@ -1,0 +1,96 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2022 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE Stage Type 1 : 1 entry FIFO bypassable from input to output
+// Filename: dce_stage_type1.tachl
+//=============================================================================
+
+var u = obj.lib;
+
+var assertOn = u.getParam('assertOn');
+
+var WIDTH = u.getParam('WIDTH');
+
+u.port('input',  'clk_i', 1);
+u.port('input',  'reset_ni', 1);
+u.port('output', 'wr_ready_o', 1);
+u.port('input',  'wr_valid_i', 1);
+u.port('input',  'wr_wdata_i', WIDTH);
+u.port('input',  'rd_ready_i', 1);
+u.port('output', 'rd_valid_o', 1);
+u.port('output', 'rd_rdata_o', WIDTH);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+localparam WIDTH = \=WIDTH=\;
+
+wire dff_enable = 1'b1;
+
+wire [WIDTH-1:0] q_rd_data, rd_data_in;
+wire q_rd_valid, rd_valid_in, rd_data_en;
+wire q_wr_ready, wr_ready_in;
+wire t_hold;
+
+assign wr_ready_o = q_wr_ready;
+
+assign rd_valid_o = q_wr_ready ? wr_valid_i : 1'b1;
+assign rd_rdata_o = q_wr_ready ? wr_wdata_i : q_rd_data;
+
+\=u.dffre(1, 'q_wr_ready', 'wr_ready_in', "1'b1", 'dff_enable', 'clk_i', 'reset_ni')=\
+
+assign wr_ready_in = (q_wr_ready & ~wr_valid_i) | rd_ready_i;
+
+
+assign t_hold = q_rd_valid & ~rd_ready_i;
+
+
+\=u.dffre(1, 'q_rd_valid', 'rd_valid_in', "1'b0", 'dff_enable', 'clk_i', 'reset_ni')=\
+
+assign rd_valid_in = wr_valid_i | t_hold;
+
+\=u.dffre(WIDTH, 'q_rd_data', 'rd_data_in', "{"+WIDTH+"{1'b0}}", 'rd_data_en', 'clk_i', 'reset_ni')=\
+
+assign rd_data_in = wr_wdata_i;
+assign rd_data_en = q_wr_ready & wr_valid_i & ~rd_ready_i;
+
+///////////////////////////////////////////////////////////////////////////////////
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) { \jsend
+
+`ifdef OVL_ASSERT_ON
+
+// synthesis_off
+// pragma synthesis_off
+// coverage off
+
+assert_never_unknown #(0,2) assert_wcontrol(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(reset_ni),
+	.test_expr	({2{reset_ni}} & 
+			 {wr_valid_i, q_wr_ready})
+);
+assert_never_unknown #(0,2) assert_rcontrol(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.qualifier	(reset_ni),
+	.test_expr	({2{reset_ni}} & 
+			 {rd_ready_i, q_rd_valid})
+);
+
+// coverage on
+// pragma synthesis_on
+// synthesis_on
+
+`endif
+
+\js }
+
+endmodule
+

@@ -1,0 +1,114 @@
+<p>Related to 
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-5514" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-5514?src=confmacro" class="jira-issue-key">MAES-5514</a>
+                            </span>
+, the purpose of this page is to present Maestro's optimization results on two potential bottlenecks.</p><ol start="1"><li><p>Each node of the project tree instantiates a BackendNotificationListener (<em>BNL</em>).</p></li><li><p>For each <em>BNL</em>, an adm signal is created.</p></li></ol><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>Those <em>quick and dirty</em> optimisations can be tested <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/tree/Franck-ProfilingTests" rel="nofollow">in this branch</a>.</p></div></div><h2 id="ProjecttreenodesandSignals-Optimization1:">Optimization 1:</h2><p>Instead of instantiating 1 <em>BNL </em>per project tree node, let's create a global <em>BNL </em>instance that will distribute the notifications to the right node. The indexing is done via a std::map. <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/Franck-ProfilingTests/src/gui/features/ProjectTree/src/Node.cc#L24" rel="nofollow">Here</a>, <em>PLACEMENTANNOTATION </em>and <em>GUIPOSITIONANNOTATION </em>class are not listened.</p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-5523" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-5523?src=confmacro" class="jira-issue-key">MAES-5523</a>
+                            </span>
+</p><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>Can be turned ON by setting <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/Franck-ProfilingTests/src/gui/features/ProjectTree/src/Node.cc#L11" rel="nofollow">ONE_GLOBAL_LISTENER</a> preprocessor macro to 1. </p></div></div><h2 id="ProjecttreenodesandSignals-Optimization2:">Optimization 2:</h2><p>Instead of having a signal for each connection, a single signal per class and ChangeType (ADD,MOD, …) is created to which multiple connections are linked. </p><p>
+
+    
+
+            
+
+
+
+<style>
+    .jira-issue {
+        padding: 0 0 0 2px;
+        line-height: 20px;
+    }
+
+    .jira-issue img {
+        padding-right: 5px;
+    }
+    .jira-issue .aui-lozenge {
+        line-height: 18px;
+        vertical-align: top;
+    }
+
+    .jira-issue .icon {
+        background-position: left center;
+        background-repeat: no-repeat;
+        display: inline-block;
+        font-size: 0;
+        max-height: 16px;
+        text-align: left;
+        text-indent: -9999em;
+        vertical-align: text-bottom;
+    }
+</style>
+
+    <span class="confluence-jim-macro jira-issue" data-jira-key="MAES-5524" >
+                <a href="https://arterisip.atlassian.net/browse/MAES-5524?src=confmacro" class="jira-issue-key">MAES-5524</a>
+                            </span>
+</p><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>Can be turned ON by setting <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/Franck-ProfilingTests/src/gui/guiCore/src/BackendNotificationListener.cc#L4" rel="nofollow">SEPARATE_SIGNALS </a>preprocessor macro to 1.</p></div></div><h2 id="ProjecttreenodesandSignals-Thetestprocedure:">The test procedure:</h2><ol start="1"><li><p>Open the project <em>hw_config_35.premap</em> (It is the result of the script <a class="external-link" href="http://gitlab.arteris.com/maestro/maestro/-/blob/Ncore3.4/develop/tests/cases/nightly/hw_config_35/hw_config_35.tcl" rel="nofollow">hw_config_35.tc</a>l) in the <em>Structural design</em> state.<strong> The opening time of the project is measured</strong>.</p></li><li><p>We go down all the stages until <em>Domains</em> and then we return to <em>Structural design</em>.<br/><strong>We measure the time needed between each step</strong>.</p></li></ol><p class="media-group"><a href="/wiki/spaces/ENGR/pages/88014860/Project+tree+nodes+and+Signals?preview=%2F88014860%2F88277005%2Fhw_config_35.premapping.mpf"><span style="background: url('/wiki/s/-672721829/6452/d621ad2a33e27b90ca05c475b216bfab745e08a2/1000.0.0-d621ad2a33e2/_/download/resources/com.atlassian.confluence.plugins.confluence-view-file-macro:view-file-macro-resources/images/placeholder-medium-file.png'); width: 250px; height: 95px; display: inline-block; padding-top: 155px; margin: 2px; border: 1px solid #ddd; text-align: center; vertical-align: text-bottom; text-decoration: none; font-size: 12px; color: #000;">hw_config_35.premapping.…</span></a></p><h2 id="ProjecttreenodesandSignals-Results:">Results:</h2><ul><li><p><strong>Case 1</strong>: No optimisation at all.</p></li><li><p><strong>Case 2</strong>: Optimisation 1 only</p></li><li><p><strong>Case 3</strong>: Optimisation 1 AND optimisation 2.  </p></li></ul><div class="panel" style="background-color: #EAE6FF;border-color: #998DD9;border-width: 1px;"><div class="panelContent" style="background-color: #EAE6FF;">
+<p><strong>For Case 1</strong>: When switching between <em>Communication</em> and <em>Structural design</em> (last step), after the measurement, i.e. after receiving the taskDone notification, Maestro &quot;freezes&quot; for several minutes!</p><p>In other cases (2 and 3), it seems to freeze for a couple of seconds. </p>
+</div></div><h3 id="ProjecttreenodesandSignals-Openingproject:">Opening project:</h3><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" width="680" src="https://arterisip.atlassian.net/wiki/download/attachments/88014860/image-20221125-100741.png?api=v2"></span><h3 id="ProjecttreenodesandSignals-Navigatingthroughstages:">Navigating through stages:</h3><span class="confluence-embedded-file-wrapper image-center-wrapper"><img class="confluence-embedded-image image-center" src="https://arterisip.atlassian.net/wiki/download/attachments/88014860/image-20221125-101018.png?api=v2"></span><p />

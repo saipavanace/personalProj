@@ -1,0 +1,456 @@
+// DVE TB top
+ 
+<% if(obj.useResiliency) { %>
+`include "fault_injector_checker.sv"
+<% } %>
+
+
+module tb_top();
+
+import uvm_pkg::*;
+`include "uvm_macros.svh"
+import <%=obj.BlockId%>_smi_agent_pkg::*;
+
+import <%=obj.BlockId%>_test_lib_pkg::*;
+
+// TB clk and rst
+bit dut_clk;
+bit tb_clk;
+bit tb_rstn;
+logic soft_rstn;
+
+wire       dve_apb_slv_pready;
+wire[31:0] dve_apb_slv_prdata;
+wire       dve_apb_slv_pslverr;
+
+wire dve_irq_uc;
+wire dve_irq_c;
+
+<% if(obj.useResiliency) { %>
+ logic[1023:0] slv_req_corruption_vector = 1024'b0;
+ logic[1023:0] slv_data_corruption_vector = 1024'b0;
+ logic[WSMIADDR-1:0] smi_req_addr_modified;
+ logic[<%=obj.DveInfo[obj.Id].wData%>-1:0] smi_req_data_modified;  //TODO checkme: flat view of txn payload data for error injection
+
+ logic bist_bist_next_ack;
+ logic bist_domain_is_on;
+ logic fault_mission_fault;
+ logic fault_latent_fault;
+ logic fault_cerr_over_thres_fault;
+<% } %>
+
+// SMI interfaces from TB perspective
+// SMI 0 non data [request]  | TX | CMDreq
+// SMI 0 non data [request]  | RX | SNPreq, STRreq
+// SMI 1 non data [response] | TX | SNPrsp, STRrsp
+// SMI 1 non data [response] | RX | CMDrsp, DTWrsp, CMPrsp
+// SMI 2 data     [request]  | TX | DTWreq
+
+//SMI Interface
+<% for (var i = 0; i < obj.nSmiRx; i++) { %>
+<%=obj.BlockId%>_smi_if m_smi<%=i%>_tx_vif(dut_clk,soft_rstn,"m_smi<%=i%>_tx");
+<% } %>
+
+<% for (var i = 0; i < obj.nSmiTx; i++) { %>
+<%=obj.BlockId%>_smi_if m_smi<%=i%>_rx_vif(dut_clk,soft_rstn,"m_smi<%=i%>_rx");
+<% } %>
+
+<%=obj.BlockId%>_apb_if     m_apb_if(dut_clk, soft_rstn);
+
+//Q-channel interface
+<%=obj.BlockId%>_q_chnl_if  m_q_chnl_if(tb_clk, tb_rstn);
+
+<%=obj.BlockId%>_stall_if <%=obj.BlockId%>_sb_stall_if();
+
+uvm_event         toggle_clk;
+uvm_event         toggle_rstn;
+
+// Setup UVM config db for SMI RX/TX interfaces from TB perspective
+initial begin
+//SmiTx ports from TB prespective
+<% for (var i = 0; i < obj.nSmiRx; i++) { %>
+  uvm_config_db #(virtual <%=obj.BlockId%>_smi_if)::set(
+    .cntxt(null),
+    .inst_name("uvm_test_top"),
+    .field_name("m_smi<%=i%>_tx_vif"),
+    .value(m_smi<%=i%>_tx_vif)
+  );
+<% } %>
+
+//SmiRxProts from TB prespective
+<% for (var i = 0; i < obj.nSmiTx; i++) { %>
+  uvm_config_db #(virtual <%=obj.BlockId%>_smi_if)::set(
+    .cntxt(null),
+    .inst_name("uvm_test_top"),
+    .field_name("m_smi<%=i%>_rx_vif"),
+    .value(m_smi<%=i%>_rx_vif)
+  );
+<% } %>
+end
+
+initial begin
+   toggle_clk = new("toggle_clk");
+   uvm_config_db#(uvm_event)::set(.cntxt( uvm_root::get()),
+                                  .inst_name( "" ),
+                                  .field_name( "toggle_clk" ),
+                                  .value(toggle_clk));
+   toggle_rstn = new("toggle_rstn");
+   uvm_config_db#(uvm_event)::set(.cntxt( uvm_root::get()),
+                                  .inst_name( "" ),
+                                  .field_name( "toggle_rstn" ),
+                                  .value(toggle_rstn));
+end
+
+bit enable=1;
+always @(posedge tb_clk) begin
+    toggle_clk.wait_trigger();
+    @(negedge tb_clk);
+    $display("triggered toggle_clk_event @time: %0t",$time);
+    enable = ~enable;
+end
+
+assign dut_clk = enable ? tb_clk : 0;
+
+bit soft_rstn_en=1;
+always @(posedge tb_clk) begin
+    toggle_rstn.wait_trigger();
+    @(negedge tb_clk);
+    $display("treggered reset event @time: %0t",$time);
+    soft_rstn_en = ~soft_rstn_en;
+end
+
+assign soft_rstn = soft_rstn_en ? tb_rstn : 0;
+
+<% for (var i = 0; i < obj.nSmiRx; i++) { %>
+ <%  if (obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.nSmiDPvc) { %> 
+assign (supply0, supply1) dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_valid = m_smi<%=i%>_tx_vif.force_smi_msg_valid;
+assign (supply0, supply1) dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_ready = m_smi<%=i%>_tx_vif.force_smi_msg_ready;
+<% } else { %>
+assign (supply0, supply1) dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_valid = m_smi<%=i%>_tx_vif.force_smi_msg_valid;
+assign (supply0, supply1) dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_ready = m_smi<%=i%>_tx_vif.force_smi_msg_ready;
+<% } %> 
+<% } %>
+
+// DUT instantiation
+<%=obj.instanceMap[obj.DutInfo.strRtlNamePrefix]%> dut(   
+//dve_0 dut(
+  .<%=obj.DveInfo[obj.Id].interfaces.clkInt.name%>clk(dut_clk),
+  .<%=obj.DveInfo[obj.Id].interfaces.clkInt.name%>reset_n(soft_rstn),
+  .<%=obj.DveInfo[obj.Id].interfaces.clkInt.name%>test_en(1'b0),
+
+  .<%=obj.DveInfo[obj.Id].interfaces.uIdInt.name%>my_n_unit_id(<%=obj.DveInfo[obj.Id].wNUnitId%>'h0),
+  .<%=obj.DveInfo[obj.Id].interfaces.uIdInt.name%>my_f_unit_id(DVE_FUNIT_IDS),
+
+  .<%=obj.DveInfo[obj.Id].interfaces.uSysIdInt.name%>f_unit_id(DVM_AIU_FUNIT_IDS),
+  .<%=obj.DveInfo[obj.Id].interfaces.uSysNodeIdInt.name%>n_unit_id(DVM_AIU_NUNIT_IDS),
+
+  .<%=obj.DveInfo[obj.Id].interfaces.uIdInt.name%>my_csr_rpn(8'h0),  //RPN width is always 8 bits as per Ncore3SysArch spec
+  .<%=obj.DveInfo[obj.Id].interfaces.uIdInt.name%>my_csr_nrri(4'h0), //NRRI width is always 4 bits as per Ncore3SysArch spec
+
+  //APB control if *****************************************
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>paddr  			(m_apb_if.paddr),
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>pwrite 			(m_apb_if.pwrite),
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>psel   		    (m_apb_if.psel),
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>penable		    (m_apb_if.penable),
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>prdata 			(m_apb_if.prdata),
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>pwdata 			(m_apb_if.pwdata),
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>pready 			(m_apb_if.pready),
+  .	<%=obj.DveInfo[obj.Id].interfaces.apbInt.name%>pslverr		    (m_apb_if.pslverr),
+
+   //SMI TX ports
+<% for (var i = 0; i < obj.nSmiTx; i++) { %>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_valid       (m_smi<%=i%>_rx_vif.smi_msg_valid),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_ready       (m_smi<%=i%>_rx_vif.smi_msg_ready),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_ndp_len	     (m_smi<%=i%>_rx_vif.smi_ndp_len),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_dp_present      (m_smi<%=i%>_rx_vif.smi_dp_present),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_targ_id	     (m_smi<%=i%>_rx_vif.smi_targ_id),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_src_id          (m_smi<%=i%>_rx_vif.smi_src_id),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_id          (m_smi<%=i%>_rx_vif.smi_msg_id),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_type	     (m_smi<%=i%>_rx_vif.smi_msg_type),
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiUser >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_user	     (m_smi<%=i%>_rx_vif.smi_msg_user[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiUser-1%>:0]), 
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiTier >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_tier	     (m_smi<%=i%>_rx_vif.smi_msg_tier[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiTier-1%>:0]),  
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiSteer >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_steer	         (m_smi<%=i%>_rx_vif.smi_steer[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiSteer-1%>:0]),  
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiPri >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_pri	     (m_smi<%=i%>_rx_vif.smi_msg_pri[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiPri-1%>:0]),  
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiMsgQos >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_qos	     (m_smi<%=i%>_rx_vif.smi_msg_qos[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiMsgQos-1%>:0]), 
+<% } %>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_ndp         (m_smi<%=i%>_rx_vif.smi_ndp[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiNDP-1%>:0]	),
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiErr >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_err	     (m_smi<%=i%>_rx_vif.smi_msg_err[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiErr-1%>:0]),
+<% } %>
+<%  if (obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.nSmiDPvc) { %>    
+        .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>dp_valid       (m_smi<%=i%>_rx_vif.smi_dp_valid),
+        .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>dp_ready       (m_smi<%=i%>_rx_vif.smi_dp_ready),
+        .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>dp_last        (m_smi<%=i%>_rx_vif.smi_dp_last),
+        .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>dp_data        (m_smi<%=i%>_rx_vif.smi_dp_data[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiDPdata-1%>:0]),
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiDPuser >0) {%>
+        .<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>dp_user	    (m_smi<%=i%>_rx_vif.smi_dp_user[<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiDPuser-1%>:0]),
+<% } %>
+<% } %> 
+<% } %>
+
+    //SMI RX ports
+<% for (var i = 0; i < obj.nSmiRx; i++) { %>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_valid	    (m_smi<%=i%>_tx_vif.smi_msg_valid),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_ready	    (m_smi<%=i%>_tx_vif.smi_msg_ready),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_ndp_len	    (m_smi<%=i%>_tx_vif.smi_ndp_len),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_dp_present     (m_smi<%=i%>_tx_vif.smi_dp_present),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_targ_id	    (m_smi<%=i%>_tx_vif.smi_targ_id),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_src_id         (m_smi<%=i%>_tx_vif.smi_src_id),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_id         (m_smi<%=i%>_tx_vif.smi_msg_id),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_type	    (m_smi<%=i%>_tx_vif.smi_msg_type),
+<% if(obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiUser >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_user	    (m_smi<%=i%>_tx_vif.smi_msg_user[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiUser-1%>:0]), 
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiTier >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_tier	    (m_smi<%=i%>_tx_vif.smi_msg_tier[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiTier-1%>:0]),  
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiSteer >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_steer	        (m_smi<%=i%>_tx_vif.smi_steer[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiSteer-1%>:0]),  
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiPri >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_pri	    (m_smi<%=i%>_tx_vif.smi_msg_pri[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiPri-1%>:0]),  
+<% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiMsgQos >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_qos	    (m_smi<%=i%>_tx_vif.smi_msg_qos[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiMsgQos-1%>:0]), 
+<% } %>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_ndp	        (m_smi<%=i%>_tx_vif.smi_ndp[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiNDP-1%>:0]	), 
+<% if(obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiErr >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_err	    (m_smi<%=i%>_tx_vif.smi_msg_err[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiErr-1%>:0]),
+<% } %>
+
+    <%  if (obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.nSmiDPvc) { %>    
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_valid                 (m_smi<%=i%>_tx_vif.smi_dp_valid),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_ready                 (m_smi<%=i%>_tx_vif.smi_dp_ready),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_last                  (m_smi<%=i%>_tx_vif.smi_dp_last),
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_data                  (m_smi<%=i%>_tx_vif.smi_dp_data[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiDPdata-1%>:0]),
+<% if(obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiDPuser >0) {%>
+    .<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_user	              (m_smi<%=i%>_tx_vif.smi_dp_user[<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.wSmiDPuser-1%>:0]),
+<% } %>
+<% } %> 
+<% } %>
+
+ 
+    
+<% if(obj.useResiliency) { %>
+    //TODO resiliency if ******************************************
+<% if(obj.DveInfo[obj.Id].ResilienceInfo.enableUnitDuplication) { %>
+    .<%=obj.DutInfo.interfaces.checkClkInt.name%>clk      (dut_clk),
+//    .<%=obj.DutInfo.interfaces.checkClkInt.name%>reset_n (soft_rstn),
+<% } %>
+    // .clk_check(fr_clk),
+     .bist_bist_next(1'b0),
+     .bist_bist_next_ack(bist_bist_next_ack),
+     .bist_domain_is_on(bist_domain_is_on),
+     .fault_mission_fault(fault_mission_fault),
+     .fault_latent_fault(fault_latent_fault),
+     .fault_cerr_over_thres_fault(fault_cerr_over_thres_fault),
+<% } %>
+
+//Q-channel interface connection
+<% if (obj.DveInfo[obj.Id].usePma) { %>
+  .<%=obj.DveInfo[obj.Id].interfaces.qInt.name%>ACTIVE                ( m_q_chnl_if.QACTIVE ) ,
+  .<%=obj.DveInfo[obj.Id].interfaces.qInt.name%>DENY                  ( m_q_chnl_if.QDENY   ) ,
+  .<%=obj.DveInfo[obj.Id].interfaces.qInt.name%>REQn                  ( m_q_chnl_if.QREQn   ) ,
+  .<%=obj.DveInfo[obj.Id].interfaces.qInt.name%>ACCEPTn               ( m_q_chnl_if.QACCEPTn) ,
+<% } %>
+  //.fault_late_clk               (dut_clk),     //TODO : need to delay?     
+  .<%=obj.DveInfo[obj.Id].interfaces.irqInt.name%>uc(dve_irq_uc)
+
+  //.smi_rx2_dp_valid(m_smi2_tx_vif.smi_dp_valid),
+  //.smi_rx2_dp_ready(m_smi2_tx_vif.smi_dp_ready),
+  //.smi_rx2_dp_last(m_smi2_tx_vif.smi_dp_last),
+  //.smi_rx2_dp_data(m_smi2_tx_vif.smi_dp_data),
+  //.smi_rx2_dp_user(m_smi2_tx_vif.smi_dp_user)
+); // dve dut
+
+//<% for (var i = 0; i < obj.nSmiTx; i++) { %>
+//   assign m_smi<%=i%>_rx_vif.smi_msg_err = 1'b0;
+//<% } %>
+////perf counter :stall_if to dut connection 
+assign <%=obj.BlockId%>_sb_stall_if.clk = dut_clk;
+assign <%=obj.BlockId%>_sb_stall_if.rst_n = soft_rstn;
+// SMI TX
+<%for (var i = 0; i < obj.nSmiTx; i++) { %>
+<%  if (obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.nSmiDPvc) { %>  
+assign <%=obj.BlockId%>_sb_stall_if.smi_tx<%=i%>_valid = dut.<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>dp_valid;       
+assign <%=obj.BlockId%>_sb_stall_if.smi_tx<%=i%>_ready = dut.<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>dp_ready;     
+<% } else { %>
+assign <%=obj.BlockId%>_sb_stall_if.smi_tx<%=i%>_valid = dut.<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_valid;       
+assign <%=obj.BlockId%>_sb_stall_if.smi_tx<%=i%>_ready = dut.<%=obj.DveInfo[obj.Id].interfaces.smiTxInt[i].name%>ndp_msg_ready;     
+<% } %> 
+<% } %>
+// SMI RX
+<%for (var i = 0; i < obj.nSmiRx; i++) { %>
+  <%  if (obj.DveInfo[obj.Id].interfaces.smiRxInt[i].params.nSmiDPvc) { %>  
+assign <%=obj.BlockId%>_sb_stall_if.smi_rx<%=i%>_valid = dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_valid;
+assign <%=obj.BlockId%>_sb_stall_if.smi_rx<%=i%>_ready = dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>dp_ready;
+<% } else { %>
+assign <%=obj.BlockId%>_sb_stall_if.smi_rx<%=i%>_valid = dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_valid;
+assign <%=obj.BlockId%>_sb_stall_if.smi_rx<%=i%>_ready = dut.<%=obj.DveInfo[obj.Id].interfaces.smiRxInt[i].name%>ndp_msg_ready;
+<% } %> 
+<% } %>
+<<<<<<< HEAD
+<%for (var i = 0; i < obj.nPerfCounters; i++) { %>
+//assign <%=obj.BlockId%>_sb_stall_if.cnt_reg_capture[<%=i%>].cnt_v =  dut.unit.dve_csr.DVECNTVR<%=i%>_CountVal_out ;  
+//assign <%=obj.BlockId%>_sb_stall_if.cnt_reg_capture[<%=i%>].cnt_v_str =  dut.unit.dve_csr.DVECNTSR<%=i%>_CountSatVal_out;      
+=======
+<%for (var i = 0; i < nPerfCounters; i++) { %>
+assign <%=obj.BlockId%>_sb_stall_if.cnt_reg_capture[<%=i%>].cnt_v =  tb_top.dut.unit.u_csr.u_apb_csr.DVECNTVR<%=i%>_CountVal_out ;  
+assign <%=obj.BlockId%>_sb_stall_if.cnt_reg_capture[<%=i%>].cnt_v_str =  tb_top.dut.unit.u_csr.u_apb_csr.DVECNTSR<%=i%>_CountSatVal_out;
+>>>>>>> origin/Ncore3_Perf_Mon
+<% } %>
+
+    initial begin
+    <% for (var i = 0; i < obj.nSmiTx; i++) { %>
+ <% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiErr == 0) {%>
+       m_smi<%=i%>_rx_vif.smi_msg_err = 0;
+ <% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiMsgQos == 0) {%>
+       m_smi<%=i%>_rx_vif.smi_msg_qos = 0;
+ <% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiuser == 0) {%>
+       m_smi<%=i%>_rx_vif.smi_msg_user = 0;
+ <% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiTier == 0) {%>
+       m_smi<%=i%>_rx_vif.smi_msg_tier = 0;
+ <% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiPri == 0) {%>
+       m_smi<%=i%>_rx_vif.smi_msg_pri = 0;
+ <% } %>
+<% if(obj.DveInfo[obj.Id].interfaces.smiTxInt[i].params.wSmiSteer == 0) {%>
+       m_smi<%=i%>_rx_vif.smi_steer = 0;
+ <% } %>
+<% } %>
+    end
+
+// interface to tap internal csr signal
+dve_csr_probe_if u_csr_probe_if(.clk(dut_clk),.resetn(soft_rstn));
+
+//       assign u_csr_probe_if.IRQ_C     = tb_top.dut.<%=obj.DveInfo[obj.Id].interfaces.irqInt.name%>c;
+       assign u_csr_probe_if.IRQ_C     = 0;
+       assign u_csr_probe_if.IRQ_UC    = tb_top.dut.<%=obj.DveInfo[obj.Id].interfaces.irqInt.name%>uc;
+<% if(obj.useResiliency) { %>
+       assign u_csr_probe_if.fault_mission_fault = tb_top.dut.fault_mission_fault;
+       assign u_csr_probe_if.fault_latent_fault  = tb_top.dut.fault_latent_fault;
+       assign u_csr_probe_if.cerr_threshold          = tb_top.dut.u_fault_checker.cerr_threshold;
+       assign u_csr_probe_if.cerr_counter            = tb_top.dut.u_fault_checker.cerr_counter;
+       assign u_csr_probe_if.cerr_over_thres_fault   = tb_top.dut.u_fault_checker.cerr_over_thres_fault;
+<% } %>
+
+initial begin
+
+    uvm_config_db#(virtual dve_csr_probe_if)::set(.cntxt( uvm_root::get() ),
+                                        .inst_name( "" ),
+                                        .field_name( "u_csr_probe_if" ),
+                                        .value( u_csr_probe_if ));
+
+    uvm_config_db#(virtual <%=obj.BlockId%>_apb_if )::set(.cntxt( uvm_root::get()),
+                                        .inst_name( "" ),
+                                        .field_name( "m_apb_if" ),
+                                        .value(m_apb_if ));
+    uvm_config_db#(virtual <%=obj.BlockId%>_q_chnl_if )::set(.cntxt( uvm_root::get()),
+                                        .inst_name( "" ),
+                                        .field_name( "m_q_chnl_if" ),
+                                        .value(m_q_chnl_if ));
+   uvm_config_db#(virtual <%=obj.BlockId%>_stall_if)::set(null, "", "<%=obj.BlockId%>_m_top_stall_if",       <%=obj.BlockId%>_sb_stall_if); 
+
+end
+
+// Reset
+initial begin
+  tb_rstn <= 0;
+  #1ns; 
+  tb_rstn <= 0;
+  repeat(20) @(posedge tb_clk); #1ns;
+  tb_rstn <= 1;
+end
+
+// Clock
+initial begin
+  tb_clk = 0;
+  forever #5ns tb_clk = ~tb_clk;
+end
+
+// Call run_test
+initial begin
+  $timeformat(-9, 0, "ns", 0);
+
+  `ifdef DUMP_ON
+    if($test$plusargs("en_dump"))
+      $vcdpluson;
+  `endif // DUMP_ON
+
+  run_test();
+  $finish;
+end
+
+<% if(obj.useResiliency) { %>
+ fault_injector_checker fault_inj_check(dut_clk, soft_rstn);
+ initial begin
+    uvm_config_db#(event)::set(.cntxt(null),
+                               .inst_name( "*" ),
+                               .field_name( "kill_test" ),
+                               .value(fault_inj_check.kill_test));
+
+    uvm_config_db#(event)::set(.cntxt(null),
+                               .inst_name( "*" ),
+                               .field_name( "raise_obj_for_resiliency_test" ),
+                               .value(fault_inj_check.raise_obj_for_resiliency_test));
+
+    uvm_config_db#(event)::set(.cntxt(null),
+                               .inst_name( "*" ),
+                               .field_name( "drop_obj_for_resiliency_test" ),
+                               .value(fault_inj_check.drop_obj_for_resiliency_test));
+ end
+
+ ////TODO FIXME inject error in which IF?
+ //assign smi_req_addr_modified = smi_if.smi_addr ^ slv_req_corruption_vector;
+ //assign smi_req_data_modified = smi_if.smi_dp_data ^ slv_data_corruption_vector;
+<% } %>
+
+//Calls UVM end of simulation/pending transactions methods 
+task assert_error(input string verbose, input string msg);
+  uvm_component  m_comp[$];
+  //dce0_scoreboard m_scb;
+
+  //uvm_top.find_all("uvm_test_top.m_env.m_dirm_scb", m_comp, uvm_top); 
+  //if (m_comp.size() == 0) 
+  //  `uvm_fatal("tb_top", "None of the components are found with specified name");
+  //if (m_comp.size() > 1) begin
+  //  foreach(m_comp[i]) 
+  //    `uvm_info("tb_top", $psprintf("component: %s", m_comp[i].get_full_name()), UVM_LOW);
+  //  `uvm_fatal("tb_top", "Multiple components with same name are found, Components are specified above");
+  //end
+
+  //if($cast(m_scb, m_comp[0])) begin
+  //  if (m_scb.m_csm.transactionPending()) 
+  //    m_scb.m_csm.printPendingTransactions(); 
+  //end else 
+  //  `uvm_fatal("tb_top", "Unable to cast, maybe the
+  //      hierarchical reference to Tb specific scoreboard is changed");
+
+  if(verbose == "FATAL") begin
+    `uvm_fatal("ASSERT_ERROR", msg); 
+  end else begin
+    `uvm_error("ASSERT_ERROR", msg); 
+  end
+endtask: assert_error
+
+//Checking clock idle when qREQn and qACCEPTn are low (entered into pma)
+<% if (obj.DveInfo[obj.Id].usePma) { %>
+assert_clk_idle_when_pma_asserted : assert property (
+    @(posedge tb_clk) disable iff (!soft_rstn)
+    (!m_q_chnl_if.QREQn && !m_q_chnl_if.QACCEPTn ) |-> !dut_clk
+    ) else assert_error("ERROR", "Dut clock is not stable low when RTL entered into PMA");
+<% } %>
+
+endmodule

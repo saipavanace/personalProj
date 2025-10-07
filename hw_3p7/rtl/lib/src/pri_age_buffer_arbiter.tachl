@@ -1,0 +1,872 @@
+\jsbegin
+//============================================================================
+// Copyright (C) 2019 Arteris, Inc.
+// All rights reserved.
+//============================================================================
+//
+// NAME: Priority Age Buffer Arbiter 
+// AUTHOR : Tso-Wei Chang
+// DESCRIPTION:
+// This module buffers requests and arbitrates among them.
+// The arbitration scheme is based on the configurations as shown below
+//
+// Legal Configurations
+// ===========================================================================
+//         useQos | useDepLink | useAge
+// Config1   0          0          1        <- FIFO if nVC = 1
+// Config2   0          1          0        <- linklists with find first arbiter
+// Config3   0          1          1        <- linklists with age arbiter           
+// Config4   1          0          1        <- priority & age based arbitration (Default)
+// Config5   1          1          1        <- priority & age based arbitration with dependencies
+//
+// Notes:
+// If useQoS: 
+// -    useAge must be set to 1.
+// -    reqInterface must contain qos field for arbitration
+// If nVC > 1: 
+// -    There can be potential timing paths from req_out_ready
+// -    req_out_ready cannot depend on req_out_valid to avoid dependency loop
+//============================================================================
+
+//============================================================================     
+// Variables
+//============================================================================
+   
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = m.bundleFunctions;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+let useSmallArea        = m.ParamDefaultGet(u, 'useSmallArea',      'int',    0);
+var useDepLink          = m.ParamDefaultGet(u, 'useDepLink',        'int',    0);
+var wDepId              = m.ParamDefaultGet(u, 'wDepId',            'array', []);
+var bypass              = m.ParamDefaultGet(u, 'bypass',            'int',    0);
+var useQos              = m.ParamDefaultGet(u, 'useQos',            'int',    1);
+var useAge              = m.ParamDefaultGet(u, 'useAge',            'int',    1);
+var useTimeOut          = m.ParamDefaultGet(u, 'useTimeOut',        'int',    0);
+var useTimeOutRef       = m.ParamDefaultGet(u, 'useTimeOutRef',     'int',    0);
+var wTimeoutThreshold   = m.ParamDefaultGet(u, 'wTimeoutThreshold', 'int',    0);
+var priorityThreshold   = m.ParamDefaultGet(u, 'priorityThreshold', 'int',    0);
+var assertOn            = m.ParamDefaultGet(u, 'assertOn',          'int',    0);
+
+var wStarvThreshold = m.ParamDefaultGet(u, 'wStarvThreshold',   'int',   16);
+var nVC             = m.ParamDefaultGet(u, 'nVC',               'int',    1);
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useQos & !useAge) {
+throw new Error('Illegal Configuration: If useQos is 1, useAge must be 1');
+}
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (!useQos & !useAge & !useDepLink) {
+throw new Error('Illegal Configuration: useQos, useAge, and useDepLink cannot be all zeros');
+}
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (nVC < 1) {
+throw new Error('Illegal Configuration: nVC must be greater or equal to 1');
+}
+// TODO: Make this parametizable
+var tOCntOffset         = 12; // 4K cycles
+var starvCntOffset      = 0;  // 1 events
+var depth               = u.getParam('depth');
+var wDepth              = log2ceil(depth);
+var clkInterface        = u.getParam('clkInterface');
+var reqInterface        = u.getParam('reqInterface');
+var wQos                =reqInterface.qos;
+var wReqPkt             = bundleFunctions.getBundleWidth(reqInterface, ['valid', 'ready'], u.bundle);
+var wTOCnt              = wTimeoutThreshold + tOCntOffset;
+var wPriority           = reqInterface.priority != undefined ? reqInterface.priority : /* istanbul ignore next env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */ 0;
+var nPriority           = Math.pow(2, wPriority);
+var wStarvCnt           = wStarvThreshold + starvCntOffset;
+var nDepLink            = wDepId.length;
+var wVC                 = log2ceil(nVC);
+
+var protectionStyle = m.ParamDefaultGet(u, 'protectionStyle', 'object', {protection: "none", protWidth: 0});
+
+var protectionInterface = m.ParamDefaultGet(u, 'protectionInterface', 'object', {name: "prot_", signals: {}});
+
+//============================================================================
+// Ports
+//============================================================================
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useDepLink) {
+    for (var i = 0; i < nDepLink; i++) {
+u.port('input', 'dep_id'+i,                     wDepId[i]);
+    }
+}
+
+if (useQos) {
+u.port('input', 'starv_en',                             1);
+u.port('input', 'starv_threshold',        wStarvThreshold);
+u.port('input', 'qos_disable',                          1);
+u.port('output', 'starv_overflow_event', 1);
+u.port('output', 'starv_mode', 1);
+    if(priorityThreshold){
+                u.port('output','full',1);
+    }
+}
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (nVC > 1) {
+u.port('input', 'vc',                                 wVC);
+u.port('output','vc_out',                             wVC);
+}
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useTimeOutRef) {
+u.port('input', 'timeout_ref_en',                       1);
+}
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useTimeOut) {
+u.port('input', 'timeout_en',                           1);
+u.port('input', 'timeout_threshold',    wTimeoutThreshold);
+u.port('output','timeout_error',                        1);
+}
+
+u.port('output', 'empty',                               1);
+/* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (nVC == 1) {
+u.port('input', 'req_out_ready',                        1);
+} else {
+    for (var i = 0; i < nVC; i++) {
+u.port('input', 'req_out_ready'+i,                      1);
+    }
+}
+
+//============================================================================
+// Interfaces
+//============================================================================
+u.interface('',             'slave',        clkInterface,            ['']);
+
+u.interface('req_in_',      'slave',        reqInterface,            ['']);
+u.interface('req_out_',     'master',       reqInterface,       ['ready']);
+
+u.interface(protectionInterface.name, 'master', protectionInterface.signals);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+\jsbegin
+//============================================================================
+// Wires
+//============================================================================
+\jsend
+wire                        alloc_en;
+wire                        dealloc_en;
+wire [\=depth-1=\:0]        age_arb_vec;
+wire [\=wReqPkt-1=\:0]      req_entry_in;
+wire [\=wReqPkt-1=\:0]      req_entry_out;
+wire [\=wReqPkt-1=\:0]      req_entry_out_mux;
+wire [\=depth-1=\:0]        req_entry_alloc_ptr;
+wire [\=depth-1=\:0]        highest_pri_req_vec;
+wire [\=depth-1=\:0]        age_link_req_vec;
+wire [\=depth-1=\:0]        age_link_pri_req_vec;
+wire [\=depth-1=\:0]        req_entry_valid;
+wire [\=depth-1=\:0]        req_entry_valid_d;
+wire                        req_entry_valid_en;
+wire [\=depth-1=\:0]        req_entry_n_valid;
+\=bundleFunctions.wiresFromInterface('req_out_int_',        reqInterface,    ['valid','ready'], u.bundle)=\
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useTimeOut) {
+\jsend
+wire [\=wTOCnt-1=\:0]       timeout_count;
+wire [\=wTOCnt-1=\:0]       timeout_count_d;
+wire                        timeout_count_en; 
+wire                        timeout_overflow_event;
+wire [\=depth-1=\:0]        entry_timeout_overflow;
+wire [\=depth-1=\:0]        entry_timeout_overflow_d;
+wire                        entry_timeout_overflow_en;
+\js }
+\jsbegin
+ if(!priorityThreshold){
+\jsend
+wire                        full;
+\jsbegin
+}
+\jsend
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (!useTimeOutRef) {
+\jsend
+wire                        timeout_ref_en = 1'b0;
+\js }
+
+\js for (var i = 0; i < depth; i++) {
+wire [\=wReqPkt-1=\:0]      req_entry\=i=\;
+wire                        req_entry_en\=i=\;
+\js     if (wPriority != 0) {
+wire                        req_entry_pri_en\=i=\;
+\js     }
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useDepLink) {
+    for(var i = 0; i < nDepLink; i++) {
+\jsend
+wire [\=depth-1=\:0]        dep_link_valid_head\=i=\;
+\js     }
+\js }
+
+\js if (useQos) {
+wire                        rb_req_in_h_priority;
+wire                        dealloc_q;
+wire [\=nPriority-1=\:0]    valid_pri_vec_dealloc;
+wire [\=nPriority-1=\:0]    valid_pri_vec_no_dealloc;
+wire [\=nPriority-1=\:0]    highest_valid_pri_no_dealloc_d;
+wire [\=nPriority-1=\:0]    highest_valid_pri_dealloc_d;
+wire [\=nPriority-1=\:0]    highest_valid_pri_no_dealloc;
+wire [\=nPriority-1=\:0]    highest_valid_pri_dealloc;
+wire [\=nPriority-1=\:0]    highest_valid_pri;
+wire [\=wStarvCnt-1=\:0]    starv_count;
+wire [\=wStarvCnt-1=\:0]    starv_count_d;
+wire                        starv_count_en;
+wire [\=depth-1=\:0]        entry_starv;
+wire                        entry_starv_en;
+wire [\=depth-1=\:0]        entry_starv_overflow;
+wire                        entry_starv_overflow_en;
+wire                        starv_mode_dealloc;
+wire                        starv_mode_no_dealloc;
+wire                        starv_mode_dealloc_d;
+wire                        starv_mode_no_dealloc_d;
+wire [\=depth-1=\:0]        entry_starv_d;
+wire [\=depth-1=\:0]        entry_starv_dealloc_d;
+wire [\=depth-1=\:0]        entry_starv_no_dealloc_d;
+
+wire [\=depth-1=\:0]        entry_starv_overflow_d;
+wire [\=depth-1=\:0]        entry_starv_qual;
+\js     for (var i = 0; i < depth; i++) {
+wire [\=nPriority-1=\:0]    req_entry_pri_vec\=i=\;
+wire [\=nPriority-1=\:0]    req_entry_pri_vec_d\=i=\;
+\js     }
+wire [\=nPriority-1=\:0]    req_in_priority_vec;
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (nVC > 1) {
+\jsend
+\js     for (var i = 0; i < depth; i++) {
+wire [\=wVC-1=\:0]          req_entry_vc\=i=\;
+\js     }
+\js }
+
+wire [\=depth-1=\:0]        vc_mask;
+
+\js if (useAge & !useDepLink & !useQos & (nVC == 1)) {
+wire [\=wDepth=\:0]         wr_ptr;
+wire [\=wDepth=\:0]         rd_ptr;
+wire [\=wDepth=\:0]         wr_ptr_d;
+wire [\=wDepth=\:0]         rd_ptr_d;
+wire                        wr_ptr_en;
+wire                        rd_ptr_en;
+
+\js }
+
+\jsbegin
+//============================================================================
+// Entry Allocation
+//============================================================================
+\jsend
+
+assign req_in_ready = ~full;
+assign req_entry_n_valid= ~req_entry_valid;
+
+\=bundleFunctions.wiresFromInterface('req_entry_valid_', protectionInterface.signals, [], u.bundle)=\
+
+  \=u.instance({
+    'instanceName': 'u_req_entry_valid',
+    'moduleName':   'prot_reg',
+    'params': {
+      'width'               : depth,
+      'protectionStyle'     : protectionStyle,
+      'protectionInterface' : protectionInterface },
+    'interfaces': [{
+      'interface'    : protectionInterface.signals,
+      'localPrefix'  : 'req_entry_valid_',
+      'modulePrefix' : protectionInterface.name }],
+    'ports': {
+      'clk'     : 'clk',
+      'reset_n' : 'reset_n',
+      'en'      : 'req_entry_valid_en',
+      'd'       : 'req_entry_valid_d',
+      'q'       : 'req_entry_valid' } })=\
+
+
+assign req_entry_valid_d = (req_entry_alloc_ptr & {\=depth=\{alloc_en}}) 
+                          |(req_entry_valid & ~(age_arb_vec & {\=depth=\{dealloc_en}})); 
+assign req_entry_valid_en = alloc_en | dealloc_en;
+
+\js if (useAge & !useDepLink & !useQos & (nVC == 1)) {
+assign req_entry_alloc_ptr =  (\=depth=\'b1 << wr_ptr[\=wDepth-1=\:0]);
+assign wr_ptr_d = (wr_ptr[\=wDepth-1=\:0] == \=wDepth=\'d\=depth-1=\)? {~wr_ptr[\=wDepth=\], \=wDepth=\'b0} : (wr_ptr + 1'b1);
+assign rd_ptr_d = (rd_ptr[\=wDepth-1=\:0] == \=wDepth=\'d\=depth-1=\)? {~rd_ptr[\=wDepth=\], \=wDepth=\'b0} : (rd_ptr + 1'b1);
+assign wr_ptr_en = alloc_en;
+assign rd_ptr_en = dealloc_en;
+assign empty = (wr_ptr == rd_ptr);
+assign full = (wr_ptr[\=wDepth=\] != rd_ptr[\=wDepth=\]) & (wr_ptr[\=wDepth-1=\:0] == rd_ptr[\=wDepth-1=\:0]);
+
+\=bundleFunctions.wiresFromInterface('wr_ptr_', protectionInterface.signals, [], u.bundle)=\
+\=bundleFunctions.wiresFromInterface('rd_ptr_', protectionInterface.signals, [], u.bundle)=\
+
+  \=u.instance({
+    'instanceName': 'u_wr_ptr',
+    'moduleName':   'prot_reg',
+    'params': {
+      'width'               : wDepth + 1,
+      'protectionStyle'     : protectionStyle,
+      'protectionInterface' : protectionInterface },
+    'interfaces': [{
+      'interface'    : protectionInterface.signals,
+      'localPrefix'  : 'wr_ptr_',
+      'modulePrefix' : protectionInterface.name }],
+    'ports': {
+      'clk'     : 'clk',
+      'reset_n' : 'reset_n',
+      'en'      : 'wr_ptr_en',
+      'd'       : 'wr_ptr_d',
+      'q'       : 'wr_ptr' } })=\
+
+  \=u.instance({
+    'instanceName': 'u_rd_ptr',
+    'moduleName':   'prot_reg',
+    'params': {
+      'width'               : wDepth + 1,
+      'protectionStyle'     : protectionStyle,
+      'protectionInterface' : protectionInterface },
+    'interfaces': [{
+      'interface'    : protectionInterface.signals,
+      'localPrefix'  : 'rd_ptr_',
+      'modulePrefix' : protectionInterface.name }],
+    'ports': {
+      'clk'     : 'clk',
+      'reset_n' : 'reset_n',
+      'en'      : 'rd_ptr_en',
+      'd'       : 'rd_ptr_d',
+      'q'       : 'rd_ptr' } })=\
+
+\jsbegin
+ } else {
+\jsend
+wire [\=wDepth=\:0] req_count_in, req_count_q0;
+wire                req_count_en;
+assign empty = ( req_count_q0 == \=wDepth+1=\'d\=depth=\ );
+
+assign req_count_in = req_count_q0 - {\=wDepth=\'h0,alloc_en} + {\=wDepth=\'h0,dealloc_en}; 
+assign req_count_en = alloc_en | dealloc_en;
+\=u.dffre(wDepth+1,        'req_count_q0', 'req_count_in',   (wDepth+1)+"'d"+(depth),        'req_count_en',    'clk',  'reset_n')=\
+
+assign full = ( req_count_q0 == \=wDepth+1=\'d0 );
+
+// assign empty = &req_entry_n_valid;
+// assign full = &req_entry_valid;
+
+\js // LSB has the highest priority
+\=u.instance({
+    instanceName: 'alloc_find_first',
+    moduleName: 'find_first_one',
+    params: {
+        width: depth 
+    },
+    verilogParams: {},
+    ports: {
+        invec: 'req_entry_n_valid',
+        outvec:'req_entry_alloc_ptr'},
+    interfaces: [],
+    portsDelimiter: '\n        '
+})=\
+
+\js }
+
+\jsbegin
+//============================================================================
+// VC Mask 
+//============================================================================
+\jsend
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (nVC > 1) {
+\jsend
+\js     for (var i = 0; i < depth; i++) {
+assign vc_mask[\=i=\] = req_out_ready0 & (req_entry_vc\=i=\ == \=wVC=\'d0)
+\js         for (var j = 1; j < nVC; j++) {
+                       |req_out_ready\=j=\ & (req_entry_vc\=i=\ == \=wVC=\'d\=j=\)
+\js         }
+                       ;
+\js     }
+\js } else {
+assign vc_mask = {\=depth=\{1'b1}};
+\js }
+
+\jsbegin
+//============================================================================
+// Dependency Link
+//============================================================================
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useDepLink) {
+\jsend
+    \js for(var i = 0; i < nDepLink; i++) {
+
+\=bundleFunctions.wiresFromInterface('dep_link'+i+'_', protectionInterface.signals, [], u.bundle)=\
+
+\=u.instance({
+    instanceName: 'dep_link'+i,
+    moduleName: 'dep_link',
+    params: {
+        useSmallArea: useSmallArea,
+        depth: depth,
+        width: wDepId[i],
+        protectionStyle     : protectionStyle,
+        protectionInterface : protectionInterface,
+        clkInterface: clkInterface
+    },
+    verilogParams: {},
+    ports: {
+        alloc_en:  'alloc_en',
+        alloc_id:  'dep_id'+i, // id used to create dependency
+        alloc_idx: 'req_entry_alloc_ptr',
+        dealloc_en:'dealloc_en',
+        dealloc_idx:'age_arb_vec', // make timing better, from arbitration result
+        valid_head_vec: 'dep_link_valid_head'+i
+    },
+    interfaces: [
+    {
+        modulePrefix: protectionInterface.name,
+        localPrefix: 'dep_link'+i+'_',
+        interface: protectionInterface.signals
+    },
+    {
+        modulePrefix: '',
+        localPrefix: '',
+        interface: clkInterface
+    }],
+    portsDelimiter: '\n        '
+})=\
+    \js }
+\js }
+
+\jsbegin
+//============================================================================
+// Priority Mask
+//============================================================================
+\jsend
+
+\js if (useQos) {
+assign req_in_priority_vec = \=nPriority=\'b1 << req_in_priority;
+
+assign valid_pri_vec_dealloc  = req_in_priority_vec & {\=nPriority=\{alloc_en}} 
+                               |(req_entry_pri_vec0  & {\=nPriority=\{~age_arb_vec[0] & req_entry_valid[0]}})
+\js     for(var i = 1; i < depth; i++) {
+                               |(req_entry_pri_vec\=i=\ & {\=nPriority=\{~age_arb_vec[\=i=\] & req_entry_valid[\=i=\]}})
+\js     }
+                               ;
+
+assign valid_pri_vec_no_dealloc = req_in_priority_vec & {\=nPriority=\{alloc_en}} 
+                                 |(req_entry_pri_vec0 & {\=nPriority=\{req_entry_valid[0]}})
+\js     for(var i = 1; i < depth; i++) {
+                                 |(req_entry_pri_vec\=i=\ & {\=nPriority=\{req_entry_valid[\=i=\]}})
+
+\js     }
+                                 ;
+
+\=u.dffre(1,        'dealloc_q',   'dealloc_en',     "1'd0",      "1'b1",  'clk',  'reset_n')=\
+
+
+\=u.instance({
+    instanceName: 'priority_find_first_dealloc',
+    moduleName: 'find_first_one',
+    params: {
+        width: nPriority 
+    },
+    verilogParams: {},
+    ports: {
+        invec: 'valid_pri_vec_dealloc',
+        outvec:'highest_valid_pri_dealloc_d'},
+    interfaces: [],
+    portsDelimiter: '\n        '
+})=\
+
+\=u.instance({
+    instanceName: 'priority_find_first_no_dealloc',
+    moduleName: 'find_first_one',
+    params: {
+        width: nPriority 
+    },
+    verilogParams: {},
+    ports: {
+        invec: 'valid_pri_vec_no_dealloc',
+        outvec:'highest_valid_pri_no_dealloc_d'},
+    interfaces: [],
+    portsDelimiter: '\n        '
+})=\
+
+
+\=u.dffre(nPriority,        'highest_valid_pri_dealloc',   'highest_valid_pri_dealloc_d',     nPriority+"'d0",      "1'b1",  'clk',  'reset_n')=\
+
+\=u.dffre(nPriority,        'highest_valid_pri_no_dealloc',   'highest_valid_pri_no_dealloc_d',     nPriority+"'d0",      "1'b1",  'clk',  'reset_n')=\
+
+
+assign highest_valid_pri = dealloc_q ? highest_valid_pri_dealloc : highest_valid_pri_no_dealloc;
+
+\js for(var i = 0; i < depth; i++) {
+assign highest_pri_req_vec[\=i=\] = |(req_entry_pri_vec\=i=\ & highest_valid_pri) & req_entry_valid[\=i=\];
+\js }
+
+\js } else {
+assign highest_pri_req_vec = req_entry_valid;
+\js }
+
+\jsbegin
+//============================================================================
+// Age Link Arbiter
+//============================================================================
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useDepLink) {
+\jsend
+assign age_link_pri_req_vec = highest_pri_req_vec & dep_link_valid_head0
+    \js for(var i = 1; i < nDepLink; i++) {
+                                              & dep_link_valid_head\=i=\
+    \js }
+                          ;
+\js } else {
+assign age_link_pri_req_vec = highest_pri_req_vec; 
+\js }
+
+\js if (useQos) {
+assign age_link_req_vec = starv_mode ? (req_entry_valid & entry_starv & vc_mask) : age_link_pri_req_vec & vc_mask;
+\js } else {
+assign age_link_req_vec = age_link_pri_req_vec & vc_mask;
+\js }
+
+\js if (useAge & !useDepLink & !useQos & (nVC == 1)) {
+assign age_arb_vec = (\=depth=\'b1 << rd_ptr[\=wDepth-1=\:0]);
+\jsbegin
+} else /* istanbul ignore next env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */ if (!useAge & useDepLink & !useQos) {
+\jsend
+
+\=u.instance({
+    instanceName: 'dep_find_first',
+    moduleName: 'find_first_one',
+    params: {
+        width: depth 
+    },
+    verilogParams: {},
+    ports: {
+        invec: 'age_link_req_vec',
+        outvec:'age_arb_vec'},
+    interfaces: [],
+    portsDelimiter: '\n        '
+})=\
+
+\js } else {
+
+\=bundleFunctions.wiresFromInterface('age_link_', protectionInterface.signals, [], u.bundle)=\
+
+wire [\=depth-1=\:0] age_link_valid_head;
+\=u.instance({
+    instanceName: 'age_link',
+    moduleName: 'dep_link',
+    params: {
+        useSmallArea: useSmallArea,
+        depth: depth,
+        width: wPriority,
+        protectionStyle: protectionStyle,
+        protectionInterface: protectionInterface,
+        clkInterface: clkInterface,
+        headDeallocOnly : 1 
+    },
+    ports: {
+        alloc_en:  'alloc_en',
+        alloc_id:  'req_in_priority',
+        alloc_idx: 'req_entry_alloc_ptr',
+        dealloc_en:'dealloc_en',
+        dealloc_idx:'age_arb_vec', // make timing better, from arbitration result
+        valid_head_vec: 'age_link_valid_head'
+    },
+    interfaces: [
+    {
+        modulePrefix: protectionInterface.name,
+        localPrefix: 'age_link_',
+        interface: protectionInterface.signals
+    },
+    {
+        modulePrefix: '',
+        localPrefix: '',
+        interface: clkInterface
+    }]
+})=\
+wire [\=depth-1=\:0] age_arb_req_vec;
+
+assign age_arb_req_vec = (age_link_valid_head & age_link_req_vec);
+
+\=u.instance({
+    instanceName: 'age_arb',
+    moduleName: 'find_first_one',
+    params: {
+        width: depth 
+    },
+    ports: {
+        invec: 'age_arb_req_vec',
+        outvec:'age_arb_vec'
+    },
+    interfaces: []
+})=\
+
+\js }
+\jsbegin
+//============================================================================
+// Buffer Entries
+//============================================================================
+\jsend
+
+\js for (var i = 0; i < depth; i++) {
+
+    \=bundleFunctions.wiresFromInterface('req_entry'+i+'_', protectionInterface.signals, [], u.bundle)=\
+
+    \=u.instance({
+        'instanceName': 'u_req_entry_valid'+i,
+        'moduleName':   'prot_reg',
+        'params': {
+          'width'               : wReqPkt,
+          'protectionStyle'     : protectionStyle,
+          'protectionInterface' : protectionInterface },
+        'interfaces': [{
+          'interface'    : protectionInterface.signals,
+          'localPrefix'  : 'req_entry'+i+'_',
+          'modulePrefix' : protectionInterface.name }],
+        'ports': {
+          'clk'     : 'clk',
+          'reset_n' : 'reset_n',
+          'en'      : 'req_entry_en'+i,
+          'd'       : 'req_entry_in',
+          'q'       : 'req_entry'+i } })=\
+
+\js     if (wPriority != 0) {
+\=u.dffre(nPriority,    'req_entry_pri_vec'+i,  'req_entry_pri_vec_d'+i,  nPriority+"'d0",    'req_entry_pri_en'+i,   'clk',  'reset_n')=\
+\js     }
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (nVC > 1) {
+\jsend
+\=u.dffre(wVC,          'req_entry_vc'+i,   'vc',               wVC+"'d0",          'req_entry_en'+i,   'clk',  'reset_n')=\
+\js }
+
+assign req_entry_en\=i=\ = req_entry_alloc_ptr[\=i=\] & alloc_en;
+\js     if (wPriority != 0) {
+assign req_entry_pri_en\=i=\ = req_entry_alloc_ptr[\=i=\] & alloc_en;
+assign req_entry_pri_vec_d\=i=\ = req_in_priority_vec & {\=nPriority=\{req_entry_alloc_ptr[\=i=\] & alloc_en}}; 
+\js     }
+\js }
+
+assign req_entry_in = \=bundleFunctions.packetizeBundle('req_in_', reqInterface, ['valid', 'ready'], u.bundle)=\;
+
+\jsbegin
+
+
+//============================================================================
+// Output Mux
+//============================================================================
+\jsend
+
+\js if (bypass) {
+assign req_entry_out = empty ? req_entry_in : req_entry_out_mux;
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (nVC == 1) {
+    \jsend
+assign req_out_valid =~empty | req_in_valid;
+assign alloc_en = req_in_valid & req_in_ready & ~(empty & req_out_ready);
+\js     } else {
+assign req_out_valid = (|age_arb_vec) | req_in_valid;
+assign alloc_en = req_in_valid & req_in_ready & ~(empty & (((vc == \=wVC=\'d0) & req_out_ready0)
+\js         for (var i = 1; i < nVC; i++) {
+                                                           |(vc == \=wVC=\'d\=i=\ & req_out_ready\=i=\ )
+\js         }
+                  ));
+\js     }
+\js } else {
+assign req_entry_out = req_entry_out_mux;
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (nVC == 1) {
+    \jsend
+assign req_out_valid = ~empty;
+\js     } else {
+assign req_out_valid = (|age_arb_vec);
+\js     }
+assign alloc_en = req_in_valid & req_in_ready;
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (nVC == 1) {
+\jsend
+assign dealloc_en = ~empty & req_out_ready;
+\js } else {
+assign dealloc_en = req_out_valid;
+\js }
+
+\jsbegin
+// Mux req_entries onto req_entry_out_mux
+var reqOutMuxPorts				= { "sel": "age_arb_vec", "out": "req_entry_out_mux" };
+
+for(var i=0; i < depth; i++) {	// Add ports for mux inputs
+    reqOutMuxPorts["in"+i]		= "req_entry"+i;
+} \jsend
+
+\=u.instance({
+    instanceName: 'u_req_out_mux',
+    moduleName: 'ao_mux',
+    params: { nInputs: depth, wMux: wReqPkt },
+    ports: reqOutMuxPorts
+})=\
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if(nVC > 1) {
+  // Mux req_entry_vc* onto vc_out
+  var vcOutMuxPorts				= { "sel": "age_arb_vec", "out": "vc_out" };
+
+  for(var i=0; i < depth; i++) {	// Add ports for mux inputs
+    vcOutMuxPorts["in"+i]		= "req_entry_vc"+i;
+  } \jsend
+
+\=u.instance({
+    instanceName: 'u_vc_out_mux',
+    moduleName: 'ao_mux',
+    params: { nInputs: depth, wMux: wVC },
+    ports: vcOutMuxPorts
+})=\ \jsbegin
+} \jsend
+
+
+assign \=bundleFunctions.packetizeBundle('req_out_int_', reqInterface, ['valid', 'ready'], u.bundle)=\ = req_entry_out;
+\=bundleFunctions.assignByBundle("req_out_","req_out_int_",reqInterface,['valid','ready','h_priority'],u.bundle)=\
+\jsbegin
+if(useQos && priorityThreshold){
+\jsend
+assign req_out_h_priority =starv_mode | req_out_int_h_priority;
+\jsbegin
+}
+
+//============================================================================
+// Starvation & Timeout
+//============================================================================
+\jsend
+\js if (useQos) {
+assign starv_count_d = (starv_count[\=wStarvCnt-1=\:\=starvCntOffset=\] == starv_threshold) ? \=wStarvCnt=\'b0 : starv_count + 1'b1;
+
+assign starv_count_en = ~starv_mode & dealloc_en & starv_en & ~qos_disable | starv_overflow_event ;
+
+assign starv_overflow_event = (starv_count[\=wStarvCnt-1=\:\=starvCntOffset=\] == starv_threshold) & (starv_threshold != \=wStarvThreshold=\'b0) & starv_en & ~qos_disable;
+assign entry_starv_dealloc_d  = (entry_starv_overflow & ~(age_arb_vec) & {\=depth=\{starv_overflow_event}}) | (entry_starv & ~age_arb_vec);
+assign entry_starv_no_dealloc_d  = (entry_starv_overflow & {\=depth=\{starv_overflow_event}}) | entry_starv;
+assign entry_starv_d = (entry_starv_overflow & ~(age_arb_vec & {\=depth=\{dealloc_en}}) & {\=depth=\{starv_overflow_event}}) | (entry_starv & ~age_arb_vec & {\=depth=\{dealloc_en}});
+
+assign entry_starv_en = starv_overflow_event | dealloc_en;
+assign entry_starv_overflow_d  = (entry_starv_qual & {\=depth=\{starv_overflow_event}}) | (entry_starv_overflow & ~age_arb_vec & {\=depth=\{dealloc_en}});
+assign entry_starv_overflow_en = starv_overflow_event | dealloc_en;
+//assign starv_mode = |(req_entry_valid & entry_starv) & starv_en & ~qos_disable;
+
+assign starv_mode_dealloc_d = (|entry_starv_dealloc_d) & starv_en & ~qos_disable;
+assign starv_mode_no_dealloc_d =  (|entry_starv_no_dealloc_d) & starv_en & ~qos_disable;
+assign starv_mode = dealloc_q ? starv_mode_dealloc : starv_mode_no_dealloc;
+\js // only entry without dependency is set when useDepLink
+\jsbegin
+     /* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+     if (useDepLink) {
+\jsend
+assign entry_starv_qual =(dep_link_valid_head0
+\js         for (var i = 1; i < nDepLink; i++) {
+                         |dep_link_valid_head\=i=\
+\js         }
+                         ) & ~(age_arb_vec & {\=depth=\{dealloc_en}});
+\js     } else {
+assign entry_starv_qual = req_entry_valid & ~(age_arb_vec & {\=depth=\{dealloc_en}});
+\js     }
+
+\=u.dffre(wStarvCnt,    'starv_count',            'starv_count_d',              wStarvCnt+"'d0",    'starv_count_en',           'clk',  'reset_n')=\
+\=u.dffre(depth,        'entry_starv',            'entry_starv_d',              depth+"'d0",        'entry_starv_en',           'clk',  'reset_n')=\
+\=u.dffre(depth,        'entry_starv_overflow',   'entry_starv_overflow_d',     depth+"'d0",        'entry_starv_overflow_en',  'clk',  'reset_n')=\
+\=u.dffre(1,            'starv_mode_dealloc',     'starv_mode_dealloc_d',       "1'd0",             "1'b1",                     'clk',  'reset_n')=\
+\=u.dffre(1,            'starv_mode_no_dealloc',  'starv_mode_no_dealloc_d',    "1'd0",             "1'b1",                     'clk',  'reset_n')=\
+\js }
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4,ncore_3p6, ncore_3p7 */
+if (useTimeOut) {
+\jsend
+assign timeout_count_d = (timeout_count[\=wTOCnt-1=\:\=tOCntOffset=\] == timeout_threshold) ? \=wTOCnt=\'b0: timeout_count + 1'b1;
+assign timeout_count_en = timeout_en;
+assign entry_timeout_overflow_d  = (req_entry_valid & {\=depth=\{timeout_overflow_event}}) | (~req_entry_alloc_ptr & {\=depth=\{alloc_en}});
+assign entry_timeout_overflow_en = timeout_overflow_event | alloc_en;
+assign timeout_overflow_event = (timeout_count[\=wTOCnt-1=\:\=tOCntOffset=\] == timeout_threshold) & (timeout_threshold != 0);//| timeout_ref_en;
+
+\=u.dffre(wTOCnt,       'timeout_count',          'timeout_count_d',            wTOCnt+"'d0",       'timeout_count_en',             'clk',  'reset_n')=\
+\=u.dffre(depth,        'entry_timeout_overflow', 'entry_timeout_overflow_d',   depth+"'d0",        'entry_timeout_overflow_en',    'clk',  'reset_n')=\
+
+\js // TODO: Add timeout error logging
+assign timeout_error = timeout_overflow_event & (|entry_timeout_overflow);
+\js }
+
+\jsbegin
+//============================================================================
+// Protection MUX
+//============================================================================
+\jsend
+
+\jsbegin
+
+// Function to convert an interface {{name, signals}) to a { modulePrefix, localPrefix, interface} object
+// that is used to specify how local interfaces are mapped to module interfaces of an instance
+ /* istanbul ignore next env ncore_3p7 */
+function getModuleLocalInterfacePrefixMap(intrface) {
+    const modulePrefix  = intrface.name;
+    const localPrefix   = intrface.name;
+    return { modulePrefix, localPrefix, "interface": intrface.signals };
+}
+
+var local_prot_intf_array = [];
+
+    local_prot_intf_array.push( {name: 'req_entry_valid_', signals: protectionInterface.signals} );
+    for (var i = 0; i < depth; i++) {
+        local_prot_intf_array.push( {name: 'req_entry'+i+'_',  signals: protectionInterface.signals} );
+    }
+    if (useAge & !useDepLink & !useQos & (nVC == 1)) {
+        local_prot_intf_array.push( {name: 'wr_ptr_',          signals: protectionInterface.signals} );
+        local_prot_intf_array.push( {name: 'rd_ptr_',          signals: protectionInterface.signals} );
+    } else {
+        //local_prot_intf_array.push( {name: 'req_count_q0_', signals: protectionInterface.signals} );
+    }
+/* istanbul ignore if env ncore_3p7 */
+    if (useDepLink) {
+        for(var i = 0; i < nDepLink; i++) {
+            local_prot_intf_array.push( {name: 'dep_link'+i+'_', signals: protectionInterface.signals} );
+        }
+    }
+    if (useAge & !useDepLink & !useQos & (nVC == 1)) {
+    }else /* istanbul ignore next env ncore_3p7 */ if (!useAge & useDepLink & !useQos) {
+    } else {
+        local_prot_intf_array.push( {name: 'age_link_', signals: protectionInterface.signals} );
+    }
+
+ /* istanbul ignore else env ncore_3p7 */ 
+ if (protectionStyle.protection === 'none') { \jsend
+
+\js } else {
+
+\=u.instance({
+    instanceName: 'u_prot_mux',
+    moduleName:   'prot_mux',
+    params: {'outInterface' : protectionInterface,
+             'inInterfaces' : local_prot_intf_array},
+    interfaces: local_prot_intf_array.concat( protectionInterface ).map( getModuleLocalInterfacePrefixMap )
+})=\
+
+\js }
+
+\jsbegin
+//============================================================================
+// Assertions
+//============================================================================
+\jsend
+
+
+endmodule
+
+

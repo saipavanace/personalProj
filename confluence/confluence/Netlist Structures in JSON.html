@@ -1,0 +1,875 @@
+<p>Below is a comprehensive example showing how you might structure a Verilog netlist hierarchy (“logical hierarchy”), then overlay additional “pseudo hierarchies” (partitions, groups, etc.) without disturbing the original logical hierarchy. We will also generate a “leftovers” logical hierarchy containing only instances that are <em>not</em> mapped into any of the pseudo hierarchies. The example includes:</p><ol start="1"><li><p><strong>Verilog Example Code</strong> (representing a simple 3-level module hierarchy)  </p></li><li><p><strong>JSON Logical Hierarchy</strong> (capturing module instances and their relationships)  </p></li><li><p><strong>JSON Pseudo Hierarchies</strong> (e.g., partition and group hierarchies referencing logical instances)  </p></li><li><p><strong>Leftover Logical Hierarchy in JSON</strong> (removing anything referenced in pseudo hierarchies)  </p></li><li><p><strong>JS Code</strong> to generate the JSON files  </p></li></ol><hr/><h2 id="NetlistStructuresinJSON-1.VerilogExampleCode">1. Verilog Example Code</h2><p>Below is a simplified set of Verilog modules demonstrating a top-level module (<code>top</code>) that instantiates five child instances (<code>u_subA</code>, <code>u_subB</code>, <code>u_subC</code>, <code>u_subD</code>, <code>u_subE</code>). Some of these children have further sub-instances, demonstrating nested hierarchy. Leaf modules (i.e., no sub-instances) are <code>subA1</code>, <code>subA2</code>, <code>subB1</code>, <code>subB2_1</code>, <code>subB2_2</code>, <code>subC</code>, <code>subD</code>, and <code>subE1</code>.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">//////////////////////////////////////////////////////////
+// Example Verilog modules illustrating a 3-level hierarchy
+//////////////////////////////////////////////////////////
+
+module top();
+  // Top-level has 5 child instances
+  subA u_subA(.clk(), .rst());
+  subB u_subB(.clk(), .rst());
+  subC u_subC(.clk(), .rst());
+  subD u_subD(.clk(), .rst());
+  subE u_subE(.clk(), .rst());
+endmodule
+
+// subA is hierarchical
+module subA(input clk, input rst);
+  // subA has 2 leaf children
+  subA1 u_subA1(.clk(clk), .rst(rst));
+  subA2 u_subA2(.clk(clk), .rst(rst));
+endmodule
+
+module subA1(input clk, input rst);
+  // Leaf module
+endmodule
+
+module subA2(input clk, input rst);
+  // Leaf module
+endmodule
+
+// subB is hierarchical
+module subB(input clk, input rst);
+  // subB has 1 leaf child and 1 hierarchical child
+  subB1  u_subB1(.clk(clk), .rst(rst));
+  subB2  u_subB2(.clk(clk), .rst(rst));
+endmodule
+
+module subB1(input clk, input rst);
+  // Leaf module
+endmodule
+
+// subB2 is hierarchical
+module subB2(input clk, input rst);
+  subB2_1 u_subB2_1(.clk(clk), .rst(rst));
+  subB2_2 u_subB2_2(.clk(clk), .rst(rst));
+endmodule
+
+// These are leaves
+module subB2_1(input clk, input rst);
+  // Leaf module
+endmodule
+
+module subB2_2(input clk, input rst);
+  // Leaf module
+endmodule
+
+// subC is a leaf (directly at the top)
+module subC(input clk, input rst);
+  // Leaf module
+endmodule
+
+// subD is a leaf (directly at the top)
+module subD(input clk, input rst);
+  // Leaf module
+endmodule
+
+// subE is hierarchical
+module subE(input clk, input rst);
+  subE1  u_subE1(.clk(clk), .rst(rst));
+  subE2  u_subE2(.clk(clk), .rst(rst));
+endmodule
+
+module subE1(input clk, input rst);
+  // Leaf module
+endmodule
+
+// subE2 is hierarchical
+module subE2(input clk, input rst);
+  subE2_1 u_subE2_1(.clk(clk), .rst(rst));
+  subE2_2 u_subE2_2(.clk(clk), .rst(rst));
+endmodule
+
+// Leaves
+module subE2_1(input clk, input rst);
+  // Leaf module
+endmodule
+
+module subE2_2(input clk, input rst);
+  // Leaf module
+endmodule</pre>
+</div></div><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image confluence-external-resource" height="381" width="1171" src="/wiki/download/attachments/1236697311/NetlistHierarchy.drawio.png?api=v2" data-image-src="/wiki/download/attachments/1236697311/NetlistHierarchy.drawio.png?api=v2" loading="lazy"></span><hr/><h2 id="NetlistStructuresinJSON-2.ExampleJSONLogicalHierarchy">2. Example JSON Logical Hierarchy</h2><p>The example below captures a simplified view of the netlist hierarchy as JSON. Each node has:</p><ul><li><p><code>name</code>: The instance name in the parent module  </p></li><li><p><code>moduleName</code>: The Verilog module name for reference  </p></li><li><p><code>type</code>: <code>module</code> or <code>leaf</code> (leaf modules have no further nested <code>instances</code>)  </p></li><li><p><code>instances</code>: A list of child instances if the current module is hierarchical  </p></li></ul><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;name&quot;: &quot;top&quot;,
+  &quot;moduleName&quot;: &quot;top&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;instances&quot;: [
+    {
+      &quot;name&quot;: &quot;u_subA&quot;,
+      &quot;moduleName&quot;: &quot;subA&quot;,
+      &quot;type&quot;: &quot;module&quot;,
+      &quot;instances&quot;: [
+        {
+          &quot;name&quot;: &quot;u_subA1&quot;,
+          &quot;moduleName&quot;: &quot;subA1&quot;,
+          &quot;type&quot;: &quot;leaf&quot;
+        },
+        {
+          &quot;name&quot;: &quot;u_subA2&quot;,
+          &quot;moduleName&quot;: &quot;subA2&quot;,
+          &quot;type&quot;: &quot;leaf&quot;
+        }
+      ]
+    },
+    {
+      &quot;name&quot;: &quot;u_subB&quot;,
+      &quot;moduleName&quot;: &quot;subB&quot;,
+      &quot;type&quot;: &quot;module&quot;,
+      &quot;instances&quot;: [
+        {
+          &quot;name&quot;: &quot;u_subB1&quot;,
+          &quot;moduleName&quot;: &quot;subB1&quot;,
+          &quot;type&quot;: &quot;leaf&quot;
+        },
+        {
+          &quot;name&quot;: &quot;u_subB2&quot;,
+          &quot;moduleName&quot;: &quot;subB2&quot;,
+          &quot;type&quot;: &quot;module&quot;,
+          &quot;instances&quot;: [
+            {
+              &quot;name&quot;: &quot;u_subB2_1&quot;,
+              &quot;moduleName&quot;: &quot;subB2_1&quot;,
+              &quot;type&quot;: &quot;leaf&quot;
+            },
+            {
+              &quot;name&quot;: &quot;u_subB2_2&quot;,
+              &quot;moduleName&quot;: &quot;subB2_2&quot;,
+              &quot;type&quot;: &quot;leaf&quot;
+            }
+          ]
+        }
+      ]
+    },
+    {
+      &quot;name&quot;: &quot;u_subC&quot;,
+      &quot;moduleName&quot;: &quot;subC&quot;,
+      &quot;type&quot;: &quot;leaf&quot;
+    },
+    {
+      &quot;name&quot;: &quot;u_subD&quot;,
+      &quot;moduleName&quot;: &quot;subD&quot;,
+      &quot;type&quot;: &quot;leaf&quot;
+    },
+    {
+      &quot;name&quot;: &quot;u_subE&quot;,
+      &quot;moduleName&quot;: &quot;subE&quot;,
+      &quot;type&quot;: &quot;module&quot;,
+      &quot;instances&quot;: [
+        {
+          &quot;name&quot;: &quot;u_subE1&quot;,
+          &quot;moduleName&quot;: &quot;subE1&quot;,
+          &quot;type&quot;: &quot;leaf&quot;
+        },
+        {
+          &quot;name&quot;: &quot;u_subE2&quot;,
+          &quot;moduleName&quot;: &quot;subE2&quot;,
+          &quot;type&quot;: &quot;module&quot;,
+          &quot;instances&quot;: [
+            {
+              &quot;name&quot;: &quot;u_subE2_1&quot;,
+              &quot;moduleName&quot;: &quot;subE2_1&quot;,
+              &quot;type&quot;: &quot;leaf&quot;
+            },
+            {
+              &quot;name&quot;: &quot;u_subE2_2&quot;,
+              &quot;moduleName&quot;: &quot;subE2_2&quot;,
+              &quot;type&quot;: &quot;leaf&quot;
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}</pre>
+</div></div><hr/><h2 id="NetlistStructuresinJSON-3.ExampleJSONPartitionandGroupHierarchies">3. Example JSON Partition and Group Hierarchies</h2><p>The “pseudo hierarchy” is <em>not</em> the actual netlist structure. Instead, it’s a separate organizational concept (e.g., for design partitioning, grouping of instances by functionality, or design ownership). Below is an example that references <em>some</em> of the instance names from the logical hierarchy above.</p><h3 id="NetlistStructuresinJSON-PartitionsJSON">Partitions JSON</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;partitions&quot;: [
+    {
+      &quot;name&quot;: &quot;PartitionAlpha&quot;,
+      &quot;description&quot;: &quot;Group for subA and subC&quot;,
+      &quot;instances&quot;: [
+        &quot;u_subA&quot;,
+        &quot;u_subC&quot;
+      ]
+    },
+    {
+      &quot;name&quot;: &quot;PartitionBeta&quot;,
+      &quot;description&quot;: &quot;Group for subB and subD&quot;,
+      &quot;instances&quot;: [
+        &quot;u_subB&quot;,
+        &quot;u_subD&quot;
+      ]
+    }
+  ]
+}</pre>
+</div></div><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image confluence-external-resource" height="251" width="481" src="/wiki/download/attachments/1236697311/partitions_hierarchy.drawio.png?api=v2" data-image-src="/wiki/download/attachments/1236697311/partitions_hierarchy.drawio.png?api=v2" loading="lazy"></span><h3 id="NetlistStructuresinJSON-GroupsJSON">Groups JSON</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;groups&quot;: [
+    {
+      &quot;name&quot;: &quot;Group1&quot;,
+      &quot;description&quot;: &quot;A group of specific leaf instances for specialized analysis&quot;,
+      &quot;instances&quot;: [
+        &quot;u_subA1&quot;,
+        &quot;u_subB2_1&quot;,
+        &quot;u_subE1&quot;
+      ]
+    },
+    {
+      &quot;name&quot;: &quot;Group2&quot;,
+      &quot;description&quot;: &quot;Another group of leaf instances for debugging&quot;,
+      &quot;instances&quot;: [
+        &quot;u_subB2_2&quot;,
+        &quot;u_subE2_2&quot;
+      ]
+    }
+  ]
+}</pre>
+</div></div><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image confluence-external-resource" height="241" width="511" src="/wiki/download/attachments/1236697311/group_hierarchy.drawio.png?api=v2" data-image-src="/wiki/download/attachments/1236697311/group_hierarchy.drawio.png?api=v2" loading="lazy"></span><p>In this scheme, certain instances or modules (like <code>u_subE2_1</code>) are not assigned to any partition or group.</p><hr/><h2 id="NetlistStructuresinJSON-4.LogicalHierarchyofLeftoversinJSON">4. Logical Hierarchy of Leftovers in JSON</h2><p>Suppose we remove all instances that appear anywhere in the partitions or groups above. We then build a “leftovers” hierarchy: it’s the same structure <em>but excluding</em> references that appear in any partition or group. Notice:</p><ul><li><p><code>u_subA</code>, <code>u_subB</code>, <code>u_subC</code>, <code>u_subD</code>, <code>u_subA1</code>, <code>u_subB2_1</code>, <code>u_subE1</code>, <code>u_subB2_2</code>, <code>u_subC</code>, etc. all appear in at least one partition/group.  </p></li><li><p>The only instance in the example <em>not</em> assigned to any partition/group is <code>u_subE2_1</code>. Also, if you interpret references to <code>u_subA</code> as removing that entire sub-tree, then <code>u_subA1</code> and <code>u_subA2</code> would also be removed.  </p></li></ul><p>Hence, the only leftover from the entire netlist might be the “u_subE2_1” instance (and its parents if we decide to keep partial structure). You can decide whether a parent is retained if <em>some</em> child is leftover, or if referencing a parent instance in a partition means removing it from leftovers entirely.</p><p>Here’s an example “leftovers” JSON that retains partial structure down to that leaf:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;name&quot;: &quot;top&quot;,
+  &quot;moduleName&quot;: &quot;top&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;instances&quot;: [
+    {
+      &quot;name&quot;: &quot;u_subE&quot;,
+      &quot;moduleName&quot;: &quot;subE&quot;,
+      &quot;type&quot;: &quot;module&quot;,
+      &quot;instances&quot;: [
+        {
+          &quot;name&quot;: &quot;u_subE2&quot;,
+          &quot;moduleName&quot;: &quot;subE2&quot;,
+          &quot;type&quot;: &quot;module&quot;,
+          &quot;instances&quot;: [
+            {
+              &quot;name&quot;: &quot;u_subE2_1&quot;,
+              &quot;moduleName&quot;: &quot;subE2_1&quot;,
+              &quot;type&quot;: &quot;leaf&quot;
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}</pre>
+</div></div><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image confluence-external-resource" height="341" width="131" src="/wiki/download/attachments/1236697311/leftover_hierarchy.drawio.png?api=v2" data-image-src="/wiki/download/attachments/1236697311/leftover_hierarchy.drawio.png?api=v2" loading="lazy"></span><p>All other instances are excluded because they appear in either a partition or a group.</p><hr/><h2 id="NetlistStructuresinJSON-5.JavaScriptCodetoGenerateTheseJSONFiles">5. JavaScript Code to Generate These JSON Files</h2><p>Below is a minimal JavaScript example that creates:</p><ul><li><p>A “Logical Hierarchy” JSON</p></li><li><p>A “Partitions” JSON</p></li><li><p>A “Groups” JSON</p></li><li><p>A “Leftovers” JSON</p></li></ul><p>It hardcodes the data structures (for demo purposes), then writes them to files. In a real flow, you might parse a Verilog netlist, build in-memory structures, and then produce JSON.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">//////////////////////////////////////////////////////////
+// JS Example: Generate JSON hierarchies for demonstration
+//////////////////////////////////////////////////////////
+
+// 1. Build the logical hierarchy data in JS
+const logicalHierarchy = {
+  name: &quot;top&quot;,
+  moduleName: &quot;top&quot;,
+  type: &quot;module&quot;,
+  instances: [
+    {
+      name: &quot;u_subA&quot;,
+      moduleName: &quot;subA&quot;,
+      type: &quot;module&quot;,
+      instances: [
+        { name: &quot;u_subA1&quot;, moduleName: &quot;subA1&quot;, type: &quot;leaf&quot; },
+        { name: &quot;u_subA2&quot;, moduleName: &quot;subA2&quot;, type: &quot;leaf&quot; }
+      ]
+    },
+    {
+      name: &quot;u_subB&quot;,
+      moduleName: &quot;subB&quot;,
+      type: &quot;module&quot;,
+      instances: [
+        { name: &quot;u_subB1&quot;, moduleName: &quot;subB1&quot;, type: &quot;leaf&quot; },
+        {
+          name: &quot;u_subB2&quot;,
+          moduleName: &quot;subB2&quot;,
+          type: &quot;module&quot;,
+          instances: [
+            { name: &quot;u_subB2_1&quot;, moduleName: &quot;subB2_1&quot;, type: &quot;leaf&quot; },
+            { name: &quot;u_subB2_2&quot;, moduleName: &quot;subB2_2&quot;, type: &quot;leaf&quot; }
+          ]
+        }
+      ]
+    },
+    { name: &quot;u_subC&quot;, moduleName: &quot;subC&quot;, type: &quot;leaf&quot; },
+    { name: &quot;u_subD&quot;, moduleName: &quot;subD&quot;, type: &quot;leaf&quot; },
+    {
+      name: &quot;u_subE&quot;,
+      moduleName: &quot;subE&quot;,
+      type: &quot;module&quot;,
+      instances: [
+        { name: &quot;u_subE1&quot;, moduleName: &quot;subE1&quot;, type: &quot;leaf&quot; },
+        {
+          name: &quot;u_subE2&quot;,
+          moduleName: &quot;subE2&quot;,
+          type: &quot;module&quot;,
+          instances: [
+            { name: &quot;u_subE2_1&quot;, moduleName: &quot;subE2_1&quot;, type: &quot;leaf&quot; },
+            { name: &quot;u_subE2_2&quot;, moduleName: &quot;subE2_2&quot;, type: &quot;leaf&quot; }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// 2. Define the partitions
+const partitions = {
+  partitions: [
+    {
+      name: &quot;PartitionAlpha&quot;,
+      description: &quot;Group for subA and subC&quot;,
+      instances: [&quot;u_subA&quot;, &quot;u_subC&quot;]
+    },
+    {
+      name: &quot;PartitionBeta&quot;,
+      description: &quot;Group for subB and subD&quot;,
+      instances: [&quot;u_subB&quot;, &quot;u_subD&quot;]
+    }
+  ]
+};
+
+// 3. Define the groups
+const groups = {
+  groups: [
+    {
+      name: &quot;Group1&quot;,
+      description: &quot;A group of specific leaf instances&quot;,
+      instances: [&quot;u_subA1&quot;, &quot;u_subB2_1&quot;, &quot;u_subE1&quot;]
+    },
+    {
+      name: &quot;Group2&quot;,
+      description: &quot;Another group of leaf instances&quot;,
+      instances: [&quot;u_subB2_2&quot;, &quot;u_subE2_2&quot;]
+    }
+  ]
+};
+
+// 4. Generate the leftover logical hierarchy
+//    (excludes any instance that appears in partitions/groups)
+function generateLeftovers(logical, allReferenced) {
+  // If current node is referenced in any partition/group, skip it entirely
+  if (allReferenced.has(logical.name)) {
+    // This instance is used in partition/group, so drop it from leftover
+    return null;
+  }
+  // Otherwise, if it&#39;s a module, we walk children
+  if (logical.type === &quot;module&quot; &amp;&amp; Array.isArray(logical.instances)) {
+    const filteredChildren = [];
+    for (const child of logical.instances) {
+      const leftoverChild = generateLeftovers(child, allReferenced);
+      if (leftoverChild) {
+        filteredChildren.push(leftoverChild);
+      }
+    }
+    // Only keep this node if it has leftover children or is top
+    if (filteredChildren.length === 0 &amp;&amp; logical.name !== &quot;top&quot;) {
+      // If no children remain, skip the node
+      return null;
+    }
+    // Return node with filtered children
+    return {
+      ...logical,
+      instances: filteredChildren
+    };
+  }
+  // If it&#39;s a leaf and not referenced, keep it
+  return { ...logical };
+}
+
+// Build a set of all referenced instance names (partitions + groups)
+const referencedInstances = new Set();
+for (const p of partitions.partitions) {
+  p.instances.forEach(inst =&gt; referencedInstances.add(inst));
+}
+for (const g of groups.groups) {
+  g.instances.forEach(inst =&gt; referencedInstances.add(inst));
+}
+
+// Generate the leftover hierarchy by traversing the top
+const leftoverHierarchy = generateLeftovers(logicalHierarchy, referencedInstances);
+
+// 5. Write out the JSON to files (in Node.js, for example):
+//    (Below is a demonstration; actual file writing depends on your environment)
+const fs = require(&quot;fs&quot;);
+
+fs.writeFileSync(&quot;logicalHierarchy.json&quot;, JSON.stringify(logicalHierarchy, null, 2));
+fs.writeFileSync(&quot;partitions.json&quot;, JSON.stringify(partitions, null, 2));
+fs.writeFileSync(&quot;groups.json&quot;, JSON.stringify(groups, null, 2));
+fs.writeFileSync(&quot;leftovers.json&quot;, JSON.stringify(leftoverHierarchy, null, 2));
+
+console.log(&quot;JSON files generated successfully!&quot;);</pre>
+</div></div><h3 id="NetlistStructuresinJSON-ExplanationofKeyPoints">Explanation of Key Points</h3><ol start="1"><li><p><code>logicalHierarchy</code>: Directly encodes the Verilog netlist structure (each “module” or “leaf” node, recursively).  </p></li><li><p><code>partitions</code> and <code>groups</code>: Independent, “pseudo” organizational data structures that reference instance names from the netlist hierarchy.  </p></li><li><p><code>generateLeftovers</code>: A utility that recursively traverses the <code>logicalHierarchy</code> and <em>removes</em> nodes whose instance names appear in the partitions/groups.  </p></li><li><p><strong>Result</strong>: Four files:  </p><ul><li><p><code>logicalHierarchy.json</code> (full netlist)  </p></li><li><p><code>partitions.json</code> (list of partitions and the instances belonging to each)  </p></li><li><p><code>groups.json</code> (list of groups and their instance references)  </p></li><li><p><code>leftovers.json</code> (what remains of the netlist after removing all partition/group instances)  </p></li></ul></li></ol><hr/><h2 id="NetlistStructuresinJSON-Conclusion">Conclusion</h2><p>By keeping your <em>logical</em> (Verilog-based) hierarchy distinct from <em>pseudo</em> (partition/group) hierarchies, you can flexibly reference or remove subsets of the design without modifying the underlying netlist structure. This approach is common in large netlist or SoC designs where different teams require custom “views” of a design for analysis, ownership, or partitioning, while preserving a single source of truth for the actual netlist hierarchy.</p><hr/><h2 id="NetlistStructuresinJSON-ARealisticExample">A Realistic Example</h2><p>The illustration below does not map all sub-parts. The parts below also show a representative link to the corresponding tacl module and not a specific instance. Part and sub-part are analogous to the partitions or groups shown in the examples above. The containment relationship between parts and sub-parts can be made simpler by attaching parts and sub-parts to the hierarchy tree. Then top-down search can reveal this relationship.</p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image confluence-external-resource" height="2121" width="2321" src="/wiki/download/attachments/1236697311/FMEDA-Example.drawio.png?api=v2" data-image-src="/wiki/download/attachments/1236697311/FMEDA-Example.drawio.png?api=v2" loading="lazy"></span><h1 id="NetlistStructuresinJSON-Memory-EfficientVerilogExampleRedone">Memory-Efficient Verilog Example Redone</h1><p>Below is a set of illustrative JSON structures and lightweight JavaScript snippets showing how you might represent and manipulate netlists, module graphs, instance trees, and partition overlays for the example Verilog design you provided. The examples demonstrate:</p><ol start="1"><li><p>A module hierarchy graph in JSON (with modules and their child instances).</p></li><li><p>An instance tree in JSON that references the module graph (avoiding deep copies).</p></li><li><p>A partition overlay style that references the module graph.</p></li><li><p>A partition overlay style that references the instance tree.</p></li><li><p>A short note on pointers / references in JavaScript.</p></li></ol><p>These examples are deliberately minimalistic to stay memory-conservative (only storing references by name or ID, never duplicating entire subtrees).</p><hr/><h2 id="NetlistStructuresinJSON-1)JSONWithaModuleHierarchyGraph">1) JSON With a Module Hierarchy Graph</h2><p>In this representation, each module lists:</p><ul><li><p>Its own name</p></li><li><p>Its input/output ports (optional here, just showing placeholders)</p></li><li><p>Its child instances (each instance references another module by name, rather than copying that module’s structure)</p></li></ul><h3 id="NetlistStructuresinJSON-moduleGraph.json">moduleGraph.json</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;moduleGraph&quot;: {
+    &quot;modules&quot;: [
+      {
+        &quot;name&quot;: &quot;top&quot;,
+        &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;],
+        &quot;instances&quot;: [
+          { &quot;instanceName&quot;: &quot;u_subA&quot;, &quot;moduleNameRef&quot;: &quot;subA&quot; },
+          { &quot;instanceName&quot;: &quot;u_subB&quot;, &quot;moduleNameRef&quot;: &quot;subB&quot; },
+          { &quot;instanceName&quot;: &quot;u_subC&quot;, &quot;moduleNameRef&quot;: &quot;subC&quot; },
+          { &quot;instanceName&quot;: &quot;u_subD&quot;, &quot;moduleNameRef&quot;: &quot;subD&quot; },
+          { &quot;instanceName&quot;: &quot;u_subE&quot;, &quot;moduleNameRef&quot;: &quot;subE&quot; }
+        ]
+      },
+      {
+        &quot;name&quot;: &quot;subA&quot;,
+        &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;],
+        &quot;instances&quot;: [
+          { &quot;instanceName&quot;: &quot;u_subA1&quot;, &quot;moduleNameRef&quot;: &quot;subA1&quot; },
+          { &quot;instanceName&quot;: &quot;u_subA2&quot;, &quot;moduleNameRef&quot;: &quot;subA2&quot; }
+        ]
+      },
+      { &quot;name&quot;: &quot;subA1&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+      { &quot;name&quot;: &quot;subA2&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+
+      {
+        &quot;name&quot;: &quot;subB&quot;,
+        &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;],
+        &quot;instances&quot;: [
+          { &quot;instanceName&quot;: &quot;u_subB1&quot;, &quot;moduleNameRef&quot;: &quot;subB1&quot; },
+          { &quot;instanceName&quot;: &quot;u_subB2&quot;, &quot;moduleNameRef&quot;: &quot;subB2&quot; }
+        ]
+      },
+      { &quot;name&quot;: &quot;subB1&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+      {
+        &quot;name&quot;: &quot;subB2&quot;,
+        &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;],
+        &quot;instances&quot;: [
+          { &quot;instanceName&quot;: &quot;u_subB2_1&quot;, &quot;moduleNameRef&quot;: &quot;subB2_1&quot; },
+          { &quot;instanceName&quot;: &quot;u_subB2_2&quot;, &quot;moduleNameRef&quot;: &quot;subB2_2&quot; }
+        ]
+      },
+      { &quot;name&quot;: &quot;subB2_1&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+      { &quot;name&quot;: &quot;subB2_2&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+
+      { &quot;name&quot;: &quot;subC&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+      { &quot;name&quot;: &quot;subD&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+
+      {
+        &quot;name&quot;: &quot;subE&quot;,
+        &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;],
+        &quot;instances&quot;: [
+          { &quot;instanceName&quot;: &quot;u_subE1&quot;, &quot;moduleNameRef&quot;: &quot;subE1&quot; },
+          { &quot;instanceName&quot;: &quot;u_subE2&quot;, &quot;moduleNameRef&quot;: &quot;subE2&quot; }
+        ]
+      },
+      { &quot;name&quot;: &quot;subE1&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+      {
+        &quot;name&quot;: &quot;subE2&quot;,
+        &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;],
+        &quot;instances&quot;: [
+          { &quot;instanceName&quot;: &quot;u_subE2_1&quot;, &quot;moduleNameRef&quot;: &quot;subE2_1&quot; },
+          { &quot;instanceName&quot;: &quot;u_subE2_2&quot;, &quot;moduleNameRef&quot;: &quot;subE2_2&quot; }
+        ]
+      },
+      { &quot;name&quot;: &quot;subE2_1&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] },
+      { &quot;name&quot;: &quot;subE2_2&quot;, &quot;ports&quot;: [&quot;clk&quot;, &quot;rst&quot;], &quot;instances&quot;: [] }
+    ]
+  }
+}</pre>
+</div></div><ul><li><p><strong>Note</strong>: Each “moduleNameRef” is just a string referencing the <code>name</code> of another module. No nested duplication occurs here.</p></li></ul><hr/><h2 id="NetlistStructuresinJSON-2)JSONThatBuildsanInstanceTree(ReferencingModules,NotCopyingThem)">2) JSON That Builds an Instance Tree (Referencing Modules, Not Copying Them)</h2><p>This structure shows a fully expanded instance tree for the design, rooted at “top.” Each node:</p><ul><li><p>Tells you which module it references</p></li><li><p>Holds its instance name</p></li><li><p>Lists children that are also references to modules (by name)</p></li></ul><p><strong>Important</strong>: In raw JSON, we cannot store direct in-memory pointers the way we might in a compiled language. So to avoid duplication, we rely on minimal references (e.g., <code>&quot;moduleNameRef&quot;</code>) and store children as arrays. The actual module data is looked up in the module graph (from Section 1).</p><h3 id="NetlistStructuresinJSON-instanceTree.json">instanceTree.json</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;instanceTree&quot;: {
+    &quot;rootInstance&quot;: {
+      &quot;instanceName&quot;: &quot;top&quot;,
+      &quot;moduleNameRef&quot;: &quot;top&quot;,
+      &quot;children&quot;: [
+        {
+          &quot;instanceName&quot;: &quot;u_subA&quot;,
+          &quot;moduleNameRef&quot;: &quot;subA&quot;,
+          &quot;children&quot;: [
+            {
+              &quot;instanceName&quot;: &quot;u_subA1&quot;,
+              &quot;moduleNameRef&quot;: &quot;subA1&quot;,
+              &quot;children&quot;: []
+            },
+            {
+              &quot;instanceName&quot;: &quot;u_subA2&quot;,
+              &quot;moduleNameRef&quot;: &quot;subA2&quot;,
+              &quot;children&quot;: []
+            }
+          ]
+        },
+        {
+          &quot;instanceName&quot;: &quot;u_subB&quot;,
+          &quot;moduleNameRef&quot;: &quot;subB&quot;,
+          &quot;children&quot;: [
+            {
+              &quot;instanceName&quot;: &quot;u_subB1&quot;,
+              &quot;moduleNameRef&quot;: &quot;subB1&quot;,
+              &quot;children&quot;: []
+            },
+            {
+              &quot;instanceName&quot;: &quot;u_subB2&quot;,
+              &quot;moduleNameRef&quot;: &quot;subB2&quot;,
+              &quot;children&quot;: [
+                {
+                  &quot;instanceName&quot;: &quot;u_subB2_1&quot;,
+                  &quot;moduleNameRef&quot;: &quot;subB2_1&quot;,
+                  &quot;children&quot;: []
+                },
+                {
+                  &quot;instanceName&quot;: &quot;u_subB2_2&quot;,
+                  &quot;moduleNameRef&quot;: &quot;subB2_2&quot;,
+                  &quot;children&quot;: []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          &quot;instanceName&quot;: &quot;u_subC&quot;,
+          &quot;moduleNameRef&quot;: &quot;subC&quot;,
+          &quot;children&quot;: []
+        },
+        {
+          &quot;instanceName&quot;: &quot;u_subD&quot;,
+          &quot;moduleNameRef&quot;: &quot;subD&quot;,
+          &quot;children&quot;: []
+        },
+        {
+          &quot;instanceName&quot;: &quot;u_subE&quot;,
+          &quot;moduleNameRef&quot;: &quot;subE&quot;,
+          &quot;children&quot;: [
+            {
+              &quot;instanceName&quot;: &quot;u_subE1&quot;,
+              &quot;moduleNameRef&quot;: &quot;subE1&quot;,
+              &quot;children&quot;: []
+            },
+            {
+              &quot;instanceName&quot;: &quot;u_subE2&quot;,
+              &quot;moduleNameRef&quot;: &quot;subE2&quot;,
+              &quot;children&quot;: [
+                {
+                  &quot;instanceName&quot;: &quot;u_subE2_1&quot;,
+                  &quot;moduleNameRef&quot;: &quot;subE2_1&quot;,
+                  &quot;children&quot;: []
+                },
+                {
+                  &quot;instanceName&quot;: &quot;u_subE2_2&quot;,
+                  &quot;moduleNameRef&quot;: &quot;subE2_2&quot;,
+                  &quot;children&quot;: []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}</pre>
+</div></div><ul><li><p>In memory, you would typically keep a lookup table (dictionary) of <code>[moduleName → moduleObject]</code> so these references can be resolved without copying entire modules.</p></li></ul><hr/><h2 id="NetlistStructuresinJSON-3)PartitionOverlayThatReferstotheModuleGraph">3) Partition Overlay That Refers to the Module Graph</h2><p>The idea here:</p><ul><li><p>You have a partition definition that references module <strong>names</strong> from the module graph.</p></li><li><p>For each module entry, you can optionally list instance names you want to include.</p></li><li><p>If the <code>&quot;includeInstances&quot;</code> array is empty, it implies including <strong>all</strong> instances in that module.</p></li></ul><h3 id="NetlistStructuresinJSON-partitionOverlay_modules.json">partitionOverlay_modules.json</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;partitionOverlay_modules&quot;: {
+    &quot;partitionName&quot;: &quot;Partition_ABC&quot;,
+    &quot;includedModules&quot;: [
+      {
+        &quot;moduleName&quot;: &quot;subA&quot;,
+        &quot;includeInstances&quot;: [&quot;u_subA1&quot;] 
+      },
+      {
+        &quot;moduleName&quot;: &quot;subB&quot;,
+        &quot;includeInstances&quot;: [] 
+      },
+      {
+        &quot;moduleName&quot;: &quot;subE&quot;,
+        &quot;includeInstances&quot;: [&quot;u_subE1&quot;, &quot;u_subE2&quot;] 
+      }
+    ]
+  }
+}</pre>
+</div></div><ul><li><p>Here, <code>&quot;includeInstances&quot;: []</code> for <code>subB</code> means include all of subB’s instances.</p></li><li><p>For <code>subA</code>, we explicitly only include <code>u_subA1</code>.</p></li><li><p>For <code>subE</code>, we include the two listed child instances.</p></li></ul><hr/><h2 id="NetlistStructuresinJSON-4)PartitionOverlayThatReferstotheInstanceTree">4) Partition Overlay That Refers to the Instance Tree</h2><p>In some flows, you might want partitions that operate at the <strong>instance</strong> level (the expanded tree). The JSON below shows how to select sub-trees by their hierarchical paths:</p><h3 id="NetlistStructuresinJSON-partitionOverlay_instances.json">partitionOverlay_instances.json</h3><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;partitionOverlay_instances&quot;: {
+    &quot;partitionName&quot;: &quot;Partition_XYZ&quot;,
+    &quot;includedInstances&quot;: [
+      {
+        &quot;hierPath&quot;: &quot;top/u_subA&quot;,
+        &quot;includedChildren&quot;: [&quot;u_subA1&quot;]
+      },
+      {
+        &quot;hierPath&quot;: &quot;top/u_subB&quot;,
+        &quot;includedChildren&quot;: []
+      },
+      {
+        &quot;hierPath&quot;: &quot;top/u_subE&quot;,
+        &quot;includedChildren&quot;: [&quot;u_subE2&quot;]
+      }
+    ]
+  }
+}</pre>
+</div></div><ul><li><p>A value like <code>&quot;hierPath&quot;: &quot;top/u_subA&quot;</code> identifies a node in the instance tree.</p></li><li><p><code>&quot;includedChildren&quot;: []</code> means “include all children.”</p></li><li><p><code>&quot;includedChildren&quot;: [&quot;u_subA1&quot;]</code> would limit to only <code>u_subA1</code> within <code>u_subA</code>.</p></li></ul><hr/><h2 id="NetlistStructuresinJSON-ExampleMemory-ConservativeJavaScript">Example Memory-Conservative JavaScript</h2><p>Below is an <strong>extremely minimal</strong> JavaScript example that:</p><ul><li><p>Loads the module graph (from the JSON in section 1).</p></li><li><p>Builds a fast lookup map for modules by name.</p></li><li><p>Constructs an instance tree for a given top module (if you haven’t already built it or if you want to do it on-the-fly).</p></li><li><p>Demonstrates how we only store references by module name without duplicating substructures.</p></li><li><p>Uses plain objects and arrays (no fancy frameworks) for minimal overhead.</p></li></ul><p>We have also enhanced Node.js script demonstrating how to “annotate” (or tag) each node in the instance tree with references to one or more partitions. The script:</p><ol start="1"><li><p>Loads the <strong>module graph</strong> and <strong>(optionally) a pre-built instance tree</strong> (or builds it on-the-fly).</p></li><li><p>Loads <strong>partition overlays</strong> that reference:</p><ul><li><p>Modules (by name) plus instance names</p></li><li><p>Instances (by hierarchical path)</p></li></ul></li><li><p>Walks the instance tree, attaching an array of partition names (e.g. <code>node.partitions</code>) to each node, based on overlay criteria.</p></li></ol><p>The example logic is simple and meant as a starting point. You can refine how you interpret and merge overlays depending on your EDA flow.</p><p>The example logic is simple and meant as a starting point. You can refine how you interpret and merge overlays depending on your EDA flow.</p><hr/><h2 id="NetlistStructuresinJSON-File/DirectorySetup">File/Directory Setup</h2><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: sql; gutter: false; theme: Confluence" data-theme="Confluence">your_project/
+├── loadData.js                 (the Node.js script below)
+├── moduleGraph.json            (from prior example)
+├── partitionOverlay_modules.json   (from prior example)
+├── partitionOverlay_instances.json  (from prior example)
+└── instanceTree.json           (optional; or build on the fly)</pre>
+</div></div><hr/><h2 id="NetlistStructuresinJSON-1)EnhancedScript(loadData.js)">1) Enhanced Script (loadData.js)</h2><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">#!/usr/bin/env node
+
+const fs = require(&#39;fs&#39;);
+const path = require(&#39;path&#39;);
+
+//=================================================
+// 1. Load or build the data structures
+//=================================================
+
+// Read module graph JSON from disk
+const moduleGraphPath = path.join(__dirname, &#39;moduleGraph.json&#39;);
+const moduleGraphJson = JSON.parse(fs.readFileSync(moduleGraphPath, &#39;utf8&#39;));
+
+// Create a lookup map: moduleName -&gt; moduleObject
+const moduleMap = Object.create(null);
+for (const mod of moduleGraphJson.moduleGraph.modules) {
+  moduleMap[mod.name] = mod;
+}
+
+// Optional: read a pre-built instance tree if available
+let topInstanceTree = null;
+try {
+  const instanceTreePath = path.join(__dirname, &#39;instanceTree.json&#39;);
+  if (fs.existsSync(instanceTreePath)) {
+    const instanceTreeJson = JSON.parse(fs.readFileSync(instanceTreePath, &#39;utf8&#39;));
+    topInstanceTree = instanceTreeJson.rootInstance;
+  }
+} catch (err) {
+  console.error(&#39;Could not load instanceTree.json, skipping:&#39;, err);
+}
+
+// Function to build an instance tree from the moduleMap (if no pre-built tree is found)
+function buildInstanceTree(moduleName, instanceName = moduleName) {
+  const node = {
+    instanceName,
+    moduleNameRef: moduleName,
+    children: [],
+    partitions: [] // Will store any partition tags here
+  };
+
+  const moduleObj = moduleMap[moduleName];
+  if (!moduleObj) {
+    console.error(`Module &quot;${moduleName}&quot; not found in moduleMap`);
+    return node;
+  }
+
+  for (const inst of moduleObj.instances) {
+    // Recursively build child
+    const child = buildInstanceTree(inst.moduleNameRef, inst.instanceName);
+    node.children.push(child);
+  }
+
+  return node;
+}
+
+// If no pre-built tree found, build it from &quot;top&quot;
+if (!topInstanceTree) {
+  topInstanceTree = buildInstanceTree(&#39;top&#39;);
+} else {
+  // If you loaded a tree from JSON that does not have partitions array yet,
+  // initialize partitions = [] for each node.
+  function initPartitions(node) {
+    if (!node.partitions) node.partitions = [];
+    for (const c of node.children || []) {
+      initPartitions(c);
+    }
+  }
+  initPartitions(topInstanceTree);
+}
+
+//=================================================
+// 2. Utilities to find &amp; annotate instance tree
+//=================================================
+
+/**
+ * Find node by hierarchical path like &quot;top/u_subA/u_subA1&quot;.
+ * @param {Object} root - the root node of the tree
+ * @param {string[]} pathArray - array of instance names, e.g. [&quot;top&quot;,&quot;u_subA&quot;,&quot;u_subA1&quot;]
+ * @return {Object|null} the matching node, or null if not found
+ */
+function findNodeByHierPath(root, pathArray) {
+  if (!root || !pathArray.length) return null;
+  if (root.instanceName !== pathArray[0]) return null;
+  if (pathArray.length === 1) {
+    return root; // matched
+  }
+  // search deeper
+  const nextName = pathArray[1];
+  for (const child of root.children) {
+    if (child.instanceName === nextName) {
+      return findNodeByHierPath(child, pathArray.slice(1));
+    }
+  }
+  return null;
+}
+
+/**
+ * Recursively annotate a node (and optionally its children) with partitionName.
+ * This is a helper if your overlay implies &quot;include all children.&quot;
+ */
+function annotateSubtree(node, partitionName) {
+  // Mark current node
+  if (!node.partitions.includes(partitionName)) {
+    node.partitions.push(partitionName);
+  }
+  // Recurse on children
+  for (const child of node.children) {
+    annotateSubtree(child, partitionName);
+  }
+}
+
+//=================================================
+// 3. Applying &quot;Modules&quot; Partition Overlay
+//=================================================
+//
+// This overlay references modules by name, possibly restricting instance names in &quot;includeInstances&quot;.
+// If &quot;includeInstances&quot; is empty =&gt; we annotate all instance names for that module.
+// Otherwise, we only annotate the listed instance names.
+//
+function applyPartitionOverlayModules(root, partitionData) {
+  const partitionName = partitionData.partitionName;
+  const includedModules = partitionData.includedModules || [];
+
+  // We will do a simple tree walk and check each node:
+  function walk(node) {
+    // For each includedModule in the overlay
+    for (const incMod of includedModules) {
+      if (node.moduleNameRef === incMod.moduleName) {
+        // matched the module
+        const incList = incMod.includeInstances || [];
+        if (incList.length === 0 || incList.includes(node.instanceName)) {
+          // Mark this node with partitionName
+          if (!node.partitions.includes(partitionName)) {
+            node.partitions.push(partitionName);
+          }
+          // If incList is empty =&gt; we mark all children as well
+          if (incList.length === 0) {
+            // annotate entire subtree
+            for (const child of node.children) {
+              annotateSubtree(child, partitionName);
+            }
+          }
+        }
+      }
+    }
+
+    // Recurse
+    for (const child of node.children) {
+      walk(child);
+    }
+  }
+
+  walk(root);
+}
+
+//=================================================
+// 4. Applying &quot;Instances&quot; Partition Overlay
+//=================================================
+//
+// This overlay references specific hierarchical paths. 
+// For each included instance path, you can list &quot;includedChildren&quot;. 
+// If &quot;includedChildren&quot; is empty =&gt; we annotate the entire subtree under that instance.
+//
+// Example structure:
+// {
+//   &quot;partitionName&quot;: &quot;Partition_XYZ&quot;,
+//   &quot;includedInstances&quot;: [
+//     {
+//       &quot;hierPath&quot;: &quot;top/u_subA&quot;,
+//       &quot;includedChildren&quot;: [&quot;u_subA1&quot;]
+//     },
+//     ...
+//   ]
+// }
+//
+function applyPartitionOverlayInstances(root, partitionData) {
+  const partitionName = partitionData.partitionName;
+  const includedInstances = partitionData.includedInstances || [];
+
+  for (const incInst of includedInstances) {
+    const hierPath = incInst.hierPath; // e.g. &quot;top/u_subA&quot;
+    const includedChildren = incInst.includedChildren || [];
+
+    // Find the node in the tree
+    const pathArray = hierPath.split(&#39;/&#39;);
+    const node = findNodeByHierPath(root, pathArray);
+
+    if (!node) {
+      console.warn(`Warning: Hierarchical path &quot;${hierPath}&quot; not found.`);
+      continue;
+    }
+
+    // Mark the node itself
+    if (!node.partitions.includes(partitionName)) {
+      node.partitions.push(partitionName);
+    }
+
+    if (includedChildren.length === 0) {
+      // If includedChildren is empty =&gt; annotate entire subtree
+      annotateSubtree(node, partitionName);
+    } else {
+      // Otherwise, only annotate the listed children
+      for (const childName of includedChildren) {
+        // find that child among node.children
+        const childNode = node.children.find(c =&gt; c.instanceName === childName);
+        if (childNode) {
+          annotateSubtree(childNode, partitionName);
+        } else {
+          console.warn(
+            `Warning: Child instanceName &quot;${childName}&quot; not found under &quot;${hierPath}&quot;.`
+          );
+        }
+      }
+    }
+  }
+}
+
+//=================================================
+// 5. Load and apply overlays
+//=================================================
+
+// A small helper to safely load JSON from a file if it exists
+function loadJsonIfExists(fileName) {
+  const fullPath = path.join(__dirname, fileName);
+  if (!fs.existsSync(fullPath)) return null;
+  return JSON.parse(fs.readFileSync(fullPath, &#39;utf8&#39;));
+}
+
+// Try loading partitionOverlay_modules.json
+const modulesOverlay = loadJsonIfExists(&#39;partitionOverlay_modules.json&#39;);
+if (modulesOverlay) {
+  console.log(&#39;\n=== Applying partitionOverlay_modules.json ===&#39;);
+  console.log(JSON.stringify(modulesOverlay, null, 2));
+  applyPartitionOverlayModules(topInstanceTree, modulesOverlay);
+}
+
+// Try loading partitionOverlay_instances.json
+const instancesOverlay = loadJsonIfExists(&#39;partitionOverlay_instances.json&#39;);
+if (instancesOverlay) {
+  console.log(&#39;\n=== Applying partitionOverlay_instances.json ===&#39;);
+  console.log(JSON.stringify(instancesOverlay, null, 2));
+  applyPartitionOverlayInstances(topInstanceTree, instancesOverlay);
+}
+
+//=================================================
+// 6. Print out the final annotated instance tree
+//=================================================
+
+console.log(&#39;\n=== Final Annotated Instance Tree ===&#39;);
+console.log(JSON.stringify(topInstanceTree, null, 2));</pre>
+</div></div><h3 id="NetlistStructuresinJSON-HowThisWorks">How This Works</h3><ol start="1"><li><p><code>partitions</code><strong> array on each node</strong></p><ul><li><p>Every node in the instance tree now has a <code>partitions</code> field (initialized to <code>[]</code>).</p></li><li><p>When an overlay “includes” that node, we push the partition name into <code>partitions</code>.</p></li><li><p>A node can belong to multiple partitions.</p></li></ul></li><li><p><strong>Module-based overlay</strong> (<code>applyPartitionOverlayModules</code>)</p><ul><li><p>For each node in the tree, we check if its <code>moduleNameRef</code> matches any included module.</p></li><li><p>If <code>includeInstances</code> is empty for that module, we mark the entire subtree.</p></li><li><p>Otherwise, we only mark the node if its <code>instanceName</code> is in that list, and you can decide whether to mark children. (In the example, if <code>includeInstances</code> is empty, we automatically mark all children.)</p></li></ul></li><li><p><strong>Instance-based overlay</strong> (<code>applyPartitionOverlayInstances</code>)</p><ul><li><p>For each entry, we look up the node by hierarchical path (e.g. <code>&quot;top/u_subA&quot;</code>).</p></li><li><p>If <code>includedChildren</code> is empty, we mark the entire subtree under that node.</p></li><li><p>If <code>includedChildren</code> is non-empty, we only mark those child instances (and their subtrees).</p></li></ul></li><li><p><strong>No duplication</strong></p><ul><li><p>We do not copy the tree or modules. We only add a small array of partition tags to each node.</p></li></ul></li><li><p><strong>Possible customizations</strong></p><ul><li><p>You might want to define more complex rules for partial subtrees, or for conflicts when a node belongs to multiple partitions.</p></li><li><p>You might want to unify module-based and instance-based overlays differently. The example approach is intentionally simple.</p></li></ul></li></ol><hr/><h2 id="NetlistStructuresinJSON-ExampleOutput(Conceptual)">Example Output (Conceptual)</h2><p>After applying the overlays, you’ll see each node in the JSON has something like:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;instanceName&quot;: &quot;u_subA&quot;,
+  &quot;moduleNameRef&quot;: &quot;subA&quot;,
+  &quot;partitions&quot;: [&quot;Partition_ABC&quot;],
+  &quot;children&quot;: [
+    {
+      &quot;instanceName&quot;: &quot;u_subA1&quot;,
+      &quot;moduleNameRef&quot;: &quot;subA1&quot;,
+      &quot;partitions&quot;: [&quot;Partition_ABC&quot;],
+      &quot;children&quot;: []
+    },
+    ...
+  ]
+}</pre>
+</div></div><p>That indicates the node belongs to “Partition_ABC.” If you had multiple overlays, you might see:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">&quot;partitions&quot;: [&quot;Partition_ABC&quot;, &quot;Partition_XYZ&quot;]</pre>
+</div></div><hr/><p><strong>Why is this memory-conservative?</strong></p><ul><li><p>We store each module’s data exactly once in <code>moduleMap</code>.</p></li><li><p>The instance tree only keeps <code>{ instanceName, moduleNameRef }</code> plus a <code>children</code> array.</p></li><li><p>No copies of large objects or big sub-objects.</p></li><li><p>All lookups are done by referencing strings (module names) as keys into <code>moduleMap</code>.</p></li><li><p>JavaScript automatically manages references, so there’s no need to store raw pointers.</p></li></ul><hr/><h2 id="NetlistStructuresinJSON-PointersorObjectReferenceManagementinJavaScript?">Pointers or Object Reference Management in JavaScript?</h2><p>JavaScript does <strong>not</strong> expose raw pointers (like C/C++). Instead, JavaScript uses automatic memory management with references to objects in the heap. A few points to keep in mind:</p><ol start="1"><li><p><strong>No Manual Pointer Arithmetic</strong>: You cannot do pointer arithmetic or direct memory manipulations.</p></li><li><p><strong>Automatic Garbage Collection</strong>: If nothing references an object anymore, the engine reclaims it.</p></li><li><p><strong>Reference vs. Value</strong>: </p><ul><li><p>Objects and arrays are passed by reference, meaning if you assign an array to a new variable, both variables point to the same underlying array.</p></li><li><p>Primitive data types (numbers, strings, booleans) are passed by value.</p></li></ul></li><li><p><strong>Potential Memory Leaks</strong>: If you hold onto references in global variables or closures, those objects remain in memory. So, it’s good practice to nullify references you no longer need.</p></li></ol><p>In short, you do not manually manage pointers in JavaScript. Instead, you rely on references and the garbage collector to handle memory. The approach above (mapping <code>moduleNameRef</code> → single stored copy in <code>moduleMap</code>) is a typical solution for netlist or EDA-like data structures in JavaScript (or TypeScript).</p><hr/><h3 id="NetlistStructuresinJSON-Summary">Summary</h3><ul><li><p><strong>Module Graph JSON</strong>: Holds each module once.</p></li><li><p><strong>Instance Tree JSON</strong>: Stores references (<code>moduleNameRef</code>) for sub-instances to avoid duplication.</p></li><li><p><strong>Partition Overlays</strong>: Can refer either to modules (by name) or to instance paths (by hierarchical names).</p></li><li><p><strong>JavaScript</strong>: Uses references automatically; we keep data structures minimal by storing each module once and re-referencing it by name everywhere else.</p></li></ul><p>This scheme allows you to represent large hierarchical EDA netlists efficiently in JavaScript with minimal memory duplication. With this enhanced approach:</p><ul><li><p><strong>You read the netlist data</strong> (module graph, instance tree) from disk.</p></li><li><p><strong>You read the partition overlay</strong> files (both module-based and instance-based).</p></li><li><p><strong>You traverse/annotate</strong> the instance tree so each node ends up with a <code>partitions</code> array reflecting all the overlays that include it.</p></li><li><p><strong>The final JSON</strong> (printed at the end) is your instance tree with partition tags. You can now export or further process this annotated tree.</p></li></ul><p>This pattern keeps memory usage low by storing each module exactly once (via <code>moduleMap</code>) and referencing it by <code>moduleNameRef</code> in the instance tree. The partition overlays only add small arrays of string tags to each node.</p>

@@ -1,0 +1,859 @@
+{
+  "name": "dce",
+  "version": "v0.1.0",
+  "tachl": [
+    {
+      "name": "dce",
+      "params": [
+        {
+         "parameterName": "syncDepth",
+         "type": "integer",
+         "parameterType": "architecture",
+         "default": 2,
+         "minimum": 2,
+         "maximum": 8,
+         "formula": "return system.syncDepth"
+        },
+        {
+          "parameterName": "useMemoryGating",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "validValues": "0,1",
+          "description": "when set to 1, the memory clock is gated and the memory enable is tied high.",
+          "formula": "return 0;"
+        },
+        {
+          "parameterName": "useSramInputFlop",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "validValues": "0,1",
+          "description": "when set to 1, an extra pipeline stage p0+ is inserted into Snoop Filter pipeline to ease synthesis timing for the SRAM input path.",
+          "formula": "return unit.useSramInputFlop"
+        },
+        {
+          "parameterName": "nCMDSkidBufArb",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 16,
+          "formula": "return unit.nCMDSkidBufArb"
+        },
+        {
+          "parameterName": "nCMDSkidBufSize",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": "16",
+          "formula": "return unit.nCMDSkidBufSize"
+        },
+        {
+          "parameterName": "CMDOverflowBufInSRAM",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return ((unit.nCMDSkidBufSize - unit.nCMDSkidBufArb) > 0) && (unit.MemoryInterfaces.CmdSkidBufMem[0].fnMemType === 'SRAM') ? 1 : 0;"
+        },
+        {
+          "parameterName": "assertOn",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "validValues": "0,1",
+          "formula": "return system.AssertionEnable ? 1 : 0;"
+        },
+        {
+          "parameterName": "wFUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 7,
+          "formula": "return system.wFUnitId"
+        },
+        {
+          "parameterName": "NullFilter",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0
+        },
+        {
+          "parameterName": "wFPortId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return system.wFPortId"
+        },
+        {
+          "parameterName": "wNUnitId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 3,
+          "formula": "return system.wNUnitId"
+        },
+        {
+          "parameterName": "wRpn",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "formula": "return system.wRPN"
+        },
+        {
+          "parameterName": "wNrri",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "formula": "return system.wNRRI"
+        },
+        {
+          "parameterName": "engVerId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return system.engVerId"
+        },
+        {
+          "parameterName": "implVerId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return system.implVerId"
+        },
+        {
+          "parameterName": "nGPRA",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return system.nGPWindows"
+        },
+        {
+          "parameterName": "InterleaveInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/interleaveInfo.tachl.cpr"
+        },
+        {
+          "parameterName": "wAddr",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 48,
+          "formula": "return system.concertocparams.wAddr"
+        },
+        {
+          "parameterName": "nPerfCounters",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4,
+		  "minimum": 1,
+		  "maximum": 16,
+          "formula": "return unit.nPerfCounters"
+        },
+        {
+          "parameterName": "AsyncReset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1
+        },
+        {
+          "parameterName": "DataReset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return 1",
+          "validValues": "0,1",
+          "description": "Force all flops to be reset: 0x0: only control flops are reset. 0x1: all flops including data flops are reset."
+        },
+        {
+          "parameterName": "wCacheLineOffset",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 6,
+          "maximum": 6,
+          "default": 6,
+          "formula": "return system.concertocparams.wCacheLine"
+        },
+        {
+          "parameterName": "nCachingAgents",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return unit.SnoopFilters.reduce((r, v) => { return r + v.SnoopFilterAssignment.length; }, 0)"
+        },
+        {
+          "parameterName": "nChieAius",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.nChieAius"
+        },
+        {
+          "parameterName": "nAius",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.nAius"
+        },
+        {
+          "parameterName": "nDmis",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.nDmis"
+        },
+        {
+          "parameterName": "nDceConnectedDmis",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.nDceConnectedDmis"
+        },
+        {
+          "parameterName": "nDceConnectedCas",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.nDceConnectedCas"
+        },
+	{
+          "parameterName": "nDve",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "return system.nDves"
+        },
+        {
+          "parameterName": "nWays",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "formula": "return unit.SnoopFilters.reduce((r, v) => { return r + v.nSnpFltrWays; }, 0)"
+        },
+        {
+          "parameterName": "RetryDepth",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 4
+        },
+        {
+          "parameterName": "StashEnable",
+          "type": "string",
+          "parameterType": "architecture",
+          "formula": "const reverseMap = Object.keys(system.fUnitIdMap).reduce((res, i) => {\n\tif (!res[system.fUnitIdMap[i]])\n      res[system.fUnitIdMap[i]] = i;\n  \treturn res;\n}, {});\n\nlet exp = 0;\nreturn `${system.nCAius + system.nProxyCaches + system.nIOAIUp}'h${unit.SnoopFilters.reduce((res, sf)=>{\n  for (let i = sf.SnoopFilterAssignment.length - 1; i >= 0; i--) {\n  \tlet ncu = root.units[reverseMap[sf.SnoopFilterAssignment[i]]];\n    if (ncu && ncu.params.fnNativeInterface)\n       res += (ncu.params.fnNativeInterface === 'CHI-B' || ncu.params.fnNativeInterface === 'CHI-E' ? Math.pow(2,exp):0);\n    exp++;\n  }\n  return res;\n},0).toString(16)}`;"
+        },
+        {
+          "parameterName": "CachingAgentIsCHI",
+          "type": "string",
+          "parameterType": "architecture",
+          "formula": "const reverseMap = Object.keys(system.fUnitIdMap).reduce((res, i) => {\n\tif (!res[system.fUnitIdMap[i]])\n      res[system.fUnitIdMap[i]] = i;\n  \treturn res;\n}, {});\n\nlet exp = 0;\nreturn `${system.nCAius + system.nProxyCaches + system.nIOAIUp}'h${unit.SnoopFilters.reduce((res, sf)=>{\n  for (let i = sf.SnoopFilterAssignment.length - 1; i >= 0; i--) {\n  \tlet ncu = root.units[reverseMap[sf.SnoopFilterAssignment[i]]];\n    if (ncu && ncu.params.fnNativeInterface)\n       res += (ncu.params.fnNativeInterface === 'CHI-B' || ncu.params.fnNativeInterface === 'CHI-E' ? Math.pow(2,exp):0);\n    exp++;\n  }\n  return res;\n},0).toString(16)}`;"
+        },
+        {
+          "parameterName": "nAttCtrlEntries",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "minimum": 4,
+          "maximum": 64,
+          "formula": "return unit.ImplementationParameters.nAttCtrlEntries"
+        },
+        {
+          "parameterName": "nTaggedMonitors",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "formula": "return unit.ImplementationParameters.nTaggedMonitors"
+        },
+        {
+          "parameterName": "wLpId",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 5,
+          "maximum": 5,
+          "default": 5
+        },
+        {
+          "parameterName": "nLpIdPerCaAgent",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "// Take max of caiu nProcs\nreturn Object.keys(root.units).reduce((r, v) => (root.units[v].module === 'aiu_top' || root.units[v].module === 'ioaiu_top') && root.units[v].params.nProcs && root.units[v].params.nProcs > r ? root.units[v].params.nProcs : r, 1);"
+        },
+        {
+          "parameterName": "CachingAgentsLpIds",
+          "type": "string",
+          "parameterType": "architecture",
+          "default": "",
+          "formula": "const nLpIdPerCaAgent = Object.keys(root.units).reduce((r,v) => (root.units[v].module === 'aiu_top' || root.units[v].module === 'ioaiu_top') && root.units[v].params.nProcs && root.units[v].params.nProcs > r ? root.units[v].params.nProcs : r, 1);\nconst caLpIds = function (unit) {\n  \tlet nLpIds = nLpIdPerCaAgent;\n  \tlet nCachingAgents = system.nCAius + system.nProxyCaches + system.nIOAIUp;\n\tlet val = nLpIds - 1;\n  \tlet wLpId = 5; \n  \treturn ('{' + Array.from(Array(nCachingAgents * nLpIds), (v,i) => {\n  \tif (val < 0) {\n    \tval = nLpIds - 1;\n    }\n    let ret = `${wLpId}'d${val}`;\n    val --;\n    return ret;\n  }).join(', ') + ' }');\n};\nreturn caLpIds(unit);"
+        },
+        {
+          "parameterName": "nRbsPerDmi",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 8,
+          "formula": "return unit.ImplementationParameters.nDceRbCredits"
+        },
+        {
+          "parameterName": "nSnpsPerAiu",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 2,
+          "formula": "return unit.ImplementationParameters.nAiuSnpCredits"
+        },
+        {
+          "parameterName": "nProcs",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 1,
+          "formula": "// nLpIdPerCaAgent = max nProcs value from all CAIUs\nconst nLpIdPerCaAgent = Object.keys(root.units).reduce((r, v) => (root.units[v].module === 'aiu_top' || root.units[v].module === 'ioaiu_top') && root.units[v].params.nProcs && root.units[v].params.nProcs > r ? root.units[v].params.nProcs : r, 1);\nreturn (system.nCAius + system.nProxyCaches + system.nIOAIUp) * nLpIdPerCaAgent;"
+        },
+        {
+          "parameterName": "useResiliency",
+          "type": "integer",
+          "parameterType": "architecture",
+          "default": 0,
+          "formula": "return system.ResilienceEnable ? 1 : 0",
+          "validValues": "0,1"
+        },
+        {
+          "parameterName": "usePma",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0, 1",
+          "default": 0,
+          "formula": "return unit.usePma ? 1 : 0"
+        },
+        {
+          "parameterName": "ResilienceInfo",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/resilienceInfo.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "PmaInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/pmaInfo.tachl.cpr"
+        },
+        {
+          "parameterName": "cmType",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/concMsgCmType.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "concParams",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/concMsg.tachl.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "concMuxMsgParams",
+          "type": "object",
+          "reference": "ConcMuxMsgParamsParam",
+          "parameterType": "architecture",
+          "formula": ""
+        },
+        {
+          "parameterName": "smiPortParams",
+          "type": "object",
+          "reference": "SmiPortParamsParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "SnoopFilterInfo",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "rm:reference": "SnoopFilterInfoParam",
+          "covReference": "SnoopFilterInfoParam",
+          "formula": "return unit.SnoopFilters.reduce((r, v) => { \n  let o = { \n    TagFilterErrorInfo: {},\n    SetSelectInfo: {} \n  }; \n  o.nVictimEntries = v.ImplementationParameters.nVictimBuffers;\n  o.nSets = v.nSnpFltrSets;\n  o.nWays = v.nSnpFltrWays;\n  o.TagFilterErrorInfo.fnErrDetectCorrect = v.TagFilterErrInfo;\n  o.SetSelectInfo.PriSubDiagAddrBits = v.SetSelectPrimaryBitV;\n  o.SetSelectInfo.SecSubRows = v.SetSelectPrimaryBitV.map(v => {return \"'h0\";});\n  o.fnFilterType = 'EXPLICITOWNER';\n  o.biten = v.bitEn;\n  o.nSnoopFilterEccSplitFactor = 1;\n  o.nCachingAgents = v.SnoopFilterAssignment.length;\n  o.TagMem = v.MemoryInterfaces.TagMem.map(e => { e.Signals = []; e.MemType = e.fnMemType === 'Flop' ? 'NONE' : 'SYNOPSYS' ; return e});\n  o.SnoopFilterAssignment = v.SnoopFilterAssignment;\n  o.SnoopFilterNUnitIdAssignment = v.SnoopFilterNUnitIdAssignment;\n o.RepPolicy = v.RepPolicy;\n o.RpMem = v.MemoryInterfaces.RpMem.map(e => { e.Signals = []; e.MemType = e.fnMemType === 'Flop' ? 'NONE' : 'SYNOPSYS' ; return e});\n return r.concat([o]) }, [])"
+        },
+        {
+          "parameterName": "MemoryGeneration",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "MemoryGenerationParam"
+        },
+        {
+          "parameterName": "interfaces",
+          "type": "object",
+          "reference": "InterfacesParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "QosInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/QosInfo.tachl.cpr"
+        },
+        {
+          "parameterName": "fnEnableQos",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "default": 0,
+          "formula": "return system.qosparams.fnEnableQos ? 1 : 0",
+          "description": "Enable QoS."
+        },
+        {
+          "parameterName": "fnEnableTimeOutRef",
+          "type": "integer",
+          "parameterType": "architecture",
+          "validValues": "0,1",
+          "formula": "return system.fnEnableTimeOutRef ? 1 : 0",
+          "default": 0,
+          "description": "Used to add extra timeout reference signal input port. This will be one port per Ncore unit AIUs, DCEs and DMIs. (At top level for Ncore this may be tied to single port out of Ncore)"
+        },
+        {
+          "parameterName": "timeOutThreshold",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return system.timeOutThreshold",
+          "default": 0,
+          "description": "Timeout threshold value; counts in increments of 4K cycles."
+        },
+        {
+          "parameterName": "BootInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/bootAndCsrInfo.tachl.cpr#BootInfo"
+        },
+        {
+          "parameterName": "wSnoopEnables",
+          "type": "integer",
+          "parameterType": "architecture",
+          "formula": "return unit.SnoopFilters.reduce((r, v) => {\n  const arr = v.SnoopFilterNUnitIdAssignment;\n  return Math.max(r, ...arr);\n},0) + 1;"
+        }
+      ]
+    },
+    {
+      "name": "ConcMuxMsgParamsParam",
+      "params": [
+        {
+          "parameterName": "tx",
+          "type": "object",
+          "reference": "TxParam",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "rx",
+          "type": "object",
+          "reference": "RxParam",
+          "parameterType": "architecture"
+        }
+      ]
+    },
+    {
+      "name": "TxParam",
+      "params": [
+        {
+          "parameterName": "sysReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSYSNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "sysRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSYSrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "cmdRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wCCMDrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "updRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wUPDrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "rbuRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wRBUrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "snpReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSNPNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "strReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSTRNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "rbrReq",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wRBRNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "mrdReq",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wMRDNdp;\n_self.wDpBits = 0;\nreturn _self"
+        }
+      ]
+    },
+    {
+      "name": "RxParam",
+      "params": [
+        {
+          "parameterName": "sysRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 1;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSYSrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "sysReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wSYSNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "cmdReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wCMDNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "updReq",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wUPDNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "rbuReq",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#ReqParam",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 2;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocrequestmessagefields.wRBUNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "snpRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 0;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSNPrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "strRsp",
+          "type": "object",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "parameterType": "architecture",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 0;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wSTRrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "mrdRsp",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 0;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wMRDrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        },
+        {
+          "parameterName": "rbrRsp",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "$TACHL_CPR_DIR/lib/reqRspParam.tachl.cpr#RspParam",
+          "formula": "_self.enablePipe = 0;\n_self.pipeDepth = 0;\n_self.dpPresent = 0;\n_self.wNdpBits = system.concertocresponsemessagefields.wRBRrspNdp;\n_self.wDpBits = 0;\nreturn _self"
+        }
+      ]
+    },
+    {
+      "name": "SmiPortParamsParam",
+      "params": [
+        {
+          "parameterName": "tx",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "rm:reference": "$TACHL_CPR_DIR/lib/smiPortTx.tachl.cpr",
+          "covReference": "$TACHL_CPR_DIR/lib/smiPortTx.tachl.cpr",
+          "formula": "function updatePipeInfo(portArray, portName, info) {\n  var idx = 0;\n  for(let i = 0; i < portArray.length; ++i) {\n  \tif (portArray[i] && portArray[i].name === portName) {\n      idx = i;\n      break;\n    }\n  }\n  \n  portArray[idx]['params']['enablePipe'] = info.enablePipe;\n  portArray[idx]['params']['pipeDepth'] = info.pipeDepth;\n  \n  return portArray;\n}\nvar smiPortMsgMap = updatePipeInfo(unit.SmiPortMsgMap.tx, 'smi_tx0_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_tx1_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_tx2_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_tx3_', {enablePipe:0, pipeDepth:2});\nreturn smiPortMsgMap;"
+        },
+        {
+          "parameterName": "rx",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "rm:reference": "$TACHL_CPR_DIR/lib/smiPortRx.tachl.cpr",
+          "covReference": "$TACHL_CPR_DIR/lib/smiPortRx.tachl.cpr",
+          "formula": "function updatePipeInfo(portArray, portName, info) {\n  var idx = 0;\n  for(let i = 0; i < portArray.length; ++i) {\n  \tif (portArray[i] && portArray[i].name === portName) {\n      idx = i;\n      break;\n    }\n  }\n  \n  portArray[idx]['params']['enablePipe'] = info.enablePipe;\n  portArray[idx]['params']['pipeDepth'] = info.pipeDepth;\n  \n  return portArray;\n}\nvar smiPortMsgMap = updatePipeInfo(unit.SmiPortMsgMap.rx, 'smi_rx0_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_rx1_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_rx2_', {enablePipe:0, pipeDepth:2});\nsmiPortMsgMap = updatePipeInfo(smiPortMsgMap, 'smi_rx3_', {enablePipe:0, pipeDepth:2});\nreturn smiPortMsgMap;"
+        }
+      ]
+    },
+    {
+      "name": "InterfacesParam",
+      "params": [
+        {
+          "parameterName": "clkInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.clkInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceCLK.design.cpr",
+          "parameterType": "architecture"
+        },
+	{
+          "parameterName": "masterTriggerInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.masterTriggerInt",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "checkClkInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.checkClkInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceCLK.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "irqInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.irqInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceINT.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "uIdInt",
+          "type": "object",
+          "formula": "const intf = unit.Interfaces.internal.uIdInt; return (Array.isArray(intf) && intf.length === 1 ? intf[0] : intf)",
+          "covReference": "$HW_LIB_DESIGN/InterfaceUnitId.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "uSysCaIdInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uSysCaIdInt",
+          "covReference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr",
+          "parameterType": "architecture"
+        },
+	{
+          "parameterName": "uSysCaNodeIdInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uSysCaNodeIdInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceUnitId.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "uSysDmiIdInt",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.internal.uSysDmiIdInt",
+          "covReference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+	 {
+          "parameterName": "uSysDveIdInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.uSysDveIdInt",
+          "parameterType": "architecture",
+	  "covReference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "parameterName": "uSysConnectedCaIdInt",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.internal.uSysConnectedCaIdInt",
+          "covReference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "parameterName": "uSysConnectedDmiIdInt",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.internal.uSysConnectedDmiIdInt",
+          "covReference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "parameterName": "uSysConnectedDmiRbOffsetInt",
+          "type": "object",
+          "parameterType": "architecture",
+          "formula": "return unit.Interfaces.internal.uSysConnectedDmiRbOffsetInt",
+          "covReference": "$HW_NCR_DESIGN/postMap/InterfaceSysUnitId.design.cpr"
+        },
+        {
+          "parameterName": "apbInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.apbInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceAPB.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "bistInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.bistInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceBIST.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "faultInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.faultInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceFault.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "qInt",
+          "type": "object",
+          "formula": "return unit.Interfaces.internal.qInt",
+          "covReference": "$HW_LIB_DESIGN/InterfacePQChannel.design.cpr",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "memoryInt",
+          "type": "array",
+          "arrayType": "object",
+          "covReference": "$HW_LIB_DESIGN/InterfaceGeneric.design.cpr",
+          "formula": "return unit.Interfaces.internal.memoryInt",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "smiTxInt",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return unit.Interfaces.internal.smiTxInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceGeneric.design.cpr"
+        },
+        {
+          "parameterName": "smiRxInt",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return unit.Interfaces.internal.smiRxInt",
+          "covReference": "$HW_LIB_DESIGN/InterfaceGeneric.design.cpr"
+        }
+      ]
+    },
+    {
+      "name": "MemoryGenerationParam",
+      "params": [
+            {
+          "parameterName": "CmdSkidBufMem",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "formula": "return unit.MemoryInterfaces.CmdSkidBufMem.map(e => { e.Signals = [];  e.MemType = e.fnMemType === 'Flop' ? 'NONE' : 'SYNOPSYS' ; return e});",
+          "reference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr",
+          "covReference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr"
+        }
+     ]
+    },
+    {
+      "name": "SnoopFilterInfoParam",
+      "params": [
+        {
+          "parameterName": "fnFilterType",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "EXPLICITOWNER",
+          "default": "EXPLICITOWNER",
+          "formula": ""
+        },
+        {
+          "parameterName": "nSnoopFilterEccSplitFactor",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 1,
+          "maximum": 1,
+          "validValues": "1",
+          "default": 1
+        },
+        {
+          "parameterName": "nVictimEntries",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 1,
+          "maximum": 1,
+          "validValues": "1",
+          "default": 1
+        },
+        {
+          "parameterName": "TagFilterErrorInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "TagFilterErrorInfoParam"
+        },
+        {
+          "parameterName": "nCachingAgents",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 1,
+          "maximum": 16,
+          "default": 1
+        },
+        {
+          "parameterName": "nSets",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 4,
+          "default": 4
+        },
+        {
+          "parameterName": "nWays",
+          "type": "integer",
+          "parameterType": "architecture",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 2
+        },
+        {
+          "parameterName": "wEntry",
+          "type": "integer",
+          "parameterType": "architecture"
+        },
+        {
+          "parameterName": "SetSelectInfo",
+          "type": "object",
+          "parameterType": "architecture",
+          "reference": "SetSelectInfoParam"
+        },
+        {
+          "parameterName": "TagMem",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "object",
+          "reference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr",
+          "covReference": "$TACHL_CPR_DIR/lib/memory.tachl.cpr"
+        }
+      ]
+    },
+    {
+      "name": "TagFilterErrorInfoParam",
+      "params": [
+        {
+          "parameterName": "fnErrDetectCorrect",
+          "type": "enum",
+          "parameterType": "architecture",
+          "validValues": "NONE, PARITY, SECDED",
+          "default": "NONE"
+        }
+      ]
+    },
+    {
+      "name": "SetSelectInfoParam",
+      "params": [
+        {
+          "parameterName": "PriSubDiagAddrBits",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "integer"
+        },
+        {
+          "parameterName": "SecSubRows",
+          "type": "array",
+          "parameterType": "architecture",
+          "arrayType": "string"
+        }
+      ]
+    }
+  ]
+}

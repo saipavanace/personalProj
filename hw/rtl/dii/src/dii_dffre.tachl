@@ -1,0 +1,84 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+//
+// NAME: dffre
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+// Reset enable flip flop.
+// Enable is always required.
+// Reset is optional; enabled by JS parameter RstEn.
+// WIDTH is a verilog parameter.
+// RST_Val is a verilog parameter avialable when RstEn is set.
+//
+//=============================================================================
+\jsend
+\jsbegin
+//
+// Variables
+//
+var u = obj.lib;
+
+u.paramDefault('RstEn', 'int', 1);
+\jsend
+\jsbegin
+//
+// Ports
+//
+u.port('input', 'clk', 1);
+
+if(u.getParam('RstEn')) 
+{
+u.port('input', 'reset_n', 1);
+}
+
+u.port('input', 'en', 1);
+u.port('input', 'd', 'WIDTH');
+u.port('output', 'q', 'WIDTH', 'reg');
+\jsend
+\jsbegin
+//
+// Module
+//
+\jsend
+module \=u.getModuleName()=\
+#(
+    parameter WIDTH = 1
+\jsbegin
+if (u.getParam('RstEn')) {
+\jsend 			      
+   ,parameter RST_VAL = {WIDTH{1'b0}}
+\jsbegin
+}
+\jsend
+
+)(
+\=u.getPorts('\n ')=\
+);
+\jsbegin
+//
+// Code
+//
+if (u.getParam('RstEn')) {
+\jsend 	   
+    always @ (posedge clk, negedge reset_n)
+        if (~reset_n)
+	    q <= RST_VAL;
+        else if (en)
+	    q <= d;
+\jsbegin
+} else {
+\jsend 	   
+    always @ (posedge clk)
+        if (en)
+	    q <= d;
+\jsbegin
+}
+\jsend 	
+
+endmodule
+

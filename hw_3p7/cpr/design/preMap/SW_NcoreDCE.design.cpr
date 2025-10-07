@@ -1,0 +1,96 @@
+{
+  "name": "SW_NcoreDCE",
+  "design": [
+    {
+      "name": "",
+      "params": [
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "snoopFilters",
+          "parameterTitle": "Snoop filters",
+          "minimum": 1,
+          "default": 1,
+          "parameterType": "architecture",
+          "docID": 526,
+          "type": "integer",
+          "maximum": 8,
+          "guiDescription": "Number of snoop fitlers in the design"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDceRbCredits",
+          "parameterTitle": "Number of DCE write request buffer credits",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of DCE write request buffer credits per DMI.\nThese credits limit number of Coherent writes and incudes snoops that can cause a write to DMI.",
+          "docID": 527,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nAiuSnpCredits",
+          "parameterTitle": "Number of snoop credits",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of snoop request credits per AIU.",
+          "docID": 528,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nDmiMrdCredits",
+          "parameterTitle": "Number of memory read credits",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 2,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of memory read credits per DMI.",
+          "docID": 529,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": false,
+          "parameterName": "nAttCtrlEntries",
+          "parameterTitle": "Number of active coherent transactions",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 4,
+          "parameterType": "architecture",
+          "guiDescription": "Maximum number of active coherent transactions tracked by each DCE",
+          "docID": 530,
+          "type": "integer"
+        },
+        {
+          "guiVisibility": "yes",
+          "readonly": true,
+          "parameterName": "memories",
+          "parameterTitle": "Memories",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/SW_Memory.design.cpr"
+        },
+        {
+          "guiVisibility": "no",
+          "readonly": false,
+          "parameterName": "mappedObjects",
+          "parameterTitle": "Mapped Objects",
+          "parameterType": "architecture",
+          "type": "array",
+          "arrayType": "object",
+          "reference": "$HW_NCR_DESIGN/preMap/COMMON_ObjectBase.design.cpr"
+        }
+      ],
+      "baseName": "NC_NcoreUnit"
+    }
+  ]
+}

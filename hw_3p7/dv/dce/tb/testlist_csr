@@ -1,0 +1,403 @@
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -m -r -n dce_config5 -d BLK_SNPS_OCP_VIP,HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON,DUMP_ON -C $WORK_TOP/../test_projects/achlProjects/dce_config5.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -m -r -n dce_config3 -d HNT_CHECKER_ON,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,ASSERT_ON,DUMP_ON -C $WORK_TOP/../test_projects/achlProjects/dce_config3.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -r -m -d MAINTENANCE_OP,BLK_SNPS_OCP_VIP,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,DUMP_ON -n sw_config2_maint_all -C $WORK_TOP/../test_projects/achlProjects/dce_config2_cov.apf
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -r -m -d MAINTENANCE_OP,BLK_SNPS_OCP_VIP,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,DUMP_ON -n sw_config2_maint_loc -C $WORK_TOP/../test_projects/achlProjects/dce_config2_cov.apf
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -r -m -d MAINTENANCE_OP,BLK_SNPS_OCP_VIP,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,DUMP_ON -n sw_config2_maint_addr -C $WORK_TOP/../test_projects/achlProjects/dce_config2_cov.apf
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -r -m -d MAINTENANCE_OP,BLK_SNPS_OCP_VIP,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,DUMP_ON -n sw_config2_maint_init -C $WORK_TOP/../test_projects/achlProjects/dce_config2_cov.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -r -m -d MAINTENANCE_OP,BLK_SNPS_OCP_VIP,STRICT_ON,EXCLUSIVE_MON,ADDR_OFFSET_COLLISION,DUMP_ON -n sw_config2_uncor_err -C $WORK_TOP/../test_projects/achlProjects/dce_config2_cov.apf
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -r -m -n dce_arch5_errdet -d HNT_CHECKER_ON,BLK_SNPS_OCP_VIP,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION,DCE_ARCH5,DUMP_ON -C $WORK_TOP/../test_projects/achlProjects/dce_arch5_errdet.apf
+node $WORK_TOP/dv/scripts/rsim.js -e dce -a -c -r -m -n dce_arch5_pm -d HNT_CHECKER_ON,BLK_SNPS_OCP_VIP,STRICT_ON,EXCLUSIVE_MON,ASSERT_ON,ADDR_OFFSET_COLLISION,DCE_ARCH5,DUMP_ON -C $WORK_TOP/../test_projects/achlProjects/dce_arch5_errdet.apf
+
+
+
+
+
+# Directory Activity Register test
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_dirutar_reg_test -n dce_config5 -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+# Correctable Error Register test - checking different bit fields: error overflow, error threshold, error count
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_dirucecr_errovf_reg_test -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,+single_bit_error=100,+k_timeout_usec=2000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_dirucecr_errthd_reg_test -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,+single_bit_error=100,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_dirucecr_errcnt_reg_test   -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,+single_bit_error=100,+k_timeout_usec=2000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+# Correctable Error Detect Register test
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_dirucecr_errDetEn_reg_test -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=100,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,+single_bit_error=100,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+
+# Uncorrectable Error Register test - interrupt enable
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_diruuecr_errIntEn_reg_test -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,double_bit_error=10,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+# Uncorrectable Error Register test - checking different bit field - error overflow, error detect enable
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_diruuecr_errovf_reg_test -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,double_bit_error=100,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_diruuecr_errDetEn_reg_test -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,double_bit_error=10,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+#Invalid test for uncorrectible errors because threshold for uncorrectible error is 0, therefore error count is never incremented.
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_diruuecr_errcnt_reg_test  -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+k_req_delay_min=0,double_bit_error=100,+k_timeout_usec=2000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+
+
+# Single-Bit Error Test
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+ntb_random_seed=58937803,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=5000,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+single_bit_error=100
+
+# Reset-In-The-Middle Testing
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_config3 -p +k_num_addr=32,+k_num_cmd=32,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=125,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+reset_testing
+
+###################################################
+# DCE Recall address/data error tests
+###################################################
+
+# Address Error (SFI SLV) on SNPrsp for Recall  +wt_err_snp_sfi_slv_recall=50
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=8192,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+wt_err_snp_sfi_slv_recall=50
+
+# Data Error (SFI DERR) on SNPrsp for Recall +wt_err_snp_sfi_derr_recall=50
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=8192,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+wt_err_snp_sfi_derr_recall=50
+
+###################################################
+# Address Error has higher precedence over Data Error
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=8192,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+wt_err_snp_sfi_slv_recall=50,+wt_err_snp_sfi_derr_recall=50
+
+###################################################
+# Transport Error has higher precedence over Address Error
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=8192,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+wt_err_snp_sfi_slv_recall=50,+wt_err_snp_sfi_tmo=50
+
+###################################################
+# Transport Error has higher precedence over Data Error
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=8192,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+wt_err_snp_sfi_derr_recall=50,+wt_err_snp_sfi_tmo=50
+
+###################################################
+# DCE propagated address/data error tests
+###################################################
+
+# Address Error (SFI SLV) on SNPrsp  +wt_err_snp_sfi_slv=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_slv=20
+
+# Data Error (SFI DERR) on SNPrsp  +wt_err_snp_sfi_derr=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_derr=20
+
+# CONC-1708
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_slv=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_derr=20
+
+# CONC-1709
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_derr=50,+wt_err_snp_sfi_disc=50
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_slv=50,+wt_err_snp_sfi_disc=50
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_derr=50,+wt_err_snp_sfi_tmo=50
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=2000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_slv=50,+wt_err_snp_sfi_tmo=50
+
+
+###################################################
+# DCE transport error tests
+###################################################
+
+# Transport Error (Disconnect) on SNPrsp  +wt_err_snp_sfi_disc=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_disc=20
+
+# Transport Error (Timeout) on SNPrsp  +wt_err_snp_sfi_tmo=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_tmo=20
+
+# Transport Error (Disconnect) on MRDrsp  +wt_err_mrd_sfi_disc=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_mrd_sfi_disc=20
+
+# Transport Error (Timeout) on MRDrsp  +wt_err_mrd_sfi_tmo=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_mrd_sfi_tmo=20
+
+# Transport Error (Disconnect) on HNTrsp  +wt_err_hnt_sfi_disc=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_hnt_sfi_disc=20
+
+# Transport Error (Timeout) on HNTrsp  +wt_err_hnt_sfi_tmo=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_hnt_sfi_tmo=20
+
+# Transport Error (Disconnect) on STRrsp  +wt_err_str_sfi_disc=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_str_sfi_disc=20
+
+# Transport Error (Timeout) on STRrsp  +wt_err_str_sfi_tmo=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=1,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=10,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_str_sfi_tmo=20
+
+###################################################
+# DCE Tag Filter Entry Uncorrectible Error
+###################################################
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=4,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+ntb_random_seed=58937803,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=500,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+double_bit_error=10
+
+
+###################################################
+# DVM address/data error tests
+###################################################
+
+# Address Error (SFI SLV) on SNPrsp  +wt_err_snp_sfi_slv=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_slv=20
+
+# Data Error (SFI DERR) on SNPrsp  +wt_err_snp_sfi_derr=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_derr=20
+
+###################################################
+# Address Error has higher precedence over Data Error
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_slv=50,+wt_err_snp_sfi_derr=50
+
+###################################################
+# Transport Error has higher precedence over Address Error
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_slv=50,+wt_err_snp_sfi_tmo=50
+
+###################################################
+# Transport Error has higher precedence over Data Error
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_derr=50,+wt_err_snp_sfi_tmo=50
+
+###################################################
+# DVM transport error tests
+###################################################
+
+# Transport Error (Disconnect) on STRrsp  +wt_err_str_sfi_disc=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=50,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_str_sfi_disc=20
+
+# Transport Error (Timeout) on STRrsp  +wt_err_str_sfi_tmo=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=50,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_str_sfi_tmo=20
+
+# Transport Error (Disconnect) on SNPrsp  +wt_err_snp_sfi_disc=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=50,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_disc=20
+
+# Transport Error (Disconnect) on SNPrsp  +wt_err_snp_sfi_tmo=20
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=32,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=50,+ntb_random_seed=1234,+k_timeout_usec=1000,+UVM_MAX_QUIT_COUNT=1,+k_init_rand_state=0,+wt_err_snp_sfi_tmo=20
+
+
+###################################################
+# DCE power management tests
+###################################################
+
+# DCE power management test: snoop filter disabled
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=15832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=28937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=48937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=55832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=68937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=75832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=88937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=95832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=11937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle
+
+# DCE power management test: caching agent snoop disabled
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=ca_snp_en
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=ca_snp_en_rand
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=ca_snp_en_rand
+
+# DCE power management test: memory hint disabled
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=mr_hnt_en
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=mr_hnt_en_rand
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=mr_hnt_en_rand
+
+###################################################
+# DVM power management tests
+###################################################
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=dvm_snp_en
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=dvm_snp_en_rand
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=32,+k_num_cmd=10000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=0,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=10,+ntb_random_seed=58937803,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=dvm_snp_en_rand
+
+###################################################
+# DCE CSR tests
+###################################################
+
+# Directed Register Write Read test
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t ocp_directed_reg_wr_rd_test -r -n dce_arch5_errdet -p +ntb_random_seed=54227420,+k_timeout_usec=25000,+UVM_MAX_QUIT_COUNT=1 
+
+#Invalid test - covered in the error count/status test
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t ocp_directed_aliasreg_wr_rd_test -r -n dce_arch5_errdet -p +ntb_random_seed=15730814,+k_timeout_usec=25000,+UVM_MAX_QUIT_COUNT=1 
+
+# Directed Register Reset test
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t ocp_directed_reg_reset_test -r -n dce_arch5_errdet -p +ntb_random_seed=37164586,+k_timeout_usec=25000,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+# Maintenance Operation Recall All Test with 10 different seeds with DCE traffic on while Maintenance Operation takes place
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=4,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=16148669,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=5,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=54809341,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=6,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=25045709,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=7,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=7388752,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=8,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=30956697,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=9,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=2269974,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=10,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=52606648,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=11,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=36363639,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=12,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=57630630,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=13,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=26881973,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=10,+wt_maint_recall_loc=0
+
+
+# Maintenance Operation Recall By Index/Way Test with 10 different seeds with DCE traffic on while Maintenance Operation takes place
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=4,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=16148669,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=5,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=54809341,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=6,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=25045709,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=7,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=7388752,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=8,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=30956697,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=9,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=2269974,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=10,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=52606648,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=11,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=36363639,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=12,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=57630630,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=13,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=26881973,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=0,+wt_maint_recall_all=0,+wt_maint_recall_loc=10
+
+# Maintenance Operation Recall By Address Test with 10 different seeds with DCE traffic on while Maintenance Operation takes place
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=4,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=16148669,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=5,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=54809341,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=6,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=25045709,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=7,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=7388752,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+#node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=8,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=30956697,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=9,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=2269974,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=10,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=52606648,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=11,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=36363639,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=12,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=57630630,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=13,+k_num_cmd=20000,+wt_cmd_rd_cpy=5,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=5,+wt_cmd_wr_unq_ptl=5,+wt_cmd_wr_unq_full=5,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=26881973,+maint_test_type=random_test,+k_timeout_usec=50000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+wt_maint_recall_addrs=10,+wt_maint_recall_all=0,+wt_maint_recall_loc=0
+
+# Directed Maintenance Test - Recall by Address (Maintenance Op takes place when DCE is quiscent, no traffic)
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_addr -p +k_num_addr=4,+k_num_cmd=1000,+wt_cmd_rd_cpy=2,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=2,+wt_cmd_cln_vld=2,+wt_cmd_cln_inv=2,+wt_cmd_wr_unq_ptl=2,+wt_cmd_wr_unq_full=2,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=12246658,+maint_test_type=recall_addrs,+k_timeout_usec=500,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+# Directed Maintenance Test - Recall by Index/Way (Maintenance Op takes place when DCE is quiscent, no traffic)
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_loc -p +k_num_addr=4,+k_num_cmd=1000,+wt_cmd_rd_cpy=2,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=2,+wt_cmd_cln_vld=2,+wt_cmd_cln_inv=2,+wt_cmd_wr_unq_ptl=2,+wt_cmd_wr_unq_full=2,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=11738937,+maint_test_type=recall_locs,+k_timeout_usec=500,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+# Directed Maintenance Test - Recall All (Maintenance Op takes place when DCE is quiscent, no traffic)
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_all -p +k_num_addr=4,+k_num_cmd=1000,+wt_cmd_rd_cpy=2,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=2,+wt_cmd_cln_vld=2,+wt_cmd_cln_inv=2,+wt_cmd_wr_unq_ptl=2,+wt_cmd_wr_unq_full=2,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=47280837,+maint_test_type=recall_all,+k_timeout_usec=500,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+# Directed Maintenance Test - Init All (Maintenance Op takes place when DCE is quiscent, no traffic)
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_csr_maint_test -r -n sw_config2_maint_init -p +k_num_addr=4,+k_num_cmd=1000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=2,+wt_cmd_cln_vld=2,+wt_cmd_cln_inv=2,+wt_cmd_wr_unq_ptl=2,+wt_cmd_wr_unq_full=2,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=47146090,+maint_test_type=init_all,+k_timeout_usec=500,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1
+
+
+# Uncorrectible (Double-Bit Error) Test
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=23118750,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=93138661,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=46148539,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=721483662+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=54809341,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=25045709,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=7388752,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=30956697,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=2269974,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=52606648,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=36363639,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=57630630,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n sw_config2_uncor_err -p +k_num_addr=8,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=26881973,+k_timeout_usec=50000,+k_single_bit_error=10,+k_double_bit_error=1,+UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_MEDIUM,+dir_commit_check,+disable_end_state_check
+
+
+
+
+# CONC-1650 MntOpActv bit (mem_init_in_progress) stuck for Maintenance Op INIT ALL
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_test -r -n dce_arch5_errdet -p +k_num_addr=4,+k_num_cmd=1000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=0,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=0,+wt_cmd_cln_inv=0,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=20,+wt_cmd_dvm_msg=0,+ntb_random_seed=58937803,+k_req_delay_min=0,+k_req_delay_max=0,+k_timeout_usec=500,+k_strict=1,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+force_reset_values=0
+
+# CONC-1659 DCE RTL got allocated twice while ATT is full
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_errdet -p +k_num_addr=1000,+k_num_cmd=10000,+wt_cmd_rd_cpy=10,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=10,+wt_cmd_cln_unq=20,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=10,+wt_cmd_wr_unq_full=10,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=35832662,+k_timeout_usec=5000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=recall_all_in_middle
+
+# CONC-1701 Snoop Filter Power Down and Up sequence: illegal p2_owner_is_known (after first snoop filter is shutdown) causing sharer snoop (expected owner snoop)
+
+node $WORK_TOP/dv/scripts/rsim.js -e dce -t dce_power_management_test -r -n dce_arch5_pm -p +k_num_addr=1,+k_num_cmd=5000,+wt_cmd_rd_cpy=0,+wt_cmd_rd_vld=10,+wt_cmd_rd_unq=10,+wt_cmd_rd_cln=0,+wt_cmd_cln_unq=0,+wt_cmd_cln_vld=10,+wt_cmd_cln_inv=10,+wt_cmd_wr_unq_ptl=0,+wt_cmd_wr_unq_full=0,+wt_cmd_upd_inv=0,+wt_cmd_dvm_msg=0,+ntb_random_seed=35832662,+k_timeout_usec=10000,+k_init_rand_state=0,+UVM_MAX_QUIT_COUNT=1,+pm_test_type=sf_en_in_middle,+k_req_vld_delay_min=32,k_req_vld_delay_max=32
+

@@ -1,0 +1,2109 @@
+\jsbegin
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+//
+// NAME: dce_tm
+//
+// AUTHOR : Mohammed Khaleeluddin 
+//
+// DESCRIPTION:
+// ATT entry for DCE
+//
+//=============================================================================
+//
+// Variables
+//
+var u = obj.lib;
+var m = obj.userLib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+//
+// Params
+//
+let fixCONC13177 = 1;
+
+let ASSERT_ON = m.ParamDefaultGet(u, 'assertOn', 'int', 0);
+
+let useSramInputFlop = u.getParam('useSramInputFlop');
+
+let useMoveFlopsToTop = m.ParamDefaultGet(u, 'useMoveFlopsToTop', 'int', 0);
+
+let att_req_alloc_bundle = m.ParamDefaultGet(u, 'att_req_alloc_bundle', 'object', {});
+let att_alloc_bundle     = m.ParamDefaultGet(u, 'att_alloc_bundle', 'object', {});
+
+let att_req_alloc_bundle_width = bundleFunctions.getBundleWidth(att_req_alloc_bundle, [], u.bundle);
+let att_alloc_bundle_width     = bundleFunctions.getBundleWidth(att_alloc_bundle, [], u.bundle);
+
+let CMD_REQ_INTF = m.ParamDefaultGet(u, 'cmdReqInterface', 'object', {});
+let UPD_REQ_INTF = m.ParamDefaultGet(u, 'updReqInterface', 'object', {});
+let MRD_REQ_INTF = m.ParamDefaultGet(u, 'mrdReqInterface', 'object', {});
+let MRD_RSP_INTF = m.ParamDefaultGet(u, 'mrdRspInterface', 'object', {});
+let SNP_REQ_INTF = m.ParamDefaultGet(u, 'snpReqInterface', 'object', {});
+let SNP_RSP_INTF = m.ParamDefaultGet(u, 'snpRspInterface', 'object', {});
+let STR_REQ_INTF = m.ParamDefaultGet(u, 'strReqInterface', 'object', {});
+let STR_RSP_INTF = m.ParamDefaultGet(u, 'strRspInterface', 'object', {});
+let RBR_REQ_INTF = m.ParamDefaultGet(u, 'rbrReqInterface', 'object', {});
+let RBR_RSP_INTF = m.ParamDefaultGet(u, 'rbrRspInterface', 'object', {});
+let reqAckEventInterface = m.ParamDefaultGet(u, 'reqAckEventInterface', 'object', {});
+
+let N_WAYS =m.ParamDefaultGet(u, 'nWays', 'int', 8);
+let N_ATT =m.ParamDefaultGet(u, 'nAttEntries', 'int', 32);
+let N_SF = m.ParamDefaultGet(u, 'nSf', 'int', 4);
+let N_C_AGENTS = m.ParamDefaultGet(u, 'nCachingAgents', 'int', 4);
+let N_CHIE_AIUS = m.ParamDefaultGet(u, 'nChieAius', 'int', 0);
+let CM_TYPE = m.ParamDefaultGet(u, 'cmType', 'object', {});
+let N_DMIS = m.ParamDefaultGet(u, 'nDmis', 'int', 4);
+let N_CONNECTED_DMIS = m.ParamDefaultGet(u, 'nConnectedDmis', 'int', 4);
+let W_CLO = m.ParamDefaultGet(u, 'wCacheLineOffset', 'int', 4);
+let W_FUNIT_ID = m.ParamDefaultGet(u, 'wFUnitId', 'int', 4);
+let W_FPORT_ID = m.ParamDefaultGet(u, 'wFPortId', 'int', 4);
+let W_NUNIT_ID = m.ParamDefaultGet(u, 'wNUnitId', 'int', 4);
+let SF_INFO = m.ParamDefaultGet(u, 'SnoopFilterInfo', 'array', []);
+let W_LP_ID = m.ParamDefaultGet(u, 'wLpId', 'int', 4);
+let N_LP_IDS = m.ParamDefaultGet(u, 'nLpIdPerCaAgent', 'int', 2);
+let N_PROCS = m.ParamDefaultGet(u, 'nProcs', 'int', 12);
+let N_TAG_MONS = m.ParamDefaultGet(u, 'nTaggedMonitors', 'int', 8);
+let N_MRD_CREDITS = m.ParamDefaultGet(u, 'nMrdsPerDmi', 'int', 18);
+let N_SNP_CREDITS = m.ParamDefaultGet(u, 'nSnpsPerAiu', 'int', 18);
+let N_RBS = m.ParamDefaultGet(u, 'nRbsPerDmi', 'int', 8);
+let N_GPRA = m.ParamDefaultGet(u, 'nGPRA', 'int', 2);
+let DMI_IGSV = m.ParamDefaultGet(u, 'dmiIGSV', 'array', []);
+let DMI_2WIFV = m.ParamDefaultGet(u, 'dmi2WIFV', 'array', []);
+let DMI_3WIFV = m.ParamDefaultGet(u, 'dmi3WIFV', 'array', []);
+let DMI_4WIFV = m.ParamDefaultGet(u, 'dmi4WIFV', 'array', []);
+let DMI_8WIFV = m.ParamDefaultGet(u, 'dmi8WIFV', 'array', []);
+let DMI_16WIFV= m.ParamDefaultGet(u, 'dmi16WIFV', 'array', []);
+
+let STASH_EN_VEC = m.ParamDefaultGet(u, 'StashEnable', 'string', "7'd0");
+let CachingAgentIsCHI = m.ParamDefaultGet(u, 'CachingAgentIsCHI', 'string', "7'd0");
+
+let W_RB_ID = RBR_REQ_INTF.rb_id - 1;
+let W_MSG_ID = CMD_REQ_INTF.message_id;
+let W_INIT_ID = CMD_REQ_INTF.initiator_id;
+let W_TARGET_ID = CMD_REQ_INTF.target_id;
+let W_CM_TYPE = CMD_REQ_INTF.cm_type;
+let W_M_PROT = CMD_REQ_INTF.m_prot;
+let W_H_PROT = CMD_REQ_INTF.h_prot;
+let W_T_TIER = SNP_REQ_INTF.t_tier;
+let W_STEER = SNP_REQ_INTF.steering;
+let W_PRI = SNP_REQ_INTF.priority;
+let W_QL =  SNP_REQ_INTF.ql;
+let W_CM_STATUS = CMD_REQ_INTF.cm_status;
+let W_ADDR = CMD_REQ_INTF.addr;
+let W_VZ = CMD_REQ_INTF.vz;
+let W_AC = CMD_REQ_INTF.ac;
+let W_CA = CMD_REQ_INTF.ca;
+let W_CH = CMD_REQ_INTF.ch;
+let W_ST = CMD_REQ_INTF.st;
+let W_EN = CMD_REQ_INTF.en;
+let W_ES = CMD_REQ_INTF.es;
+let W_NS = CMD_REQ_INTF.ns;
+let W_PR = CMD_REQ_INTF.pr;
+let W_OR = CMD_REQ_INTF.or;
+let W_LK = CMD_REQ_INTF.lk;
+let W_RL = CMD_REQ_INTF.rl;
+let W_TM = CMD_REQ_INTF.tm;
+let W_MPF1 = CMD_REQ_INTF.mpf1;
+let W_MPF2 = CMD_REQ_INTF.mpf2;
+let W_MPF3 = SNP_REQ_INTF.mpf3;
+let W_SIZE = CMD_REQ_INTF.size;
+let W_INTF_SIZE = CMD_REQ_INTF.intf_size;
+let W_D_ID = CMD_REQ_INTF.d_id;
+let W_TOF = CMD_REQ_INTF.tof;
+let W_QOS = SNP_REQ_INTF.qos;
+let W_R_TYPE = RBR_REQ_INTF.r_type;
+let W_MW = RBR_REQ_INTF.mw;
+let W_UP = SNP_REQ_INTF.up;
+let W_AUX = CMD_REQ_INTF.aux;
+let WSNP_AUX = SNP_REQ_INTF.aux;
+let N_QOS = Math.pow(2, W_QOS);
+let W_N_ATT = Math.max(m.log2ceil(N_ATT), 1);
+let W_N_C_AGENTS = Math.max(m.log2ceil(N_C_AGENTS), 1);
+
+let QosInfo = m.ParamDefaultGet(u, 'QosInfo', 'object', {qosMap:[]});
+let useQos = m.ParamDefaultGet(u, 'useQos', 'int', 0);
+
+let DM_PIPELINE_DEPTH = useSramInputFlop ? 4 : 3;
+
+let DIR_RSP_INTF = 
+{
+    valid       : 1,
+    att_vec     : N_ATT,
+    way_vec     : N_WAYS,
+    owner_valid : 1,
+    owner_num   : W_N_C_AGENTS,
+    sharer_vec  : N_C_AGENTS,
+    wr_required : 1,
+    error       : 1
+};
+
+let clkInterface			= { name: "", signals: { clk: 1, reset_n: 1 } };
+
+// Function to convert an interface {{name, signals}) to a { modulePrefix, localPrefix, interface} object
+// that is used to specify how local interfaces are mapped to module interfaces of an instance
+function getModuleLocalPrefixAndInterface (intrface) {
+	const modulePrefix		= intrface.name;
+	const localPrefix		= intrface.name;
+	return { modulePrefix, localPrefix, "interface": intrface.signals };
+}
+
+var ccrCsrInterface          = u.getParam('ccrCsrInterface');
+
+//
+// Ports
+//
+
+u.port('input', 'clk', 1);
+u.port('input', 'reset_n', 1);
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveFlopsToTop) {
+
+u.port('output', 'en_att_req_alloc_bundle_vec',  N_ATT);
+u.port('output', 'in_att_req_alloc_bundle_vec',  N_ATT * att_req_alloc_bundle_width);
+u.port('input',  'out_att_req_alloc_bundle_vec', N_ATT * att_req_alloc_bundle_width);
+
+u.port('output', 'en_att_alloc_bundle_vec',  N_ATT);
+u.port('output', 'in_att_alloc_bundle_vec',  N_ATT * att_alloc_bundle_width);
+u.port('input',  'out_att_alloc_bundle_vec', N_ATT * att_alloc_bundle_width);
+
+}
+
+u.port('input', 'cmux_snp_rsp_UCE', 1);
+u.port('input', 'cmux_mrd_rsp_UCE', 1);
+u.port('input', 'cmux_str_rsp_UCE', 1);
+u.port('input', 'cmux_rbr_rsp_UCE', 1);
+
+u.interface(ccrCsrInterface.name, 'slave' , ccrCsrInterface.signals);
+
+u.port('output', 'csr_target_ue_valid', 1);
+u.port('output', 'csr_target_ue_init_id', W_FUNIT_ID);
+u.port('output', 'err_p1_tm_cmd_req_d_id_valid', 1);
+u.port('output', 'err_p1_tm_cmd_req_d_id_addr', W_ADDR);
+
+if (useQos) {
+u.port('input', 'csr_eviction_qos', 4);
+u.port('input', 'csr_use_eviction_qos', 1);
+}
+
+u.port('input', 'tm_req_alloc_valid', 1);
+u.port('output', 'tm_req_alloc_ready', 1);
+u.port('output', 'tm_req_alloc_vec', N_ATT);
+u.port('output', 'tm_busy', 1);
+
+u.port('input', 'ih_req_wakeup_valid', 1);
+u.port('input', 'ih_req_addr', W_ADDR);
+u.port('input', 'ih_req_initiator_id', W_INIT_ID);
+u.port('input', 'ih_req_ns', W_NS);
+u.port('input', 'ih_req_type', W_CM_TYPE);
+u.port('input', 'ih_req_mpf1', W_MPF1);
+u.port('input', 'ih_req_mpf2', W_MPF2);
+u.port('input', 'ih_req_es', W_ES);
+u.port('input', 'ih_req_alloc_vec', N_ATT);
+
+u.port('input', 'ih_req_upd_valid', 1);
+u.port('input', 'ih_req_upd_req_ns', W_NS);
+u.port('input', 'ih_req_upd_req_addr', W_ADDR);
+
+u.port('input', 'dm_recall_alloc_valid', 1);
+u.port('output','dm_recall_alloc_ready', 1);
+u.port('input', 'dm_recall_addr', W_ADDR);
+u.port('input', 'dm_recall_ns', W_NS);
+u.port('input', 'dm_recall_sharer_vec',  N_C_AGENTS);
+u.port('input', 'dm_recall_owner_valid', 1);
+u.port('input', 'dm_recall_owner_num', W_N_C_AGENTS);
+ 
+u.port('input', 'ca_f_unit_id', N_C_AGENTS*W_FUNIT_ID);
+u.port('input', 'ca_lp_id', N_PROCS*W_LP_ID);
+u.port('input', 'dmi_f_unit_id', N_DMIS*W_FUNIT_ID);
+u.port('input', 'connected_dmi_f_unit_id', N_CONNECTED_DMIS*W_FUNIT_ID);
+u.port('input', 'hexDceConnectedDmiRbOffset', N_CONNECTED_DMIS*W_RB_ID);
+u.port('input', 'my_f_unit_id', W_FUNIT_ID);
+u.port('input', 'my_n_unit_id', W_NUNIT_ID);
+
+// Directory signals
+
+u.port('output', 'dm_rsp_ready', 1);
+
+m.defineSlavePortsFromInterface('dm_rsp_',     DIR_RSP_INTF, u.port);
+
+u.port('input', 'dm_rsp_lookup_cm_type', W_CM_TYPE);
+u.port('input', 'dm_rsp_lookup_ns', W_NS);
+u.port('input', 'dm_rsp_lookup_addr', W_ADDR);
+u.port('input', 'dm_rsp_lookup_initiator_id', W_INIT_ID);
+u.port('input', 'dm_rsp_lookup_mpf2', W_MPF2);
+u.port('input', 'dm_rsp_lookup_es', W_ES);
+
+u.port('input',  'p1_req_sf_num_vec', N_SF); //BOON: UNUSED!!
+u.port('output', 'p1_dm_busy_way_vec', N_WAYS);
+u.port('output', 'p1_dm_req_alloc', 1);
+u.port('output', 'p1_dm_req_cancel', 1);
+
+
+u.port('input', 'dm_write_ready', 1);
+u.port('output', 'dm_write_valid', 1);
+u.port('output', 'dm_write_addr', W_ADDR);
+u.port('output', 'dm_write_ns', W_NS);
+u.port('output', 'dm_write_way_vec', N_WAYS);
+u.port('output', 'dm_write_owner_valid', 1);
+u.port('output', 'dm_write_owner_num', W_N_C_AGENTS);
+u.port('output', 'dm_write_sharer_vec', N_C_AGENTS);
+u.port('output', 'dm_write_change_vec', N_C_AGENTS);
+
+u.port('output', 'dm_write_valid_dup', 1);
+u.port('output', 'dm_write_addr_dup', W_ADDR);
+u.port('output', 'dm_write_ns_dup', W_NS);
+u.port('output', 'dm_write_way_vec_dup', N_WAYS);
+u.port('output', 'dm_write_owner_valid_dup', 1);
+u.port('output', 'dm_write_owner_num_dup', W_N_C_AGENTS);
+u.port('output', 'dm_write_sharer_vec_dup', N_C_AGENTS);
+u.port('output', 'dm_write_change_vec_dup', N_C_AGENTS);
+
+// Wake interface
+
+u.port('output', 'tm_cmd_wakeup_req_arb_valid', 1);
+u.port('input',  'tm_cmd_wakeup_req_arb_ready', 1);
+u.port('output', 'att_entry_wakeup_req_cm_type', W_CM_TYPE);
+u.port('output', 'att_entry_wakeup_req_ns', W_NS);
+u.port('output', 'att_entry_wakeup_req_addr', W_ADDR);
+u.port('output', 'att_entry_wakeup_req_initiator_id', W_INIT_ID);
+u.port('output', 'att_entry_wakeup_req_mpf1', W_MPF1);
+u.port('output', 'att_entry_wakeup_req_mpf2', W_MPF2);
+u.port('output', 'att_entry_wakeup_req_es', W_ES);
+u.port('output', 'att_entry_wakeup_req_att_vec', N_ATT);
+
+// Address map
+
+u.port('input',  'hexDceDmiVec', N_DMIS);
+
+for (var i = 0; i < N_GPRA; i++) 
+  {
+   u.port('input',  'GPRAR'+i+'_Valid',      1);
+   u.port('input',  'GPRAR'+i+'_HUT',        1);
+   u.port('input',  'GPRAR'+i+'_Size',       6);
+   u.port('input',  'GPRAR'+i+'_HUI', 5);
+   //u.port('input',  'GPRAR'+i+'_DIGId',      3);
+   u.port('input',  'GPRBAR'+i+'_AddrLo',    32);
+   u.port('input',  'GPRBAR'+i+'_AddrHi',    8);
+   }
+
+u.port('input',  'BRAR_Valid',      1);
+u.port('input',  'BRAR_Size',       6);
+u.port('input',  'BRAR_HUT',        1);
+u.port('input',  'BRAR_HUI', 5);
+//u.port('input',  'BRAR_DIGId',      3);
+u.port('input',  'BRBAR_AddrLo',    32);
+u.port('input',  'BRBAR_AddrHi',    8);
+
+u.port('input',  'AMIGR_AMIGS',     4);
+u.port('input',  'AMIGR_Valid',     1);
+u.port('input',  'MIFSR_A16WIFId',  3);
+u.port('input',  'MIFSR_A8WIFId',   3);
+u.port('input',  'MIFSR_A4WIFId',   3);
+u.port('input',  'MIFSR_A3WIFId',   3);
+u.port('input',  'MIFSR_A2WIFId',   3);
+
+u.port('output', 'tm_timeout_ue_valid',  1);
+u.port('output', 'tm_timeout_ue_addr', W_ADDR);
+u.port('output', 'tm_timeout_ue_ns', W_NS);
+
+u.port('output', 'csr_addr_map_multi_hit',  1);
+u.port('output', 'csr_addr_map_no_hit',  1);
+u.port('output', 'csr_addr_map_req_wr',  1);
+u.port('output', 'csr_addr_map_addr', W_ADDR);
+u.port('output', 'csr_addr_map_trans_id', W_MSG_ID);
+u.port('output', 'csr_addr_map_unconnected_dmi_access', 1);
+
+u.port('output', 'no_credits_access_err', 1);
+u.port('output', 'no_credits_access_err_addr', W_ADDR);
+
+u.port('input',  'bist_timeout_trigger', 1);
+u.port('input',  'csr_timeout_threshold', 31);
+u.port('input',  'csr_timeout_ref_en', 1);
+u.port('input',  'csr_timeout_count_reset', 1);
+u.port('input',  'csr_SnoopEnable', N_C_AGENTS);
+
+u.port('output', 'att_entry_agent_inactive', N_C_AGENTS);
+u.port('output', 'att_count', W_N_ATT+1);
+u.port('output', 'pmon_addr_collisions', 1);
+u.port('output', 'snp_rsp_miss', 1);
+u.port('output', 'snp_rsp_owner_transfer', 1);
+u.port('output', 'snoop_filter_hit', 1);
+u.port('output', 'snoop_filter_miss', 1);
+u.port('output', 'snoop_filter_recall', 1);
+
+//
+// interfaces
+//
+
+m.defineMasterPortsFromInterface('tm_mrd_req_', MRD_REQ_INTF, u.port);
+m.defineMasterPortsFromInterface('tm_snp_req_', SNP_REQ_INTF, u.port);
+m.defineMasterPortsFromInterface('tm_rbr_req_', RBR_REQ_INTF, u.port);
+m.defineMasterPortsFromInterface('tm_str_req_', STR_REQ_INTF, u.port);
+m.defineMasterPortsFromInterface(reqAckEventInterface.name, reqAckEventInterface.signals, u.port);
+
+m.defineSlavePortsFromInterface('tm_cmd_req_', CMD_REQ_INTF, u.port, ['ready', 'valid']);
+m.defineSlavePortsFromInterface('tm_mrd_rsp_', MRD_RSP_INTF, u.port);
+m.defineSlavePortsFromInterface('tm_snp_rsp_', SNP_RSP_INTF, u.port);
+m.defineSlavePortsFromInterface('tm_str_rsp_', STR_RSP_INTF, u.port);
+m.defineSlavePortsFromInterface('tm_rbr_rsp_', RBR_RSP_INTF, u.port);
+
+//
+// Module
+//
+
+\jsend
+
+module \=u.getModuleName()=\
+         (\=u.getPorts()=\
+          );
+   
+\jsbegin
+//
+// verilog params
+//
+\jsend
+
+localparam
+  W_ATT_REQ_ALLOC_BUN = \=att_req_alloc_bundle_width=\,
+  W_ATT_ALLOC_BUN = \=att_alloc_bundle_width=\,
+  W_RB_ID = \=W_RB_ID=\,
+  W_M_PROT = \=W_M_PROT=\,
+  W_H_PROT = \=W_H_PROT=\,
+  W_T_TIER = \=W_T_TIER=\,
+  W_STEER = \=W_STEER=\,
+  W_PRI = \=W_PRI=\,
+  W_QL = \=W_QL=\,
+  W_MSG_ID = \=W_MSG_ID=\,
+  W_INIT_ID = \=W_INIT_ID=\,
+  W_TARGET_ID = \=W_TARGET_ID=\,
+  W_ADDR = \=W_ADDR=\,
+  W_CM_STATUS = \=W_CM_STATUS=\,
+  W_CM_TYPE = \=W_CM_TYPE=\,
+  W_VZ = \=W_VZ=\,
+  W_AC = \=W_AC=\,
+  W_CA = \=W_CA=\,
+  W_CH = \=W_CH=\,
+  W_ST = \=W_ST=\,
+  W_EN = \=W_EN=\,
+  W_ES = \=W_ES=\,
+  W_NS = \=W_NS=\,
+  W_PR = \=W_PR=\,
+  W_OR = \=W_OR=\,
+  W_LK = \=W_LK=\,
+  W_RL = \=W_RL=\,
+  W_TM = \=W_TM=\,
+  W_MPF1 = \=W_MPF1=\,
+  W_MPF2 = \=W_MPF2=\,
+  W_MPF3 = \=W_MPF3=\,
+  W_SIZE = \=W_SIZE=\,
+  W_INTF_SIZE = \=W_INTF_SIZE=\,
+  W_D_ID = \=W_D_ID=\,
+  W_TOF = \=W_TOF=\,
+  W_QOS = \=W_QOS=\,
+  W_AUX = \=W_AUX=\,
+  W_R_TYPE = \=W_R_TYPE=\,
+  W_MW = \=W_MW=\,
+  W_UP = \=W_UP=\,
+  W_N_C_AGENTS = \=W_N_C_AGENTS=\,
+  N_SF = \=N_SF=\,
+  N_C_AGENTS = \=N_C_AGENTS=\,
+  N_ATT = \=N_ATT=\,
+  W_N_ATT = \=W_N_ATT=\,
+  N_WAYS = \=N_WAYS=\,
+  W_FUNIT_ID = \=W_FUNIT_ID=\,
+  W_NUNIT_ID = \=W_NUNIT_ID=\,
+  W_FPORT_ID = \=W_FPORT_ID=\,
+  W_LP_ID = \=W_LP_ID=\,
+  N_LP_IDS = \=N_LP_IDS=\,
+  N_TAG_MONS = \=N_TAG_MONS=\,
+  N_PROCS = \=N_PROCS=\,
+  N_DMIS = \=N_DMIS=\,
+  N_CONNECTED_DMIS = \=N_CONNECTED_DMIS=\,
+  STASH_EN_VEC = \=STASH_EN_VEC=\;
+
+\js if ( W_PRI != 0 ) {
+function automatic [\=W_PRI-1=\:0] pri_gen;
+    input [\=W_QOS-1=\:0] qos;
+    reg   [\=N_QOS-1=\:0] qos_one_hot;
+    begin
+        qos_one_hot = \=N_QOS=\'b1 << qos;
+        pri_gen     = 
+\js for (var bucket_vec of QosInfo.qosMap) {
+        |(qos_one_hot & \=bucket_vec=\)? \=W_PRI=\'d\=QosInfo.qosMap.indexOf(bucket_vec)=\ : 
+\js }
+        \=W_PRI=\'d0;
+    end
+endfunction
+\js }
+
+wire att_valid_or;
+wire att_valid_early_or;
+wire att_recall_entry_valid_or;
+wire [N_ATT-1:0] att_valid_early;
+wire [N_ATT-1:0] att_valid;
+wire [N_ATT-1:0] att_req_avail;
+wire [N_ATT-1:0] att_recall_valid;
+wire [N_ATT-1:0] att_recall_avail;
+wire [N_ATT-1:0] att_req_alloc;
+wire [N_ATT-1:0] att_recall_alloc;
+wire [N_ATT-1:0] att_recall_entry_valid;
+wire [N_ATT-1:0] att_timeout_overflow;
+wire [N_ATT-1:0] att_invalid;
+wire [N_ATT-1:0] att_entry_dm_rsp_valid;
+wire [W_N_ATT:0] att_count_in;
+wire [W_N_ATT:0] att_count_in0;
+reg  [W_N_ATT:0] att_count_in1;
+wire [N_ATT-1:0] pmon_addr_collisions_vec;
+wire pmon_addr_collisions_in;
+
+wire [N_ATT-1:0] p1_req_att_alloc;
+wire p1_att_mrd_type_valid;
+wire p1_att_write_rbid_valid;
+wire p1_att_snp_all;
+wire [W_CM_TYPE-1:0] p1_att_snp_type;
+wire [W_CM_TYPE-1:0] p1_att_mrd_type;
+wire p1_req_wakeup_valid;
+wire p1_req_cmd_req_stash_mpf1;
+
+
+wire att_timeout_overflow_event;
+wire att_timeout_overflow_event_clr;
+wire [30:0] csr_timeout_threshold_minus1  = csr_timeout_threshold - 1'b1;
+
+wire att_recall_alloc_valid;
+wire att_recall_alloc_or;
+
+wire [W_D_ID-1:0] recall_d_id;
+wire addr_map_error_hit_multi;
+wire addr_map_error_hit_none;
+wire unconnected_dmi_access;
+wire [4:0] addr_map_dmi_id;
+wire addr_map_dmi_id_valid;
+wire nrs_region_hit, gpr_region_hit, bra_region_hit;
+wire [4:0] dmi_mig;
+wire [3:0] size_of_ig;
+
+  
+genvar gi;
+
+wire dff_enable = 1'b1;
+wire snp_rsp_valid_qual;
+wire mrd_rsp_valid_qual;
+wire [N_ATT-1:0] att_rb_id_req, att_rb_id_grant, att_rb_id_void_valid, att_entry_req_rbr_reserve_sent, att_rb_id_in_gid, att_rb_id_out_gid, att_rbr_rsp_void_valid;
+wire [N_ATT*W_D_ID-1:0] att_rb_id_d_id;
+wire [N_ATT*N_CONNECTED_DMIS-1:0] att_rb_id_d_id_vec;
+wire [N_ATT*N_DMIS-1:0] mrd_att_rb_id_d_id_vec;
+wire [N_ATT*W_RB_ID-1:0] att_rb_id_out, att_rb_id_in;
+wire [N_ATT*W_ADDR-1:0] att_entry_req_addr;
+wire [N_ATT*W_CM_TYPE-1:0] att_entry_req_mrd_type, att_entry_req_snp_type, att_entry_req_type;
+wire [N_ATT*W_VZ-1:0] att_entry_req_vz;
+wire [N_ATT*W_AC-1:0] att_entry_req_ac;
+wire [N_ATT*W_CA-1:0] att_entry_req_ca;
+wire [N_ATT*W_CH-1:0] att_entry_req_ch;
+wire [N_ATT*W_ST-1:0] att_entry_req_st;
+wire [N_ATT*W_EN-1:0] att_entry_req_en;
+wire [N_ATT*W_ES-1:0] att_entry_req_es;
+wire [N_ATT*W_NS-1:0] att_entry_req_ns;
+wire [N_ATT*W_PR-1:0] att_entry_req_pr;
+wire [N_ATT*W_OR-1:0] att_entry_req_or;
+wire [N_ATT*W_LK-1:0] att_entry_req_lk;
+wire [N_ATT*W_RL-1:0] att_entry_req_rl;
+wire [N_ATT*W_RL-1:0] att_entry_mrd_req_rl;
+wire [N_ATT*W_TM-1:0] att_entry_req_tm;
+wire [N_ATT*W_MPF1-1:0] att_entry_req_mpf1;
+wire [N_ATT*W_MPF2-1:0] att_entry_req_mpf2;
+wire [N_ATT*W_SIZE-1:0] att_entry_req_size;
+wire [N_ATT*W_INTF_SIZE-1:0] att_entry_req_intf_size ;  
+wire [N_ATT*W_D_ID-1:0] att_entry_req_d_id;
+wire [N_ATT*W_TOF-1:0] att_entry_req_tof;
+wire [N_ATT*W_R_TYPE-1:0] att_entry_req_r_type;
+wire [N_ATT*W_MW-1:0] att_entry_req_mw;
+wire [N_ATT*W_RB_ID-1:0] att_entry_req_rb_id;
+wire [N_ATT-1:0] att_entry_req_gid;
+wire [N_ATT*W_CM_STATUS-1:0] att_entry_req_cm_status;
+wire [N_ATT*W_UP-1:0] att_entry_req_up;
+\js if ( W_QOS != 0 ) {
+wire [N_ATT*W_QOS-1:0] att_entry_req_qos;
+\js }
+\js if ( W_PRI != 0 ) {
+wire [N_ATT*W_PRI-1:0] att_entry_req_pri;
+\js }
+\js if ( W_AUX != 0 ) {
+wire [N_ATT*W_AUX-1:0] att_entry_req_aux;
+\js }
+
+wire [N_ATT*W_INIT_ID-1:0] att_entry_req_initiator_id;
+wire [N_ATT*W_MSG_ID-1:0] att_entry_req_message_id;
+wire [N_ATT*W_TARGET_ID-1:0] att_entry_snp_req_target_id;
+   
+wire [N_ATT*W_MPF1-1:0] att_entry_req_snp_mpf1;
+wire [N_ATT*W_MPF2-1:0] att_entry_req_snp_mpf2;
+wire [N_ATT*W_MPF3-1:0] att_entry_req_snp_mpf3;
+   
+wire [N_ATT*W_MPF1-1:0] att_entry_req_str_mpf1;
+wire [N_ATT*W_MPF2-1:0] att_entry_req_str_mpf2;
+wire [N_ATT-1:0] att_entry_req_str_tm;
+wire [N_ATT*W_INTF_SIZE-1:0] att_entry_req_str_intf_size;   
+
+wire [N_ATT*W_MPF1-1:0] att_entry_req_mrd_mpf1;
+wire [N_ATT*W_MPF2-1:0] att_entry_req_mrd_mpf2;
+
+wire [N_ATT*W_ADDR-1:0] att_entry_dm_write_addr;
+wire [N_ATT*W_NS-1:0] att_entry_dm_write_ns;
+wire [N_ATT*N_WAYS-1:0] att_entry_dm_write_way_vec;   
+wire [N_ATT-1:0] att_entry_dm_write_owner_valid;   
+wire [N_ATT*W_N_C_AGENTS-1:0] att_entry_dm_write_owner_num;   
+wire [N_ATT*N_C_AGENTS-1:0] att_entry_dm_write_sharer_vec; 
+wire [N_ATT*N_C_AGENTS-1:0] att_entry_dm_write_change_vec;
+wire [W_N_ATT-1:0] att_entry_coll_num;  
+wire [N_ATT-1:0] att_entry_wake_next[N_ATT-1:0];
+wire [N_ATT*N_WAYS-1:0] att_entry_way_vec;
+wire [N_ATT*N_C_AGENTS-1:0] att_entry_agent_active_vec;
+   
+wire [N_ATT-1:0] att_entry_last;
+wire [N_ATT-1:0] att_entry_addr_comp_valid;
+wire [N_ATT-1:0] att_entry_sleep;
+wire [N_ATT-1:0] att_entry_coll_en;
+wire [N_ATT-1:0] att_entry_wake;
+wire [N_ATT-1:0] att_wake_next_vec;
+     
+wire [N_ATT-1:0] att_entry_req_snp_valid;   
+wire [N_ATT-1:0] att_entry_req_snp_last;
+wire [N_ATT-1:0] att_entry_req_snp_ready;
+wire [N_ATT-1:0] att_entry_req_snp_grant;
+wire [N_ATT-1:0] att_entry_req_mrd_valid;   
+wire [N_ATT-1:0] att_entry_req_mrd_last;
+wire [N_ATT-1:0] att_entry_req_mrd_ready;
+wire [N_ATT-1:0] att_entry_req_mrd_grant;
+wire [N_ATT-1:0] att_entry_req_rbr_valid;   
+wire [N_ATT-1:0] att_entry_req_rbr_last;
+wire [N_ATT-1:0] att_entry_req_rbr_ready;
+wire [N_ATT-1:0] att_entry_req_rbr_grant;
+wire [N_ATT-1:0] att_entry_req_str_valid;   
+wire [N_ATT-1:0] att_entry_req_str_last;
+wire [N_ATT-1:0] att_entry_req_str_ready;
+wire [N_ATT-1:0] att_entry_req_str_grant;
+wire [N_ATT-1:0] att_entry_dm_write_ready;        
+wire [N_ATT-1:0] att_entry_dm_write_valid;         
+wire [N_ATT-1:0] att_entry_dm_write_last;  
+wire [N_ATT-1:0] att_entry_dm_write_grant;
+wire [N_ATT-1:0] dm_write_att_vec;
+wire [N_ATT-1:0] att_entry_dm_write_way_vec_clr;
+wire [N_ATT-1:0] att_entry_wakeup_req_valid;
+wire [N_ATT-1:0] att_entry_wakeup_req_ready; 
+
+wire [N_ATT-1:0] att_entry_rtr_retry;
+
+wire [N_ATT-1:0] att_mrd_credit_req;
+wire [N_ATT*N_DMIS-1:0] att_mrd_credit_grant, att_mrd_credit_grant_err;
+wire att_mrd_credit_limit_err_detected;
+wire [N_ATT-1:0] att_mrd_credit_limit_err_att_id_onehot;
+
+wire [N_ATT-1:0] att_snp_credit_req;
+wire [N_ATT*N_C_AGENTS-1:0] att_snp_credit_grant;
+wire [N_ATT*N_C_AGENTS-1:0] att_snp_credit_id_vec;
+wire [N_C_AGENTS-1:0] att_entry_agent_active;
+wire [N_C_AGENTS-1:0] snp_credits_not_zero;
+
+wire [W_SIZE-1:0] tm_snp_req_size;
+
+wire [W_INIT_ID-1 : 0] pipe_dm_rsp_lookup_initiator_id;
+wire [N_C_AGENTS-1:0] pipe_dm_rsp_cmd_init_vec;
+wire pipe_dm_rsp_cmd_init_nca;
+wire pipe_dm_rsp_cmd_init_owner;
+wire pipe_dm_rsp_cmd_init_valid;
+
+wire pipe_dm_rsp_exmon_valid, pipe_dm_rsp_exmon_load, pipe_dm_rsp_exmon_store, pipe_dm_rsp_exmon_op;
+wire [N_ATT-1:0] pipe_dm_rsp_exmon_alloc;
+wire [N_PROCS-1:0] pipe_dm_rsp_exmon_proc_id;
+wire [W_ADDR-1 :0] pipe_dm_rsp_lookup_addr;
+wire [W_NS-1:0] pipe_dm_rsp_lookup_ns;
+wire dm_rsp_exmon_store_fail;
+wire dm_rsp_exmon_store_pass;
+wire dm_rsp_exmon_status;
+wire exmon_valid;
+
+wire p2_dm_req_cancel, p3_dm_req_cancel;
+wire rbid_busy;   
+wire evt_buffer_busy;   
+
+wire [N_ATT-1:0] att_entry_snp_rsp_miss;
+wire snp_rsp_miss_in;
+
+wire tm_timeout_ue_valid_in;
+wire [\=W_ADDR-1=\:0] tm_timeout_ue_addr_in;
+wire [\=W_NS-1=\:0] tm_timeout_ue_ns_in;
+
+wire tm_busy_org, tm_busy_org_q;
+
+wire [W_D_ID-1:0] rbr_rsp_d_id;
+wire [W_RB_ID-1:0] rbr_rsp_rb_id;
+wire rbr_rsp_gid;
+
+wire [N_ATT-1:0]  q_att_recall_alloc;
+wire [W_D_ID-1:0] q_recall_d_id;
+wire              q_addr_map_error_hit_none;
+wire              q_addr_map_error_hit_multi;
+
+\=m.bundleFunctions.wiresFromInterface("tm_snp_rsp_", { success: 2, rv: 1, rs: 1, dc: 1, dt:2, snarf: 1 }, [], u.bundle)=\
+
+assign { tm_snp_rsp_success, tm_snp_rsp_rv, tm_snp_rsp_rs, tm_snp_rsp_dc, tm_snp_rsp_dt, tm_snp_rsp_snarf } = tm_snp_rsp_cm_status;
+
+\jsbegin   
+//
+// Code
+//     
+// ATT allocation logic
+// Find first for actual register allocation
+// Find second for recall pre allocation
+\jsend
+
+//RSP tie offs
+
+assign dm_rsp_ready = 1'b1;
+assign tm_str_rsp_ready = 1'b1;
+assign tm_mrd_rsp_ready = 1'b1;
+assign tm_snp_rsp_ready = 1'b1;
+assign tm_rbr_rsp_ready = 1'b1;
+                        
+assign att_invalid = ~att_valid;
+
+\=u.instance({
+              instanceName : 'att_ff',
+              moduleName : 'find_first_one',
+              params : {
+                        width :  N_ATT
+                        },
+              ports : {
+                       invec : 'att_invalid',
+                       outvec : 'att_req_avail'
+                       }
+              })=\
+       
+assign att_recall_avail = att_recall_valid & ~att_req_avail;
+
+    \=u.instance({
+        instanceName: 'att_ff_rev',
+        moduleName: 'find_first_one_rev',
+        params: { width : N_ATT },
+        verilogParams: { WIDTH : N_ATT },
+        ports: {
+            invec : 'att_invalid',
+            outvec : 'att_recall_valid'
+        }
+    })=\
+
+     
+  \=u.instance({
+    instanceName: 'u_att_valid_early_or',
+    moduleName:   'logic_tree',
+    params: {'width' : N_ATT,
+             'logic' : '|'},
+    ports: { 'din'  : 'att_valid_early',
+             'dout' : 'att_valid_early_or' }
+    })=\
+
+\=u.dffre(1, 'att_valid_or', 'att_valid_early_or', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign att_req_alloc = att_req_avail & {N_ATT{tm_req_alloc_valid & tm_req_alloc_ready}};
+assign att_recall_alloc = att_recall_avail & {N_ATT{dm_recall_alloc_valid & dm_recall_alloc_ready}};
+assign att_recall_alloc_valid = att_recall_alloc_or;
+
+  \=u.instance({
+    instanceName: 'u_att_recall_alloc_or',
+    moduleName:   'logic_tree',
+    params: {'width' : N_ATT,
+             'logic' : '|'},
+    ports: { 'din'  : 'att_recall_alloc',
+             'dout' : 'att_recall_alloc_or' }
+    })=\
+
+assign tm_busy = tm_busy_org | tm_busy_org_q;
+assign tm_busy_org = att_valid_or | rbid_busy | evt_buffer_busy;   
+\=u.dffre(1, 'tm_busy_org_q', 'tm_busy_org', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+
+\=u.dffre(1, 'p2_dm_req_cancel', 'p1_dm_req_cancel', "1'b0", "1'b1", 'clk', 'reset_n')=\
+\=u.dffre(1, 'p3_dm_req_cancel', 'p2_dm_req_cancel', "1'b0", "1'b1", 'clk', 'reset_n')=\                      
+integer i;   
+   
+assign att_count_in0 = {\=W_N_ATT=\'b0, att_valid[0]}
+\js for ( var i = 1 ; i < N_ATT; i++ ) {
+                     + {\=W_N_ATT=\'b0, att_valid[\=i=\]}
+\js }
+                     ;
+
+wire [1:0] att_count_in1_sel = {(tm_req_alloc_valid & tm_req_alloc_ready), (dm_recall_alloc_valid & dm_recall_alloc_ready)};
+
+always @(*) begin
+    case (att_count_in1_sel)
+    2'b01 :   att_count_in1 = \=W_N_ATT+1=\'d1;
+    2'b10 :   att_count_in1 = \=W_N_ATT+1=\'d1;
+    2'b11 :   att_count_in1 = \=W_N_ATT+1=\'d2;
+    default : att_count_in1 = \=W_N_ATT+1=\'d0;
+    endcase
+end
+
+assign att_count_in = att_count_in0 + att_count_in1;
+
+\=u.dffre(W_N_ATT+1, 'att_count', 'att_count_in', "{W_N_ATT+1{1'b0}}", "1'b1", 'clk', 'reset_n')=\
+
+assign tm_req_alloc_ready    = (att_count < \=W_N_ATT+1=\'d\=N_ATT-(DM_PIPELINE_DEPTH-1)=\);
+assign dm_recall_alloc_ready = (att_count < \=W_N_ATT+1=\'d\=N_ATT-(DM_PIPELINE_DEPTH-2)=\); //& ~att_recall_entry_valid_or;
+
+assign tm_req_alloc_vec = att_req_avail; 
+
+  \=u.instance({
+    instanceName: 'u_att_recall_entry_valid_or',
+    moduleName:   'logic_tree',
+    params: {'width' : N_ATT,
+             'logic' : '|'},
+    ports: { 'din'  : 'att_recall_entry_valid',
+             'dout' : 'att_recall_entry_valid_or' }
+    })=\
+
+
+
+\jsbegin
+
+let dce_tm_p1_ports = {
+    clk                         : 'clk',
+    reset_n                     : 'reset_n',
+    connected_dmi_f_unit_id     : 'connected_dmi_f_unit_id',
+    ca_f_unit_id                : 'ca_f_unit_id',
+    csr_SnoopEnable             : 'csr_SnoopEnable',
+
+    tm_req_alloc_valid          : 'tm_req_alloc_valid',
+    tm_req_alloc_ready          : 'tm_req_alloc_ready',
+    att_req_alloc               : 'att_req_alloc',
+
+    ih_req_wakeup_valid         : 'ih_req_wakeup_valid',
+    ih_req_addr                 : 'ih_req_addr',
+    ih_req_initiator_id         : 'ih_req_initiator_id',
+    ih_req_ns                   : 'ih_req_ns',
+    ih_req_type                 : 'ih_req_type',
+    ih_req_mpf1                 : 'ih_req_mpf1',
+    ih_req_mpf2                 : 'ih_req_mpf2',
+    ih_req_es                   : 'ih_req_es',
+    ih_req_alloc_vec            : 'ih_req_alloc_vec',
+
+    ih_req_upd_valid            : 'ih_req_upd_valid',
+    ih_req_upd_req_ns           : 'ih_req_upd_req_ns',
+    ih_req_upd_req_addr         : 'ih_req_upd_req_addr',
+
+    att_entry_way_vec           : 'att_entry_way_vec',
+    att_entry_req_addr          : 'att_entry_req_addr',
+    att_entry_req_ns            : 'att_entry_req_ns',
+    att_entry_last              : 'att_entry_last',
+    att_entry_addr_comp_valid   : 'att_entry_addr_comp_valid',
+    att_recall_entry_valid      : 'att_recall_entry_valid',
+
+    att_entry_sleep             : 'att_entry_sleep',
+    att_entry_coll_en           : 'att_entry_coll_en',
+    att_entry_coll_num          : 'att_entry_coll_num',
+
+    p1_req_att_alloc            : 'p1_req_att_alloc',
+    p1_att_snp_all              : 'p1_att_snp_all',
+    p1_att_snp_type             : 'p1_att_snp_type',
+    p1_att_mrd_type_valid       : 'p1_att_mrd_type_valid',
+    p1_att_write_rbid_valid     : 'p1_att_write_rbid_valid',
+    p1_att_mrd_type             : 'p1_att_mrd_type',
+    p1_req_wakeup_valid         : 'p1_req_wakeup_valid',
+    p1_req_cmd_req_stash_mpf1   : 'p1_req_cmd_req_stash_mpf1',
+
+    p1_dm_busy_way_vec          : 'p1_dm_busy_way_vec',
+    p1_dm_req_alloc             : 'p1_dm_req_alloc',
+    p1_dm_req_cancel            : 'p1_dm_req_cancel',
+
+    err_p1_tm_cmd_req_d_id_valid : 'err_p1_tm_cmd_req_d_id_valid',
+    err_p1_tm_cmd_req_d_id_addr  : 'err_p1_tm_cmd_req_d_id_addr'
+};
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_p1',
+    moduleName: 'dce_tm_p1',
+    params : {
+        assertOn         : ASSERT_ON,
+        useSramInputFlop : useSramInputFlop,
+        cmdReqInterface  : CMD_REQ_INTF,
+        cmType           : CM_TYPE,
+        nWays            : N_WAYS,
+        nAttEntries      : N_ATT,
+        wNumAtt          : W_N_ATT,
+        nCachingAgents   : N_C_AGENTS,
+        nConnectedDmis   : N_CONNECTED_DMIS,
+        wCacheLineOffset : W_CLO,
+        wFUnitId         : W_FUNIT_ID,
+        SnoopFilterInfo  : SF_INFO,
+        StashEnable      : STASH_EN_VEC
+    },
+    verilogParams : {},
+    ports : dce_tm_p1_ports,
+    interfaces : [
+        {modulePrefix: 'tm_cmd_req_', localPrefix: 'tm_cmd_req_', interface: CMD_REQ_INTF, exclude: ['valid', 'ready']}
+    ]
+})=\
+
+assign pmon_addr_collisions_vec = att_entry_addr_comp_valid & att_entry_sleep;
+assign pmon_addr_collisions_in  = {|{pmon_addr_collisions_vec}};
+\=u.dffre(1, 'pmon_addr_collisions', 'pmon_addr_collisions_in', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+\jsbegin
+var att_entry_wake_next_mux_port_list = {};
+att_entry_wake_next_mux_port_list['dout'] = 'att_wake_next_vec';
+for (let i = 0; i < N_ATT; i++) {
+    att_entry_wake_next_mux_port_list['din_'+i] = 'att_entry_wake_next['+i+']';
+}
+\jsend
+   \=u.instance({
+     instanceName: 'u_att_wake_next_vec',
+     moduleName:   'logic_tree_bus',
+     params: {
+              width     : N_ATT,
+              bus_width : N_ATT,
+              logic : '|'},
+     ports: att_entry_wake_next_mux_port_list
+   })=\
+
+assign att_entry_wake = att_wake_next_vec;
+
+
+// Ex Mon logic
+
+wire dm_rsp_exmon_valid, dm_rsp_exmon_load, dm_rsp_exmon_store, dm_rsp_exmon_op;
+wire [N_PROCS-1:0] dm_rsp_exmon_proc_id;
+wire [N_ATT-1:0] dm_rsp_exmon_alloc;
+
+assign dm_rsp_exmon_load = ((dm_rsp_lookup_cm_type == \=CM_TYPE.CmdRdCln=\  ) |
+                            (dm_rsp_lookup_cm_type == \=CM_TYPE.CmdRdVld=\  ) |
+                            (dm_rsp_lookup_cm_type == \=CM_TYPE.CmdRdNshDty=\ )) &
+                            dm_rsp_lookup_es;
+
+assign dm_rsp_exmon_store = ((dm_rsp_lookup_cm_type == \=CM_TYPE.CmdClnUnq=\) &  dm_rsp_lookup_es);
+
+assign dm_rsp_exmon_op = dm_rsp_exmon_load | dm_rsp_exmon_store;
+assign dm_rsp_exmon_valid = dm_rsp_valid & dm_rsp_ready & ~dm_rsp_error;
+assign dm_rsp_exmon_alloc = dm_rsp_att_vec & {N_ATT{dm_rsp_exmon_valid}};
+
+\jsbegin 
+   for(let i=0; i< N_C_AGENTS; i++) { 
+      for(let j=0; j< N_LP_IDS; j++) {
+\jsend 
+       assign dm_rsp_exmon_proc_id[\=i*N_LP_IDS+j=\ ] = ({dm_rsp_lookup_initiator_id[W_INIT_ID-1:W_FPORT_ID], dm_rsp_lookup_mpf2[W_LP_ID-1:0]} == 
+                                                         {ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID], ca_lp_id[\=i*N_LP_IDS+j=\*W_LP_ID +: W_LP_ID]});
+\jsbegin 
+       }   
+      }
+\jsend 
+            
+\=u.dffre(1,      'pipe_dm_rsp_exmon_valid',   'dm_rsp_exmon_valid',   "1'b0",           'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1,      'pipe_dm_rsp_exmon_op',      'dm_rsp_exmon_op',      "1'b0",           'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1,      'pipe_dm_rsp_exmon_load',    'dm_rsp_exmon_load',    "1'b0",           'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1,      'pipe_dm_rsp_exmon_store',   'dm_rsp_exmon_store',   "1'b0",           'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(N_PROCS,'pipe_dm_rsp_exmon_proc_id', 'dm_rsp_exmon_proc_id', "{N_PROCS{1'b0}}",'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(N_ATT,  'pipe_dm_rsp_exmon_alloc',   'dm_rsp_exmon_alloc',   "{N_ATT{1'b0}}",  'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(W_NS,   'pipe_dm_rsp_lookup_ns',     'dm_rsp_lookup_ns',     "{W_NS{1'b0}}",   'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(W_ADDR, 'pipe_dm_rsp_lookup_addr',   'dm_rsp_lookup_addr',   "{W_ADDR{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.dffre(W_INIT_ID, 'pipe_dm_rsp_lookup_initiator_id', 'dm_rsp_lookup_initiator_id', "{W_INIT_ID{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+\=u.instance ({
+               instanceName: 'exmon',
+               moduleName: 'dce_excl_mon',
+               params: {
+                        assertOn : ASSERT_ON,
+                        wCacheLineOffset : W_CLO,
+                        wAddr : W_ADDR,
+                        wSecurity : W_NS,
+                        nProcs : N_PROCS,
+                        nTaggedMonitors : N_TAG_MONS
+                        },
+               ports : {
+                        clk : 'clk',
+                        reset_n : 'reset_n',
+                        valid : 'pipe_dm_rsp_exmon_valid',
+                        lock_op : 'pipe_dm_rsp_exmon_op',
+                        msg_type_load : 'pipe_dm_rsp_exmon_load',
+                        msg_type_store : 'pipe_dm_rsp_exmon_store',
+                        cmd_init_valid : 'pipe_dm_rsp_cmd_init_valid',
+                        security : 'pipe_dm_rsp_lookup_ns',
+                        address : 'pipe_dm_rsp_lookup_addr',
+                        proc_id_onehot : 'pipe_dm_rsp_exmon_proc_id',
+                        mon_status : 'dm_rsp_exmon_status',
+                        mon_valid : 'exmon_valid' // not used
+                        }
+               })=\
+
+assign dm_rsp_exmon_store_fail = pipe_dm_rsp_exmon_store & ~dm_rsp_exmon_status;
+assign dm_rsp_exmon_store_pass = pipe_dm_rsp_exmon_store & dm_rsp_exmon_status;
+
+wire evt_buffer_en;
+\=u.dffre(1, 'evt_buffer_en', 'dm_rsp_exmon_store_pass & exmon_valid', "1'b0", "1'b1", 'clk', 'reset_n')=\
+
+// Instantiate event buffer
+\=u.instance({
+  instanceName: 'u_evt_buffer',
+  moduleName: 'dce_evt_buffer',
+  params: { clkInterface, reqAckEventInterface },
+  interfaces: [clkInterface, reqAckEventInterface].map( getModuleLocalPrefixAndInterface ), // Array of interfaces is converted to array of {modulePrefix, localPrefix, interface} objects 
+  ports: {
+      en		: 'evt_buffer_en',
+	  busy		: 'evt_buffer_busy'
+  }
+})=\
+
+
+\=m.bundleFunctions.wiresFromInterface('pipe_dm_rsp_', DIR_RSP_INTF, [], u.bundle)=\
+
+wire [N_C_AGENTS-1:0] pipe_dm_rsp_owner_one_hot;
+wire [N_C_AGENTS-1:0] pipe_dm_rsp_owner_vec;
+
+\=u.instance({
+              instanceName : 'dir_rsp_pipe_stage',
+              moduleName : 'simple_pipe_stage',
+              params : {
+                        pipeSignals: DIR_RSP_INTF
+                       },
+              ports : {
+                       clk : 'clk',
+                       reset_n : 'reset_n',
+                       en : "1'b1"
+                       },
+              interfaces : [
+                            {modulePrefix: 'in_',   localPrefix: 'dm_rsp_',       interface: DIR_RSP_INTF},
+                            {modulePrefix: 'out_',  localPrefix: 'pipe_dm_rsp_',  interface: DIR_RSP_INTF}
+                            ]
+              })=\
+                                               
+// DIR decode
+assign att_entry_dm_rsp_valid = {N_ATT{pipe_dm_rsp_valid}} & pipe_dm_rsp_att_vec;
+
+assign pipe_dm_rsp_owner_one_hot = (\=N_C_AGENTS=\'b1 << pipe_dm_rsp_owner_num);
+
+assign pipe_dm_rsp_owner_vec = {N_C_AGENTS{pipe_dm_rsp_owner_valid}} & pipe_dm_rsp_owner_one_hot;
+
+// Recall DID decode (Address map)
+
+
+
+wire                    q_unconnected_dmi_access;
+wire [W_ADDR-1:0]       q_dm_recall_addr;
+
+\=u.dffre(1,      'q_unconnected_dmi_access', 'unconnected_dmi_access',             "1'b0",   'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(W_ADDR, 'q_dm_recall_addr',         'dm_recall_addr',         "{"+W_ADDR+"{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+
+assign csr_addr_map_multi_hit = q_addr_map_error_hit_multi;
+assign csr_addr_map_no_hit = q_addr_map_error_hit_none;
+assign csr_addr_map_req_wr = 1'b0;
+assign csr_addr_map_trans_id = \=W_MSG_ID=\'b0; 
+assign csr_addr_map_addr = q_dm_recall_addr;
+assign csr_addr_map_unconnected_dmi_access = q_unconnected_dmi_access;
+
+\jsbegin
+let addr_map_ports = {
+
+                      address_valid : 'att_recall_alloc_valid',
+                      address : 'dm_recall_addr',
+
+                      hexDceDmiVec : 'hexDceDmiVec',
+                      unconnected_dmi_access : 'unconnected_dmi_access',
+
+                      BRAR_Valid : 'BRAR_Valid',
+                      BRAR_Size : 'BRAR_Size',
+                      BRAR_HUT : 'BRAR_HUT',
+                      BRAR_HomeUnitId : 'BRAR_HUI',
+                      //BRAR_DIGId : 'BRAR_DIGId',
+                      BRBAR_AddrLo : 'BRBAR_AddrLo',
+                      BRBAR_AddrHi : 'BRBAR_AddrHi',
+
+                      AMIGR_AMIGS : 'AMIGR_AMIGS',
+                      AMIGR_Valid : 'AMIGR_Valid',
+                      AMIFR_A16WIFId : 'MIFSR_A16WIFId',
+                      AMIFR_A8WIFId : 'MIFSR_A8WIFId',
+                      AMIFR_A4WIFId : 'MIFSR_A4WIFId',
+                      AMIFR_A3WIFId : 'MIFSR_A3WIFId',
+                      AMIFR_A2WIFId : 'MIFSR_A2WIFId',
+
+                      addressing_error_hit_multi : 'addr_map_error_hit_multi',
+                      addressing_error_hit_none : 'addr_map_error_hit_none',
+
+                      dmi_f_unit_id : 'recall_d_id[W_FUNIT_ID-1:0]',
+                      dmi_id : 'addr_map_dmi_id',                    //UNUSED!
+                      dmi_id_valid : 'addr_map_dmi_id_valid',        //UNUSED!
+
+                      nrs_region_hit : 'nrs_region_hit',             //UNUSED!
+                      gpr_region_hit : 'gpr_region_hit',             //UNUSED!
+                      bra_region_hit : 'bra_region_hit',             //UNUSED!
+                      dmi_mig        : 'dmi_mig',                    //UNUSED!
+                      size_of_ig     : 'size_of_ig'                  //UNUSED!
+
+                      };
+
+for (let i = 0; i < N_GPRA; i++) 
+  {
+   addr_map_ports['GPRAR'+i+'_Valid'] = 'GPRAR'+i+'_Valid';
+   addr_map_ports['GPRAR'+i+'_HUT'] = 'GPRAR'+i+'_HUT';
+   addr_map_ports['GPRAR'+i+'_Size'] = 'GPRAR'+i+'_Size';
+   addr_map_ports['GPRAR'+i+'_HomeUnitId'] = 'GPRAR'+i+'_HUI';
+   //addr_map_ports['GPRAR'+i+'_DIGId'] = 'GPRAR'+i+'_DIGId';
+   addr_map_ports['GPRBAR'+i+'_AddrLo'] = 'GPRBAR'+i+'_AddrLo';
+   addr_map_ports['GPRBAR'+i+'_AddrHi'] = 'GPRBAR'+i+'_AddrHi';
+   };
+for (let i = 0; i < N_DMIS; i++)
+  {
+   addr_map_ports['dmi'+i+'_f_unit_id'] = 'dmi_f_unit_id['+i+'*W_FUNIT_ID +: W_FUNIT_ID]';
+   }
+ 
+\jsend
+   
+\=u.instance ({
+               instanceName : 'dce_addr_map',
+               moduleName: 'ncore3_addr_map',
+               params: {
+                        wSysAddr : W_ADDR,
+                        nGPRA : N_GPRA,
+                        wFUnitId : W_FUNIT_ID,
+                        nDmis : N_DMIS,
+                        dmiIGSV : DMI_IGSV,
+                        dmi2WIFV : DMI_2WIFV,
+                        dmi3WIFV : DMI_3WIFV,
+                        dmi4WIFV : DMI_4WIFV,
+                        dmi8WIFV : DMI_8WIFV,
+                        dmi16WIFV: DMI_16WIFV,
+                        useAMIFR_A16W_A8W: 1,
+                        instantiator : 'dce'
+                        },
+               verilogParams: {},
+               ports : addr_map_ports, 
+               })=\
+   
+\=u.dffre(N_ATT,  'q_att_recall_alloc',        'att_recall_alloc',        "{N_ATT{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(W_D_ID, 'q_recall_d_id',             'recall_d_id',            "{W_D_ID{1'b0}}", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1,      'q_addr_map_error_hit_none', 'addr_map_error_hit_none',        "1'b0",   'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1,      'q_addr_map_error_hit_multi','addr_map_error_hit_multi',       "1'b0",   'dff_enable', 'clk', 'reset_n')=\
+
+// MRD Credits
+
+\=u.instance({
+              instanceName : 'mrd_credits',
+              moduleName : 'dce_credit_var',
+              params : {
+                        ccrCsrInterface: {name:"", signals: ccrCsrInterface.signals},
+                        nDmis: N_DMIS,
+                        assertOn: ASSERT_ON,
+                        nAttEntries : N_ATT,
+                        nTargets : N_DMIS,
+                        wTargetId : W_FUNIT_ID,
+                        nCreditsPerTarget : N_MRD_CREDITS
+                        },
+              ports : {
+                       clk : 'clk',
+                       reset_n : 'reset_n',
+                       hexDceDmiVec : 'hexDceDmiVec',
+                       att_req_credit : 'att_mrd_credit_req',
+                       att_req_credit_id_vec : 'mrd_att_rb_id_d_id_vec',
+                       att_targ_ids : 'dmi_f_unit_id',
+                       att_void_credit : 'mrd_rsp_valid_qual',
+                       att_void_credit_id : 'tm_mrd_rsp_initiator_id[W_INIT_ID-1:W_FPORT_ID]',
+                       att_credit_grant : 'att_mrd_credit_grant',
+                       att_credit_grant_err : 'att_mrd_credit_grant_err',
+                       credit_limit_err_detected : 'att_mrd_credit_limit_err_detected',
+                       credit_limit_err_att_id_onehot : 'att_mrd_credit_limit_err_att_id_onehot'
+                       },
+              interfaces: [
+                       {modulePrefix: '', localPrefix: ccrCsrInterface.name, interface: ccrCsrInterface.signals}
+                       ]
+              })=\
+  
+\=u.dffre(1, 'no_credits_access_err', 'att_mrd_credit_limit_err_detected', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire [W_ADDR-1:0] no_credits_access_err_addr_in;
+
+assign no_credits_access_err_addr_in = (
+\js for (let i=0; i< N_ATT ; i++) {
+                                  ({W_ADDR{att_mrd_credit_limit_err_att_id_onehot[\=i=\]}} & att_entry_req_addr[W_ADDR*\=i=\ +: W_ADDR]) |
+\js } 
+                                  {W_ADDR{1'b0}});
+
+\=u.dffre(W_ADDR, 'no_credits_access_err_addr', 'no_credits_access_err_addr_in', W_ADDR+"'b0", 'dff_enable', 'clk', 'reset_n')=\
+ 
+// SNP Credits
+
+\=u.instance({
+              instanceName : 'snp_credits',
+              moduleName : 'dce_credit',
+              params : {
+                        assertOn: ASSERT_ON,
+                        nAttEntries : N_ATT,
+                        nTargets : N_C_AGENTS,
+                        wTargetId : W_FUNIT_ID,
+                        nCreditsPerTarget : N_SNP_CREDITS
+                        },
+              ports : {
+                       clk : 'clk',
+                       reset_n : 'reset_n',
+                       att_req_credit : 'att_snp_credit_req',
+                       att_req_credit_id_vec : 'att_snp_credit_id_vec',
+                       att_targ_ids : 'ca_f_unit_id',
+                       att_void_credit : 'snp_rsp_valid_qual',
+                       att_void_credit_id : 'tm_snp_rsp_initiator_id[W_INIT_ID-1:W_FPORT_ID]',
+                       att_credit_grant : 'att_snp_credit_grant',
+                       credits_not_zero : 'snp_credits_not_zero'
+                       }
+              })=\
+                          
+// ATT entries  
+\jsbegin
+let attEntryPorts = {
+                               clk : 'clk',
+                               reset_n : 'reset_n',
+                               ca_f_unit_id : 'ca_f_unit_id',
+                               dmi_f_unit_id : 'dmi_f_unit_id',
+                               connected_dmi_f_unit_id : 'connected_dmi_f_unit_id',
+                               alloc : 'att_req_alloc[gi]',
+                               p1_alloc : 'p1_req_att_alloc[gi]',
+                               valid : 'att_valid[gi]',
+                               valid_early : 'att_valid_early[gi]',
+                               timeout_overflow : 'att_timeout_overflow[gi]',
+                               timeout_overflow_event : 'att_timeout_overflow_event',
+                               timeout_overflow_event_clr : 'att_timeout_overflow_event_clr',
+                               p1_att_snp_all : 'p1_att_snp_all',
+                               p1_att_snp_type : 'p1_att_snp_type',
+                               p1_att_mrd_type_valid : 'p1_att_mrd_type_valid',
+                               p1_att_write_rbid_valid : 'p1_att_write_rbid_valid',
+                               p1_att_mrd_type : 'p1_att_mrd_type',
+                               p1_att_req_wakeup_valid : 'p1_req_wakeup_valid',
+                               p1_att_req_stash_mpf1 : 'p1_req_cmd_req_stash_mpf1',
+
+                               p3_att_exmon_en : 'pipe_dm_rsp_exmon_alloc[gi]',
+                               p3_att_exmon_status : 'dm_rsp_exmon_status',
+                               p3_att_exmon_store_fail : 'dm_rsp_exmon_store_fail',
+
+                               addr_map_error : 'addr_map_error_hit_none | addr_map_error_hit_multi',
+                               recall_alloc : 'att_recall_alloc[gi]',
+                               recall_ns : 'dm_recall_ns',
+                               recall_addr : 'dm_recall_addr',
+                               recall_d_id : 'recall_d_id',
+                               recall_sharer_vec : 'dm_recall_sharer_vec',
+                               recall_req : 'att_recall_entry_valid[gi]',
+
+                               q_recall_alloc : 'q_att_recall_alloc[gi]',
+                               q_recall_d_id : 'q_recall_d_id',
+                               q_addr_map_error : 'q_addr_map_error_hit_none | q_addr_map_error_hit_multi',
+
+                               att_entry_way_vec : 'att_entry_way_vec[gi*N_WAYS +: N_WAYS]',
+                               att_entry_agent_active_vec : 'att_entry_agent_active_vec[gi*N_C_AGENTS +: N_C_AGENTS]',
+
+                               att_entry_sleep : 'att_entry_sleep[gi]',
+                               att_entry_coll_en : 'att_entry_coll_en[gi]',
+                               att_entry_coll_num : 'att_entry_coll_num',
+                               att_entry_last : 'att_entry_last[gi]',
+                               att_entry_addr_comp_valid : 'att_entry_addr_comp_valid[gi]',
+                               att_entry_wake_next : 'att_entry_wake_next[gi]',
+                               att_entry_wake : 'att_entry_wake[gi]',
+                               att_entry_wakeup_req_valid : 'att_entry_wakeup_req_valid[gi]',
+                               att_entry_wakeup_req_ready : 'att_entry_wakeup_req_ready[gi]',
+
+                               att_entry_req_addr : 'att_entry_req_addr[gi*W_ADDR +: W_ADDR]',
+                               att_entry_req_type : 'att_entry_req_type[gi*W_CM_TYPE +: W_CM_TYPE]',
+                               att_entry_req_mrd_type : 'att_entry_req_mrd_type[gi*W_CM_TYPE +: W_CM_TYPE]',
+                               att_entry_req_snp_type : 'att_entry_req_snp_type[gi*W_CM_TYPE +: W_CM_TYPE]',
+                               att_entry_req_vz : 'att_entry_req_vz[gi*W_VZ +: W_VZ]',
+                               att_entry_req_ac : 'att_entry_req_ac[gi*W_AC +: W_AC]',
+                               att_entry_req_ca : 'att_entry_req_ca[gi*W_CA +: W_CA]',
+                               att_entry_req_ch : 'att_entry_req_ch[gi*W_CH +: W_CH]',
+                               att_entry_req_st : 'att_entry_req_st[gi*W_ST +: W_ST]',
+                               att_entry_req_en : 'att_entry_req_en[gi*W_EN +: W_EN]',
+                               att_entry_req_es : 'att_entry_req_es[gi*W_ES +: W_ES]',
+                               att_entry_req_pr : 'att_entry_req_pr[gi*W_PR +: W_PR]',
+                               att_entry_req_ns : 'att_entry_req_ns[gi*W_NS +: W_NS]',
+                               att_entry_req_or : 'att_entry_req_or[gi*W_OR +: W_OR]',
+                               att_entry_req_lk : 'att_entry_req_lk[gi*W_LK +: W_LK]',
+                               att_entry_req_rl : 'att_entry_req_rl[gi*W_RL +: W_RL]',
+                               att_entry_req_tm : 'att_entry_req_tm[gi*W_TM +: W_TM]',
+                               att_entry_req_mpf1 : 'att_entry_req_mpf1[gi*W_MPF1 +: W_MPF1]',
+                               att_entry_req_mpf2 : 'att_entry_req_mpf2[gi*W_MPF2 +: W_MPF2]',
+                               att_entry_req_size : 'att_entry_req_size[gi*W_SIZE +: W_SIZE]',
+                               att_entry_req_intf_size : 'att_entry_req_intf_size[gi*W_INTF_SIZE +: W_INTF_SIZE]',
+                               att_entry_req_d_id : 'att_entry_req_d_id[gi*W_D_ID +: W_D_ID]',
+                               att_entry_req_tof : 'att_entry_req_tof[gi*W_TOF +: W_TOF]',
+                               att_entry_req_r_type : 'att_entry_req_r_type[gi*W_R_TYPE +: W_R_TYPE]',
+                               att_entry_req_mw : 'att_entry_req_mw[gi*W_MW  +: W_MW]',
+                               att_entry_req_rb_id : 'att_entry_req_rb_id[gi*W_RB_ID +: W_RB_ID]',
+                               att_entry_req_gid : 'att_entry_req_gid[gi]',
+                               att_entry_req_cm_status : 'att_entry_req_cm_status[gi*W_CM_STATUS +: W_CM_STATUS]',
+                               att_entry_req_up : 'att_entry_req_up[gi*W_UP +: W_UP]', 
+                               att_entry_req_initiator_id : 'att_entry_req_initiator_id[gi*W_INIT_ID +: W_INIT_ID]',
+                               att_entry_req_message_id : 'att_entry_req_message_id[gi*W_MSG_ID +: W_MSG_ID]',
+                               att_entry_snp_req_target_id : 'att_entry_snp_req_target_id[gi*W_TARGET_ID +: W_TARGET_ID]',
+                               att_entry_mrd_req_rl : 'att_entry_mrd_req_rl[gi*W_RL +: W_RL]',
+
+                               att_entry_dm_write_way_vec_clr : 'att_entry_dm_write_way_vec_clr[gi]',
+                               
+                               att_entry_req_snp_mpf1 : 'att_entry_req_snp_mpf1[gi*W_MPF1 +: W_MPF1]',
+                               att_entry_req_snp_mpf2 : 'att_entry_req_snp_mpf2[gi*W_MPF2 +: W_MPF2]',
+                               att_entry_req_snp_mpf3 : 'att_entry_req_snp_mpf3[gi*W_MPF3 +: W_MPF3]',
+
+                               att_entry_req_str_mpf1 : 'att_entry_req_str_mpf1[gi*W_MPF1 +: W_MPF1]',
+                               att_entry_req_str_mpf2 : 'att_entry_req_str_mpf2[gi*W_MPF2 +: W_MPF2]',
+                               att_entry_req_str_tm : 'att_entry_req_str_tm[gi]',
+                               att_entry_req_str_intf_size : ' att_entry_req_str_intf_size[gi*W_INTF_SIZE +: W_INTF_SIZE]',
+                               
+                               att_entry_req_mrd_mpf1 : 'att_entry_req_mrd_mpf1[gi*W_MPF1 +: W_MPF1]',
+                               att_entry_req_mrd_mpf2 : 'att_entry_req_mrd_mpf2[gi*W_MPF2 +: W_MPF2]',
+
+                               att_entry_req_snp_valid          : 'att_entry_req_snp_valid[gi]',
+                               att_entry_req_snp_ready          : 'att_entry_req_snp_ready[gi]',
+                               att_entry_req_snp_last           : 'att_entry_req_snp_last[gi]',
+                               att_entry_req_mrd_valid          : 'att_entry_req_mrd_valid[gi]',
+                               att_entry_req_mrd_ready          : 'att_entry_req_mrd_ready[gi]',
+                               att_entry_req_mrd_last           : 'att_entry_req_mrd_last[gi]',
+                               att_entry_req_rbr_valid          : 'att_entry_req_rbr_valid[gi]',
+                               att_entry_req_rbr_ready          : 'att_entry_req_rbr_ready[gi]',
+                               att_entry_req_rbr_last           : 'att_entry_req_rbr_last[gi]',
+                               att_entry_req_str_valid          : 'att_entry_req_str_valid[gi]',
+                               att_entry_req_str_ready          : 'att_entry_req_str_ready[gi]',
+                               att_entry_req_str_last           : 'att_entry_req_str_last[gi]',
+                               
+                               // DIR resp
+                               att_entry_dm_rsp_valid           : 'att_entry_dm_rsp_valid[gi]',
+                               att_entry_dm_rsp_way_vec         : 'pipe_dm_rsp_way_vec',
+                               att_entry_dm_rsp_owner_valid     : 'pipe_dm_rsp_owner_valid',
+                               att_entry_dm_rsp_owner_num       : 'pipe_dm_rsp_owner_num',
+                               att_entry_dm_rsp_owner_vec       : 'pipe_dm_rsp_owner_vec',
+                               att_entry_dm_rsp_sharer_vec      : 'pipe_dm_rsp_sharer_vec',
+                               att_entry_dm_rsp_wr_required     : 'pipe_dm_rsp_wr_required',
+                               att_entry_dm_rsp_error           : 'pipe_dm_rsp_error',
+
+                               att_entry_dm_write_ready         : 'att_entry_dm_write_ready[gi]',  
+                               att_entry_dm_write_valid         : 'att_entry_dm_write_valid[gi]',   
+                               att_entry_dm_write_last          : 'att_entry_dm_write_last[gi]',     
+                               att_entry_dm_write_addr          : 'att_entry_dm_write_addr[gi*W_ADDR +: W_ADDR]',     
+                               att_entry_dm_write_ns            : 'att_entry_dm_write_ns[gi*W_NS +: W_NS]',       
+                               att_entry_dm_write_way_vec       : 'att_entry_dm_write_way_vec[gi*N_WAYS +: N_WAYS]',
+                               att_entry_dm_write_owner_valid   : 'att_entry_dm_write_owner_valid[gi]',
+                               att_entry_dm_write_owner_num     : 'att_entry_dm_write_owner_num[gi*W_N_C_AGENTS +: W_N_C_AGENTS]',
+                               att_entry_dm_write_sharer_vec    : 'att_entry_dm_write_sharer_vec[gi*N_C_AGENTS +: N_C_AGENTS]',  
+                               att_entry_dm_write_change_vec    : 'att_entry_dm_write_change_vec[gi*N_C_AGENTS +: N_C_AGENTS]', 
+    
+                               // RB Req signals
+                               att_rb_id_req : 'att_rb_id_req[gi]',
+                               att_rb_id_d_id : 'att_rb_id_d_id[gi*W_D_ID +: W_D_ID]',
+                               att_rb_id_d_id_vec : 'att_rb_id_d_id_vec[gi*N_CONNECTED_DMIS +: N_CONNECTED_DMIS]',
+                           mrd_att_rb_id_d_id_vec : 'mrd_att_rb_id_d_id_vec[gi*N_DMIS +: N_DMIS]',
+                               att_rb_id_grant : 'att_rb_id_grant[gi]',
+                               att_rb_id_in : 'att_rb_id_in[gi*W_RB_ID +: W_RB_ID]',
+                               att_rb_id_in_gid : 'att_rb_id_in_gid[gi]',
+                               att_rb_id_void_valid : 'att_rb_id_void_valid[gi]',
+                               att_rb_id_out : 'att_rb_id_out[gi*W_RB_ID +: W_RB_ID]',
+                               att_rb_id_out_gid : 'att_rb_id_out_gid[gi]',
+                               att_entry_req_rbr_reserve_sent : 'att_entry_req_rbr_reserve_sent[gi]',
+
+                               // credits
+                               att_mrd_credit_req : 'att_mrd_credit_req[gi]',
+                               att_mrd_credit_grant : 'att_mrd_credit_grant[gi*N_DMIS +: N_DMIS]',
+                               att_mrd_credit_grant_err : 'att_mrd_credit_grant_err[gi*N_DMIS +: N_DMIS]',
+                               
+                               att_snp_credit_req : 'att_snp_credit_req[gi]',
+                               att_snp_credit_grant : 'att_snp_credit_grant[gi*N_C_AGENTS +: N_C_AGENTS]',
+                               att_snp_credit_id_vec : 'att_snp_credit_id_vec[gi*N_C_AGENTS +: N_C_AGENTS]',
+
+                               snp_rsp_valid : 'snp_rsp_valid_qual',
+                               mrd_rsp_valid : 'mrd_rsp_valid_qual',
+                               str_rsp_valid : 'str_rsp_valid_qual',
+
+							   csr_SnoopEnable : 'csr_SnoopEnable',
+							   snp_rsp_miss : 'att_entry_snp_rsp_miss[gi]'
+
+                    }
+
+if (W_QOS != 0)  {
+    attEntryPorts['att_entry_req_qos'] = 'att_entry_req_qos[gi*W_QOS +: W_QOS]';
+}
+if (W_PRI != 0)  {
+    attEntryPorts['att_entry_req_pri'] = 'att_entry_req_pri[gi*W_PRI +: W_PRI]';
+}
+if (W_AUX != 0)  {
+    attEntryPorts['att_entry_req_aux'] = 'att_entry_req_aux[gi*W_AUX +: W_AUX]';
+}
+if (useQos) {
+    attEntryPorts['csr_eviction_qos'] = 'csr_eviction_qos';
+    attEntryPorts['csr_use_eviction_qos'] = 'csr_use_eviction_qos';
+}
+
+/* istanbul ignore if env ncore_3p7 */
+if (useMoveFlopsToTop) {
+
+    attEntryPorts['en_att_req_alloc_bundle']  = 'en_att_req_alloc_bundle_vec[gi]';
+    attEntryPorts['in_att_req_alloc_bundle']  = 'in_att_req_alloc_bundle_vec[gi*W_ATT_REQ_ALLOC_BUN +: W_ATT_REQ_ALLOC_BUN]';
+    attEntryPorts['out_att_req_alloc_bundle'] = 'out_att_req_alloc_bundle_vec[gi*W_ATT_REQ_ALLOC_BUN +: W_ATT_REQ_ALLOC_BUN]';
+
+    attEntryPorts['en_att_alloc_bundle']  = 'en_att_alloc_bundle_vec[gi]';
+    attEntryPorts['in_att_alloc_bundle']  = 'in_att_alloc_bundle_vec[gi*W_ATT_ALLOC_BUN +: W_ATT_ALLOC_BUN]';
+    attEntryPorts['out_att_alloc_bundle'] = 'out_att_alloc_bundle_vec[gi*W_ATT_ALLOC_BUN +: W_ATT_ALLOC_BUN]';
+
+}
+
+\jsend
+
+wire str_rsp_valid_qual;
+wire rbr_rsp_valid_qual;
+
+wire snp_ue_valid;
+wire mrd_ue_valid;
+wire str_ue_valid;
+wire rbr_ue_valid;
+
+assign snp_rsp_valid_qual = tm_snp_rsp_valid & (tm_snp_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id) & ~cmux_snp_rsp_UCE;
+assign mrd_rsp_valid_qual = tm_mrd_rsp_valid & (tm_mrd_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id) & ~cmux_mrd_rsp_UCE;
+assign str_rsp_valid_qual = tm_str_rsp_valid & (tm_str_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id) & ~cmux_str_rsp_UCE;
+assign rbr_rsp_valid_qual = tm_rbr_rsp_valid & (tm_rbr_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id) & ~cmux_rbr_rsp_UCE;
+
+generate
+   for(gi = 0; gi < N_ATT; gi=gi+1)
+     begin : ATT_ENTRIES
+        \=u.instance({
+                      instanceName : 'att_entry',
+                      moduleName : 'dce_att_entry',
+                      params :{
+                               assertOn : ASSERT_ON,
+                               CachingAgentIsCHI : CachingAgentIsCHI,
+                               useQos : useQos,
+                               useMoveFlopsToTop : useMoveFlopsToTop,
+                               att_req_alloc_bundle : att_req_alloc_bundle,
+                               att_alloc_bundle     : att_alloc_bundle,
+                               cmdReqInterface : CMD_REQ_INTF,
+                               mrdReqInterface : MRD_REQ_INTF,
+                               snpReqInterface : SNP_REQ_INTF,
+                               strReqInterface : STR_REQ_INTF,
+                               snpRspInterface : SNP_RSP_INTF,
+                               strRspInterface : STR_RSP_INTF,
+                               mrdRspInterface : MRD_RSP_INTF,
+                               rbrReqInterface : RBR_REQ_INTF,
+                               nSf : N_SF,
+                               nCachingAgents : N_C_AGENTS,
+                               nDmis : N_DMIS,
+                               nConnectedDmis : N_CONNECTED_DMIS,
+                               cmType : CM_TYPE,
+                               nAtt : N_ATT,
+                               wNumAtt : W_N_ATT,
+                               nWays : N_WAYS,
+                               wFUnitId : W_FUNIT_ID,
+                               wFPortId : W_FPORT_ID,
+                               snoopFilterInfo : SF_INFO 
+                               },
+                      verilogParams : {
+                                       ATT_ID : 'gi'
+                                       },
+                      ports : attEntryPorts,
+                      interfaces : [
+                                    {modulePrefix: 'cmd_req_', localPrefix: 'tm_cmd_req_', interface: CMD_REQ_INTF, exclude: ['valid', 'ready']},
+                                    {modulePrefix: 'snp_rsp_', localPrefix: 'tm_snp_rsp_', interface: SNP_RSP_INTF, exclude: ['valid', 'ready']},
+                                    {modulePrefix: 'mrd_rsp_', localPrefix: 'tm_mrd_rsp_', interface: MRD_RSP_INTF, exclude: ['valid', 'ready']},
+                                    {modulePrefix: 'str_rsp_', localPrefix: 'tm_str_rsp_', interface: STR_RSP_INTF, exclude: ['valid', 'ready']}
+                                    ]
+                      })=\     
+end // block: ATT_ENTRIES
+endgenerate
+
+
+assign snp_rsp_miss_in			= |att_entry_snp_rsp_miss;
+\=u.dffre(1, 'snp_rsp_miss', 'snp_rsp_miss_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire snp_rsp_owner_transfer_in = tm_snp_rsp_valid & tm_snp_rsp_ready & tm_snp_rsp_dc;
+\=u.dffre(1, 'snp_rsp_owner_transfer', 'snp_rsp_owner_transfer_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire snoop_filter_hit_in  = dm_rsp_valid & dm_rsp_ready & {|{dm_rsp_sharer_vec}};
+wire snoop_filter_miss_in = dm_rsp_valid & dm_rsp_ready & ~{|{dm_rsp_sharer_vec}};
+wire snoop_filter_recall_in = dm_recall_alloc_valid & dm_recall_alloc_ready;
+
+\=u.dffre(1, 'snoop_filter_hit', 'snoop_filter_hit_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'snoop_filter_miss', 'snoop_filter_miss_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'snoop_filter_recall', 'snoop_filter_recall_in', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+// Making sure no snoops are pending to deactivated agent                                    
+
+assign att_entry_agent_active = 
+ \jsbegin
+                                for (let i=0; i< N_ATT ; i++)
+                                {
+\jsend
+                                 (att_entry_agent_active_vec[N_C_AGENTS*\=i=\ +: N_C_AGENTS]) |
+\js                             } 
+                                  {N_C_AGENTS{1'b0}};
+
+assign att_entry_agent_inactive = ~att_entry_agent_active & ~snp_credits_not_zero;
+
+
+wire [N_ATT-1:0]         att_entry_wakeup_req_att_vec_pre;
+wire [\=W_CM_TYPE-1=\:0] att_entry_wakeup_req_cm_type_pre;
+wire [\=W_NS-1=\:0]      att_entry_wakeup_req_ns_pre;
+wire [\=W_ADDR-1=\:0]    att_entry_wakeup_req_addr_pre;
+wire [\=W_MPF1-1=\:0]    att_entry_wakeup_req_mpf1_pre;
+wire [\=W_MPF2-1=\:0]    att_entry_wakeup_req_mpf2_pre;
+wire [\=W_ES-1=\:0]      att_entry_wakeup_req_es_pre;
+wire [\=W_INIT_ID-1=\:0] att_entry_wakeup_req_initiator_id_pre;
+
+wire tm_cmd_wakeup_req_arb_valid_pre;
+wire tm_cmd_wakeup_req_arb_ready_pre;
+
+//
+// Wake up mux path
+//
+
+\jsbegin
+
+let dce_tm_wake_req_ports = {
+    clk                               : 'clk',
+    reset_n                           : 'reset_n',
+
+    att_entry_wakeup_req_valid        : 'att_entry_wakeup_req_valid',
+    att_entry_wakeup_req_ready        : 'att_entry_wakeup_req_ready',
+    att_entry_req_type                : 'att_entry_req_type',
+    att_entry_req_ns                  : 'att_entry_req_ns',
+    att_entry_req_addr                : 'att_entry_req_addr',
+    att_entry_req_mpf1                : 'att_entry_req_mpf1',
+    att_entry_req_mpf2                : 'att_entry_req_mpf2',
+    att_entry_req_es                  : 'att_entry_req_es',
+    att_entry_req_initiator_id        : 'att_entry_req_initiator_id',
+
+    tm_cmd_wakeup_req_arb_valid       : 'tm_cmd_wakeup_req_arb_valid_pre',
+    tm_cmd_wakeup_req_arb_ready       : 'tm_cmd_wakeup_req_arb_ready_pre',
+    att_entry_wakeup_req_att_vec      : 'att_entry_wakeup_req_att_vec_pre',
+    att_entry_wakeup_req_cm_type      : 'att_entry_wakeup_req_cm_type_pre',
+    att_entry_wakeup_req_ns           : 'att_entry_wakeup_req_ns_pre',
+    att_entry_wakeup_req_addr         : 'att_entry_wakeup_req_addr_pre',
+    att_entry_wakeup_req_mpf1         : 'att_entry_wakeup_req_mpf1_pre',
+    att_entry_wakeup_req_mpf2         : 'att_entry_wakeup_req_mpf2_pre',
+    att_entry_wakeup_req_es           : 'att_entry_wakeup_req_es_pre',
+    att_entry_wakeup_req_initiator_id : 'att_entry_wakeup_req_initiator_id_pre'
+}
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_wake_req',
+    moduleName: 'dce_tm_wake_req',
+    params : {
+        assertOn        : ASSERT_ON,
+        cmdReqInterface : CMD_REQ_INTF,
+        nAttEntries     : N_ATT
+    },
+    ports : dce_tm_wake_req_ports
+})=\
+
+    \=u.instance ({
+               instanceName: 'wakeup_fifo',
+               moduleName: 'fifo',
+               params: {
+                        width: W_ES + W_MPF2 + W_MPF1 + W_INIT_ID + W_ADDR + W_NS + W_CM_TYPE + N_ATT,
+                        depth: 2,
+                        zerodepth: 0,
+                        bypass_mode: 0,
+                        output_empty: 0
+                        },
+               ports: {
+                       clk            : 'clk',
+                       reset_n        : 'reset_n',
+                       push_valid     : 'tm_cmd_wakeup_req_arb_valid_pre',
+                       push_ready     : 'tm_cmd_wakeup_req_arb_ready_pre',
+                       push_data      : '{att_entry_wakeup_req_es_pre, att_entry_wakeup_req_mpf2_pre, att_entry_wakeup_req_mpf1_pre, att_entry_wakeup_req_initiator_id_pre, att_entry_wakeup_req_addr_pre, att_entry_wakeup_req_ns_pre, att_entry_wakeup_req_cm_type_pre, att_entry_wakeup_req_att_vec_pre}',
+                       pop_valid      : 'tm_cmd_wakeup_req_arb_valid',
+                       pop_ready      : 'tm_cmd_wakeup_req_arb_ready',
+                       pop_data       : '{att_entry_wakeup_req_es, att_entry_wakeup_req_mpf2, att_entry_wakeup_req_mpf1, att_entry_wakeup_req_initiator_id, att_entry_wakeup_req_addr, att_entry_wakeup_req_ns, att_entry_wakeup_req_cm_type, att_entry_wakeup_req_att_vec}'
+                       }
+    })=\
+
+
+
+\=u.instance ({
+               instanceName: 'dce_rbid',
+               moduleName: 'dce_rbid',
+               params: {
+                        assertOn : ASSERT_ON,
+                        nAttEntries : N_ATT,
+                        wDid : W_D_ID,
+                        wRbId : W_RB_ID,
+                        nConnectedDmis : N_CONNECTED_DMIS,
+                        nRbsPerDmi : N_RBS,
+                        wFUnitId : W_FUNIT_ID,
+                        rbrRspInterface : RBR_RSP_INTF,
+                        },
+               ports: {
+                       'clk' : 'clk',
+                       'reset_n' : 'reset_n',
+                       'rbid_busy' : 'rbid_busy',
+                       'connected_dmi_f_unit_id' : 'connected_dmi_f_unit_id',
+                       'hexDceConnectedDmiRbOffset' : 'hexDceConnectedDmiRbOffset',
+                       'att_rb_id_req' : 'att_rb_id_req',
+                       'att_rb_id_d_id' : 'att_rb_id_d_id',
+                       'att_rb_id_d_id_vec' : 'att_rb_id_d_id_vec',
+                       'att_rb_id_grant' : 'att_rb_id_grant',
+                       'att_rb_id_out' : 'att_rb_id_in',
+                       'att_rb_id_out_gid' : 'att_rb_id_in_gid',
+                       'att_rb_id_void_valid' : 'att_rb_id_void_valid',
+                       'att_rb_id_in' : 'att_rb_id_out',
+                       'att_rb_id_in_gid' : 'att_rb_id_out_gid',
+                       'att_entry_req_rbr_reserve_sent' : 'att_entry_req_rbr_reserve_sent',
+                       'rbr_rsp_valid' : 'rbr_rsp_valid_qual',
+                       'rbr_rsp_d_id' : 'rbr_rsp_d_id',
+                       'rbr_rsp_rb_id' : 'rbr_rsp_rb_id',
+                       'rbr_rsp_gid' : 'rbr_rsp_gid',
+                       },
+               interfaces : []
+               })=\
+
+assign rbr_rsp_d_id = tm_rbr_rsp_initiator_id[W_INIT_ID-1:W_FPORT_ID];
+
+assign {rbr_rsp_gid, rbr_rsp_rb_id} = tm_rbr_rsp_rb_id;
+
+//
+// SNPreq arbiter and packet
+//
+
+\jsbegin
+
+let dce_tm_snp_req_ports = {
+    clk                         : 'clk',
+    reset_n                     : 'reset_n',
+    my_f_unit_id                : 'my_f_unit_id',
+    att_entry_req_snp_valid     : 'att_entry_req_snp_valid',
+    att_entry_req_snp_last      : 'att_entry_req_snp_last',
+    att_entry_req_snp_ready     : 'att_entry_req_snp_ready',
+    att_entry_req_snp_grant     : 'att_entry_req_snp_grant',
+    att_entry_snp_req_target_id : 'att_entry_snp_req_target_id',
+    att_entry_req_snp_type      : 'att_entry_req_snp_type',
+    att_entry_req_addr          : 'att_entry_req_addr',
+    att_entry_req_ns            : 'att_entry_req_ns',
+    att_entry_req_vz            : 'att_entry_req_vz',
+    att_entry_req_ac            : 'att_entry_req_ac',
+    att_entry_req_ca            : 'att_entry_req_ca',
+    att_entry_req_pr            : 'att_entry_req_pr',
+    att_entry_req_up            : 'att_entry_req_up',
+    att_entry_req_tm            : 'att_entry_req_tm',
+    att_entry_req_snp_mpf1      : 'att_entry_req_snp_mpf1',
+    att_entry_req_snp_mpf2      : 'att_entry_req_snp_mpf2',
+    att_entry_req_snp_mpf3      : 'att_entry_req_snp_mpf3',
+    att_entry_req_size          : 'att_entry_req_size',
+    att_entry_req_intf_size     : 'att_entry_req_intf_size',
+    att_entry_req_d_id          : 'att_entry_req_d_id',
+    att_entry_req_rb_id         : 'att_entry_req_rb_id',
+    att_entry_req_gid           : 'att_entry_req_gid',
+    att_entry_req_tof           : 'att_entry_req_tof'
+    };
+    dce_tm_snp_req_ports['tm_snp_req_size'] = 'tm_snp_req_size';  //UNUSED!! SHOULD BE REMOVED!!
+
+if ( W_PRI != 0 ) {
+    dce_tm_snp_req_ports['att_entry_req_pri'] = 'att_entry_req_pri';
+}
+if ( W_QOS != 0 ) {
+    dce_tm_snp_req_ports['att_entry_req_qos'] = 'att_entry_req_qos';
+}
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_snp_req',
+    moduleName: 'dce_tm_snp_req',
+    params : {
+        assertOn        : ASSERT_ON,
+        cmdReqInterface : CMD_REQ_INTF,
+        snpReqInterface : SNP_REQ_INTF,
+        rbrReqInterface : RBR_REQ_INTF,
+        nAttEntries     : N_ATT,
+        wFUnitId        : W_FUNIT_ID,
+        wFPortId        : W_FPORT_ID
+    },
+    verilogParams : {},
+    ports : dce_tm_snp_req_ports,
+    interfaces : [
+        {modulePrefix: 'tm_snp_req_', localPrefix: 'tm_snp_req_', "interface": SNP_REQ_INTF}
+    ]
+})=\
+
+//
+// MRDreq arbiter and packet
+//
+
+\jsbegin
+
+let dce_tm_mrd_req_ports = {
+    clk                         : 'clk',
+    reset_n                     : 'reset_n',
+    my_f_unit_id                : 'my_f_unit_id',
+    att_entry_req_mrd_valid     : 'att_entry_req_mrd_valid',
+    att_entry_req_mrd_last      : 'att_entry_req_mrd_last',
+    att_entry_req_mrd_ready     : 'att_entry_req_mrd_ready',
+    att_entry_req_mrd_grant     : 'att_entry_req_mrd_grant',
+    att_entry_req_d_id          : 'att_entry_req_d_id',
+    att_entry_req_mrd_type      : 'att_entry_req_mrd_type',
+    att_entry_req_addr          : 'att_entry_req_addr',
+    att_entry_req_ns            : 'att_entry_req_ns',
+    att_entry_req_ac            : 'att_entry_req_ac',
+    att_entry_req_pr            : 'att_entry_req_pr',
+    att_entry_mrd_req_rl        : 'att_entry_mrd_req_rl',
+    att_entry_req_tm            : 'att_entry_req_tm',
+    att_entry_req_mrd_mpf1      : 'att_entry_req_mrd_mpf1',
+    att_entry_req_mrd_mpf2      : 'att_entry_req_mrd_mpf2',
+    att_entry_req_size          : 'att_entry_req_size',
+    att_entry_req_intf_size     : 'att_entry_req_intf_size'
+    };
+
+if ( W_QOS != 0 ) {
+    dce_tm_mrd_req_ports['att_entry_req_qos'] = 'att_entry_req_qos';
+}
+if ( W_PRI != 0 ) {
+    dce_tm_mrd_req_ports['att_entry_req_pri'] = 'att_entry_req_pri';
+}
+if ( W_AUX != 0 ) {
+    dce_tm_mrd_req_ports['att_entry_req_aux'] = 'att_entry_req_aux';
+}
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_mrd_req',
+    moduleName: 'dce_tm_mrd_req',
+    params : {
+        assertOn        : ASSERT_ON,
+        cmdReqInterface : CMD_REQ_INTF,
+        mrdReqInterface : MRD_REQ_INTF,
+        snpReqInterface : SNP_REQ_INTF,
+        nAttEntries     : N_ATT,
+        wFUnitId        : W_FUNIT_ID,
+        wFPortId        : W_FPORT_ID
+    },
+    verilogParams : {},
+    ports : dce_tm_mrd_req_ports,
+    interfaces : [
+        {modulePrefix: 'tm_mrd_req_', localPrefix: 'tm_mrd_req_', "interface": MRD_REQ_INTF}
+    ]
+})=\
+
+//
+// RBRreq arbiter and packet
+//                            
+
+\jsbegin
+
+let dce_tm_rbr_req_ports = {
+    clk                         : 'clk',
+    reset_n                     : 'reset_n',
+    my_f_unit_id                : 'my_f_unit_id',
+    att_entry_req_rbr_valid     : 'att_entry_req_rbr_valid',
+    att_entry_req_rbr_last      : 'att_entry_req_rbr_last',
+    att_entry_req_rbr_ready     : 'att_entry_req_rbr_ready',
+    att_entry_req_rbr_grant     : 'att_entry_req_rbr_grant',
+    att_entry_req_d_id          : 'att_entry_req_d_id',
+    att_entry_req_addr          : 'att_entry_req_addr',
+    att_entry_req_ns            : 'att_entry_req_ns',
+    att_entry_req_vz            : 'att_entry_req_vz',
+    att_entry_req_ac            : 'att_entry_req_ac',
+    att_entry_req_ca            : 'att_entry_req_ca',
+    att_entry_req_pr            : 'att_entry_req_pr',
+    att_entry_req_tm            : 'att_entry_req_tm',
+    att_entry_req_tof           : 'att_entry_req_tof',
+    att_entry_req_mw            : 'att_entry_req_mw',
+    att_entry_req_size          : 'att_entry_req_size',
+    att_entry_req_rb_id         : 'att_entry_req_rb_id',
+    att_entry_req_gid           : 'att_entry_req_gid',
+    att_entry_req_r_type        : 'att_entry_req_r_type'
+    };
+
+if ( W_QOS != 0 ) {
+    dce_tm_rbr_req_ports['att_entry_req_qos'] = 'att_entry_req_qos';
+}
+if ( W_PRI != 0 ) {
+    dce_tm_rbr_req_ports['att_entry_req_pri'] = 'att_entry_req_pri';
+}
+if ( W_AUX != 0 ) {
+    dce_tm_rbr_req_ports['att_entry_req_aux'] = 'att_entry_req_aux';
+}
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_rbr_req',
+    moduleName: 'dce_tm_rbr_req',
+    params : {
+        assertOn        : ASSERT_ON,
+        cmdReqInterface : CMD_REQ_INTF,
+        rbrReqInterface : RBR_REQ_INTF,
+        snpReqInterface : SNP_REQ_INTF,
+        cmType          : CM_TYPE,
+        nAttEntries     : N_ATT,
+        wFUnitId        : W_FUNIT_ID,
+        wFPortId        : W_FPORT_ID
+    },
+    verilogParams : {},
+    ports : dce_tm_rbr_req_ports,
+    interfaces : [
+        {modulePrefix: 'tm_rbr_req_', localPrefix: 'tm_rbr_req_', "interface": RBR_REQ_INTF}
+    ]
+})=\
+
+//
+// STRreq arbiter and packet
+//                            
+
+\jsbegin
+
+let dce_tm_str_req_ports = {
+    clk                         : 'clk',
+    reset_n                     : 'reset_n',
+    my_f_unit_id                : 'my_f_unit_id',
+    att_entry_req_str_valid     : 'att_entry_req_str_valid',
+    att_entry_req_str_last      : 'att_entry_req_str_last',
+    att_entry_req_str_ready     : 'att_entry_req_str_ready',
+    att_entry_req_str_grant     : 'att_entry_req_str_grant',
+    att_entry_req_str_mpf1      : 'att_entry_req_str_mpf1',
+    att_entry_req_str_mpf2      : 'att_entry_req_str_mpf2',
+    att_entry_req_str_intf_size : 'att_entry_req_str_intf_size',
+    att_entry_req_str_tm        : 'att_entry_req_str_tm',
+    att_entry_req_initiator_id  : 'att_entry_req_initiator_id',
+    att_entry_req_cm_status     : 'att_entry_req_cm_status',
+    att_entry_req_message_id    : 'att_entry_req_message_id',
+    att_entry_req_rb_id         : 'att_entry_req_rb_id',
+    att_entry_req_gid           : 'att_entry_req_gid',
+    };
+
+if ( W_QOS != 0 ) {
+    dce_tm_str_req_ports['att_entry_req_qos'] = 'att_entry_req_qos';
+}
+if ( W_PRI != 0 ) {
+    dce_tm_str_req_ports['att_entry_req_pri'] = 'att_entry_req_pri';
+}
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_str_req',
+    moduleName: 'dce_tm_str_req',
+    params : {
+        assertOn        : ASSERT_ON,
+        cmdReqInterface : CMD_REQ_INTF,
+        strReqInterface : STR_REQ_INTF,
+        snpReqInterface : SNP_REQ_INTF,
+        rbrReqInterface : RBR_REQ_INTF,
+        cmType          : CM_TYPE,
+        nAttEntries     : N_ATT,
+        wFUnitId        : W_FUNIT_ID,
+        wFPortId        : W_FPORT_ID
+    },
+    verilogParams : {},
+    ports : dce_tm_str_req_ports,
+    interfaces : [
+        {modulePrefix: 'tm_str_req_', localPrefix: 'tm_str_req_', "interface": STR_REQ_INTF}
+    ]
+})=\
+
+//
+// Directory Write
+//
+
+wire tm_dm_write_ready;
+wire tm_dm_write_valid; 
+wire [W_ADDR-1:0] tm_dm_write_addr;
+wire [W_NS-1:0] tm_dm_write_ns;
+wire [N_WAYS-1:0] tm_dm_write_way_vec;
+wire tm_dm_write_owner_valid;
+wire [W_N_C_AGENTS-1:0] tm_dm_write_owner_num;
+wire [N_C_AGENTS-1:0] tm_dm_write_sharer_vec;
+wire [N_C_AGENTS-1:0] tm_dm_write_change_vec;
+
+\jsbegin
+
+let dce_tm_dm_write_ports = {
+    clk                            : 'clk',
+    reset_n                        : 'reset_n',
+    att_entry_dm_write_valid       : 'att_entry_dm_write_valid',
+    att_entry_dm_write_last        : 'att_entry_dm_write_last',
+    att_entry_dm_write_ready       : 'att_entry_dm_write_ready',
+    att_entry_dm_write_grant       : 'att_entry_dm_write_grant',
+    att_entry_dm_write_addr        : 'att_entry_dm_write_addr',
+    att_entry_dm_write_ns          : 'att_entry_dm_write_ns',
+    att_entry_dm_write_way_vec     : 'att_entry_dm_write_way_vec',
+    att_entry_dm_write_owner_valid : 'att_entry_dm_write_owner_valid',
+    att_entry_dm_write_owner_num   : 'att_entry_dm_write_owner_num',
+    att_entry_dm_write_sharer_vec  : 'att_entry_dm_write_sharer_vec',
+    att_entry_dm_write_change_vec  : 'att_entry_dm_write_change_vec',
+    tm_dm_write_valid              : 'tm_dm_write_valid',
+    tm_dm_write_ready              : 'tm_dm_write_ready',
+    tm_dm_write_addr               : 'tm_dm_write_addr',
+    tm_dm_write_ns                 : 'tm_dm_write_ns',
+    tm_dm_write_way_vec            : 'tm_dm_write_way_vec',
+    tm_dm_write_owner_valid        : 'tm_dm_write_owner_valid',
+    tm_dm_write_owner_num          : 'tm_dm_write_owner_num',
+    tm_dm_write_sharer_vec         : 'tm_dm_write_sharer_vec',
+    tm_dm_write_change_vec         : 'tm_dm_write_change_vec'
+    };
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_dm_write',
+    moduleName: 'dce_tm_dm_write',
+    params : {
+        ASSERT_ON        : ASSERT_ON,
+        N_ATT            : N_ATT,
+        W_ADDR           : W_ADDR,
+        W_NS             : W_NS,
+        N_WAYS           : N_WAYS,
+        N_C_AGENTS       : N_C_AGENTS,
+        W_N_C_AGENTS     : W_N_C_AGENTS
+    },
+    ports : dce_tm_dm_write_ports
+})=\
+
+//
+// DM write Pipe stage
+//
+
+\js var DM_WR_WIDTH = W_ADDR+W_NS+N_WAYS+1+W_N_C_AGENTS+N_C_AGENTS+N_C_AGENTS+N_ATT;
+
+localparam DM_WR_WIDTH = \=DM_WR_WIDTH=\;
+                               
+wire tm_dm_write_ready_dup;
+wire [DM_WR_WIDTH-1:0] tm_dm_write_pl, dm_write_pl;                          
+wire [DM_WR_WIDTH-N_ATT-1:0] tm_dm_write_pl_dup, dm_write_pl_dup;
+
+assign tm_dm_write_pl = {tm_dm_write_addr, tm_dm_write_ns, 
+                         tm_dm_write_way_vec, 
+                         tm_dm_write_owner_valid, tm_dm_write_owner_num, 
+                         tm_dm_write_sharer_vec, 
+                         tm_dm_write_change_vec,
+                         att_entry_dm_write_grant};                                                      
+ 
+assign tm_dm_write_pl_dup = {tm_dm_write_addr, tm_dm_write_ns, 
+                         tm_dm_write_way_vec, 
+                         tm_dm_write_owner_valid, tm_dm_write_owner_num, 
+                         tm_dm_write_sharer_vec, 
+                         tm_dm_write_change_vec};
+ 
+\=u.instance ({
+               instanceName: 'dm_wr_pipe_fifo',
+               moduleName: 'fifo',
+               params: {
+                        width: DM_WR_WIDTH,
+                        depth: 2,
+                        zerodepth: 0,
+                        bypass_mode: 0,
+                        output_empty: 0
+                        },
+               ports: {
+                       clk            : 'clk',
+                       reset_n        : 'reset_n',
+                       push_valid     : 'tm_dm_write_valid',
+                       push_ready     : 'tm_dm_write_ready',
+                       push_data      : 'tm_dm_write_pl',
+                       pop_valid      : 'dm_write_valid',
+                       pop_ready      : 'dm_write_ready',
+                       pop_data       : 'dm_write_pl'
+                       }
+               })=\
+                               
+\=u.instance ({
+               instanceName: 'dm_wr_pipe_fifo_dup',
+               moduleName: 'fifo',
+               params: {
+                        width: DM_WR_WIDTH - N_ATT,
+                        depth: 2,
+                        zerodepth: 0,
+                        bypass_mode: 0,
+                        output_empty: 0
+                        },
+               ports: {
+                       clk            : 'clk',
+                       reset_n        : 'reset_n',
+                       push_valid     : 'tm_dm_write_valid',
+                       push_ready     : 'tm_dm_write_ready_dup',
+                       push_data      : 'tm_dm_write_pl_dup',
+                       pop_valid      : 'dm_write_valid_dup',
+                       pop_ready      : 'dm_write_ready',
+                       pop_data       : 'dm_write_pl_dup'
+                       }
+               })=\
+
+assign {dm_write_addr, dm_write_ns, 
+        dm_write_way_vec, 
+        dm_write_owner_valid, dm_write_owner_num, 
+        dm_write_sharer_vec, 
+        dm_write_change_vec,
+        dm_write_att_vec} = dm_write_pl; 
+
+assign {dm_write_addr_dup, dm_write_ns_dup, 
+        dm_write_way_vec_dup, 
+        dm_write_owner_valid_dup, dm_write_owner_num_dup, 
+        dm_write_sharer_vec_dup, 
+        dm_write_change_vec_dup} = dm_write_pl_dup; 
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (useSramInputFlop) {
+\jsend
+
+wire [N_ATT-1:0] att_entry_dm_write_way_vec_clr_in = dm_write_att_vec & {N_ATT{dm_write_valid & dm_write_ready}};
+
+\=u.dffre(N_ATT, 'att_entry_dm_write_way_vec_clr', 'att_entry_dm_write_way_vec_clr_in', "{N_ATT{1'b0}}", "1'b1", 'clk', 'reset_n')=\
+
+\js } else {
+
+assign att_entry_dm_write_way_vec_clr = dm_write_att_vec & {N_ATT{dm_write_valid & dm_write_ready}}; 
+
+\js }
+
+//
+// Target ID error logic
+//
+
+wire [W_FUNIT_ID-1:0] snp_ue_init_id;
+
+assign snp_ue_valid = (tm_snp_rsp_valid & tm_snp_rsp_ready) & ~(tm_snp_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id);
+assign snp_ue_init_id = tm_snp_rsp_initiator_id[W_INIT_ID-1 : W_FPORT_ID];
+
+wire [W_FUNIT_ID-1:0] str_ue_init_id;
+
+assign str_ue_valid = (tm_str_rsp_valid & tm_str_rsp_ready) & ~(tm_str_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id);
+assign str_ue_init_id = tm_str_rsp_initiator_id[W_INIT_ID-1 : W_FPORT_ID];
+
+wire [W_FUNIT_ID-1:0] mrd_ue_init_id;
+
+assign mrd_ue_valid = (tm_mrd_rsp_valid & tm_mrd_rsp_ready) & ~(tm_mrd_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id);
+assign mrd_ue_init_id = tm_mrd_rsp_initiator_id[W_INIT_ID-1 : W_FPORT_ID];
+
+wire [W_FUNIT_ID-1:0] rbr_ue_init_id;
+
+assign rbr_ue_valid = (tm_rbr_rsp_valid & tm_rbr_rsp_ready) & ~(tm_rbr_rsp_target_id[W_INIT_ID-1 : W_FPORT_ID] == my_f_unit_id);
+assign rbr_ue_init_id = tm_rbr_rsp_initiator_id[W_INIT_ID-1 : W_FPORT_ID];
+
+// Error signalling
+
+assign csr_target_ue_valid = snp_ue_valid | str_ue_valid | mrd_ue_valid | rbr_ue_valid;
+
+assign csr_target_ue_init_id = (snp_ue_valid) ? snp_ue_init_id : (str_ue_valid) ? str_ue_init_id : (mrd_ue_valid) ? mrd_ue_init_id : rbr_ue_init_id;
+
+//
+// Timeout Counter
+//
+
+wire t_cfg_timeout, timeout_trigger_os_falling, timeout_trigger_os, t_sv_timeout_bist;
+
+    \=obj.lib.instance({
+        instanceName: 'u_timeout',
+        moduleName: 'ncore3_timeout',
+        params: {
+        },
+        ports: {
+           clk_i                : 'clk',
+           reset_ni             : 'reset_n',
+           uerrs_en_bit_3       : "1'b1",
+           external_i           : "1'b0",
+           cfg_external_i       : 'csr_timeout_ref_en',
+           cfg_top_i            : 'csr_timeout_threshold',
+           cfg_tperiod_i        : "32'b0",
+           bist_timeout_trigger : 'bist_timeout_trigger',
+           t_sv_timeout_bist    : 't_sv_timeout_bist',
+           t_sv_ovt             : 'att_timeout_overflow_event',
+           t_sv_ovt_clr         : 'att_timeout_overflow_event_clr',
+           t_cfg_timeout        : 't_cfg_timeout',
+           timeout_trigger_os_falling : 'timeout_trigger_os_falling',
+           timeout_trigger_os         : 'timeout_trigger_os'
+        }
+    })=\
+
+\jsbegin
+
+let dce_tm_timeout_ports = {
+    clk                            : 'clk',
+    reset_n                        : 'reset_n',
+    t_sv_timeout_bist              : 't_sv_timeout_bist',
+    att_timeout_overflow           : 'att_timeout_overflow',
+    att_timeout_overflow_event     : 'att_timeout_overflow_event',
+    att_entry_req_addr             : 'att_entry_req_addr',
+    att_entry_req_ns               : 'att_entry_req_ns',
+    tm_timeout_ue_valid            : 'tm_timeout_ue_valid',
+    tm_timeout_ue_addr             : 'tm_timeout_ue_addr',
+    tm_timeout_ue_ns               : 'tm_timeout_ue_ns'
+    };
+
+\jsend
+
+\=u.instance({
+    instanceName: 'dce_tm_timeout',
+    moduleName: 'dce_tm_timeout',
+    params : {
+        ASSERT_ON        : ASSERT_ON,
+        N_ATT            : N_ATT,
+        W_ADDR           : W_ADDR,
+        W_NS             : W_NS
+    },
+    ports : dce_tm_timeout_ports
+})=\
+
+
+//
+// command initiator decode
+//
+
+\js for (let i=0; i < N_C_AGENTS; i++) {
+assign pipe_dm_rsp_cmd_init_vec[\=i=\] = (pipe_dm_rsp_lookup_initiator_id[W_INIT_ID-1:W_FPORT_ID] == ca_f_unit_id[\=i=\*W_FUNIT_ID +: W_FUNIT_ID]);
+\js }
+
+
+//
+// command initiator is not caching agent
+//
+assign pipe_dm_rsp_cmd_init_nca = ~(| pipe_dm_rsp_cmd_init_vec);
+
+
+//
+// command initiator is owner
+//
+assign pipe_dm_rsp_cmd_init_owner = (pipe_dm_rsp_owner_valid & (pipe_dm_rsp_cmd_init_vec == pipe_dm_rsp_owner_vec) & ~pipe_dm_rsp_cmd_init_nca);
+
+//
+// command initiator is owner or sharer
+//
+assign pipe_dm_rsp_cmd_init_valid = pipe_dm_rsp_cmd_init_owner | (| (pipe_dm_rsp_sharer_vec & pipe_dm_rsp_cmd_init_vec));
+
+
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (ASSERT_ON) { \jsend
+`ifdef OVL_ASSERT_ON
+//coverage off
+//pragma synthesis_off
+
+wire [N_ATT-1:0] att_valid_curr;
+wire [W_N_ATT:0] att_count_in_org, att_count_org;
+
+assign att_valid_curr = att_req_alloc | att_recall_alloc | att_valid;
+
+assign att_count_in_org = {\=W_N_ATT=\'b0, att_valid_curr[0]}
+\js for ( var i = 1 ; i < N_ATT; i++ ) {
+                        + {\=W_N_ATT=\'b0, att_valid_curr[\=i=\]}
+\js }
+                        ;
+
+\=u.dffre(W_N_ATT+1, 'att_count_org', 'att_count_in_org', "{W_N_ATT+1{1'b0}}", "1'b1", 'clk', 'reset_n')=\
+
+
+    property p_att_count;
+        @(posedge clk) disable iff (~reset_n)
+        (att_count == att_count_org);
+    endproperty
+
+    assert_att_count: assert property (p_att_count)
+        else begin $error("att_count MUST MATCH att_count_org !"); #100 $finish; end
+
+//coverage on
+//pragma synthesis_on
+`endif
+\js }
+endmodule

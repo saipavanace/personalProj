@@ -1,0 +1,11 @@
+//////////////////////////TB_  fault_if ////////////////////////
+//DUT interfaces
+//////////////////////////////////////////////////////////////////
+interface fault_if;
+
+  logic mission_fault; 
+  logic latent_fault;
+  logic cerr_over_thres_fault;
+  
+endinterface: fault_if
+

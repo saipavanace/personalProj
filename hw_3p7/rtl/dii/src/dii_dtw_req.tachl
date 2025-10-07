@@ -1,0 +1,1761 @@
+\jsbegin
+    var u = obj.lib;
+
+    var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+    let m = obj.userLib;
+
+    var intfsize_width       = u.getParam('wIntfSize');
+    var wTOF                 = u.getParam('wTOF');    
+    var wtt_num_entries      = u.getParam('nWttEntries');
+    var wtt_id_width         = u.getParam('wtt_id_width');
+    var nWriteBufferEntries  = u.getParam('nWriteBufferEntries');
+    var wAddr                = u.getParam('wAddr');
+    var tid_width            = u.getParam('wMsgId');
+    var unit_id_width        = u.getParam('unit_id_width');
+    var port_id_width        = u.getParam('port_id_width');
+    var init_id_width        = wFUnitId;
+    var cm_type_width        = u.getParam('wCmType');
+    var cm_status_width      = Math.abs(u.getParam('DTWReqInterface', 'cm_status'));
+    var m_prot_width         = Math.abs(u.getParam('DTWRspInterface', 'm_prot'));
+    var tm_width             = Math.abs(u.getParam('DTWRspInterface', 'tm'));
+    var msg_id_width         = Math.abs(u.getParam('DTWRspInterface', 'message_id'));
+    var h_prot_width         = u.getParam('wHProt');
+    var t_tier_width         = u.getParam('wTtier');
+    var steering_width       = u.getParam('wSteering');
+    var priority_width       = u.getParam('wPriority');
+    var ql_width             = u.getParam('wQl');
+    var qos_width            = u.getParam('wQos');    
+    var data_width           = u.getParam('wData');
+    var dii_dw               = (data_width / 64);
+    var rl_width             = u.getParam('wRL')
+    var be_width             = u.getParam('be_width');
+    var axi_id_width         = u.getParam('axi_id_width');
+    var write_resp_width     = u.getParam('write_resp_width');
+    var shift_width          = (data_width <= 64) ? 0 : log2ceil(data_width/64);
+    var wNarrowInfo          = log2ceil(data_width/8)+1+3+3+2;
+    var awuser_width         = u.getParam('awuser_width');
+    var wAux		     = u.getParam('wAux');
+    var nExclusiveEntries  = u.getParam('nExclusiveEntries');
+
+    if(data_width > 64) {
+      var dtw_data_req_width   = wtt_id_width + axi_id_width + be_width + data_width + 3 + shift_width + 4  + 3 + wNarrowInfo;
+    } else {
+      var dtw_data_req_width   = wtt_id_width + axi_id_width + be_width + data_width + 3 + 4 + 3 + wNarrowInfo ;    
+    }
+    
+    var wFUnitId             = u.getParam('wFUnitId');
+    var wFPortId             = obj.lib.getParam('wFPortId');
+    var DtwRsp               = u.getParam('cmType','DtwRsp'); 
+    var dtw_req_width        = wtt_id_width + wFUnitId + init_id_width ;
+    var resp_width           = Math.abs(obj.lib.getParam('AXI_Interface', 'b_', 'resp'));
+    var dtw_resp_width       = wFUnitId + tid_width + resp_width + 1 + ql_width + priority_width + 1 + 1;
+    var wMpf1                = u.getParam('wMpf1');
+    var log2width            = log2ceil((data_width/8));
+    var max_beats = 512/data_width;
+
+    var id_width = axi_id_width;
+
+    u.port('input', 'clk',                       1);
+    u.port('input', 'reset_n',                   1);
+    u.port('input', 'my_f_unit_id',              wFUnitId);
+    u.port('input', 'write_resp_data',           write_resp_width);
+    u.port('input', 'write_resp_valid',          1);
+    u.port('output', 'write_resp_ready',         1);
+    u.port('input', 'write_req_fifo_out_valid',  1);
+    u.port('input', 'out_write_req_ready',       1);
+    u.port('input', 'write_req_rb_id',           wtt_id_width);
+    u.port('input', 'write_req_ex_pass',         1);    
+    u.port('output', 'wtt_retire_entry',         wtt_num_entries);
+    u.port('output', 'wtt_ewa_sent_set',         wtt_num_entries);
+    u.port('output', 'axi_id_match',             wtt_num_entries);
+    u.port('output', 'wr_axi_id_retire',         1);
+    u.port('output', 'wr_axi_id_comp',           axi_id_width);
+    u.port('output', 'dtw_data_done',            1);
+    u.port('output', 'init_cond',                1);
+    u.port('output', 'bresp_addr',               wAddr);
+    u.port('output', 'bresp_valid',              1);
+    u.port('output', 'bresp_ns',                 1);        
+    u.port('output', 'bresp',                    2);
+
+    u.port('input', 'dtw_req_UCE',               1);
+
+for (var i = 0; i < wtt_num_entries; i++) {
+    u.port('input',  'wtt_entry'+i+'_tm',        1);
+    u.port('input',  'wtt_entry'+i+'_ewa_sent',  1);    
+    u.port('input',  'wtt_entry'+i+'_ewa',       1);
+    u.port('input',  'wtt_entry'+i+'_valid',     1);
+    u.port('input',  'wtt_entry'+i+'_oldest',    1);
+    u.port('input',  'wtt_entry'+i+'_axi_id',    axi_id_width);
+    u.port('input',  'wtt_entry'+i+'_tid',       tid_width);
+    u.port('input',  'wtt_entry'+i+'_init_id',   wFUnitId);
+    u.port('input',  'wtt_entry'+i+'_dtw_tid',   tid_width);
+    u.port('input',  'wtt_entry'+i+'_dtw_ql',    ql_width);
+    u.port('input',  'wtt_entry'+i+'_dtw_priority',   priority_width);
+    u.port('input',  'wtt_entry'+i+'_size',      3);
+    u.port('input',  'wtt_entry'+i+'_intfsize',  intfsize_width);
+    u.port('input',  'wtt_entry'+i+'_tof',       wTOF);
+    u.port('input',  'wtt_entry'+i+'_data_pending', 1);    
+    u.port('input',  'wtt_entry'+i+'_st',        1);
+    u.port('input',  'wtt_entry'+i+'_ca',        1);
+    u.port('input',  'wtt_entry'+i+'_ch',        1);
+    u.port('input',  'wtt_entry'+i+'_narrow',    1);
+    u.port('input',  'wtt_entry'+i+'_lock',      1);
+    u.port('input',  'wtt_entry'+i+'_ex_pass',   1);    
+    u.port('input',  'wtt_entry'+i+'_prot',      3);        
+    u.port('input',  'wtt_entry'+i+'_mpf1',      wMpf1);
+    u.port('input',  'wtt_entry'+i+'_addr',      wAddr);
+    u.port('input',  'wtt_entry'+i+'_dbad',      1);
+    u.port('input',  'wtt_entry'+i+'_qos',       qos_width);
+    u.port('input',  'wtt_entry'+i+'_ql',        ql_width);
+    u.port('input',  'wtt_entry'+i+'_priority',  priority_width); 
+    u.port('input',  'wtt_entry'+i+'_user',      awuser_width);      
+ };
+
+obj.lib.interface('dtw_req_slv_', 'slave',   obj.lib.getParam('DTWReqInterface'));
+obj.lib.interface('dtw_rsp_mst_', 'master',  obj.lib.getParam('DTWRspInterface'));
+obj.lib.interface('axi_mst_w_',   'master',  obj.lib.getParam('AXI_Interface', 'w_'), ['data','strb']);
+u.port('output', 'axi_mst_w_data'      , data_width);
+u.port('output', 'axi_mst_w_strb'      , data_width/8);
+
+u.port('output', 'release_rbid_credit'      , 1);
+
+if (awuser_width != 0) {
+    u.port('output',  'pmon_dtw_req_user_bits'      , wAux); 	
+}
+
+
+\jsend
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+wire                        incoming_msg_target_mismatch;
+assign                      incoming_msg_target_mismatch = (dtw_req_slv_target_id != {my_f_unit_id,\=wFPortId=\'b0});
+
+\=m.bundleFunctions.wiresFromInterface('axi_mst_w_pipe_', obj.lib.getParam('AXI_Interface', 'w_'), ['data','strb'], u.bundle)=\
+wire [\=data_width=\-1:0]    axi_mst_w_pipe_data;
+wire [\=data_width/8=\-1:0]  axi_mst_w_pipe_strb;
+
+\jsbegin
+	var dtw_data_lsb          = 0;
+	var dtw_data_msb          = data_width -1;
+	var dtw_last_lsb          = data_width;
+        var dtw_strb_lsb          = data_width + 1;
+	var dtw_strb_msb          = data_width + be_width;
+	var dtw_axi_id_lsb        = data_width + be_width  + 1;
+        var dtw_axi_id_msb        = data_width + be_width + axi_id_width;
+	var dtw_req_rb_id_lsb     = data_width + be_width + axi_id_width + 1;
+        var dtw_req_rb_id_msb     = data_width + be_width + axi_id_width + wtt_id_width; 
+        var dtw_req_new_wr        = data_width + be_width + axi_id_width + wtt_id_width + 1;
+	var dtw_req_last          = data_width + be_width + axi_id_width + wtt_id_width + 2;
+	var dtw_req_shift_lsb     = data_width + be_width + axi_id_width + wtt_id_width + 3;
+	var dtw_req_shift_msb     = data_width + be_width + axi_id_width + wtt_id_width + 2 + shift_width;
+	var dtw_req_bit_lsb       = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width;
+	var dtw_req_bit_msb       = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 2;
+	var dtw_req_nws           = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 3;
+	var dtw_req_size_lsb      = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 4;
+	var dtw_req_size_msb      = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 6;
+
+	var dtw_req_narrow             = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 7;
+	var dtw_req_narrow_size_lsb    = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 8;
+	var dtw_req_narrow_size_msb    = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 10;
+	var dtw_req_narrow_length_lsb  = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 11;
+	var dtw_req_narrow_length_msb  = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 13;	
+	var dtw_req_narrow_offset_lsb  = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 14;
+	var dtw_req_narrow_offset_msb  = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 14 + log2ceil(data_width/8) - 1;
+	var dtw_req_narrow_bt_lsb      = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 14 + log2ceil(data_width/8) ;
+	var dtw_req_narrow_bt_msb      = data_width + be_width + axi_id_width + wtt_id_width + 3 + shift_width + 14 + log2ceil(data_width/8) +1;
+
+        var axi_rsp_id_msb   = axi_id_width + 1; 
+        var dtw_rsp_targ_id_lsb = tid_width;
+        var dtw_rsp_targ_id_msb = tid_width + wFUnitId -1;
+        var dtw_rsp_resp_lsb = tid_width + wFUnitId;
+        var dtw_rsp_resp_msb = tid_width + wFUnitId + resp_width -1;
+        var dtw_rsp_dbad     = tid_width + wFUnitId + resp_width;
+	
+        var dtw_rsp_priority_lsb     = tid_width + wFUnitId + resp_width + 1;		
+        var dtw_rsp_priority_msb     = tid_width + wFUnitId + resp_width + priority_width;		
+        var dtw_rsp_ql_lsb           = tid_width + wFUnitId + resp_width + priority_width + 1;		
+        var dtw_rsp_ql_msb           = tid_width + wFUnitId + resp_width + priority_width + ql_width;
+        var dtw_rsp_tm               = tid_width + wFUnitId + resp_width + priority_width + ql_width + 1;		
+        var dtw_rsp_ewa              = tid_width + wFUnitId + resp_width + priority_width + ql_width + 2;		
+	
+\jsend
+
+reg [\=wAddr-1=\:0]                  r_bresp_write_addr;
+reg                                  r_bresp_write_ns;
+wire [\=axi_id_width-1=\:0]          axi_mst_w_id;
+wire [\=axi_id_width-1=\:0]          axi_mst_w_pipe_id;
+wire [\=tid_width-1=\:0]             new_dtw_id;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_entry_valid_set;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_entry_valid_lock;
+reg [\=nWriteBufferEntries-1=\:0]    dtw_entry_valid_clear;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_entry_valid;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_entry_valid_in;
+wire [\=dtw_data_req_width-1=\:0]    dtw_req_data_in; 
+wire [\=nWriteBufferEntries-1=\:0]   dtw_invalid_entries; 
+wire [\=nWriteBufferEntries-1=\:0]   update_dtw_entry;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_wr_ptr_in;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_wr_ptr;
+wire [\=dtw_resp_width-1=\:0]        dtw_resp_fifo_in_packet;
+wire [\=dtw_resp_width-1=\:0]        dtw_resp_fifo_out_packet;
+reg [\=dtw_data_req_width-1=\:0]     dtw_req_out_packet;
+
+\js if (data_width > 64) {
+  reg [\=dtw_data_req_width-1=\:0]   dtw_req_out_packet_m1;
+\js }
+
+\js if (data_width > 64) {
+ \js for (let i = 1; i < 512/data_width; i++) {
+  reg [\=dtw_data_req_width-1=\:0]   dtw_req_out_packet_p\=i=\;
+  reg                                dtw_req_out_packet_valid_p\=i=\;  
+ \js }
+\js }
+
+wire                                  in_last_axi_beat;
+wire                                  r_last_axi_beat;
+
+reg [\=axi_id_width-1=\:0]           wtt_axi_id;
+wire [\=wtt_num_entries-1=\:0]       axi_id_match_oldest;
+wire [\=wtt_num_entries-1=\:0]       axi_id_match_already_sent;
+wire [\=wtt_num_entries-1=\:0]       ewa_match;
+reg [\=wtt_num_entries-1=\:0]        r_wtt_ewa_sent_set;
+
+wire                                 r_last;
+wire                                 r_last_en;
+wire                                 dtw_data_buf_full;
+wire                                 dtw_resp_fifo_ready;
+wire                                 wvalid_d1;
+wire                                 out_write_req_ready_d1;
+wire                                 write_req_fifo_out_valid_d1;
+wire                                 next_write_ptr_valid;
+
+wire                                 first_beat_to_write;
+
+reg [\=tid_width-1=\:0]              dtw_rid;
+
+\jsbegin
+// Dont have ql.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p4,ncore_3p6,ncore_3p7 */
+if(ql_width) {
+\jsend
+reg [\=ql_width-1=\:0]               dtw_ql;
+\js }
+
+reg                                  dtw_tm;
+reg                                  dtw_ewa;
+\js if(priority_width) {
+reg [\=priority_width-1=\:0]         dtw_priority;
+\js }
+reg [\=wFUnitId-1=\:0]               dtw_init_id;
+reg [\=wtt_id_width-1=\:0]           dtw_entry_rb_id;
+wire [\=nWriteBufferEntries-1=\:0]   last_beat_read_done_in;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_last_beat_read_done;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_last_beat_read_done_in;
+wire                                 last_beat_read_done_en;
+wire [\=nWriteBufferEntries-1=\:0]   dtw_last_beat_read_en;
+reg                                  last_beat_data;
+reg                                  dtw_data_not_ready;
+wire                                 last_index_reached;
+
+wire                                 dtw_new_write;
+wire                                 wvalid;
+wire [\=wtt_id_width-1=\:0]          wtt_rb_id;
+wire                                 out_dtw_req_ready;
+wire                                 last_entry_reached;
+wire                                 dtw_buf_write;
+wire                                 dtw_resp_fifo_in_valid;
+wire                                 dtw_resp_fifo_out_valid;
+wire                                 out_dtw_resp_ready;
+wire                                 dtw_resp_empty;
+wire                                 dtw_rsp_mst_transaction_id;
+
+reg [\=wMpf1-1=\:0]                  wtt_mpf1;
+reg                                  wtt_st;
+reg                                  wtt_ca;
+reg                                  wtt_ch;
+reg                                  wtt_dbad;
+reg                                  wtt_narrow;
+reg [2:0]                            wtt_size;
+reg [\=wTOF-1=\:0]                   wtt_tof;
+reg [\=intfsize_width=\-1:0]         wtt_intfSize;
+reg [\=wAddr-1=\:0]                  wtt_addr;
+reg                                  wtt_size_lt_intf; \jsbegin
+if (awuser_width != 0) { \jsend
+reg [\=awuser_width-1=\:0] 	     wtt_user; \jsbegin
+} 				   
+
+for (var i = 0; i < nWriteBufferEntries; i++) {
+\jsend
+wire  \='dtw_entry_transaction_not_sent'+i=\;
+wire [\=dtw_data_req_width-1=\:0] dtw_req_data_out\=i=\;
+
+\js }
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Drop if error'd message is recieved.
+
+wire                        incoming_msg_cmstatus_error;
+assign                      incoming_msg_cmstatus_error = (dtw_req_slv_cm_status[7:6] == 2'b11);
+wire                        dtw_req_slv_valid_mask =  dtw_req_slv_valid & !incoming_msg_cmstatus_error & !incoming_msg_target_mismatch & ~dtw_req_UCE;
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Write Transaction Lookup
+
+    always @* begin
+        case ((dtw_req_slv_rb_id[\=log2ceil(wtt_num_entries)=\-1:0] & {\=log2ceil(wtt_num_entries)=\{dtw_req_slv_valid_mask}}))
+            \js for (i=0; i < wtt_num_entries-1; i++) {
+             \=i=\:  begin
+	                 wtt_axi_id     = wtt_entry\=i=\_axi_id;
+			 wtt_mpf1       = wtt_entry\=i=\_mpf1;
+			 wtt_st         = wtt_entry\=i=\_st;
+			 wtt_ca         = wtt_entry\=i=\_ca;
+			 wtt_ch         = wtt_entry\=i=\_ch;
+			 wtt_size       = wtt_entry\=i=\_size;
+			 wtt_addr       = wtt_entry\=i=\_addr;
+			 wtt_tof        = wtt_entry\=i=\_tof;			 
+			 wtt_intfSize   = wtt_entry\=i=\_intfsize;
+			 wtt_narrow     = wtt_entry\=i=\_narrow; \jsbegin
+		 	 if (awuser_width != 0) { \jsend
+			   wtt_user	= wtt_entry\=i=\_user; \jsbegin			 		} 			   \jsend
+                     end
+            \js }
+               default: begin
+	                 wtt_axi_id     = wtt_entry\=i=\_axi_id;
+			 wtt_mpf1       = wtt_entry\=i=\_mpf1;
+			 wtt_st         = wtt_entry\=i=\_st;
+			 wtt_ca         = wtt_entry\=i=\_ca;
+			 wtt_ch         = wtt_entry\=i=\_ch;
+			 wtt_size       = wtt_entry\=i=\_size;
+			 wtt_addr       = wtt_entry\=i=\_addr;
+			 wtt_tof        = wtt_entry\=i=\_tof;			 
+			 wtt_intfSize   = wtt_entry\=i=\_intfsize;
+			 wtt_narrow     = wtt_entry\=i=\_narrow; \jsbegin
+			 if (awuser_width != 0) { \jsend
+			   wtt_user	= wtt_entry\=i=\_user; \jsbegin			 		} 			   \jsend			 
+			end
+        endcase
+    end
+    
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Write Shifter
+
+wire in_stretch_last;
+wire stretch_last;
+
+wire in_real_last;
+wire real_last;
+
+wire left_shift_halt;
+
+\js if(data_width > 64) {
+  wire [2:0]                             shift_beats_in_transaction = dtw_req_out_packet[\=dtw_req_bit_msb=\:\=dtw_req_bit_lsb=\];
+  wire [\=log2ceil(data_width/64)-1=\:0] shift_out_amount           = dtw_req_out_packet[\=dtw_req_shift_msb=\:\=dtw_req_shift_lsb=\];
+  wire [2:0]                             cmd_size                   = dtw_req_out_packet[\=dtw_req_size_msb=\:\=dtw_req_size_lsb=\];
+\js }
+
+wire write_data_shifter_ready;
+wire write_data_shifter_valid                       = wvalid & write_req_fifo_out_valid  & ~(left_shift_halt);
+wire write_data_shifter_last                        = (dtw_req_out_packet[\=dtw_last_lsb=\] & ~in_stretch_last);
+wire [\=axi_id_width-1=\:0] write_data_shifter_nsd  = dtw_req_out_packet[\=dtw_axi_id_msb=\: \=dtw_axi_id_lsb=\];
+wire [\=axi_id_width-1=\:0] non_shift_data;
+
+// Drop the data if it did not pass the exclusive check. 
+wire                                              buffer_in_valid   = write_data_shifter_valid & write_req_ex_pass; 
+
+reg [\=data_width-1=\:0] shifted_data_first;
+reg [\=data_width-1=\:0] shifted_data_last;
+reg [\=data_width-1=\:0] shifted_data_other;
+reg [\=data_width-1=\:0] shifted_data;
+reg [\=data_width-1=\:0] px_data;
+reg px_valid;
+reg [\=data_width-1=\:0] m1_data;
+reg [\=data_width-1=\:0] zero_data;
+
+reg [\=(data_width/8)-1=\:0] shifted_strb_first;
+reg [\=(data_width/8)-1=\:0] shifted_strb_last;
+reg [\=(data_width/8)-1=\:0] shifted_strb_other;
+reg [\=(data_width/8)-1=\:0] shifted_strb;
+reg [\=(data_width/8)-1=\:0] px_strb;
+reg [\=(data_width/8)-1=\:0] m1_strb;
+reg [\=(data_width/8)-1=\:0] zero_strb;
+wire [\=data_width+be_width + axi_id_width + wNarrowInfo=\:0]   buffer_in_data    =
+                                                 {shifted_data,
+                                                  write_data_shifter_last,
+					          shifted_strb,
+					          dtw_req_out_packet[\=dtw_axi_id_msb=\: \=dtw_axi_id_lsb=\],
+						  dtw_req_out_packet[\=dtw_req_narrow=\],						  
+						  dtw_req_out_packet[\=dtw_req_narrow_offset_msb=\: \=dtw_req_narrow_offset_lsb=\],
+			                          dtw_req_out_packet[\=dtw_req_narrow_length_msb=\: \=dtw_req_narrow_length_lsb=\],						  
+			                          dtw_req_out_packet[\=dtw_req_narrow_size_msb=\  : \=dtw_req_narrow_size_lsb=\],
+				                  dtw_req_out_packet[\=dtw_req_narrow_bt_msb=\    : \=dtw_req_narrow_bt_lsb=\]						  
+						  };
+
+						  
+wire                                                              buffer_in_ready;
+wire                                                              buffer_out_valid;
+wire [\=data_width+be_width + axi_id_width + wNarrowInfo=\:0]     buffer_out_data;
+wire                                                              buffer_out_ready;
+
+ \js if(data_width > 64) {
+wire in_first;
+wire first;
+
+assign in_first = (first) ? ~(buffer_in_ready & buffer_in_valid & ~write_data_shifter_last) : (buffer_in_ready & buffer_in_valid & write_data_shifter_last);
+
+\=u.dffre(  1
+          , 'first'
+	  , 'in_first'
+	  , "1'b1"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+assign in_stretch_last = (stretch_last) ? ~(buffer_in_ready & buffer_in_valid) : (buffer_in_valid & buffer_in_ready & dtw_req_out_packet[\=dtw_last_lsb=\] & dtw_req_out_packet[\=dtw_req_nws=\] & (dtw_req_out_packet[\=dtw_req_narrow=\] | (shift_out_amount != 0)));
+
+\=u.dffre(  1
+          , 'stretch_last'
+	  , 'in_stretch_last'
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+
+assign in_real_last = (real_last) ? ~(buffer_in_ready & buffer_in_valid) : (buffer_in_valid & buffer_in_ready & stretch_last);
+
+\=u.dffre(  1
+          , 'real_last'
+	  , 'in_real_last'
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+ 
+assign left_shift_halt = first & ~px_valid & (shift_out_amount != 0);                                                                                                                                                                               
+\js } else {
+assign in_stretch_last = 1'h0;
+assign stretch_last = 1'h0;
+assign in_real_last = 1'h0;
+assign real_last = 1'h0;
+assign left_shift_halt = 1'h0;
+\js }
+
+always @(*) begin
+ \js if(data_width == 64) {
+    shifted_data = dtw_req_out_packet[\=dtw_data_msb=\:\=dtw_data_lsb=\];
+    shifted_strb = dtw_req_out_packet[\=dtw_strb_msb=\: \=dtw_strb_lsb=\];
+ \js } else {
+    m1_data = dtw_req_out_packet_m1[\=dtw_data_msb=\:\=dtw_data_lsb=\];
+    m1_strb = dtw_req_out_packet_m1[\=dtw_strb_msb=\: \=dtw_strb_lsb=\];
+
+    zero_data = dtw_req_out_packet[\=dtw_data_msb=\:\=dtw_data_lsb=\];
+    zero_strb = dtw_req_out_packet[\=dtw_strb_msb=\: \=dtw_strb_lsb=\];
+
+    case(shift_beats_in_transaction[2:0])
+      3'd2: begin
+              px_data  = dtw_req_out_packet_p1[\=dtw_data_msb=\:\=dtw_data_lsb=\];
+              px_strb  = dtw_req_out_packet_p1[\=dtw_strb_msb=\: \=dtw_strb_lsb=\];
+              px_valid = dtw_req_out_packet_valid_p1;	      	      
+	    end
+      \js if(data_width <= 128) {
+      3'd3: begin
+              px_data = dtw_req_out_packet_p2[\=dtw_data_msb=\:\=dtw_data_lsb=\];
+              px_strb = dtw_req_out_packet_p2[\=dtw_strb_msb=\: \=dtw_strb_lsb=\];
+              px_valid = dtw_req_out_packet_valid_p2;	      	      	      
+	    end
+      3'd4: begin
+              px_data = dtw_req_out_packet_p3[\=dtw_data_msb=\:\=dtw_data_lsb=\];
+              px_strb = dtw_req_out_packet_p3[\=dtw_strb_msb=\: \=dtw_strb_lsb=\];
+              px_valid = dtw_req_out_packet_valid_p3;	      	      	      	      
+            end
+      \js }
+      default:
+            begin
+              px_data = dtw_req_out_packet[\=dtw_data_msb=\:\=dtw_data_lsb=\];
+              px_strb = dtw_req_out_packet[\=dtw_strb_msb=\: \=dtw_strb_lsb=\];
+              px_valid = 1'b1;	      	      	      	      	      
+            end
+    endcase
+
+case(shift_out_amount)
+      \js for (let i = 0 ; i < data_width/64 - 1; i++) {
+      \=log2ceil(data_width/64)=\'d\=i+1=\: begin
+       \js var split_bit_data = (64 * (i+1));
+       \js var split_bit_strb = (8 * (i+1));
+         if(dtw_req_out_packet[\=dtw_req_nws=\]) begin
+              shifted_data_first = {zero_data[\=data_width-split_bit_data-1=\:0],{\=split_bit_data=\{1'b0}}};  	 
+	      shifted_strb_first = {zero_strb[\=(data_width/8)-split_bit_strb-1=\:0],{\=split_bit_strb=\{1'b0}}};	 	      
+	 end else begin
+              shifted_data_first = {zero_data[\=data_width-split_bit_data-1=\:0],px_data[\=data_width-1=\:\=data_width-split_bit_data=\]};  	 
+	      shifted_strb_first = {zero_strb[\=(data_width/8)-split_bit_strb-1=\:0],px_strb[\=(data_width/8)-1=\:\=(data_width/8)-split_bit_strb=\]};
+	 end
+
+	 shifted_data_last  = {{\=data_width-split_bit_data=\{1'b0}},zero_data[\=(data_width)-1=\:\=(data_width)-split_bit_data=\]};
+	 shifted_strb_last  = {{\=(data_width/8)-split_bit_strb=\{1'b0}},zero_strb[\=(data_width/8)-1=\:\=(data_width/8)-split_bit_strb=\]};
+	 
+         shifted_data_other = {zero_data[\=data_width-split_bit_data-1=\:0],m1_data[\=data_width-1=\:\=data_width-split_bit_data=\]};      
+         shifted_strb_other = {zero_strb[\=(data_width/8)-split_bit_strb-1=\:0],m1_strb[\=(data_width/8)-1=\:\=(data_width/8)-split_bit_strb=\]};        
+      end
+      \js }
+      default : begin
+         shifted_data_first = zero_data;  
+         shifted_strb_first = zero_strb;
+
+	 shifted_data_last  = zero_data; 
+	 shifted_strb_last  = zero_strb;
+	 
+         shifted_data_other = zero_data;      
+         shifted_strb_other = zero_strb; 
+      end
+    endcase
+ 
+    shifted_data = (first) ? shifted_data_first :  ((stretch_last) ? shifted_data_last : shifted_data_other); 
+    shifted_strb = (first) ? shifted_strb_first :  ((stretch_last) ? shifted_strb_last : shifted_strb_other);
+
+ \js }
+end
+
+assign write_data_shifter_ready = buffer_in_ready;
+
+//Generate dtw_req_user bits from cmd_user bits
+\jsbegin  
+if (awuser_width != 0 ) { \jsend
+wire [\=wAux-1=\:0] wtt_cmd_user;
+assign wtt_cmd_user = wtt_user[\=wAux-1=\:0];
+wire wtt_en_user = dtw_req_slv_valid && dtw_req_slv_ready;
+\=u.dffre( wAux 
+          , 'pmon_dtw_req_user_bits'
+	  , 'wtt_cmd_user'
+	  , wAux+"'b0"
+	  , 'wtt_en_user'
+	  , 'clk'
+	  , 'reset_n')=\
+
+ \jsbegin
+} \jsend
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// AXI W Bus Pipe Stage
+
+\=u.instance({
+        instanceName: 'pipe_buffer',
+        moduleName: 'fifo',
+        params: {
+                width       :  data_width+1+be_width + axi_id_width + wNarrowInfo,
+                depth       :  2,
+                bypass_mode :  0
+        },
+        verilogParams: {},
+        ports: {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                push_valid      : 'buffer_in_valid',
+                push_data       : 'buffer_in_data',
+                push_ready      : 'buffer_in_ready',
+                pop_valid       : 'buffer_out_valid',
+                pop_data        : 'buffer_out_data',
+                pop_ready       : 'buffer_out_ready'
+        }
+})=\
+
+wire unmasked_data_last;
+
+///////////////////////////////////////////////////
+//
+//  Narrow Logic
+//
+
+wire                                  narrow;
+wire [\=log2ceil(data_width/8)=\-1:0] narrow_offset;
+reg  [\=log2ceil(data_width/8)=\-1:0] narrow_offset_size;
+wire [2:0]                            narrow_size;
+wire [2:0]                            narrow_length;
+wire [1:0]                            narrow_bt;
+wire [2:0]                            narrow_beat_count;
+wire [2:0]                            narrow_beat_count_in;
+wire                                  narrow_initial_beat;
+wire                                  narrow_initial_beat_in;
+wire                                  narrow_reset_be_mask;
+wire [\=data_width/8=\-1:0]           narrow_be_mask;
+wire [\=data_width/8=\-1:0]           narrow_be_mask_out;
+wire [\=data_width/8=\-1:0]           narrow_be_mask_in;
+
+wire [\=data_width/8=\-1:0]           pre_narrow_strb;
+wire                                  pre_narrow_valid;
+wire                                  pre_narrow_last;
+wire                                  post_narrow_ready;
+
+wire                                  narrow_be_mask_enable;
+assign                                narrow_be_mask_enable = axi_mst_w_valid & axi_mst_w_ready;
+
+reg [\=data_width/8=\-1:0]            narrow_base_mask;
+reg [\=data_width/8=\-1:0]            narrow_bytes;
+
+// Needs to come from 64b initiator and is a 2 beat narrow.
+// This happends when an unaligned WRAP smaller than the bus size comes in. This can only happen for 128b transactions from 64b initiators to 256b targets
+// The key is that the narrow masks have to wrap to points within a beat and not over the whole beat.
+// This only happens when the offset is unaligned to the txn.
+// A more generic circuit can be made but will be more logic. Better to just hit this case
+\js if (data_width == 256) {
+wire                                  unaligned_to_txn       = !(narrow_offset_size == 0 | narrow_offset_size == 16);
+wire                                  interbeat_shift_narrow = narrow & (narrow_size == 3) & (narrow_length == 1) & (narrow_bt == 2'b10) & unaligned_to_txn;
+\js } else {
+wire                                  unaligned_to_txn       = 1'h0;
+wire                                  interbeat_shift_narrow = 1'h0;
+\js }
+
+// Need to count the beats as last cannot indicate the true last beat of the narrow.
+
+\=u.dffre(  3
+          , 'narrow_beat_count'
+	  , 'narrow_beat_count_in'
+	  , "3'b0"
+	  , 'narrow_be_mask_enable'
+	  , 'clk'
+	  , 'reset_n')=\
+
+assign narrow_beat_count_in = (axi_mst_w_last) ? 3'h0 : narrow_beat_count + 3'h1;
+
+always @ (*) begin
+  case(narrow_size) 
+            \js for (let i = 1; i < log2ceil(data_width/8); i++) {
+             \=i=\ : begin
+                       narrow_base_mask   = {\=(data_width/8)-Math.pow(2, i)=\'b0,{\=Math.pow(2, i)=\{1'b1}}};
+		       narrow_bytes       = \=data_width/8=\'d\=Math.pow(2, i)=\;
+		       narrow_offset_size = {narrow_offset[\=log2ceil(data_width/8)-1=\:\=i=\],\=i=\'b0};
+             end
+             \js }
+             default: begin
+                       narrow_base_mask         = \=data_width/8=\'h1;
+		       narrow_bytes             = \=data_width/8=\'h1;
+		       narrow_offset_size       = narrow_offset;		       
+             end
+  endcase
+end
+
+\js if (data_width == 256) {
+assign narrow_be_mask_in = (interbeat_shift_narrow)  ? narrow_be_mask  >> (narrow_bytes):
+                           (narrow_reset_be_mask)    ? narrow_base_mask :
+                                                       narrow_be_mask  << (narrow_bytes);			   
+
+\js } else {
+assign narrow_be_mask_in = (narrow_reset_be_mask) ? narrow_base_mask : narrow_be_mask  << (narrow_bytes);			   
+\js }
+
+\=u.dffre(  (data_width/8)
+          , 'narrow_be_mask_out'
+	  , 'narrow_be_mask_in'
+	  , (data_width/8) + "'b0"
+	  , 'narrow_be_mask_enable'
+	  , 'clk'
+	  , 'reset_n')=\
+
+assign narrow_be_mask       = (narrow_initial_beat)  ? (narrow_base_mask << narrow_offset_size) : narrow_be_mask_out;
+
+\js if (data_width == 256) {
+assign narrow_reset_be_mask = (interbeat_shift_narrow) ? (narrow_be_mask[\=data_width/16=\-1] | narrow_be_mask[\=data_width/8=\-1]) : narrow_be_mask[\=data_width/8=\-1];
+\js } else {
+assign narrow_reset_be_mask = narrow_be_mask[\=data_width/8=\-1];
+\js }
+
+assign narrow_initial_beat_in = (narrow_initial_beat) ? (~(axi_mst_w_valid & axi_mst_w_ready) | (pre_narrow_valid & buffer_out_ready & axi_mst_w_last))  : (pre_narrow_valid & buffer_out_ready & axi_mst_w_last);
+
+\=u.dffre(  1
+          , 'narrow_initial_beat'
+	  , 'narrow_initial_beat_in'
+	  , "1'b1"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+assign pre_narrow_valid                                                                                                            = buffer_out_valid;
+assign axi_mst_w_valid                                                                                                             = pre_narrow_valid;
+
+assign axi_mst_w_strb                                                                                                              = (narrow) ? pre_narrow_strb & narrow_be_mask       : pre_narrow_strb;
+
+assign {axi_mst_w_data,pre_narrow_last,pre_narrow_strb,axi_mst_w_id,narrow,narrow_offset,narrow_length,narrow_size,narrow_bt}      = buffer_out_data;
+assign buffer_out_ready                                                                                                            = (narrow) ? (axi_mst_w_ready & ((~interbeat_shift_narrow & narrow_reset_be_mask) | axi_mst_w_last)) : axi_mst_w_ready;
+assign axi_mst_w_last                                                                                                              = (narrow) ? (narrow_beat_count == narrow_length)                        : pre_narrow_last;
+
+assign release_rbid_credit = write_data_shifter_valid & write_data_shifter_ready & write_data_shifter_last;
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Address Alignment
+
+reg  [2:0] mpf1_size;
+reg  [6:0] mpf1_trans_size;
+wire [2:0] mpf1_asize;
+wire [6:0] mpf1_alength;
+wire       mpf1_valid;
+
+wire [6:0] beats_in_trans;
+wire [6:0] beats_in_trans_size;
+reg  [6:0] beats_in_trans_intfSize;
+
+wire [6:0] beat_number_in_trans;
+wire [6:0] num_beats_size;
+wire [6:0] num_beats_intfSize;
+wire [6:0] num_beats_transaction;
+
+wire [6:0] num_beats;
+wire [6:0] trans_size;
+
+wire [6:0] start_beat;
+wire [6:0] r_start_beat;
+
+wire [6:0] r_start_beat_native;
+wire [6:0] r_start_beat_native_sa;
+
+wire [6:0] r_start_byte_native;
+wire [6:0] r_start_byte_native_sa;
+
+wire       drop_beat;
+wire       mpf1_last_beat;
+
+assign mpf1_asize        = wtt_mpf1[5:3];
+assign mpf1_alength      = {4'b0,wtt_mpf1[2:0]};
+
+reg  [\=wAddr-1=\:0] wr_asize_aligned_address;
+wire [6:0] wr_mpf1_end_address;
+wire [6:0] mpf1_dii_size;
+
+always @ (*) begin
+ case(mpf1_asize)
+   3'b000: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd0;
+         wr_asize_aligned_address   =  wtt_addr[\=wAddr-1=\:0];	 	 	 
+   end
+   3'b001: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd1;
+         wr_asize_aligned_address   =  {wtt_addr[\=wAddr-1=\:1],1'b0};	 	 	 	 
+   end
+   3'b010: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd2;
+         wr_asize_aligned_address   =  {wtt_addr[\=wAddr-1=\:2],2'b0};	 	 	 	 	 
+   end
+   3'b011: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd3;
+         wr_asize_aligned_address   =  {wtt_addr[\=wAddr-1=\:3],3'b0};	 	 	 	 	 	 
+   end
+   3'b100: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd4;
+         wr_asize_aligned_address   =  {wtt_addr[\=wAddr-1=\:4],4'b0};	 	 	 	 	 	 
+   end
+   3'b101: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd5;
+         wr_asize_aligned_address   =  {wtt_addr[\=wAddr-1=\:5],5'b0};	 	 	 	 	 	 
+   end
+   3'b110: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd6;
+         wr_asize_aligned_address   =  {wtt_addr[\=wAddr-1=\:6],6'b0};	 	 	 	 	 	 
+   end
+   default: begin
+         mpf1_trans_size =  (mpf1_alength + 7'd1) << 7'd7;
+         wr_asize_aligned_address   =  \=wAddr=\'h0;	 	 	 	 	 	 
+   end
+ endcase
+end
+
+reg [\=wAddr-1=\:0] wr_cap_aligned_address;
+
+always @ (*) begin
+ case(mpf1_asize)
+   3'b000: begin
+         wr_cap_aligned_address   =  wtt_addr;	 
+   end
+   3'b001: begin
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:1],1'b0};	 	 
+   end
+   3'b010: begin
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:2],2'b0};	 	 	  
+   end
+   3'b011: begin
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:3],3'b0};
+   end
+   3'b100: begin
+       \js if(data_width == 64) {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:3],3'b0};
+       \js } else {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:4],4'b0};       
+       \js }
+   end
+   3'b101: begin
+       \js if(data_width == 64) {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:3],3'b0};
+       \js } else if (data_width == 128) {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:4],4'b0};       
+       \js } else {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:5],5'b0};
+       \js }
+   end
+   default: begin
+       \js if(data_width == 64) {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:3],3'b0};
+       \js } else if (data_width == 128) {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:4],4'b0};       
+       \js } else {
+         wr_cap_aligned_address   =  {wtt_addr[\=wAddr-1=\:5],5'b0};
+       \js }	 	 	  	 	 
+   end
+ endcase
+end
+
+reg [\=wAddr-1=\:0] size_wrap_addr_mask;
+always@(*) begin
+    case (wtt_size) 
+      3'd0 :  size_wrap_addr_mask = {\=wAddr=\{1'b1}};
+      3'd1 :  size_wrap_addr_mask = {{\=wAddr-log2ceil( 2)=\{1'b1}},{\=log2ceil( 2)=\{1'b0}}};
+      3'd2 :  size_wrap_addr_mask = {{\=wAddr-log2ceil( 4)=\{1'b1}},{\=log2ceil( 4)=\{1'b0}}};
+      3'd3 :  size_wrap_addr_mask = {{\=wAddr-log2ceil( 8)=\{1'b1}},{\=log2ceil( 8)=\{1'b0}}};
+      3'd4 :  size_wrap_addr_mask = {{\=wAddr-log2ceil(16)=\{1'b1}},{\=log2ceil(16)=\{1'b0}}};
+      3'd5 :  size_wrap_addr_mask = {{\=wAddr-log2ceil(32)=\{1'b1}},{\=log2ceil(32)=\{1'b0}}}; 
+     default: size_wrap_addr_mask = {{\=wAddr-log2ceil(64)=\{1'b1}},{\=log2ceil(64)=\{1'b0}}};
+    endcase
+end
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Transaction Size Calculation
+
+wire [\=wAddr-1=\:0] width_aligned_address    = wtt_addr & {{\=wAddr-log2ceil(data_width/8)=\{1'b1}},{\=log2ceil(data_width/8)=\{1'b0}}};
+
+assign mpf1_valid                             = wtt_st & (wtt_mpf1[7:6] != 2'b10) & ~wtt_ca & (wtt_tof != 1);
+
+assign wr_mpf1_end_address                    = ({1'b0,wr_asize_aligned_address[5:0]} + mpf1_trans_size);
+
+wire [6:0] full_mpf1_dii_size                 = (wr_mpf1_end_address[6:0] - {1'b0,wr_cap_aligned_address[5:0]});
+
+assign mpf1_dii_size                          = full_mpf1_dii_size[6:0];
+
+//wire [6:0] mpf1_shift = |(mpf1_trans_size[\=log2width=\-1:0]) ?  ((mpf1_trans_size  >> \=log2width=\) + 1'b1) : (mpf1_trans_size  >> \=log2width=\)  ;
+assign num_beats                              = (mpf1_dii_size >> \=log2ceil(data_width/8)=\) + {6'b0,(|mpf1_dii_size[\=log2ceil(data_width/8)=\-1:0])};
+
+assign trans_size                             = (7'd1 << wtt_size);
+
+wire [6:0] size_shift                         = (trans_size >> \=log2width=\);
+assign num_beats_size                         = (|size_shift) ? size_shift : 7'd1;
+assign num_beats_transaction                  = (wtt_size_lt_intf) ? beats_in_trans_intfSize : num_beats_size;
+assign beats_in_trans_size                    = (mpf1_valid) ? num_beats : num_beats_size;
+
+always @(*) begin
+  case (wtt_intfSize)
+    \=intfsize_width=\'d0: begin
+      \js if(data_width == 64) {
+      beats_in_trans_intfSize = 7'h1; 
+      \js } else if (data_width == 128) {
+      beats_in_trans_intfSize = 7'h1;       
+      \js } else {
+      beats_in_trans_intfSize = 7'h1;       
+      \js }
+      wtt_size_lt_intf = wtt_size < 3;
+    end
+    \=intfsize_width=\'d1: begin
+      \js if(data_width == 64) {
+      beats_in_trans_intfSize = 7'h2; 
+      \js } else if (data_width == 128) {
+      beats_in_trans_intfSize = 7'h1;       
+      \js } else {
+      beats_in_trans_intfSize = 7'h1;
+      \js }
+      wtt_size_lt_intf = wtt_size < 4;            
+    end
+    default: begin
+      \js if(data_width == 64) {
+      beats_in_trans_intfSize = 7'h4; 
+      \js } else if (data_width == 128) {
+      beats_in_trans_intfSize = 7'h2;       
+      \js } else {
+      beats_in_trans_intfSize = 7'h1;       
+      \js }
+      wtt_size_lt_intf = wtt_size < 5;      
+    end
+  endcase
+end
+
+assign beats_in_trans = num_beats_transaction - r_start_beat_native_sa;
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Beat Reordering Logic
+
+assign dtw_new_write  = ((beat_number_in_trans == 0) & dtw_req_slv_valid_mask & dtw_req_slv_ready);
+assign r_last_en      = dtw_req_slv_valid_mask & dtw_req_slv_ready & ~drop_beat;
+ 
+wire [3:0] beat_count;
+reg  [3:0] beat_count_ns;
+
+always @ (*) begin
+  if((dtw_req_slv_last & dtw_req_slv_valid_mask & dtw_req_slv_ready ))
+       beat_count_ns = 4'h0;
+  else if (dtw_req_slv_valid_mask & dtw_req_slv_ready)
+       beat_count_ns = beat_count + 4'b1;
+  else
+       beat_count_ns = beat_count;
+end
+
+\=u.dffre(  4
+          , 'beat_count'
+	  , 'beat_count_ns'
+	  , "4'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+wire [3:0] beat_count_nd;
+reg  [3:0] beat_count_nd_ns;
+
+always @ (*) begin
+  if((dtw_req_slv_last & dtw_req_slv_valid_mask & dtw_req_slv_ready ))
+       beat_count_nd_ns = 4'h0;
+  else if (dtw_req_slv_valid_mask & dtw_req_slv_ready & ~drop_beat)
+       beat_count_nd_ns = beat_count_nd + 4'b1;
+  else
+       beat_count_nd_ns = beat_count_nd;
+end
+
+\=u.dffre(  4
+          , 'beat_count_nd'
+	  , 'beat_count_nd_ns'
+	  , "4'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+  
+wire [\=wAddr-1=\:0] size_aligned_address           = wtt_addr &  size_wrap_addr_mask;
+   
+assign r_start_byte_native             = {1'b0,wtt_addr[5:0]}      & (7'b0111111 >> (2'b11  - wtt_intfSize));
+assign r_start_byte_native_sa          = size_aligned_address[6:0] & (7'b0111111 >> (2'b11  - wtt_intfSize));
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (dii_dw >= 1) {
+\jsend
+assign r_start_beat_native     = r_start_byte_native >> (\=log2ceil(dii_dw)+1=\ + 2);
+assign r_start_beat_native_sa  = (r_start_byte_native_sa >> (\=log2ceil(dii_dw)+1=\ + 2));
+\js } else {
+assign r_start_beat_native     = r_start_byte_native >> 2;
+assign r_start_beat_native_sa  = (r_start_byte_native_sa >> 2);
+\js }
+
+assign r_start_beat = r_start_beat_native; 
+assign start_beat   = r_start_beat;
+
+wire [6:0] beat_number_in_trans_sub = ({3'b0,beat_count}) - r_start_beat;
+reg  [6:0] beat_number_in_trans_mask;
+
+//wire [3:0] beat_number_in_trans_sub = trans_mpf1_valid ? (beat_count[3:0] - r_start_beat_native_sa) : ((beat_count[3:0] + r_start_beat[3:0]) - r_start_beat_native_sa);
+
+always @ (*) begin
+  case(num_beats_size[4:0])
+         \js if (data_width <= 64) {
+         5'd8 : begin
+	          beat_number_in_trans_mask = {4'b0,3'b111};
+	 end
+         5'd7 : begin
+	          beat_number_in_trans_mask = {4'b0,3'b111};
+	 end
+	 5'd6 : begin
+	          beat_number_in_trans_mask = {4'b0,3'b111};
+	 end
+	 5'd5 : begin
+	          beat_number_in_trans_mask = {4'b0,3'b111};
+	 end
+	 \js }
+         \js if (data_width <= 128) {	 
+	 5'd4 : begin
+	          beat_number_in_trans_mask = {5'b0,2'b11};
+	 end
+	 5'd3 : begin
+	          beat_number_in_trans_mask = {5'b0,2'b11};
+	 end
+	 \js }
+	 5'd2 : begin
+	          beat_number_in_trans_mask = {6'b0,1'b1};
+	 end
+	 default : begin
+	          beat_number_in_trans_mask = 7'd1;
+	 end
+  endcase
+end
+
+assign beat_number_in_trans = beat_number_in_trans_sub & beat_number_in_trans_mask;
+
+// Drop beats - within size | before cmd.size to align to intfsize | extra beats after cmd.size
+assign drop_beat      =  (beats_in_trans_size <= beat_number_in_trans) | (beat_count < r_start_beat_native_sa[3:0]) | (beat_count_nd >= beats_in_trans_size[3:0]);// | (mpf1_valid & r_last_axi_beat);
+
+wire [4:0] num_beats_m1 = ({1'b0,num_beats[3:0]} - 5'd1);
+
+assign mpf1_last_beat =  ({1'b0,beat_count} == num_beats_m1)  & mpf1_valid;
+
+
+\=u.dffre(  1
+          , 'r_last'
+	  , 'dtw_req_slv_last'
+	  , "1'b0"
+	  , 'r_last_en'
+	  , 'clk'
+	  , 'reset_n')=\
+
+// ET: Split Always block to get rid of logic loop.
+// Need to also clear when data is dropped from failed exclusive.
+always @* begin
+        case ({1'b1, write_req_rb_id, 1'b1, 1'b1})
+            \js for (var i=0; i < nWriteBufferEntries; i++) {
+	      \js if (i%max_beats==0) {
+              {dtw_req_data_out\=i=\[\=dtw_req_new_wr=\],dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] ,dtw_entry_valid[\=i=\], ~dtw_last_beat_read_done[\=i=\]}: begin
+			 dtw_entry_valid_clear= (\=nWriteBufferEntries=\'b1  << \=i=\) & {\=nWriteBufferEntries=\{wvalid & write_data_shifter_valid & write_data_shifter_ready & ~in_stretch_last}};
+                    end
+	      \js } else {
+              {~dtw_req_data_out\=i=\[\=dtw_req_new_wr=\],dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] ,dtw_entry_valid[\=i=\], dtw_last_beat_read_done[\=i=\]}: begin
+                         dtw_entry_valid_clear= (\=nWriteBufferEntries=\'b1  << \=i=\) & {\=nWriteBufferEntries=\{wvalid & write_data_shifter_valid & write_data_shifter_ready & ~in_stretch_last}};			 
+                  end
+             \js }
+	    \js }
+             default: begin
+                         dtw_entry_valid_clear=  \=nWriteBufferEntries=\'d0;			 
+                      end
+        endcase
+    end
+
+// ET: Split Always block to get rid of logic loop.
+always @* begin
+        case ({1'b1, write_req_rb_id, 1'b1, 1'b1})
+            \js for (var i=0; i < nWriteBufferEntries; i++) {
+	     \js if (i%max_beats==0) {
+              {dtw_req_data_out\=i=\[\=dtw_req_new_wr=\],dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] ,dtw_entry_valid[\=i=\], ~dtw_last_beat_read_done[\=i=\]}: begin
+                         dtw_data_not_ready = 1'b0;
+                    end
+	     \js } else {
+              {~dtw_req_data_out\=i=\[\=dtw_req_new_wr=\],dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] ,dtw_entry_valid[\=i=\], dtw_last_beat_read_done[\=i=\]}: begin
+                         dtw_data_not_ready = 1'b0;
+                  end
+	     \js }
+            \js }
+             default: begin
+                         dtw_data_not_ready = 1'b1;
+                      end
+        endcase
+    end
+    
+// Need to prevent backfilling table when left shift is occuring. All data associated with a rb_id cannot be used if there is a current match on that rb_id
+\js for (var i=0; i < nWriteBufferEntries; i++) {
+  \js if (data_width > 64) {
+    assign  dtw_entry_valid_lock[\=i=\] = (write_req_rb_id == dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\]) & ~dtw_data_not_ready & write_req_fifo_out_valid & dtw_entry_transaction_not_sent\=i=\;
+  \js } else {
+    assign  dtw_entry_valid_lock[\=i=\] = 1'h0;
+  \js }
+\js }
+
+always @* begin
+        //dtw_entry_valid_lock = 'h0;
+        case ({1'b1, write_req_rb_id, 1'b1, 1'b1})
+            \js for (var i=0; i < nWriteBufferEntries; i++) {
+	    \js if (i%max_beats==0) {
+             {dtw_req_data_out\=i=\[\=dtw_req_new_wr=\],dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] ,dtw_entry_valid[\=i=\], ~dtw_last_beat_read_done[\=i=\]}: begin
+                         dtw_req_out_packet = dtw_req_data_out\=i=\;
+                         dtw_entry_rb_id =  (dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\]);
+                         last_beat_data = dtw_req_data_out\=i=\[\=dtw_last_lsb=\];
+			 \js if (data_width > 64) {
+			  \js if( i == 0) {
+                           dtw_req_out_packet_m1                           = dtw_req_data_out\=nWriteBufferEntries-1=\;
+			  \js } else {
+                           dtw_req_out_packet_m1         =  dtw_req_data_out\=i-1=\;
+			   
+			  \js }
+                         \js for (let z = 1; z < 512/data_width; z++) {
+                          dtw_req_out_packet_p\=z=\                            = dtw_req_data_out\=(i+z)%nWriteBufferEntries=\;
+                          dtw_req_out_packet_valid_p\=z=\                      = dtw_entry_valid[\=(i+z)%nWriteBufferEntries=\];
+			  
+                         \js }
+                       \js }	    
+                    end
+             \js } else {
+             {~dtw_req_data_out\=i=\[\=dtw_req_new_wr=\],dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] ,dtw_entry_valid[\=i=\], dtw_last_beat_read_done[\=i=\]}: begin
+                         dtw_req_out_packet = dtw_req_data_out\=i=\;
+                         dtw_entry_rb_id =  (dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\]);
+                         last_beat_data = dtw_req_data_out\=i=\[\=dtw_last_lsb=\];
+			 \js if (data_width > 64) {
+			  \jsbegin
+			  	 /* istanbul ignore if env ncore_3p7 */
+			  	 if( i == 0) { \jsend
+                           dtw_req_out_packet_m1                           = dtw_req_data_out\=nWriteBufferEntries-1=\;
+			  \js } else {
+                           dtw_req_out_packet_m1         = dtw_req_data_out\=i-1=\;
+			  \js }
+                         \js for (let z = 1; z < 512/data_width; z++) {
+                          dtw_req_out_packet_p\=z=\  = dtw_req_data_out\=(i+z)%nWriteBufferEntries=\;
+                          dtw_req_out_packet_valid_p\=z=\  = dtw_entry_valid[\=(i+z)%nWriteBufferEntries=\];
+                         \js }
+                       \js }
+                  end
+	     \js }
+            \js }
+             default: begin
+                       \js if (data_width > 64) {
+                         dtw_req_out_packet_m1     = \=dtw_data_req_width=\'h0;
+                         \js for (let i = 1; i < 512/data_width; i++) {
+                          dtw_req_out_packet_p\=i=\= \=dtw_data_req_width=\'h0;
+                          dtw_req_out_packet_valid_p\=i=\= 1'h0;			  
+                         \js }
+                       \js }	     
+	                 dtw_entry_rb_id =  \=wtt_id_width=\'h0;
+                         dtw_req_out_packet = \=dtw_data_req_width=\'d0;
+			 last_beat_data = 1'h0;
+                      end
+        endcase
+    end
+                 assign last_index_reached = (dtw_entry_valid_clear[\=nWriteBufferEntries=\-1] == 1'b1);   
+
+                  assign   last_beat_read_done_in[\=nWriteBufferEntries=\-1:0] = last_beat_data ? dtw_last_beat_read_done[\=nWriteBufferEntries=\-1:0] :
+                                                                             last_index_reached ? (dtw_last_beat_read_done[\=nWriteBufferEntries=\-1:0] |  \=nWriteBufferEntries=\'b1)  :
+                                                                            (dtw_last_beat_read_done[\=nWriteBufferEntries=\-1:0] | (dtw_entry_valid_clear[\=nWriteBufferEntries=\-1:0] << 1'b1)) ;
+
+                 assign last_beat_read_done_en = write_data_shifter_valid & write_data_shifter_ready & ~in_stretch_last; //axi_mst_w_valid & axi_mst_w_ready;
+   
+//Do not give ready for DTW request if DTW response cannot be enqueued
+// ET: Cannot enque when data is being sent on the bus. That might be the last beat left in data buffer and the next beat coming in wont be configured correctly if it happens the cycle after this condition
+        assign dtw_req_slv_ready  =  (~dtw_data_buf_full & dtw_resp_fifo_ready & next_write_ptr_valid) | drop_beat;         
+
+\=u.dffre(  1
+          , 'write_req_fifo_out_valid_d1'
+	  , 'write_req_fifo_out_valid'
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+wire r_dtw_data_done;
+wire dtw_data_done_in;
+
+assign dtw_data_done = r_dtw_data_done | (write_data_shifter_valid & write_data_shifter_ready & write_data_shifter_last); //(axi_mst_w_valid & axi_mst_w_last & axi_mst_w_ready);
+assign dtw_data_done_in = (dtw_data_done) ? ~(out_write_req_ready & write_req_fifo_out_valid) : (wvalid & write_req_fifo_out_valid & write_data_shifter_ready & write_data_shifter_last);//(axi_mst_w_valid & axi_mst_w_last & axi_mst_w_ready);
+
+\=u.dffre(  1
+          , 'r_dtw_data_done'
+	  , 'dtw_data_done_in'
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+\=u.dffre(  1
+          , 'out_write_req_ready_d1'
+	  , 'out_write_req_ready'
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+        assign wvalid  = ~dtw_data_not_ready;
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (obj.lib.getParam('AXI_Interface', 'w_','user')) {
+\jsend
+        assign axi_mst_w_user   = 'h0;
+\js }
+
+        assign wtt_rb_id        = dtw_req_out_packet[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\]; 
+
+        assign out_dtw_req_ready = write_data_shifter_ready; //axi_mst_w_ready ;
+        wire dtw_last = dtw_req_slv_valid_mask & dtw_req_slv_ready & dtw_req_slv_last;
+	wire [7:0] beats_in_trans_size_m1 = (beats_in_trans_size - 8'd1);
+        wire last_axi_beat = (dtw_req_slv_valid_mask & dtw_req_slv_ready & ({1'b0,beat_number_in_trans} == beats_in_trans_size_m1)) & ~(drop_beat); //mpf1_last_beat |
+
+        assign in_last_axi_beat = r_last_axi_beat ? ~(dtw_req_slv_valid_mask & dtw_req_slv_ready & dtw_req_slv_last)  : (last_axi_beat & ~dtw_req_slv_last);
+        \=u.dffre(  1
+          , 'r_last_axi_beat'
+	  , 'in_last_axi_beat'
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+////////////////////////////////////////////////////////////////////////////
+//
+//  BE and DATA Masking from Dbad and SMI Size
+//
+
+\js if( dii_dw > 1) {
+        reg [\=dii_dw=\*8-1:0]  size_mask_be;
+        reg [\=dii_dw=\*64-1:0] size_mask_data;
+
+        // Need to mask out possible garbage data merged in from DW Adapters
+        always @ (*) begin
+	       case(wtt_intfSize)
+               \js if (data_width == 128) {
+	          0 : begin
+		        size_mask_data = (wtt_size <= 3) ? {64'b0, {64{1'b1}}}   : {128{1'b1}};
+		        size_mask_be   = (wtt_size <= 3) ? {8'b0, {8{1'b1}}}     : {16{1'b1}};			
+		      end
+               \js }
+	       \js if (data_width == 256) {
+	          0 : begin
+		        size_mask_data = (wtt_size == 4) ? {128'b0, {128{1'b1}}} :
+			                 (wtt_size <= 3) ? {192'b0,  {64{1'b1}}} : {256{1'b1}};
+		        size_mask_be   = (wtt_size == 4) ? {16'b0, {16{1'b1}}}   :
+			                 (wtt_size <= 3) ? {24'b0,  {8{1'b1}}}   : {32{1'b1}};					 
+		      end
+		  1 : begin
+		        size_mask_data = (wtt_size <= 4) ? {128'b0, {128{1'b1}}} : {256{1'b1}};
+		        size_mask_be   = (wtt_size <= 4) ? {16'b0, {16{1'b1}}}   : {32{1'b1}};			
+		      end
+	       \js }
+	       default:
+	         begin
+	           size_mask_be   = {\=dii_dw*8=\{1'b1}};
+	           size_mask_data = {\=dii_dw*64=\{1'b1}};		   
+		 end
+	       endcase
+	end
+	
+	wire [\=dii_dw=\*8-1:0] dbad_mask = {
+        \js for ( let i =  dii_dw - 1; i > 0 ; i--) {
+	  {8{~dtw_req_slv_dbad[\=i=\]}},
+	\js }
+	  {8{~dtw_req_slv_dbad[\=0=\]}}
+        };
+	
+	wire [\=dii_dw=\*8-1:0]  masked_be   = dtw_req_slv_be & dbad_mask & size_mask_be;
+	wire [\=dii_dw=\*64-1:0] masked_data = dtw_req_slv_data & size_mask_data;		
+	
+\js } else {
+	wire [8-1:0]  dbad_mask =  {8{~dtw_req_slv_dbad}};
+
+	wire [8-1:0]  masked_be   = dtw_req_slv_be & dbad_mask;
+	wire [64-1:0] masked_data = dtw_req_slv_data;	
+\js } 
+
+////////////////////////////////////////////////////////////////////////////
+//
+//  In Beat Shift
+//
+
+// Will never need to shift for 32bit data widths
+\jsbegin
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if(data_width >= 64) {
+\jsend
+  reg [2:0] r_shift_amount;
+  always @ (*) begin
+   case(wtt_intfSize)
+     \js if (data_width >= 128) {
+     \=intfsize_width=\'d0: begin
+          r_shift_amount = {1'b0,wtt_addr[4:3]};
+	 end
+     \js }
+     \js if (data_width >= 256) {
+     \=intfsize_width=\'d1: begin
+          r_shift_amount = {1'b0,wtt_addr[4],1'b0}; 
+     end
+     \js }
+     default: begin
+          r_shift_amount = {1'b0,2'b0};   
+     end
+    endcase
+  end
+
+   
+  \js if(data_width > 64) {
+   wire [2:0] shift_amount                                = r_shift_amount;
+
+   wire [\=3+log2ceil(data_width/8)=\-1:0]  shifted_beats_in_trans_size = ({\=log2ceil(data_width/8)=\'b0,beats_in_trans_size[2:0]} << \=log2ceil(data_width/8)=\);
+
+   wire tranaction_goes_above_top_bytes_of_bus            = {\=log2ceil(data_width/8)-3=\'b0,wr_mpf1_end_address[6:0]} > ({\=log2ceil(data_width/8)-2=\'b0,width_aligned_address[5:0]} + shifted_beats_in_trans_size);
+
+   \js if(data_width == 256) {
+   wire interbeat_shift                                   = wtt_size == 4 & (wtt_intfSize == 0);
+   \js } else {
+   wire interbeat_shift                                   = 1'b0;   
+   \js }
+   
+   wire unaligned_narrow_wrap                             = (wtt_mpf1[7:6] == 2'b10) & (r_shift_amount[\=log2ceil(data_width/64)-1=\:0] != 0) & wtt_narrow & !interbeat_shift;
+
+   wire non_wrapping_shift                                = (mpf1_valid) ? (tranaction_goes_above_top_bytes_of_bus) : (unaligned_narrow_wrap);
+  \js} else {
+   wire non_wrapping_shift                                = 1'h0;
+  \js }
+
+  reg [\=data_width-1=\:0]     intf_inbeat_shift_data;
+  reg [\=(data_width/8)-1=\:0] intf_inbeat_shift_strb;
+  
+  \js if(data_width == 256) {
+     always @ (*) begin
+       if(wtt_size == 4 && (shift_amount[0])) begin      
+           intf_inbeat_shift_data = {masked_data[127:64],128'b0 , masked_data[63:0]};
+           intf_inbeat_shift_strb = {masked_be[15:8]    ,16'b0  , masked_be[7:0]};
+       end
+       else begin
+           intf_inbeat_shift_data = masked_data;
+           intf_inbeat_shift_strb = masked_be;
+       end
+     end
+  \js } else {
+   always @ (*) begin
+     intf_inbeat_shift_data = masked_data;
+     intf_inbeat_shift_strb = masked_be;
+   end
+  \js }
+ 
+  \js if(data_width > 64) {
+     assign dtw_req_data_in  = {wtt_mpf1[7:6],
+                                wtt_addr[\=log2ceil(data_width/8)=\-1:0],
+                                mpf1_alength[2:0],     
+                                mpf1_asize,
+				wtt_narrow,
+				wtt_size,
+				non_wrapping_shift,
+				beats_in_trans_size[2:0],
+				shift_amount[\=log2ceil(data_width/64)-1=\:0],
+				dtw_last,
+				dtw_new_write,
+				dtw_req_slv_rb_id[\=wtt_id_width-1=\:0],
+				wtt_axi_id,
+				intf_inbeat_shift_strb,
+				last_axi_beat,
+				intf_inbeat_shift_data};
+  \js} else {
+     assign dtw_req_data_in  = {wtt_mpf1[7:6],
+                                wtt_addr[\=log2ceil(data_width/8)=\-1:0],
+                                mpf1_alength[2:0],          
+                                mpf1_asize,
+				wtt_narrow,
+				wtt_size,				
+				non_wrapping_shift,
+				beats_in_trans_size[2:0],				
+				dtw_last,
+				dtw_new_write,
+				dtw_req_slv_rb_id[\=wtt_id_width-1=\:0],
+				wtt_axi_id,
+				intf_inbeat_shift_strb,
+				last_axi_beat,
+				intf_inbeat_shift_data};
+  \js}
+
+\js } else /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ {
+  assign dtw_req_data_in  = {dtw_last,
+                             dtw_new_write,
+			     dtw_req_slv_rb_id[\=wtt_id_width-1=\:0],
+			     wtt_axi_id,
+			     masked_be,
+			     last_axi_beat,
+			     masked_data};
+\js }
+	  
+\=u.dffre(  1
+          , 'wvalid_d1'
+	  , 'wvalid'
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+	  
+\jsbegin
+for (var i = 0; i < nWriteBufferEntries; i++) {
+\jsend
+
+\=u.dffre(   dtw_data_req_width
+          , 'dtw_req_data_out'+i
+	  , 'dtw_req_data_in'
+	  , '{'+dtw_data_req_width+'{1\'b0}}'
+	  , 'dtw_entry_valid_set['+i+']'
+	  , 'clk'
+	  , 'reset_n')=\
+	  
+assign dtw_last_beat_read_done_in[\=i=\] = (dtw_entry_valid_clear[\=i=\]) ? 1'b0 : last_beat_read_done_in[\=i=\];
+assign dtw_last_beat_read_en[\=i=\]      = dtw_entry_valid_set[\=i=\] |  last_beat_read_done_en;
+
+wire   \='dtw_last_beat_read_done'+i=\;
+wire   \='dtw_last_beat_read_done_in'+i=\   = \='dtw_last_beat_read_done_in['+i+']'=\ | (dtw_entry_valid_set[\=i=\] & \='dtw_last_beat_read_done'+i=\);
+assign \='dtw_last_beat_read_done['+i+']'=\ = \='dtw_last_beat_read_done'+i=\;
+
+\=u.dffre(  1
+          , 'dtw_last_beat_read_done'+i
+	  , 'dtw_last_beat_read_done_in'+i
+	  , "1'b0"
+	  , 'dtw_last_beat_read_en['+i+']'
+	  , 'clk'
+	  , 'reset_n')=\
+
+
+\jsbegin
+}
+\jsend
+
+// Barrel Shifter.
+reg [\=nWriteBufferEntries-1=\:0] dtw_wr_ptr_beat_rotate;
+
+// Up to 16 Beats
+always @ (*) begin
+  case(beat_number_in_trans[3:0])
+    4'd0 : begin
+       dtw_wr_ptr_beat_rotate = dtw_wr_ptr[\=nWriteBufferEntries-1=\:0]; 
+    end
+    4'd1 : begin
+       dtw_wr_ptr_beat_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-1=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\]}; 
+    end
+\jsbegin
+for(let i = 2; i < max_beats-1; i++) {
+\jsend
+    4'd\=i=\ : begin
+       dtw_wr_ptr_beat_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-i=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-(i-1)=\]};
+    end
+\jsbegin
+    }
+\jsend
+    default : begin
+       dtw_wr_ptr_beat_rotate =  {dtw_wr_ptr[\=nWriteBufferEntries-1-(max_beats-1)=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-((max_beats-1)-1)=\]};
+    end
+   endcase
+end
+
+assign dtw_entry_valid_set[\=nWriteBufferEntries-1=\:0] = {\=nWriteBufferEntries=\{dtw_req_slv_valid_mask & dtw_req_slv_ready & !drop_beat & !incoming_msg_target_mismatch & !dtw_req_UCE}}  & dtw_wr_ptr_beat_rotate;
+
+assign dtw_entry_valid_in =  (dtw_entry_valid_set  | dtw_entry_valid )  ^  (dtw_entry_valid_clear);
+
+assign update_dtw_entry = dtw_entry_valid_set | dtw_entry_valid_clear;
+
+\jsbegin
+for (var i = 0; i < nWriteBufferEntries; i++) {
+\jsend
+
+wire   \='dtw_entry_valid'+i=\;
+wire   \='dtw_entry_valid_in'+i=\   = \='dtw_entry_valid_in['+i+']'=\;
+assign \='dtw_entry_valid['+i+']'=\ = \='dtw_entry_valid'+i=\;
+
+\=u.dffre(  1
+          , 'dtw_entry_valid'+i
+	  , 'dtw_entry_valid_in'+i
+	  , "1'b0"
+	  , 'update_dtw_entry['+i+']'
+	  , 'clk'
+	  , 'reset_n')=\
+
+wire   \='dtw_entry_transaction_not_sent_in'+i=\   = dtw_entry_transaction_not_sent\=i=\   ? ~(write_data_shifter_valid &
+                                                                                               write_data_shifter_ready &
+                                                                                               write_data_shifter_last &
+                                                                                               (dtw_req_data_out\=i=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] == write_req_rb_id) 
+										              )  :
+                                                                                             dtw_entry_valid_set[\=i=\];
+
+\=u.dffre(  1
+          , 'dtw_entry_transaction_not_sent'+i
+	  , 'dtw_entry_transaction_not_sent_in'+i
+	  , "1'b0"
+	  , "1'b1"
+	  , 'clk'
+	  , 'reset_n')=\
+
+\jsbegin
+}
+\jsend
+
+assign dtw_data_buf_full = &(dtw_entry_valid[\=nWriteBufferEntries-1=\:0]);
+
+//Calculate the DTW buffer entry index to enqueue the dtw data
+
+assign dtw_invalid_entries =  ~(dtw_entry_valid[\=nWriteBufferEntries-1=\:0] );
+
+assign init_cond = &(dtw_invalid_entries);
+assign last_entry_reached = (dtw_wr_ptr[\=nWriteBufferEntries-1=\] == 1'b1);
+
+reg [\=nWriteBufferEntries=\-1:0] dtw_wr_ptr_rotate;
+
+// By Hand Barrel Shifter since there are only 5 possibilities. Could make into JS to make it cleaner. Overall  unneccisary to make a totally generic once since # beats is always power of 2
+
+always @ (*) begin
+  case(\=max_beats=\)
+    5'd1 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-1=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\]}; 
+    end
+    5'd2 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-2=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-1=\]}; 
+    end
+    \js if(max_beats > 2) {    
+    5'd3 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-3=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-2=\]}; 
+    end
+    \js }
+    \js if(max_beats >= 4) {    
+    5'd4 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-4=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-3=\]}; 
+    end
+    \js }    
+    \js if(max_beats > 4) {        
+    5'd5 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-5=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-4=\]}; 
+    end
+    5'd6 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-6=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-5=\]}; 
+    end
+    5'd7 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-7=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-6=\]}; 
+    end    
+    \js }
+    \js if(max_beats >= 8) {      
+    5'd8 : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-8=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\:\=nWriteBufferEntries-1-7=\]}; 
+    end
+    \js }
+    default : begin
+       dtw_wr_ptr_rotate = {dtw_wr_ptr[\=nWriteBufferEntries-1-1=\:0],dtw_wr_ptr[\=nWriteBufferEntries-1=\]}; 
+    end
+   endcase
+end
+
+// This needs to take into account that dropping the first beat causes beat count to go up. In that case beat_number_in_txn is sorrect
+//assign first_beat_to_write = (beat_count == 0) | (beat_number_in_trans == 0);
+
+assign  first_beat_to_write = (beat_count_nd == 0);
+	  
+wire                               walk_buffer      = ~next_write_ptr_valid & first_beat_to_write ; 
+wire [\=nWriteBufferEntries=\-1:0] walk_buffer_next = (~|dtw_wr_ptr_rotate) ? \=nWriteBufferEntries=\'b1 : dtw_wr_ptr_rotate;
+
+assign dtw_wr_ptr_in = walk_buffer ? walk_buffer_next : dtw_wr_ptr_rotate; 
+assign dtw_buf_write = (dtw_req_slv_valid_mask & dtw_req_slv_ready & dtw_req_slv_last) | walk_buffer;
+
+\=u.dffre(  nWriteBufferEntries
+          , 'dtw_wr_ptr'
+	  , 'dtw_wr_ptr_in'
+	  , nWriteBufferEntries+'\'d1'
+	  , 'dtw_buf_write'
+	  , 'clk'
+	  , 'reset_n')=\
+
+wire slot_open = first_beat_to_write ? |(dtw_wr_ptr & ~dtw_entry_valid & ~dtw_entry_valid_lock) : 1'b1;
+wire entry_open = |(dtw_wr_ptr_beat_rotate & ~dtw_entry_valid & ~dtw_entry_valid_lock);
+
+assign next_write_ptr_valid = slot_open & entry_open;
+
+wire [\=wtt_num_entries=\-1:0] retire_failed_write;
+wire [\=wtt_num_entries=\-1:0] entry_has_valid_dtw;
+
+\jsbegin
+       for (var entry = 0 ; entry < wtt_num_entries ; entry++) {
+\jsend
+       assign axi_id_match[\=entry=\] =  wtt_entry\=entry=\_valid &  (wtt_entry\=entry=\_axi_id[\=id_width=\-1:0] == write_resp_data[\=id_width+1=\:2] ) & write_resp_valid;
+       assign axi_id_match_already_sent[\=entry=\] = wtt_entry\=entry=\_ewa & wtt_entry\=entry=\_ewa_sent;
+       assign axi_id_match_oldest[\=entry=\] =  axi_id_match[\=entry=\] & wtt_entry\=entry=\_oldest & wtt_entry\=entry=\_ex_pass;
+       assign ewa_match[\=entry=\] =  wtt_entry\=entry=\_ewa & !wtt_entry\=entry=\_ewa_sent & !(|axi_id_match_oldest) & ~wtt_entry\=entry=\_data_pending; 
+       assign retire_failed_write[\=entry=\] = wtt_entry\=entry=\_valid & axi_id_match_already_sent[\=entry=\] & ~wtt_entry\=entry=\_ex_pass & wtt_entry\=entry=\_lock & ~entry_has_valid_dtw[\=entry=\];
+\jsbegin
+                }
+\jsend
+
+// Need structure to indicate to retire failed write only after there are no dtw entries matching that wtt entry. 
+\js for (var entry = 0 ; entry < wtt_num_entries ; entry++) {
+      assign entry_has_valid_dtw[\=entry=\] = 1'b0 
+       \js for (var dtw_entry = 0; dtw_entry < nWriteBufferEntries; dtw_entry++) {
+	     | ((dtw_req_data_out\=dtw_entry=\[\=dtw_req_rb_id_msb=\: \=dtw_req_rb_id_lsb=\] == \=entry=\) & dtw_entry_valid[\=dtw_entry=\])
+       \js }
+       ;
+ \js}
+
+       wire [\=wtt_num_entries-1=\:0] qualified_axi_id_match_oldest = axi_id_match_oldest & {\=wtt_num_entries=\{dtw_resp_fifo_ready}};
+
+       wire [\=wtt_num_entries-1=\:0] retire_failed_write_sel;
+
+       \js // Only retire one entry at a time
+       \=u.instance({
+          instanceName: 'u_retire_sel',
+          moduleName: 'find_first_one',
+          params: {
+            width   : wtt_num_entries
+          },
+          verilogParams: {
+          },
+          ports: {
+            invec       : 'retire_failed_write',
+            outvec      : 'retire_failed_write_sel'
+          }
+       })=\
+
+       assign wtt_retire_entry = (|qualified_axi_id_match_oldest) ? qualified_axi_id_match_oldest : retire_failed_write_sel;
+//Retire axi id only if there are no other outstanding entries with the same axi id
+       assign wr_axi_id_retire =  (|(axi_id_match[\=wtt_num_entries-1=\:0])  & (~|(axi_id_match[\=wtt_num_entries-1=\:0] ^ axi_id_match_oldest[\=wtt_num_entries-1=\:0])) & dtw_resp_fifo_ready);
+       assign wr_axi_id_comp = write_resp_data[\=axi_rsp_id_msb=\:2];
+
+
+//DTW Response FIFO
+//Enqueue DTW response when bresp comes from endpoint on AXI for EWA=0
+
+    reg ewa_resp;
+    reg ewa_already_sent;
+    reg dtw_lock;
+    reg dtw_ex_pass;
+    
+    assign wtt_ewa_sent_set = r_wtt_ewa_sent_set;
+    
+    always @* begin
+        r_wtt_ewa_sent_set  = \=wtt_num_entries=\'h0;
+        case (1'b1)
+            \js for (i=0; i < wtt_num_entries; i++) {
+             (axi_id_match_oldest[\=i=\] | ewa_match[\=i=\]): begin
+                          dtw_ex_pass = wtt_entry\=i=\_ex_pass;
+                          dtw_lock = wtt_entry\=i=\_lock;
+	                  dtw_tm = wtt_entry\=i=\_tm;
+	                  ewa_resp = ewa_match[\=i=\];
+                          dtw_rid = wtt_entry\=i=\_dtw_tid;
+			  \jsbegin
+                          // Dont have ql.
+                          /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+			  if (ql_width) {
+			  \jsend
+			  dtw_ql = wtt_entry\=i=\_dtw_ql; 
+			  \js }
+			  \js if (priority_width) {
+			  dtw_priority = wtt_entry\=i=\_dtw_priority; 
+			  \js }			  
+                          r_bresp_write_addr = wtt_entry\=i=\_addr;
+                          r_bresp_write_ns   = wtt_entry\=i=\_prot[1];			  			  
+                          dtw_init_id = wtt_entry\=i=\_init_id;
+			  r_wtt_ewa_sent_set[\=i=\] = dtw_resp_fifo_ready;
+			  ewa_already_sent = axi_id_match_already_sent[\=i=\];
+			  wtt_dbad = wtt_entry\=i=\_dbad; 
+                          dtw_ewa = wtt_entry\=i=\_ewa;
+                          end
+            \js }
+               default:  begin
+	                 dtw_tm = 1'h0;	
+                         dtw_ex_pass = 1'h0;
+                         dtw_lock = 1'h0;       
+			 \jsbegin
+                         // Dont have ql.
+                         /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */	       
+			 if (ql_width) {
+			 \jsend
+			 dtw_ql = 'h0;
+			 \js }
+			 \js if (priority_width) {
+			 dtw_priority = 3'h0;
+			 \js }		       
+                         r_bresp_write_addr = \=wAddr=\'h0;
+                         r_bresp_write_ns   = 1'h0;			  	       		  	 
+	                 ewa_resp = 1'b0;
+                         dtw_rid = \=tid_width=\'b0;
+                         dtw_init_id = \=wFUnitId=\'b0;
+			 r_wtt_ewa_sent_set  = \=wtt_num_entries=\'h0;
+			 ewa_already_sent = 1'h0;
+			 wtt_dbad = 1'h0;
+                         dtw_ewa = 1'h0;			 
+                       end
+        endcase
+    end
+
+assign bresp_addr              = r_bresp_write_addr;
+assign bresp_ns                = r_bresp_write_ns;
+
+\js if (nExclusiveEntries== 0) {
+assign bresp                   = write_resp_data[\=resp_width-1=\:0] & {\=resp_width=\{write_resp_valid}};
+\js } else {
+assign bresp                   = ((dtw_lock & dtw_ex_pass & !(|write_resp_data[\=resp_width-1=\:0])) ? 2'b01 : write_resp_data[\=resp_width-1=\:0]) & {\=resp_width=\{write_resp_valid}};
+\js }
+
+assign bresp_valid             = write_resp_valid;
+
+assign dtw_resp_fifo_in_valid  = ((write_resp_valid & ~ewa_already_sent) | ewa_resp);
+assign dtw_resp_fifo_in_packet = { dtw_ewa,
+                                   dtw_tm,
+			           \jsbegin
+                                   // Dont have ql.
+                                   /* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+                                   if (ql_width) {
+				   \jsend
+                                   dtw_ql,
+				   \js }
+				   \js if (priority_width) {
+				   dtw_priority,
+				   \js }
+				   wtt_dbad,
+				   bresp,
+				   dtw_init_id,
+				   dtw_rid};
+assign write_resp_ready        = dtw_resp_fifo_ready & ~ewa_resp;
+
+\jsbegin
+        var dii_dtw_resp_fifo_Params = {
+                width       : dtw_resp_width ,
+                depth       : 2,
+                bypass_mode : 0
+        };
+
+        var  instance_ports_for_dii_dtw_resp_fifo = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                push_valid      : 'dtw_resp_fifo_in_valid',
+                push_data       : 'dtw_resp_fifo_in_packet',
+                push_ready      : 'dtw_resp_fifo_ready',
+                pop_valid       : 'dtw_resp_fifo_out_valid',
+                pop_data        : 'dtw_resp_fifo_out_packet',
+                pop_ready       : 'out_dtw_resp_ready',
+                empty           : 'dtw_resp_empty'
+        };
+\jsend
+
+  \=u.instance({
+        instanceName: 'dii_dtw_resp_fifo',
+        moduleName: 'dii_fifo',
+        params: dii_dtw_resp_fifo_Params,
+        verilogParams: {},
+        ports: instance_ports_for_dii_dtw_resp_fifo
+  })=\
+
+    assign dtw_rsp_mst_valid                                                = dtw_resp_fifo_out_valid;
+
+    assign out_dtw_resp_ready                                               = dtw_rsp_mst_ready;
+
+    assign dtw_rsp_mst_message_id                                           = \=msg_id_width=\'h0;
+    assign dtw_rsp_mst_target_id                                            = {dtw_resp_fifo_out_packet[\=dtw_rsp_targ_id_msb=\:\=dtw_rsp_targ_id_lsb=\],{\=wFPortId=\{1'b0}}};
+    assign dtw_rsp_mst_r_message_id                                         = dtw_resp_fifo_out_packet[\=tid_width -1=\ :0];
+    assign dtw_rsp_mst_transaction_id                                       = 1'h0;
+    assign dtw_rsp_mst_cm_type                                              = \=DtwRsp=\;
+    assign dtw_rsp_mst_cm_status                                            = (dtw_resp_fifo_out_packet[\=dtw_rsp_resp_msb=\:\=dtw_rsp_resp_lsb=\] == 2'b01) ? \=cm_status_width=\'b00000001 :    
+                                                                              (dtw_resp_fifo_out_packet[\=dtw_rsp_ewa=\]                                   ) ? \=cm_status_width=\'b00000000 :
+                                                                              (dtw_resp_fifo_out_packet[\=dtw_rsp_resp_msb=\:\=dtw_rsp_resp_lsb=\] == 2'b10) ? \=cm_status_width=\'b10000011 :
+                                                                              (dtw_resp_fifo_out_packet[\=dtw_rsp_resp_msb=\:\=dtw_rsp_resp_lsb=\] == 2'b11) ? \=cm_status_width=\'b10000100 : \=cm_status_width=\'d0;
+
+
+    assign dtw_rsp_mst_initiator_id                                         = {my_f_unit_id,{\=wFPortId=\{1'b0}}};
+
+//
+\js if (u.getParam('DTWReqInterface', 'h_prot')) {
+    assign dtw_rsp_mst_h_prot                                               = \=u.getParam('DTWReqInterface', 'h_prot')=\'h0;
+\js }
+
+\jsbegin
+// Dont have t_tier.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (u.getParam('DTWReqInterface', 't_tier')) {
+\jsend
+    assign dtw_rsp_mst_t_tier                                               = 'h0;
+\js }
+
+\js if (u.getParam('DTWReqInterface', 'priority')) {
+    assign dtw_rsp_mst_priority                                             = dtw_resp_fifo_out_packet[\=dtw_rsp_priority_msb=\:\=dtw_rsp_priority_lsb=\];
+\js }
+
+\jsbegin
+// Dont have ql.
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (u.getParam('DTWReqInterface', 'ql')) {
+\jsend
+    assign dtw_rsp_mst_ql                                                   = dtw_resp_fifo_out_packet[\=dtw_rsp_ql_msb=\:\=dtw_rsp_ql_lsb=\];
+\js }
+
+    assign dtw_rsp_mst_rl                                                   = 2'h0;
+
+\js if(m_prot_width != 0) {
+    assign dtw_rsp_mst_m_prot                                               = \=m_prot_width=\'h0;
+\js }
+
+\jsbegin
+// Always have 
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if(tm_width != 0) {
+\jsend
+    assign dtw_rsp_mst_tm                                                   = dtw_resp_fifo_out_packet[\=dtw_rsp_tm=\];
+\js }
+
+endmodule
+ 

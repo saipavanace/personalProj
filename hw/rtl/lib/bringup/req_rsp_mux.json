@@ -1,0 +1,68 @@
+{
+    "requestInterfaces" : [
+	{
+	    "name" : "str_req_",
+	    "signals" : {
+		"valid" : 1,
+		"ready" : -1,
+		"message_id" : 4,
+		"mpf1" : 4,
+		"addr" : 3,
+		"mpf2" : 4
+	    },
+	    "hasLast" : false,
+	    "selectionMap" : "message_id",
+	    "numInterfaces" : 3
+	},
+	{
+	    "name" : "dtr_req_",
+	    "signals" : {
+		"valid" : 1,
+		"ready" : -1,
+		"message_id" : 4,
+		"mpf1" : 1,
+		"target_id" : 3,
+		"mpf2" : 8,
+		"data" : 64,
+		"last" : 1
+	    },
+	    "hasLast" : true,
+	    "selectionMap" : "message_id",
+	    "numInterfaces" : 2
+	}
+    ],
+    "responseInterfaces" : [
+	{
+	    "name" : "str_rsp_",
+	    "signals" : {
+		"valid" : 1,
+		"ready" : -1,
+		"message_id" : 4,
+		"mpf1" : 4,
+		"addr" : 3,
+		"mpf2" : 4
+	    },
+	    "hasLast" : false,
+	    "selectionMap" : "",
+	    "demuxSignal" : "addr[3:1]",
+	    "numInterfaces" : 3
+	},
+	{
+	    "name" : "dtw_req_",
+	    "signals" : {
+		"valid" : 1,
+		"ready" : -1,
+		"message_id" : 4,
+		"mpf1" : 1,
+		"target_id" : 3,
+		"mpf2" : 8,
+		"data" : 32,
+		"last" : 1
+	    },
+	    "hasLast" : true,
+	    "selectionMap" : "message_id",
+	    "demuxSignal" : "message_id[3]",
+	    "numInterfaces" : 2
+	}
+    ]
+}

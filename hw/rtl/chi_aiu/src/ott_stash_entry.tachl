@@ -1,0 +1,544 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines single transaction table entry
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+\jsend
+
+\jsbegin
+var assertOn = u.getParam('assertOn');
+var interfaces         = u.getParam('interfaces');
+var rsp_flit_interface = u.getParam('RspInterface');
+var dat_flit_interface = u.getParam('DatInterface');
+var wAddr =  u.getParam('wAddr');
+var wData =  u.getParam('wData');
+var chi_b =  u.getParam('chi_b');
+var chi_e =  u.getParam('chi_e');
+var wEntries = u.getParam('wEntries');
+var wDBID = u.getParam('DatInterface').DBID;
+var wCCID = u.getParam('DatInterface').CCID;
+var wReqTxnID = u.getParam('ReqInterface').TxnID;
+var wReqSrcID = u.getParam('ReqInterface').SrcID;
+var wReqTgtID = u.getParam('ReqInterface').TgtID;
+var wReqQoS   = u.getParam('ReqInterface').QoS;
+var wOpcode  = u.getParam('ReqInterface').Opcode;
+var wTagOp      = (u.getParam('ReqInterface').TagOp > 0)      ? u.getParam('ReqInterface').TagOp : 0;
+var wTag        = (u.getParam('DatInterface').Tag   > 0)      ? u.getParam('DatInterface').Tag   : 0;
+var wTU         = (u.getParam('DatInterface').TU    > 0)      ? u.getParam('DatInterface').TU    : 0;
+var wDataSource = (u.getParam('DatInterface').DataSource > 0) ? u.getParam('DatInterface').DataSource : 0;
+var wCBusy      = (u.getParam('DatInterface').CBusy > 0)      ? u.getParam('DatInterface').CBusy : 0;
+var wFwdState =  u.getParam('DatInterface').FwdState;
+var wRSVDC    =  u.getParam('DatInterface').RSVDC;
+var wStashTxnID = u.getParam('CHI_SnpInterface').TxnID;
+var wStashSrcID = u.getParam('CHI_SnpInterface').SrcID;
+var wStashQoS   = u.getParam('CHI_SnpInterface').QoS;
+var wStashLPID  = u.getParam('CHI_SnpInterface').FwdTxnID;
+var initiator_id_width = u.getParam('initiator_id_width');
+var unit_id_width   = u.getParam('unit_id_width');
+var lpid_width   = u.getParam('ReqInterface').LPID;
+var snpattr_width =  u.getParam('ReqInterface').SnpAttr;
+var wAux = u.getParam('DTRReqRxInterface').aux;
+var wHProt = u.getParam('DTWReqInterface').h_prot;
+var wMProt_cmd_rsp = u.getParam('CMDRspInterface').m_prot;
+var wMProt_dtr_rsp = u.getParam('DTRRspTxInterface').m_prot;
+var wMProt_str_rsp = u.getParam('STRRspInterface').m_prot;
+var wMProt_dtw_req = u.getParam('DTWReqInterface').m_prot;
+var wDProt_dtw_req = u.getParam('DTWReqInterface').dprot;
+var wTTier = u.getParam('DTWReqInterface').t_tier;
+var wSteering = u.getParam('DTWReqInterface').steering;
+var wPriority = u.getParam('DTWReqInterface').priority;
+var wQl = u.getParam('DTWReqInterface').ql;
+var wUser = u.getParam('DTWReqInterface').user;
+var wTm_dtr_req = u.getParam('DTRReqRxInterface').tm;
+var wTm_dtr_rsp = u.getParam('DTRRspTxInterface').tm;
+var cm_type  = u.getParam('cm_type');
+var chi_cmd  = u.getParam('chi_cmd');
+var qosInfo  = u.getParam('qosInfo');
+var num_pri_buckets =  qosInfo.qosMap.length;
+var intf_size = Math.max(log2ceil(wData/64),1);
+var intf_size_width = u.getParam('intf_size_width');
+var num_dces = u.getParam('nDCEs');
+var num_dmis = u.getParam('nDmis');
+var num_diis = u.getParam('nDiis');
+var cm_status_width = u.getParam('STRReqInterface').cm_status;
+var rb_id_width = u.getParam('STRReqInterface').rb_id;
+var msg_id_width = u.getParam('STRReqInterface').message_id;
+var wMpf1 = u.getParam('STRReqInterface').mpf1;
+var wMpf2 = u.getParam('STRReqInterface').mpf2;
+var init_id_width = u.getParam('STRReqInterface').initiator_id;
+var wRl = u.getParam('DTRReqRxInterface').rl;
+var wRspFlit_FwdState_local = u.getParam('wRspFlit_FwdState_local');
+var wDatFlit_TraceTag_local = u.getParam('wDatFlit_TraceTag_local');
+var wDatFlit_Homenode_ID_local = u.getParam('wDatFlit_Homenode_ID_local');
+var wSnpFlit_FwdNID_local  = u.getParam('wSnpFlit_FwdNID_local');
+var wPriority_modif = (wPriority > 0) ? wPriority : 1;
+var wFlit_Addr    = interfaces.chiInt.params.wAddr;
+var wAddr_diff = wAddr - wFlit_Addr;
+
+var bundleFunctions = obj.userLib.bundleFunctions;
+var dtw_req_width = bundleFunctions.getBundleWidth(u.getParam('DTWReqInterface'),['valid','ready','last','data','be','aux','wdid','dbad'],obj.lib.bundle); 
+var dtw_data_out_width = dtw_req_width + 2; 
+var cmd_data_width = bundleFunctions.getBundleWidth(u.getParam('ReqInterface'),['SrcID','TxnID','LikelyShared','AllowRetry'     ,'PCrdType','ExCompAck'],obj.lib.bundle);
+var cmd_data_out_width = cmd_data_width + 1 + 8 + wPriority + 2;
+var dat_flit_width = bundleFunctions.getBundleWidth(dat_flit_interface ,['Poison', 'Data','BE','DataID', 'Homenode_ID'],obj.lib.bundle);
+var rddata_bundle_width = dat_flit_width + 3 + 1 + 1;
+
+u.port('input','clk', 1);
+u.port('input','reset_n',1);
+u.port('input','init',1);
+u.port('output','init_d',1);
+u.port('input','init_id',initiator_id_width);
+u.port('input','my_f_unit_id',unit_id_width);
+u.port('input','rx_rsp_valid',1);
+u.port('input','stt_chi_rx_dat_flitv_d1',1);
+u.port('input',  'timeout_overflow_event', 1);
+u.port('input',  'timeout_overflow_event_clr', 1);
+u.port('output', 'timeout_overflow', 1);
+
+u.interface('STT_RXDATFLIT_',   'slave', u.getParam('DatInterface'),['TgtID','BE','Data','TraceTag', 'DataID', 'CCID', 'Resp', 'RespErr', 'Homenode_ID', 'QoS']);
+
+u.interface('SNP_', 'slave',  u.getParam('CHI_SnpInterface'),['FwdTxnID', 'OpCode', 'NS', 'DoNotGoToSD', 'RetToSrc', 'TraceTag']);
+
+u.port('input','SNP_valid',1);
+
+u.port('input','rn_rsp_sel',1);
+
+u.interface('RXRSP_', 'slave', u.getParam('RspInterface'),['QoS','TgtID','PCrdType']);
+
+u.port('input','dtr_req_sel',1);
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wAux > 0) {
+u.interface('dtr_req_slv_', 'slave', u.getParam('DTRReqRxInterface'), ['ready','target_id','tr','mpf1','data','be'] );
+} else {
+u.interface('dtr_req_slv_', 'slave', u.getParam('DTRReqRxInterface'), ['ready','target_id','tr','mpf1','data','be', 'aux'] );
+} 
+
+u.port('input','ott_entry_num', wEntries)
+
+u.port('output','rd_data_out', rddata_bundle_width);
+
+u.port('output','dtr_rsp_out_req',1);
+u.port('output','dtr_rsp_out_data', bundleFunctions.getBundleWidth(u.getParam('DTRRspTxInterface'),['valid','ready','last'],obj.lib.bundle) );
+u.port('input','dtr_rsp_out_ack',1);
+
+u.port('output','entry_valid',1);
+u.port('output','entry_valid_early',1);
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+wire dff_enable = 1'b1;
+wire q_txn_id_valid;
+wire q_dtr_rsp_flag ;
+wire q_dtr_req_flag ;
+wire q_ExCompAck ;
+wire entry_valid_en;
+wire q_stashing_entry;
+wire [\=u.getParam('ReqInterface').TxnID-1=\:0] q_txn_id;
+wire [\=wReqSrcID=\-1:0] q_src_id;
+wire [\=wReqTgtID=\-1:0] q_tgt_id;
+wire [\=wReqQoS=\-1:0] q_qos;
+wire [\=wReqQoS=\-1:0] qos_in;
+wire [\=wReqTxnID=\-1:0] txn_id_in;
+wire [\=wReqSrcID=\-1:0] src_id_in;
+wire [\=wReqTgtID=\-1:0] tgt_id_in;
+wire [\=wReqSrcID=\-1:0] snp_rsp_src_id;
+wire [1:0] ccid_in;
+wire [1:0] q_ccid;
+wire q_entry_valid, q_entry_valid_d;
+wire [2:0] rd_data_cmd_size;
+wire dealloc_me;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_dtr_req > 0) {
+\jsend
+wire [\=wTm_dtr_req-1=\:0] q_dtr_req_tm;
+\js }
+
+\=bundleFunctions.wiresFromInterface('dtr_rsp_', u.getParam('DTRRspTxInterface') ,['valid','ready','last'],obj.lib.bundle )=\   
+
+\=bundleFunctions.wiresFromInterface('rddata_', dat_flit_interface ,['Data','BE','DataID', 'FwdState', 'TraceTag'],obj.lib.bundle )=\   
+
+wire [\=wDBID-1=\:0] dbid_in;
+wire [\=wDBID-1=\:0] q_dbid;
+
+wire q_stashing_entry_d;
+
+
+\=u.dffre(1, 'init_d', 'init', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+
+//=============================================================================
+// Capture SMI DTRreq message_id, initiaitor_id 
+//=============================================================================
+
+wire [\=msg_id_width-1=\ :0] q_dtr_message_id;
+
+\=u.dffre(msg_id_width, 'q_dtr_message_id', 'dtr_req_slv_message_id', msg_id_width+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+
+wire [\=u.getParam('DTRReqRxInterface').initiator_id-1=\ :0] q_dtr_initiator_id;
+
+\=u.dffre(init_id_width, 'q_dtr_initiator_id', 'dtr_req_slv_initiator_id', init_id_width+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+
+//=============================================================================
+// SMI DTRrsp 
+//=============================================================================
+
+assign  dtr_rsp_initiator_id [\=u.getParam('DTRRspTxInterface').initiator_id-1=\:0]  = init_id ;
+
+assign  dtr_rsp_target_id    [\=u.getParam('DTRRspTxInterface').target_id-1=\:0]  = q_dtr_initiator_id; 
+assign  dtr_rsp_message_id   [\=u.getParam('DTRRspTxInterface').message_id-1=\:0]  = \=u.getParam('DTRRspTxInterface').message_id=\'b0 ;
+assign  dtr_rsp_cm_type      [\=u.getParam('DTRRspTxInterface').cm_type-1=\:0]  = 8'b1111_0100;
+
+\js if(wHProt > 0) {
+\js if(wHProt == 1) {
+assign  dtr_rsp_h_prot        =   1'b0 ;
+\js } else { 
+assign  dtr_rsp_h_prot       [\=u.getParam('DTRRspTxInterface').h_prot-1=\:0]  =   \=wHProt=\'b0 ;
+\js } }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wTTier > 0) {
+\jsend
+assign  dtr_rsp_t_tier       [\=u.getParam('DTRRspTxInterface').t_tier-1=\:0]  =   \=wTTier=\'b0 ;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wSteering > 0) {
+\jsend
+assign  dtr_rsp_steering     [\=u.getParam('DTRRspTxInterface').steering-1=\:0]  = \=wSteering=\'b0 ;
+\js }
+
+\jsbegin
+if(wPriority > 0) {
+\jsend
+wire [\=wPriority-1=\:0] q_dtr_req_pri;
+\=u.dffre(wPriority, 'q_dtr_req_pri', 'dtr_req_slv_priority', wPriority+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+    \jsbegin
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if(num_pri_buckets >= wPriority) {
+    \jsend
+assign  dtr_rsp_priority     [\=u.getParam('DTRRspTxInterface').priority-1=\:0]  =  q_dtr_req_pri;
+    \js } else {
+assign  dtr_rsp_priority     [\=u.getParam('DTRRspTxInterface').priority-1=\:0]  = \=wPriority=\'b0 ;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wQl > 0) {
+\jsend
+assign  dtr_rsp_ql           [\=u.getParam('DTRRspTxInterface').ql-1=\:0]  =  \=wQl=\'b0 ;
+\js }
+
+\js if(wMProt_dtr_rsp > 0) {
+\js if(wMProt_dtr_rsp == 1) {
+assign  dtr_rsp_m_prot        = 1'b0;
+\js } else {
+assign  dtr_rsp_m_prot       [\=u.getParam('DTRRspTxInterface').m_prot-1=\:0]  =   \=wMProt_dtr_rsp=\'b0 ;
+\js } }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_dtr_rsp > 0) {
+    /* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+    if (wTm_dtr_req > 0) {
+\jsend
+assign dtr_rsp_tm = q_dtr_req_tm;
+    \js } else {
+assign dtr_rsp_tm = \=wTm_dtr_req=\'d0;
+    \js }
+\js }
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wTm_dtr_req > 0) {
+\jsend
+\=u.dffre(wTm_dtr_req, 'q_dtr_req_tm', 'dtr_req_slv_tm', wTm_dtr_req+"'b0", 'dtr_req_sel', 'clk', 'reset_n')=\
+\js }
+
+assign  dtr_rsp_cm_status    [\=u.getParam('DTRRspTxInterface').cm_status-1=\:0]  = \=u.getParam('DTRRspTxInterface').cm_status=\'b0 ;
+
+assign  dtr_rsp_r_message_id [\=u.getParam('DTRRspTxInterface').r_message_id-1=\:0]  = q_dtr_message_id ;
+
+
+assign dtr_rsp_out_data =  \=bundleFunctions.packetizeBundle('dtr_rsp_', u.getParam('DTRRspTxInterface') ,['valid','ready','last'],obj.lib.bundle )=\   ;
+
+//=============================================================================
+// CHI TXDAT channel CompData packet
+//=============================================================================
+
+assign rddata_QoS     [\=u.getParam('DatInterface').QoS-1=\:0] = q_qos ;
+assign rddata_TgtID   [\=u.getParam('DatInterface').TgtID-1=\:0] = q_tgt_id ;
+assign rddata_SrcID   [\=u.getParam('DatInterface').SrcID-1=\:0] = q_src_id ;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if(wDatFlit_Homenode_ID_local > 0) { \jsend
+\js //assign rddata_Homenode_ID   [\=wDatFlit_Homenode_ID_local-1=\:0] = q_src_id ; //i.e. rddata_SrcID
+\js }
+
+assign rddata_TxnID   [\=u.getParam('DatInterface').TxnID-1=\:0] = q_dbid ;
+assign rddata_OpCode  [\=u.getParam('DatInterface').OpCode-1=\:0] = \=u.getParam('DatInterface').OpCode=\\=chi_cmd.CompData=\ ;
+assign rddata_Resp    [\=u.getParam('DatInterface').Resp-1=\:0] = dtr_req_slv_valid ? (
+                                                               {\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataInv=\ )}}  & \=chi_cmd.CompData_I=\
+                                                            |  {\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataSCln=\ )}} & \=chi_cmd.CompData_SC=\
+                                                            |  {\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataSDty=\ )}} & \=chi_cmd.CompData_SD_PD=\ 
+                                                            |  {\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataUCln=\ )}} & \=chi_cmd.CompData_UC=\
+                                                            |  {\=u.getParam('DatInterface').Resp=\{(dtr_req_slv_cm_type == \=cm_type.DtrDataUDty=\ )}} & \=chi_cmd.CompData_UD_PD=\ ) : \=u.getParam('DatInterface').Resp=\'h0 ;
+
+\js //For DTR requests, the CM status & poison bits on thee Data are checked to see if there is data error.
+\js //CM status is checked to detect non data errors. If any errors are deteted, they are sent on RespErr field of the TXDATFLIT.
+
+wire dtr_req_cm_status_error =  (dtr_req_slv_cm_status[7] | {|{dtr_req_slv_cm_status[6:0]}}) & dtr_req_slv_valid; //CM Status bits of DTR request are not clean
+wire dbad_error =  (|(dtr_req_slv_dbad) & dtr_req_slv_valid) ;
+wire data_error = ((dtr_req_slv_cm_status[7:0] == 8'b10100110) | (dtr_req_slv_cm_status[7:0] == 8'b10000011)) & dtr_req_slv_valid;
+wire non_data_error = (dtr_req_cm_status_error & ~data_error) ;
+
+assign rddata_RespErr  = non_data_error ? 2'b11 : (data_error | dbad_error) ? 2'b10 : 2'b0;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (wDBID > wEntries) { \jsend
+assign rddata_DBID    [\=wDBID-1=\:0] =   {{\=wDBID - wEntries=\{1'b0}} ,ott_entry_num}; 
+\js } else {
+assign rddata_DBID    [\=wDBID-1=\:0] =   ott_entry_num; 
+\js }
+assign rddata_CCID    [\=wCCID-1=\:0] =  q_ccid[1:0] ;
+
+wire rddata_TraceTag = dtr_req_slv_valid ? dtr_req_slv_tm : 1'h0; 
+
+
+\js if(wFwdState > 0) {
+wire [\=wFwdState -1=\:0] rddata_FwdState;
+assign  rddata_FwdState[\=wFwdState-1=\:0]  = \=wFwdState=\'b0; 
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if(wRSVDC > 0)  { 
+\jsend
+\js if(wAux > 0) {
+assign rddata_RSVDC = dtr_req_slv_aux;
+\js } else  {
+assign rddata_RSVDC = \=wRSVDC=\'b0;
+\js }
+\js }
+
+    \js if (chi_e) {
+assign rddata_TU = \=wTU=\'b0;
+assign rddata_TagOp = \=wTagOp=\'b0;
+assign rddata_Tag = \=wTag=\'b0;
+assign rddata_DataSource = \=wDataSource=\'b0;
+assign rddata_CBusy = \=wCBusy=\'h5;
+    \js }
+
+assign rd_data_cmd_size = 3'b0;
+
+assign rd_data_out = {1'b0, q_stashing_entry, rd_data_cmd_size , \=bundleFunctions.packetizeBundle('rddata_', dat_flit_interface ,['Poison', 'Data','BE','DataID', 'Homenode_ID'], obj.lib.bundle )=\}   ;
+
+//=============================================================================
+// Monitoring CHI RXRSP / RXDAT channel for Snoop Response
+//=============================================================================
+
+wire q_snp_rsp_rcvd;
+
+wire snp_rsp_rcvd_in =  init ? 1'b0 : 1'b1 ;
+wire snp_rxrsp_match_txn_id = (RXRSP_TxnID == q_txn_id) & (RXRSP_OpCode == \=u.getParam('RspInterface').OpCode=\\=chi_cmd.SnpResp=\) & rx_rsp_valid & q_entry_valid & q_entry_valid_d & q_txn_id_valid;
+wire snp_rxdat_match_txn_id = (STT_RXDATFLIT_TxnID == q_txn_id) & ((STT_RXDATFLIT_OpCode == \=u.getParam('DatInterface').OpCode=\\=chi_cmd.SnpRespData=\) | (STT_RXDATFLIT_OpCode == \=u.getParam('DatInterface').OpCode=\\=chi_cmd.SnpRespDataPtl=\)) & stt_chi_rx_dat_flitv_d1 & q_entry_valid & q_entry_valid_d & q_txn_id_valid;
+
+wire snp_resp_rcvd_en = init | ( ( snp_rxrsp_match_txn_id | snp_rxdat_match_txn_id ) & ~q_snp_rsp_rcvd);
+
+\=u.dffre(1, 'q_snp_rsp_rcvd', 'snp_rsp_rcvd_in', "1'b0", 'snp_resp_rcvd_en', 'clk', 'reset_n')=\
+
+wire stash_snp_resp_valid =  ( snp_rxrsp_match_txn_id | snp_rxdat_match_txn_id ) & ~q_snp_rsp_rcvd & q_stashing_entry;
+
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (wRspFlit_FwdState_local > 0) { \jsend
+    \js if (chi_e) {
+wire [\=wRspFlit_FwdState_local-1=\:0] STT_RXDATFLIT_FwdState = STT_RXDATFLIT_DataSource[\=wRspFlit_FwdState_local-1=\:0];
+    \js }
+wire cancel_stashing_entry =  stash_snp_resp_valid &
+                                  ( ((RXRSP_RespErr[1] | ~RXRSP_FwdState[0]) & snp_rxrsp_match_txn_id) | 
+                                    (            ~STT_RXDATFLIT_FwdState[0] & snp_rxdat_match_txn_id) );
+\js } else {
+wire cancel_stashing_entry =  stash_snp_resp_valid & 
+                                  ( snp_rxrsp_match_txn_id | 
+                                    snp_rxdat_match_txn_id );
+\js }
+
+//=============================================================================
+// Entry Deallocate
+//=============================================================================
+
+//Delayed version of q_stashing_entry is used to avoid premature deallocation of the stashing snoop entry
+
+assign dealloc_me = q_entry_valid & (
+           (q_stashing_entry_d & ~q_dtr_req_flag & ~q_dtr_rsp_flag & ~q_ExCompAck) 
+         | (q_stashing_entry_d & cancel_stashing_entry)
+         );
+
+wire entry_dealloc  = entry_valid & dealloc_me ;
+
+//=============================================================================
+// Entry Valid
+//=============================================================================
+assign entry_valid_early = init ? 1'b1 : entry_dealloc ? 1'b0 : entry_valid;
+assign entry_valid_en = init | entry_dealloc ;
+wire entry_valid_in = entry_dealloc ? 1'b0 : 1'b1 ;
+assign entry_valid = q_entry_valid ;
+
+\=u.dffre(1, 'q_entry_valid', 'entry_valid_in', "1'b0", 'entry_valid_en', 'clk', 'reset_n')=\
+
+wire stashing_entry_in = entry_dealloc ? 1'b0 : 1'b1;
+
+\=u.dffre(1, 'q_stashing_entry', 'stashing_entry_in', "1'b0", 'entry_valid_en', 'clk', 'reset_n')=\
+
+\=u.dffre(1, 'q_stashing_entry_d', 'q_stashing_entry', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// Capture STT Stashing Request parameters on init_d
+//=============================================================================
+
+assign txn_id_in = SNP_TxnID;
+
+\=u.dffre(wReqTxnID, 'q_txn_id', 'txn_id_in', wReqTxnID+"'b0", 'SNP_valid', 'clk', 'reset_n')=\
+
+assign ccid_in = SNP_Addr[2:1];
+
+\=u.dffre(2, 'q_ccid', 'ccid_in', "2'b0", 'SNP_valid', 'clk', 'reset_n')=\
+
+assign qos_in = SNP_QoS;
+
+\=u.dffre(wReqQoS, 'q_qos', 'qos_in', wReqQoS+"'b0", 'SNP_valid', 'clk', 'reset_n')=\
+
+//=============================================================================
+// Capture CHI RXRSP / RXDAT Snoop Response
+//=============================================================================
+
+assign dbid_in = ({\=wDBID=\{snp_rxrsp_match_txn_id}} & RXRSP_DBID) |
+                 ({\=wDBID=\{snp_rxdat_match_txn_id}} & STT_RXDATFLIT_DBID);
+
+\=u.dffre(wDBID, 'q_dbid', 'dbid_in', wDBID+"'b0", 'stash_snp_resp_valid', 'clk', 'reset_n')=\
+
+\jsbegin
+/* istanbul ignore else env ncore_3p2, ncore_3p4, ncore_3p6, ncore_3p7 */
+if (wReqSrcID > unit_id_width) {
+\jsend
+assign src_id_in = {\=wReqSrcID-unit_id_width=\'b0, my_f_unit_id};
+\js } else {
+assign src_id_in = my_f_unit_id[\=wReqSrcID-1=\:0];
+\js }
+
+\=u.dffre(wReqSrcID, 'q_src_id', 'src_id_in', wReqSrcID+"'b0", 'init', 'clk', 'reset_n')=\
+
+
+\jsbegin
+/* istanbul ignore else env ncore_3p6, ncore_3p7 */
+if (wSnpFlit_FwdNID_local > 0) { \jsend
+assign snp_rsp_src_id = ({\=wReqSrcID=\{snp_rxrsp_match_txn_id}} & RXRSP_SrcID) | 
+                        ({\=wReqSrcID=\{snp_rxdat_match_txn_id}} & STT_RXDATFLIT_SrcID);
+assign tgt_id_in = snp_rsp_src_id ;
+\js } else {
+assign tgt_id_in = 'b0;
+\js }
+
+wire tgt_id_en = snp_rxrsp_match_txn_id | 
+                 snp_rxdat_match_txn_id;
+
+\=u.dffre(wReqTgtID, 'q_tgt_id', 'tgt_id_in', wReqTgtID+"'b0", 'tgt_id_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// ExCompAck flag
+//=============================================================================
+
+wire ex_comp_flag_set = init;
+wire ex_comp_flag_reset = (rn_rsp_sel & (RXRSP_OpCode == \=u.getParam('RspInterface').OpCode=\\=chi_cmd.CompAck=\)) | dealloc_me; 
+
+wire ex_comp_flag_en = ex_comp_flag_set | ex_comp_flag_reset ; 
+wire ex_comp_flag_in = ex_comp_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_ExCompAck', 'ex_comp_flag_in', "1'b0", 'ex_comp_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// dtr_req_flag
+//=============================================================================
+
+wire dtr_req_flag_set = init_d & q_stashing_entry;
+wire dtr_req_flag_reset = (dtr_req_sel & dtr_req_slv_last) | dealloc_me;
+
+wire dtr_req_flag_en = dtr_req_flag_set | dtr_req_flag_reset ; 
+wire dtr_req_flag_in = dtr_req_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_dtr_req_flag', 'dtr_req_flag_in', "1'b0", 'dtr_req_flag_en', 'clk', 'reset_n')=\
+
+//=============================================================================
+// dtr_rsp_flag
+//=============================================================================
+
+wire dtr_rsp_flag_set = dtr_req_sel & dtr_req_slv_last ;
+wire dtr_rsp_flag_reset = dtr_rsp_out_ack | dealloc_me;
+
+wire dtr_rsp_flag_en = dtr_rsp_flag_set | dtr_rsp_flag_reset ; 
+wire dtr_rsp_flag_in = dtr_rsp_flag_set ? 1'b1 : 1'b0 ;
+
+\=u.dffre(1, 'q_dtr_rsp_flag', 'dtr_rsp_flag_in', "1'b0", 'dtr_rsp_flag_en', 'clk', 'reset_n')=\
+
+\js //DTR responses for stashing snoops need to wait for CompAck
+assign dtr_rsp_out_req = q_entry_valid & ~q_dtr_req_flag & q_dtr_rsp_flag & ~q_ExCompAck;
+
+//=============================================================================
+// Timeout
+//=============================================================================
+
+wire entry_dealloc_d1, entry_dealloc_d2, entry_dealloc_pulse;
+\=u.dffre(1, 'entry_dealloc_d1', 'entry_dealloc', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+\=u.dffre(1, 'entry_dealloc_d2', 'entry_dealloc_d1', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+assign entry_dealloc_pulse = ~entry_dealloc_d2 & entry_dealloc_d1;
+
+\js // Timeout Overflow
+wire timeout_overflow_en, timeout_overflow_in, q_timeout_overflow, timeout_overflow_en2, timeout_overflow_in2, q_timeout_overflow2;
+assign timeout_overflow_en = timeout_overflow_event_clr | (entry_valid & timeout_overflow_event) | entry_dealloc_pulse;
+assign timeout_overflow_in = ~timeout_overflow_event_clr & ~entry_dealloc_pulse & entry_valid;
+assign timeout_overflow = q_timeout_overflow & q_timeout_overflow2;
+
+\=u.dffre(1,        'q_timeout_overflow', 'timeout_overflow_in',   "1'b0",        'timeout_overflow_en',    'clk',  'reset_n')=\
+\=u.dffre(1,        'q_timeout_overflow2','timeout_overflow_in2',   "1'b0",       'timeout_overflow_en2',    'clk',  'reset_n')=\
+
+assign timeout_overflow_en2 = timeout_overflow_en & q_timeout_overflow;
+assign timeout_overflow_in2 = timeout_overflow_in & q_timeout_overflow;
+
+//=============================================================================
+// Delayed version of q_entry_valid
+// q_entry_valid_d is time aligned with init_d, as well as TXSNPFLIT valid
+//=============================================================================
+
+\=u.dffre(1, 'q_entry_valid_d', 'q_entry_valid', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+//=============================================================================
+// q_txn_id_valid
+//=============================================================================
+
+wire q_txn_id_valid_in, q_txn_id_valid_en, q_txn_id_valid_set, q_txn_id_valid_clr;
+
+\=u.dffre(1, 'q_txn_id_valid', 'q_txn_id_valid_in', "1'b0", 'q_txn_id_valid_en', 'clk', 'reset_n')=\
+
+assign q_txn_id_valid_set = q_entry_valid & SNP_valid;
+assign q_txn_id_valid_clr = entry_dealloc;
+assign q_txn_id_valid_en  = q_txn_id_valid_set | q_txn_id_valid_clr;
+assign q_txn_id_valid_in  = q_txn_id_valid_clr ? 1'b0 : q_txn_id_valid_set;
+
+endmodule

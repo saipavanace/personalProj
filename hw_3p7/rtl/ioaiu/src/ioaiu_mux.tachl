@@ -1,0 +1,83 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU mux.
+//
+//////////////////////////////////////////////////////////////////////////
+var u = obj.lib;
+var m = obj.userLib;
+
+var NUM = u.getParam('NUM');
+var DW = u.getParam('DW');
+var assertOn = u.getParam('assertOn');
+
+u.paramDefault('clkAssertInterface', 'object', null);
+var clkAssertInterface     = m.hierGetParam('clkAssertInterface', u.getParam);
+u.interface(clkAssertInterface.name, 'slave', clkAssertInterface.signals);
+
+u.port('output','ready_o',NUM);
+u.port('input','valid_i',NUM);
+u.port('input','data_i',NUM*DW);
+u.port('input','ready_i',1);
+u.port('output','valid_o',1);
+u.port('output','data_o',DW);
+u.port('input','bvsel_i',NUM);
+
+\jsend
+
+module \=u.getModuleName()=\ (
+\=u.getPorts('\n    ')=\
+);
+
+wire [\=(NUM*DW)-1=\:0]	t_be;
+wire [\=DW-1=\:0]		q_data;
+
+assign ready_o = bvsel_i & {\=NUM=\{ready_i}};
+assign valid_o = (| (valid_i & bvsel_i));
+assign data_o = q_data;
+
+\js for (let i=0; i<NUM; i=i+1) {
+assign t_be[\=i*DW+DW-1=\:\=i*DW=\] = {\=DW=\{bvsel_i[\=i=\]}};
+\js }
+
+assign q_data =
+\js for(let i=0; i<NUM; i=i+1) {
+\js var term;
+\js if (i<NUM-1) { term = "|"; } else { term = ";" }
+                (data_i[\=i*DW+DW-1=\:\=i*DW=\] & t_be[\=i*DW+DW-1=\:\=i*DW=\]) \=term=\
+\js }
+
+/////////////////////////////////////////////////////////////////
+\jsbegin
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off   
+// coverage off
+assert_never #(0) assert_parameters(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	((\=DW=\==0))
+);
+
+assert_zero_one_hot #(0, \=NUM=\) assert_select(
+	.clk		(clk_i),
+	.reset_n	(reset_ni),
+	.test_expr	(bvsel_i)
+);
+
+// coverage on
+// pragma synthesis_on
+// synopsys translate_on 
+`endif
+
+\js }
+
+endmodule

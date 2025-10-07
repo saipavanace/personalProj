@@ -1,0 +1,89 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2018 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+// DCE Exclusive Monitor CAM
+// Author: Boon Chuan
+// Filename: dce_excl_mon_cam.tachl
+//=============================================================================
+
+// Variables
+
+var u = obj.lib;
+var utilFunctions      = obj.userLib;
+
+//=============================================================================
+// Top Level Parameters
+//=============================================================================
+
+var num_entry = u.getParam("num_entry");
+var width     = u.getParam("width");
+    
+//=============================================================================
+// Ports
+//=============================================================================
+
+u.port('input', 'clk',            1);
+u.port('input', 'reset_n',        1);
+
+u.port('input', 'cam_wr',         1);         // cam write enable
+u.port('input', 'cam_wrdata',     width);     // cam write data
+u.port('input', 'cam_wrsel',      num_entry); // one hot entry selection for cam_wr
+u.port('input', 'cam_mask',       width);     // which cam entries to compare 
+u.port('input', 'cam_searchdata', width);     // data to be compared for cam match
+u.port('input', 'search_en',      1);         // cam match enable
+
+u.port('output', 'cam_match',     num_entry); // vector giving cam match result
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+
+    \js for (var i=0; i < num_entry; i++) {
+wire [\=width-1=\:0] matched\=i=\;
+wire camvecwren\=i=\;
+wire [\=width-1=\:0] CamEntry\=i=\;
+    \js }
+
+\jsbegin
+//=============================================================================
+// Logic
+//=============================================================================
+\jsend
+\js if (num_entry == 1) {
+assign camvecwren0 = cam_wrsel & cam_wr;
+\js } else {
+    \js for (var i=0; i < num_entry; i++) {
+assign camvecwren\=i=\ = cam_wrsel[\=i=\] & cam_wr;
+    \js }
+\js }
+
+    \js for (var i=0; i < num_entry; i++) {
+\=u.dffre(width, "CamEntry"+i, "cam_wrdata", '{'+width+"{1'b0}}", "camvecwren"+i, 'clk', 'reset_n')=\
+    \js }
+
+    \js for (var i=0; i < num_entry; i++) {
+assign matched\=i=\ = ((cam_searchdata & cam_mask) ^ (CamEntry\=i=\ & cam_mask));
+    \js }
+
+\jsbegin
+//=============================================================================
+// Output
+//=============================================================================
+\jsend
+\js if (num_entry == 1) {
+assign cam_match = search_en & ~( {|{ matched0 }} );
+\js } else { 
+    \js for (var k=0; k < num_entry; k++) {
+assign cam_match[\=k=\] = search_en & ~( {|{ matched\=k=\ }} );
+    \js }
+\js }
+endmodule
+

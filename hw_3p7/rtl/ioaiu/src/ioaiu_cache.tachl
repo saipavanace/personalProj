@@ -1,0 +1,633 @@
+\jsbegin
+///////////////////////////////////////////////////////////////////////////
+// Arteris Inc. 2021
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// NCore 3.2
+// Author : Nabil
+// Date   : May 2021
+//
+// Description : IOAIU cache.
+//
+//////////////////////////////////////////////////////////////////////////
+var u = obj.lib;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var XO = u.getParam('XO');
+var DRST = u.getParam('DRST');
+var EID = u.getParam('EID');
+var EIW = u.getParam('EIW');
+var CIW = u.getParam('CIW');
+var assertOn = u.getParam('assertOn');
+
+/* istanbul ignore else env ncore_3p7 */
+if (assertOn) {
+var clkAssertInterface = { name : '', signals : {'clk_i' : 1,'reset_ni' : 1}};
+} else {
+var clkAssertInterface = { };
+}
+
+var usePLRU = u.getParam('usePLRU');
+var cmType = u.getParam('cmType');
+var useOwnerTransfer = u.getParam('useOwnerTransfer');
+var WAYS = u.getParam('WAYS');
+var BANKS = u.getParam('BANKS');
+var XO = u.getParam('XO');
+var CTW = u.getParam('CTW');
+var DW = u.getParam('DW');
+var CKB = u.getParam('CKB');
+var WW = u.getParam('WW');
+var CSW = u.getParam('CSW');
+var COH_MSI = u.getParam('COH_MSI');
+var COH_MEI = u.getParam('COH_MEI');
+var COH_MOESI = u.getParam('COH_MOESI');
+var CST_IX = u.getParam('CST_IX');
+var CST_SC = u.getParam('CST_SC');
+var CST_SD = u.getParam('CST_SD');
+var CST_UC = u.getParam('CST_UC');
+var CST_UD = u.getParam('CST_UD');
+
+var KW = Math.max(log2ceil(BANKS),1);
+\jsend
+
+module \=u.getModuleName()=\ (
+	clk_i,
+	reset_ni,
+	cfg_alloc_i,
+	ccp_ready_i,
+	p0_af_o,
+	p0_ready_i,
+	p0_ready_o,
+	p0_valid_i,
+	p0_wr_i,
+	p0_pl_i,	
+	p0_valid_o,
+	p0_index_i,
+	p2_scmd_i,
+	p2_write_i,
+	p2_cmr_i,
+	p2_partial_i,
+	p2_rinfo_i,
+	p2_delay_i,
+	p2_cancel_i,
+	p2_cancel_alloc_i,
+	p2_lookup_i,
+        p2_nc_i,
+	p2_alloc_o,
+	p2_rd_o,
+	p2_wr_o,
+	p2_port_o,
+	p2_lru_o,
+	p2_update_o,
+	p2_nstate_o,
+	p2_valid_o,
+	p2_hit_o,
+	p2_way_o,
+	p2_retry_o,
+	p2_cache_o,
+	p2_done_o,
+	p2_evict_i,
+	p2_estate_i,
+	p2_valid_i,
+	p2_cstate_i,
+	p2_cnru_i,
+	p2_hits_i,
+	p2_ways_i,
+	p2_nacks_i,
+	p2_nacks_raw_i,	
+	p2_evict_o,
+	p2_flush_o,
+	p2_sndtr_o, p2_sndtw_o,
+	p2_cstate_o,
+	p2_sinfo_i,
+	p2_upmatch_i, // snoop info
+        p2_up_i,
+	ce_af_o,
+	ce_ready_i,
+	ce_valid_i,
+	ce_last_i,
+	ce_info_o,
+	ce_evict_o,
+	cd_ready_o,
+	cd_valid_i,
+	cd_ready_i,
+	cd_valid_o,
+	cd_last_i,
+	cd_info_o,
+
+	pmon_cache_r_hit,
+	pmon_cache_w_hit,
+	pmon_cache_s_hit,
+	pmon_cache_evict,
+	pmon_no_ways,
+	pmon_cache_f_stall,
+	pmon_cache_r_stall,
+	pmon_cache_w_stall,
+	pmon_cache_replay,
+	pmon_cache_r_miss,
+	pmon_cache_w_miss,
+	pmon_cache_s_miss
+);
+
+input			clk_i;
+input			reset_ni;
+input			cfg_alloc_i;
+input			ccp_ready_i;
+output			p0_af_o;
+input [\=BANKS-1=\:0]	p0_ready_i;
+output			p0_ready_o;
+input			p0_valid_i;
+input 			p0_wr_i;
+input 			p0_pl_i;
+output [\=BANKS-1=\:0]	p0_valid_o;
+input [\=CTW-1=\:0]		p0_index_i;
+input [7:0]		p2_scmd_i;
+input			p2_write_i;
+input [1:0]		p2_cmr_i;
+input			p2_partial_i;
+input [\=CIW=\:0]		p2_rinfo_i;
+input			p2_delay_i;
+input			p2_cancel_i;
+input			p2_cancel_alloc_i;
+input			p2_lookup_i;
+input			p2_nc_i;
+output			p2_alloc_o;
+output			p2_rd_o;
+output			p2_wr_o;
+output			p2_port_o;
+output			p2_lru_o;
+output			p2_update_o;
+output [\=CSW-1=\:0]	p2_nstate_o;
+output			p2_valid_o;
+output			p2_hit_o;
+output [\=WW-1=\:0]		p2_way_o;
+output			p2_retry_o;
+output			p2_cache_o;
+output			p2_done_o;
+output			ce_af_o;
+input			p2_evict_i;
+input [\=CSW-1=\:0]		p2_estate_i;
+input           	p2_valid_i;
+input [\=CSW-1=\:0]		p2_cstate_i;
+input [\=WAYS-1=\:0]	p2_cnru_i;
+input [\=WAYS-1=\:0]	p2_hits_i;
+input [\=WAYS-1=\:0]	p2_ways_i;
+input [3:0]     	p2_nacks_i;
+input [3:0]     	p2_nacks_raw_i;
+output			p2_evict_o;
+output			p2_flush_o;
+output			p2_sndtr_o, p2_sndtw_o;
+output [\=CSW-1=\:0]	p2_cstate_o;
+input [\=EIW-1=\:0]		p2_sinfo_i;
+input 			p2_upmatch_i;
+input [1:0]             p2_up_i;                 
+input			ce_ready_i;
+input			ce_valid_i;
+input			ce_last_i;
+output [\=EIW-1=\:0]	ce_info_o;
+output			ce_evict_o;
+output			cd_ready_o;
+input			cd_valid_i;
+input			cd_ready_i;
+output			cd_valid_o;
+input			cd_last_i;
+output [\=CIW=\:0]	        cd_info_o;
+
+output			pmon_cache_r_hit;
+output			pmon_cache_w_hit;
+output			pmon_cache_s_hit;
+output			pmon_cache_evict;
+output			pmon_no_ways;
+output			pmon_cache_f_stall;
+output			pmon_cache_r_stall;
+output			pmon_cache_w_stall;
+output			pmon_cache_replay;
+output			pmon_cache_r_miss;
+output			pmon_cache_w_miss;
+output			pmon_cache_s_miss;
+	
+wire [\=BANKS-1=\:0]	t_p0_sel;
+wire			t_p2_done, t_p2_flush, t_p2_evict;
+wire			t_p2_lru, t_p2_rd, t_p2_wr, t_p2_update, 
+			t_p2_snoop, t_p2_sndtr, t_p2_sndtw;
+wire			t_p2_alloc;
+wire			t_p2_alloc_ccp;
+wire			t_p2_port;
+wire [\=CSW-1=\:0]		n_p2_state, n_p2_moesi;
+wire [\=WAYS-1=\:0]		t_p2_ways;
+wire			t_p2_hit;
+wire [\=WW-1=\:0]		t_p2_way;
+wire			w_eq_ready,	n_eq_ready;
+wire			n_eq_valid,	w_eq_valid;
+wire			w_iq_ready,	n_iq_ready, t_iq_ready;
+wire			n_iq_valid,	w_iq_valid;
+
+\=u.instance({
+	moduleName: 'ioaiu_demux',
+	instanceName: 'p0_demux',
+	params: {
+		 NUM:		BANKS,
+		 DW:		1,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn : assertOn
+        },
+	verilogParams: {
+	},
+	ports: {
+		ready_o:	'p0_ready_o',
+		valid_i:	'p0_valid_i',
+		data_i:		'1\'b0',
+		ready_i:	'p0_ready_i',
+		valid_o:	'p0_valid_o',
+		data_o:		'',
+		bvsel_i:	't_p0_sel'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+assign	pmon_cache_s_hit = p2_valid_i & p2_hit_o & ~p2_write_i &  p2_partial_i & ~p2_cancel_i & ~p2_lookup_i;
+assign	pmon_cache_w_hit = p2_valid_i & p2_done_o &  p2_write_i;
+assign	pmon_cache_r_hit = p2_valid_i & p2_done_o & ~p2_write_i & ~p2_partial_i;
+
+assign	pmon_cache_evict = p2_valid_i & t_p2_evict;
+
+assign	pmon_no_ways = p2_valid_i & (p2_nacks_raw_i[1]);
+
+wire stall = |(p0_valid_i & ~p0_ready_o);
+
+assign	pmon_cache_f_stall = 1'h0; // Tied at Core Level
+assign	pmon_cache_r_stall = stall & ~p0_wr_i & ~p0_pl_i;
+assign	pmon_cache_w_stall = stall &  p0_wr_i;
+
+assign	pmon_cache_replay = p2_valid_i & (|p2_nacks_i[2]);
+
+assign	pmon_cache_s_miss = p2_valid_i & ~p2_hit_o & ~p2_write_i &  p2_partial_i & ~p2_cancel_i;
+assign	pmon_cache_w_miss = p2_valid_i & ~p2_hit_o &  p2_write_i                 & ~p2_cancel_i;
+assign	pmon_cache_r_miss = p2_valid_i & ~p2_hit_o & ~p2_write_i & ~p2_partial_i & ~p2_cancel_i;
+
+wire [\=BANKS=\:0] t_p0_sel_tmp = {\=BANKS+1=\{~p2_nacks_i[0]}} & {\=BANKS+1=\{ccp_ready_i}} & (
+\js if (BANKS>1) {
+                                                                                                1'b1
+\js } else {
+                                                                                                1'b0
+\js }
+                                                                                                              & p0_valid_i ? ({{\=BANKS=\{1'b0}}, 1'b1} << p0_index_i[\=CKB=\ +: \=KW=\]) : {{\=BANKS=\{1'b0}}, 1'b1});
+assign t_p0_sel = t_p0_sel_tmp[\=BANKS-1=\:0];
+
+\js // Create a special cancel that doesn't include nack[0]/nack[2] because the ccp uses them locally anyways.
+\js // This should help break the ccp->nack[2]->t_pt_ok->t_c2_cancel->cp2_alloc_o->ccp_p2_evict long timing path
+assign t_p2_alloc_ccp = p2_valid_i & ~p2_cancel_alloc_i & (~| p2_hits_i) & ~p2_nacks_i[1]& cfg_alloc_i &
+                                                ~p2_cmr_i[1] &
+                                                ~(~p2_write_i & p2_partial_i);
+
+assign t_p2_alloc = p2_valid_i & ~p2_cancel_i & (~| p2_hits_i) & ~p2_nacks_i[1]& cfg_alloc_i &
+						~p2_cmr_i[1] &
+						~(~p2_write_i & p2_partial_i);
+assign t_p2_lru = p2_valid_i &                ~p2_cancel_i & ~p2_nacks_i[0] &
+\js if (!usePLRU) {
+                               ~p2_lookup_i &
+\js } else {
+                               ~(|p2_cmr_i[1:0]) &
+\js }
+					    ~p2_nacks_i[3] & ~p2_nacks_i[2] &
+		  ((| p2_cstate_i) | ((~|p2_cstate_i) & 
+\js if (!usePLRU) {
+                                                        ((p2_cnru_i|p2_ways_i) == {\=WAYS=\{1'b1}}) & 
+\js }
+                                                                                                  t_p2_alloc)) & ~(~p2_write_i & p2_partial_i);
+
+assign t_p2_done = p2_valid_i & t_p2_hit & ~p2_cmr_i[1] & ~p2_nacks_i[2] &
+				~p2_lookup_i & ~p2_cancel_i & ~p2_nacks_i[0];
+assign t_p2_rd = t_p2_snoop | t_p2_flush |
+		 (t_p2_done & ~p2_write_i & ~p2_partial_i & ~p2_cmr_i[1]);
+assign t_p2_wr = p2_valid_i & p2_write_i & t_p2_hit & ~p2_cmr_i[1] &
+					     ~p2_nacks_i[3] & ~p2_nacks_i[2] &
+				~p2_lookup_i & ~p2_cancel_i & ~p2_nacks_i[0];
+assign t_p2_flush = p2_valid_i & t_p2_evict & ((p2_estate_i == \=CST_SD=\) |
+					       (p2_estate_i == \=CST_UD=\));
+assign t_p2_evict = (p2_evict_i & (~| p2_nacks_i[3:2])) | 
+		    (p2_valid_i & (& p2_cmr_i) & (| p2_estate_i) & ~p2_cancel_i&
+						(~| p2_nacks_i[3:2]));
+assign t_p2_snoop = t_p2_sndtr | t_p2_sndtw;
+
+\jsbegin /* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7 */
+  if (useOwnerTransfer>0) {
+\jsend
+reg t_p2_sndtr_case;
+always @(*) begin
+  case (p2_scmd_i)
+    \=cmType.SnpClnDtr=\ : t_p2_sndtr_case = p2_upmatch_i;
+    \=cmType.SnpNoSDInt=\: t_p2_sndtr_case = p2_upmatch_i;
+    \=cmType.SnpVldDtr=\ : t_p2_sndtr_case = p2_upmatch_i;
+    \=cmType.SnpInvDtr=\ : t_p2_sndtr_case = p2_upmatch_i && (((p2_cstate_i==\=CST_UC=\) || (p2_cstate_i==\=CST_UD=\)) || (p2_up_i == 2'b01 && ((p2_cstate_i==\=CST_SC=\) || (p2_cstate_i==\=CST_SD=\))));
+    \=cmType.SnpNitc=\   : t_p2_sndtr_case = p2_upmatch_i;
+    \=cmType.SnpNitcCI=\ : t_p2_sndtr_case = p2_upmatch_i;
+    \=cmType.SnpNitcMI=\ : t_p2_sndtr_case = p2_upmatch_i;
+    default   : t_p2_sndtr_case = 1'b0;
+  endcase
+end
+assign t_p2_sndtr = t_p2_done & ~p2_write_i & p2_partial_i & ~p2_delay_i & t_p2_sndtr_case;
+\js } else {
+assign t_p2_sndtr = t_p2_done & ~p2_write_i & p2_partial_i & ~p2_delay_i &
+				  (((p2_cstate_i==\=CST_SD=\) |
+				    (p2_cstate_i==\=CST_UC=\) |
+				    ((p2_cstate_i==\=CST_SC=\) && p2_upmatch_i && ~(p2_scmd_i==\=cmType.SnpInvDtr=\)) |
+				    (p2_cstate_i==\=CST_UD=\)) & 
+					          ((p2_scmd_i==\=cmType.SnpClnDtr=\) |
+						   (p2_scmd_i==\=cmType.SnpNoSDInt=\) |
+						   (p2_scmd_i==\=cmType.SnpVldDtr=\) |
+						   (p2_scmd_i==\=cmType.SnpInvDtr=\) |
+						   (p2_scmd_i==\=cmType.SnpNitc=\) |
+						   (p2_scmd_i==\=cmType.SnpNitcCI=\) |
+						   (p2_scmd_i==\=cmType.SnpNitcMI=\)));
+\js }
+
+assign t_p2_sndtw = t_p2_done & ~p2_write_i & p2_partial_i & ~p2_delay_i &
+                                 ((((p2_cstate_i==\=CST_SC=\) || (p2_cstate_i==\=CST_SD=\)) && (p2_up_i == 2'b11) && p2_upmatch_i && (p2_scmd_i==\=cmType.SnpInvDtr=\)) |
+				  ((p2_cstate_i==\=CST_SD=\) || (p2_cstate_i==\=CST_UD=\)) & 
+					          ((p2_scmd_i==\=cmType.SnpNitcCI=\) |
+						   (p2_scmd_i==\=cmType.SnpClnDtw=\) |
+						   (p2_scmd_i==\=cmType.SnpStshShd=\) |
+						   (p2_scmd_i==\=cmType.SnpInvDtw=\) |
+						   (p2_scmd_i==\=cmType.SnpUnqStsh=\) |
+						   (p2_scmd_i==\=cmType.SnpStshUnq=\))
+                                 );
+assign t_p2_update = p2_valid_i & ~p2_lookup_i & ~p2_cancel_i & ~p2_nacks_i[0] &
+					       ~p2_nacks_i[3] & ~p2_nacks_i[2] &
+		     (p2_cstate_i != n_p2_state) &	//see C#4274
+		     ((p2_write_i & t_p2_hit) | (p2_cmr_i[1] & (| p2_cstate_i))|
+		      (~p2_write_i & p2_partial_i & t_p2_hit & ~p2_delay_i &
+						 ((p2_scmd_i==\=cmType.SnpClnDtr=\) |
+						  (p2_scmd_i==\=cmType.SnpNoSDInt=\) |
+						  (p2_scmd_i==\=cmType.SnpVldDtr=\) |
+						  (p2_scmd_i==\=cmType.SnpInvDtr=\) |
+						  (p2_scmd_i==\=cmType.SnpNitcCI=\) |
+						  (p2_scmd_i==\=cmType.SnpNitcMI=\) |
+						  (p2_scmd_i==\=cmType.SnpInvDtw=\) |
+						  (p2_scmd_i==\=cmType.SnpUnqStsh=\) |
+						  (p2_scmd_i==\=cmType.SnpStshUnq=\) |
+						  (p2_scmd_i==\=cmType.SnpClnDtw=\) |
+						  (p2_scmd_i==\=cmType.SnpStshShd=\) |
+						  (p2_scmd_i==\=cmType.SnpInv=\) |
+						  (p2_scmd_i==\=cmType.SnpInvStsh=\))));
+
+assign n_p2_state = (p2_cmr_i[1] & (| p2_cstate_i)) ? \=CST_IX=\ :
+		    p2_write_i ? \=CST_UD=\ :
+\jsbegin
+// COH_MOESI always 1 with cache in 3.7
+/* istanbul ignore else env ncore_3p7 */
+    if (COH_MOESI) { \jsend
+		                    n_p2_moesi ;
+\js } else if (COH_MSI) {
+		                  (((p2_scmd_i==\=cmType.SnpClnDtw=\) |
+				    (p2_scmd_i==\=cmType.SnpStshShd=\))) ? \=CST_SC=\ :
+						  {\=CSW=\{1'b0}};
+\js } else if (COH_MSI || COH_MEI) {
+		                    \=CST_IX=\ ;
+\js } else {
+						  {\=CSW=\{1'b0}};
+\js }
+
+\jsbegin /* istanbul ignore next env ncore_3p4,ncore_3p6,ncore_3p7 */
+  if (useOwnerTransfer>0) {
+\jsend
+reg [\=CSW-1=\:0] n_p2_moesi_s;
+always @(*) begin
+  casez (p2_scmd_i)
+    \=cmType.SnpClnDtr=\:	 n_p2_moesi_s = (p2_cstate_i==\=CST_UC=\) ? \=CST_SC=\ : ((p2_cstate_i==\=CST_UD=\) ? \=CST_SD=\ : p2_cstate_i);
+    \=cmType.SnpNoSDInt=\:  n_p2_moesi_s = (p2_cstate_i==\=CST_UC=\) ? \=CST_SC=\ : ((p2_cstate_i==\=CST_UD=\) ? \=CST_SD=\ : p2_cstate_i);
+    \=cmType.SnpVldDtr=\:   n_p2_moesi_s = ((p2_cstate_i==\=CST_SC=\) || (p2_cstate_i==\=CST_SD=\) || (p2_cstate_i==\=CST_UC=\) || (p2_cstate_i==\=CST_UD=\)) ? \=CST_SC=\ : p2_cstate_i;
+    \=cmType.SnpNitc=\:     n_p2_moesi_s = p2_cstate_i;
+    \=cmType.SnpClnDtw=\:   n_p2_moesi_s = ((p2_cstate_i==\=CST_SC=\) || (p2_cstate_i==\=CST_SD=\)) ? \=CST_SC=\ : ((p2_cstate_i==\=CST_UC=\) || (p2_cstate_i==\=CST_UD=\)) ? \=CST_UC=\ : p2_cstate_i;
+    \=cmType.SnpStshShd=\:  n_p2_moesi_s = (p2_cstate_i==\=CST_UC=\) ? \=CST_SC=\ : ((p2_cstate_i==\=CST_UD=\) ? \=CST_SD=\ : p2_cstate_i);
+    default:     n_p2_moesi_s = \=CST_IX=\;
+  endcase
+end
+assign n_p2_moesi = n_p2_moesi_s;
+
+\js } else {
+assign n_p2_moesi = ((((p2_scmd_i==\=cmType.SnpClnDtr=\) |
+		       (p2_scmd_i==\=cmType.SnpNoSDInt=\) |
+		       (p2_scmd_i==\=cmType.SnpVldDtr=\) |
+		       (p2_scmd_i==\=cmType.SnpNITC=\) |
+		       (p2_scmd_i==\=cmType.SnpClnDtw=\) |
+		       (p2_scmd_i==\=cmType.SnpStshShd=\)) & (p2_cstate_i==\=CST_SC=\)) |
+		     (((p2_scmd_i==\=cmType.SnpClnDtr=\) |
+		       (p2_scmd_i==\=cmType.SnpNoSDInt=\) |
+		       (p2_scmd_i==\=cmType.SnpStshShd=\) |
+		       (p2_scmd_i==\=cmType.SnpVldDtr=\)) & (p2_cstate_i==\=CST_UC=\)) |
+		     ((p2_scmd_i==\=cmType.SnpClnDtw=\) & (p2_cstate_i==\=CST_SD=\))) ? \=CST_SC=\:
+		    ((((p2_scmd_i==\=cmType.SnpClnDtr=\) |
+		       (p2_scmd_i==\=cmType.SnpNoSDInt=\) |
+		       (p2_scmd_i==\=cmType.SnpVldDtr=\) |
+		       (p2_scmd_i==\=cmType.SnpStshShd=\) |
+		       (p2_scmd_i==\=cmType.SnpNITC=\)) & (p2_cstate_i==\=CST_SD=\)) |
+		     (((p2_scmd_i==\=cmType.SnpClnDtr=\) |
+		       (p2_scmd_i==\=cmType.SnpNoSDInt=\) |
+		       (p2_scmd_i==\=cmType.SnpStshShd=\) |
+		       (p2_scmd_i==\=cmType.SnpVldDtr=\)) & (p2_cstate_i==\=CST_UD=\)))?\=CST_SD=\:
+		    ((((p2_scmd_i==\=cmType.SnpNITC=\) |
+		       (p2_scmd_i==\=cmType.SnpClnDtw=\)) & (p2_cstate_i==\=CST_UC=\)) |
+		     ((p2_scmd_i==\=cmType.SnpClnDtw=\) & (p2_cstate_i==\=CST_UD=\))) ? \=CST_UC=\:
+		    ((p2_scmd_i==\=cmType.SnpNITC=\) & (p2_cstate_i==\=CST_UD=\)) ? \=CST_UD=\ : \=CST_IX=\;
+\js }
+
+
+
+assign t_p2_hit = ~p2_nacks_i[3] &
+		  (p2_write_i ? ((p2_cstate_i==\=CST_UD=\) | 
+                                 (p2_nc_i & ((p2_cstate_i==\=CST_SD=\) | (p2_cstate_i==\=CST_SC=\))) |
+				 (p2_cstate_i==\=CST_UC=\)) : (| p2_hits_i));
+assign t_p2_port = p2_valid_i & (t_p2_evict | p2_partial_i);
+
+assign n_eq_valid = (t_p2_evict & ((p2_estate_i == \=CST_UD=\) |
+				   (p2_estate_i == \=CST_SD=\))) | 
+		    (t_p2_snoop & t_p2_hit);
+
+assign n_eq_ready = ce_valid_i & ce_ready_i & ce_last_i;
+\js // Get almost-full functionality by exposing the valids, and seeing how full the fifo is.
+wire [\=EID-1=\:0] eq_valids;
+assign ce_af_o = eq_valids[\=EID-4=\];
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'eq',
+	params: {
+                depth:          EID,
+		width:		1+EIW,
+                pipeForward:    "yes",
+                pipeBackward:   "yes",
+                simplePipe:     "no",
+                circular:       "no",
+                exposeValids:   "true"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		valids:		'eq_valids',
+		in_ready:	'w_eq_ready',
+		in_valid:	'n_eq_valid',
+		in_data:	'{t_p2_evict, p2_sinfo_i}',
+		out_ready:	'n_eq_ready',
+		out_valid:	'w_eq_valid',
+		out_data:	'{ce_evict_o, ce_info_o}'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+assign p2_alloc_o = t_p2_alloc_ccp;
+assign p2_rd_o = t_p2_rd;
+assign p2_wr_o = t_p2_wr;
+assign p2_port_o = t_p2_port;
+assign p2_lru_o = t_p2_lru;
+assign p2_update_o = t_p2_update;
+assign p2_nstate_o = n_p2_state;
+
+assign p2_valid_o = p2_valid_i;
+assign p2_hit_o = t_p2_hit & p2_valid_i & ~p2_nacks_i[0] & ~p2_cmr_i[1];
+assign p2_way_o = t_p2_way;
+assign p2_retry_o = (p2_nacks_i[2] | p2_nacks_i[0]) & p2_valid_i;
+assign p2_cache_o = (p2_valid_i & ~p2_nacks_i[1] & (cfg_alloc_i|(p2_write_i & (| p2_cstate_i))) &
+				  ~p2_nacks_i[3] & ~p2_cmr_i[1]) | 
+		     p2_cancel_i;
+assign p2_done_o = t_p2_done & ~(~p2_write_i & p2_partial_i);
+assign p2_evict_o = t_p2_evict & ~(p2_write_i & t_p2_hit & ~p2_cmr_i[1] &
+						(p2_estate_i != \=CST_SD=\) & 
+						(p2_estate_i != \=CST_UD=\));
+assign p2_flush_o = t_p2_flush;
+assign p2_sndtr_o = t_p2_sndtr;
+assign p2_sndtw_o = t_p2_sndtw;
+assign p2_cstate_o = p2_cstate_i;
+
+assign n_iq_valid = (t_p2_done & ~p2_write_i & ~p2_partial_i);
+
+assign n_iq_ready = t_iq_ready & cd_last_i;
+
+// Get almost-full functionality by exposing the valids, and seeing how full the fifo is.
+wire [9:0] iq_valids;
+assign p0_af_o = iq_valids[5];
+\=u.instance({
+	moduleName: 'rdy_vld_pipe',
+	instanceName: 'iq',
+	params: {
+                depth:          10,
+		width:		CIW+1,
+                pipeForward:    "yes",
+                pipeBackward:   "yes",
+                simplePipe:     "no",
+                circular:       "no",
+                exposeValids:   "true"
+		 },
+	verilogParams: {
+	},
+	ports: {
+		clk:		'clk_i',
+		reset_n:	'reset_ni',
+		valids:		'iq_valids',
+		in_ready:	'w_iq_ready',
+		in_valid:	'n_iq_valid',
+		in_data:	'p2_rinfo_i',
+		out_ready:	'n_iq_ready',
+		out_valid:	'w_iq_valid',
+		out_data:	'cd_info_o'
+	},
+	portsDelimiter: '\n\t'
+})=\
+
+\=u.instance({
+	moduleName: 'ioaiu_combine',
+	instanceName: 'cd_merge',
+	params: {
+                 DW:             2,
+                 clkAssertInterface : clkAssertInterface,
+                 assertOn : assertOn
+        },
+	ports: {
+		ready_o:	'{t_iq_ready, cd_ready_o}',
+		valid_i:	'{w_iq_valid, cd_valid_i}',
+		ready_i:	'cd_ready_i',
+		valid_o:	'cd_valid_o'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+assign t_p2_ways = (p2_write_i & (| p2_cstate_i)) ? p2_hits_i : p2_ways_i;
+
+\=u.instance({
+	moduleName: 'ioaiu_enc',
+	instanceName: 'ways',
+	params: {
+                 DW:             WAYS,
+                 BE:             0,
+                 NW:             16,
+                 NO_VALID_OUT:   1,
+                 NO_BV_OUT:      1,
+                 clkAssertInterface: clkAssertInterface,
+                 assertOn: assertOn
+        },
+	ports: {
+		bv_i:		't_p2_ways',
+		index_o:	't_p2_way'
+	},
+        interfaces: [ {modulePrefix: '', localPrefix: '', interface: clkAssertInterface.signals} ],
+	portsDelimiter: '\n\t'
+})=\
+
+///////////////////////////////////////////////////////////////////////
+\jsbegin
+// Assert always on for designs with a cache at the moment
+/* istanbul ignore else env ncore_3p6,ncore_3p7 */
+    if (assertOn) { \jsend
+`ifdef OVL_ASSERT_ON
+// pragma synthesis_off
+// synopsys translate_off
+// coverage off
+
+reg a_error_test, a_unit_level;
+initial begin
+	if ($test$plusargs("error_test")) begin
+		a_error_test = 1'b1;
+	end else begin
+		a_error_test = 1'b0;
+	end
+	if ($test$plusargs("ioaiu_tb_arg")) begin
+		a_unit_level = 1'b1;
+	end else begin
+		a_unit_level = 1'b0;
+	end
+end
+
+assert_zero_one_hot #(0, \=WAYS=\) assert_hits(
+	.clk		(clk_i),
+	.reset_n	(reset_ni & p2_valid_i & ~p2_cmr_i[1] & 
+						(~| p2_nacks_i[3:2])),
+	.test_expr	(p2_hits_i)
+);
+assert_zero_one_hot #(0, \=WAYS=\) assert_ways(
+	.clk		(clk_i),
+	.reset_n	(reset_ni & p2_valid_i),
+	.test_expr	(p2_ways_i)
+);
+
+assert_never #(0) assert_cache(
+	.clk		(clk_i),
+	.reset_n	(reset_ni & ~a_error_test),
+	.test_expr	(~w_iq_ready | ~w_eq_ready | (\=EID=\<4) |
+			 (\=COH_MOESI=\==0) |
+			 (t_p2_evict & t_p2_snoop) |
+//			 (p2_valid_i & ~p2_write_i & p2_partial_i & 
+//					(p2_scmd_i==\=cmType.SnpRecall=\)) |
+			 (ce_valid_i & ~w_eq_valid) |
+			 (p2_valid_o & ~p2_cache_o & p2_hit_o & 1'b0))
+);
+// coverage on
+// synopsys translate_on 
+// pragma synthesis_on
+`endif
+
+\js }
+
+endmodule

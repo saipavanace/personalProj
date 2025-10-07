@@ -1,0 +1,43 @@
+\jsbegin
+var u = obj.lib;
+\jsend
+
+module \=u.getModuleName()=\ (
+	vec_i,
+	bin_o
+);
+
+parameter VW = 10;
+parameter BW = 4;
+
+input [VW-1:0]	vec_i;
+output [BW-1:0]	bin_o;
+
+reg [BW-1:0]	t_nums[VW-1:0], t_bin;
+reg [VW-1:0]	t_encs[BW-1:0];
+
+integer i, j, h, k;
+
+always @ (*) begin
+for (h=0; h<VW; h=h+1) begin
+	t_nums[h] = {BW{vec_i[h]}} & h;
+end 
+end
+
+always @ (*) begin
+for (i=0; i<BW; i=i+1) begin
+	for (j=0; j<VW; j=j+1) begin
+		t_encs[i][j] = t_nums[j][i];
+	end
+end
+end
+
+always @ (*) begin
+for (k=0; k<BW; k=k+1) begin
+	t_bin[k] = (| t_encs[k]);
+end
+end
+
+assign bin_o = t_bin;
+
+endmodule

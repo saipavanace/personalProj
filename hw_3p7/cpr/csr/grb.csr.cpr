@@ -1,0 +1,245 @@
+{
+  "name": "grb",
+  "version": "3.0",
+  "csr": {
+    "addressWidth": "12",
+    "width": 32,
+    "spaceBlock": [
+      {
+        "baseAddress": "0x0",
+        "registers": [
+          {
+            "name": "GRBUCSSFIDR",
+            "description": "GRBU Coherent Subsystem Snoop Filter Identification Register",
+            "csrDescription": "GRBU Coherent Subsystem Snoop Filter Identification Register",
+            "addressOffset": "0xf00",
+            "offsetStep": 4,
+            "fields": [
+              {
+                "name": "nSets",
+                "bitOffset": 0,
+                "bitWidth": "20",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Number of Snoop Filter Sets. This field indicates the number of sets in the snoop filter minus one in each DIRU. To determine the total number of sets in the snoop filter, this value must be multiplied by the number of DIRUs. For an unimplemented filter or a null filter, the value of this field is zero.",
+                "reset": "return derived.SnoopFilters[register.conditionIndex].nSnpFltrSets - 1",
+                "scope": "All"
+              },
+              {
+                "name": "nWays",
+                "bitOffset": 20,
+                "bitWidth": "6",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Number of Snoop Filter Ways. This field indicates the number of ways (i.e. the associativity) in the snoop filter minus one. For an unimplemented filter or a null filter, the value of this field is zero.",
+                "reset": "return derived.SnoopFilters[register.conditionIndex].nSnpFltrWays - 1",
+                "scope": "All"
+              },
+              {
+                "name": "filterType",
+                "bitOffset": 26,
+                "bitWidth": "3",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Snoop Filter Type. This field indicates the type of snoop filter. The type of the snoop filter is given as follows (all other values are RESERVED): 0b000-Unimplemented filter, 0b001-Null filter, 0b010-Tag filter-presence vector, 0b011-Tag filter-owner pointer/sharer vector, 0b110-Tag filter with victim buffer-presence vector, 0b111-Tag filter with victim buffer-owner pointer/sharer vector",
+                "reset": "return derived.SnoopFilters[register.conditionIndex].ImplementationParameters.nVictimBuffers ? 0x7 : 0x3",
+                "scope": "All"
+              },
+              {
+                "name": "Rsvd1",
+                "bitOffset": 29,
+                "bitWidth": "3",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "Reserved.",
+                "reset": "0x0",
+                "scope": "All"
+              }
+            ],
+            "condition": "return derived.nSnoopFilters;"
+          },
+          {
+            "name": "GRBUNRRIR",
+            "description": "GRBU NRR Identification Register",
+            "csrDescription": "GRBU NRR Identification Register",
+            "addressOffset": "0xff0",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "NRRI",
+                "bitOffset": 0,
+                "bitWidth": "4",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Ncore Register Region Identifier of this Global Registers block."
+              },
+              {
+                "name": "NRRUsed",
+                "bitOffset": 16,
+                "bitWidth": "4",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "0x0",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Total number of NRRs used in this Ncore 3 instance is given by NRRUsed + 1 NRRs with indices 0 through NRRUsed are expected to be used in this instance."
+              }
+            ],
+            "condition": "1"
+          },
+          {
+            "name": "GRBUENGIDR",
+            "description": "GRBU Engineering ID Register ",
+            "csrDescription": "GRBU Engineering ID Register ",
+            "addressOffset": "0xff4",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "EngVerId",
+                "bitOffset": 0,
+                "bitWidth": "32",
+                "access": "RO",
+                "hardware": "RO",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "description": "The Engineering Version Identifier is a concatenation of two fields: {MPFHash[18:0], CHIP_ID[12:0]}. The CHIP_ID is obtained from a license file and the MPFHash is the last 19 bits obtained from the 128bit MD5 Hash.",
+                "scope": "Engg",
+                "reset": "return derived.engVerId"
+              }
+            ],
+            "condition": "return true"
+          },
+          {
+            "name": "GRBUNRRUCR",
+            "description": "GRBU NRR Unit Census Register",
+            "csrDescription": "GRBU NRR Unit Census Register",
+            "addressOffset": "0xff8",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "nAIUs",
+                "bitOffset": 0,
+                "bitWidth": "8",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.nAius",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Number of AIUs"
+              },
+              {
+                "name": "nDCEs",
+                "bitOffset": 8,
+                "bitWidth": "6",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.nDces",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Number of DCE units"
+              },
+              {
+                "name": "nDMIs",
+                "bitOffset": 14,
+                "bitWidth": "6",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.nDmis",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Number of DMI units"
+              },
+              {
+                "name": "nDIIs",
+                "bitOffset": 20,
+                "bitWidth": "6",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.nDiis",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Number of DII units"
+              },
+              {
+                "name": "nDVEs",
+                "bitOffset": 26,
+                "bitWidth": "1",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.nDves",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Number of DVE units"
+              }
+            ],
+            "condition": "1"
+          },
+          {
+            "name": "GRBUNSIDR",
+            "description": "Ncore Subsystem Identification Register",
+            "csrDescription": "Ncore Subsystem Identification Register",
+            "addressOffset": "0xffc",
+            "offsetStep": 0,
+            "fields": [
+              {
+                "name": "RelVer",
+                "bitOffset": 0,
+                "bitWidth": "16",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.implVerId",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Release Version."
+              },
+              {
+                "name": "CachelineOffset",
+                "bitOffset": 16,
+                "bitWidth": "4",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.wCacheLineOffset - 5",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Directory Cacheline Offset. This field indicates the width of the directory cache line offset. The number of bits in the directory cache line offset equals the value of this field + 5, e.g. for a 6-bit offset the value of this field equals 1. The size in bytes of the directory cache line is equal to two to the power of the offset."
+              },
+              {
+                "name": "nSnoopFilters",
+                "bitOffset": 20,
+                "bitWidth": "8",
+                "access": "RO",
+                "hardware": "RO",
+                "reset": "return derived.nSnoopFilters - 1",
+                "linkOp": "NULL",
+                "opOrder": "NULL",
+                "scope": "All",
+                "description": "Number of Snoop Filters. This field indicates the number of snoop filters in the coherent derived. The value of this field equals the number of snoop filters minus one."
+              }
+            ],
+            "condition": "1"
+          }
+        ]
+      }
+    ]
+  }
+}

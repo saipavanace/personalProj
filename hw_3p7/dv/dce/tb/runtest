@@ -1,0 +1,10 @@
+#!/bin/csh -fx
+# Usage: runtest.sh [test_list=testlist]
+
+set testf = testlist
+if ($#argv > 0) then
+    set testf = $1
+endif
+
+$WORK_TOP/../scripts/grid_sub_list.sh -d $WORK_TOP -f $WORK_TOP/dv/dce/tb/$testf -r
+#../../scripts/grid_sub_list.sh -d $WORK_TOP -f `pwd`/$testf 

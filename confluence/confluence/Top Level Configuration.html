@@ -1,0 +1,223 @@
+<p>The top level provides several ways to configure the test bench.</p><p><style type='text/css'>/*<![CDATA[*/
+div.rbtoc1759723708193 {padding: 0px;}
+div.rbtoc1759723708193 ul {list-style: disc;margin-left: 0px;}
+div.rbtoc1759723708193 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style><div class='toc-macro rbtoc1759723708193'>
+<ul class='toc-indentation'>
+<li><a href='#TopLevelConfiguration-CommandLineInterface(CLI)'>Command Line Interface (CLI)</a>
+<ul class='toc-indentation'>
+<li><a href='#TopLevelConfiguration---config-file'>--config-file</a></li>
+<li><a href='#TopLevelConfiguration---input-file'>--input-file</a></li>
+<li><a href='#TopLevelConfiguration---scenario-file'>--scenario-file</a></li>
+<li><a href='#TopLevelConfiguration---csr-config'>--csr-config</a></li>
+</ul>
+</li>
+<li><a href='#TopLevelConfiguration-Envrionmentvariables'>Envrionment variables</a></li>
+</ul>
+</div></p><p><br/></p><h2 id="TopLevelConfiguration-CommandLineInterface(CLI)">Command Line Interface (CLI)</h2><p>Invoking the toplevel with the -h switch yields the following help output:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: text; gutter: false; theme: Confluence" data-theme="Confluence">        SystemC 2.3.3-Accellera --- Apr 20 2020 06:29:27
+        Copyright (c) 1996-2018 by all Contributors,
+        ALL RIGHTS RESERVED
+Arteris IP NCore3 architectural simulator, build: SnapShot (SHA: xxxxxx)
+
+Standard options:
+  -h [ --help ]                         Produce help message
+  -v [ --verbose ] arg (=4)             Debug output level (0-7 == NONE, FATAL,
+                                        ERROR, WARNING, INFO, DEBUG, TRACE, 
+                                        TRACEALL)
+  -V [ --Verbose ] arg (=4)             Debug output level as with --verbose 
+                                        but print non-colored
+  -D [ --debug-level ] arg              Debug output level (textual) as with 
+                                        --verbose
+  -l [ --log-file ] arg                 Log file name
+  --log-filter arg                      Log filter regular expression name
+  --log-sync                            Disable asynchronous logging
+  --log-delta                           print delta-cycle count
+  --log-minimal                         omit time and severity in logging
+  --log-wide                            enlarge log tag column width
+  --log-all-errors                      print all errors not only the first one
+  --log-start arg                       The time point when to change the 
+                                        loging level. Format is &#39;&lt;timepoint in 
+                                        ms&gt;:&lt;verbosity level&gt;&#39;
+  -t [ --trace ] arg                    Enable tracing of performance counters,
+                                        if no name for the file is specified 
+                                        either the scenario or the design name 
+                                        is used
+  --trace-interval arg                  the time interval statitics are written
+                                        to VCD in seconds
+  --trace-start arg                     The time point when VCD tracing starts 
+                                        in seconds
+  -T [ --trace-all ] arg                Enable tracing of all counters, ports, 
+                                        and signals, if no name for the file  
+                                        is specified either the scenario or the
+                                        design name is used
+  --vcd-default-trace-off               switches default tracing of signals 
+                                        off, they need to be explicitly enabled
+                                        by the config file given to the 
+                                        --config-file switch
+  --gen-stl                             Generate STL trace from ATP profile
+  --enable-protocol-checks              Enables protocol checker for 
+                                        AXI4/ACELite interfaces
+  --dump-config arg                     Dump simulation configuration to JSON 
+                                        file
+  --dump-csr-config arg                 Dump CSR configuration to JSON file
+  --show-csr-config                     Show CSR configuration
+  --randomize                           Randomize the seed value of the random 
+                                        generator
+  -s [ --scenario-file ] arg            Scenario file name allowing to provide 
+                                        fixed sets of scenario options (see 
+                                        below)
+  --force-clkfreq                       Forces all clock to run at 100MHz/10ns 
+                                        clock period
+  --disable-qos                         Disable QoS handling in all units
+  -y [ --cycles ]                       Print all timestamps as cycles relative
+                                        to the fastest clock. Can also be 
+                                        enabled the the environment variable 
+                                        NCORE3_PRINT_CYCLES
+  --gen-desc arg                        Generate JSON interface description of 
+                                        the MAESTRO design
+  -b [ --heart-beat ] [=arg(=1.0000000000000001e-05)]
+                                        Enable heartbeat printing in seconds, 
+                                        default is every 10µs (10e-6)
+  --pv-only                             Use on PV model for simulation
+  -w [ --watchdog ] [=arg(=30)]         Timeout of the program run time in 
+                                        minutes.
+  --final-stats arg                     Print final statistics at simulation 
+                                        end, optionally into given file
+  --json-stats [=arg(=stats.json)]      Print statistics at simulation end into
+                                        JSON file
+  --version                             Print the version number
+
+Scenario Options:
+  -f [ --input-file ] arg               Input file name(s) for STL or TPU. It 
+                                        can be multiple times specified either 
+                                        as a plain file name(s), in the format 
+                                        &lt;interface spec&gt;:&lt;file name&gt; or as 
+                                        &lt;interface spec&gt;:&lt;format 
+                                        override&gt;:&lt;file name&gt;. When specifying 
+                                        using an interface name globbing as 
+                                        well as protocol match is supported.
+  -d [ --duration ] arg (=10)           Timeout of the simulation in ms. Might 
+                                        also be fractions
+  -c [ --config-file ] arg              Read simulation configuration from file
+  -m [ --maestro-config ] arg           MAESTRO config file name
+  -r [ --random-seed ] arg (=42)        Seed value of random generator, must be
+                                        in the interval [0,18446744073709551615
+                                        ], default: 42
+  --tb-cache arg (=cache:32:4)          cache model to use for coherent driver.
+                                        Valid values are: fixed:&lt;state&gt;, 
+                                        responder:&lt;nsets&gt;:&lt;nways&gt;, or 
+                                        cache:&lt;nsets&gt;:&lt;nways&gt;.  Valid state for
+                                        &#39;fixed&#39; is one of IX, SC, SD, UC, UD, 
+                                        UDP, UCE, default is UC.
+  --csr-config arg                      CSR config file name
+  --use-dram-target [=arg(=DDR4)]       Use Ramulator as memory model
+  --use-dramsys-target arg              Use DRAMSys as memory model. If no 
+                                        argument is provided values are taken 
+                                        from the simulation configuration file 
+                                        (-c swtich). Optionally a JSON config 
+                                        file can be specified which may be 
+                                        relative to scenario file or relative 
+                                        to ${NCORE_HOME}/contrib/DRAMSys/config
+                                        s. E.g. --use-dramsys-target=ddr4-examp
+                                        le.json will read ${NCORE_HOME}/contrib
+                                        /DRAMSys/configs/ddr4-example.json
+  --use-dramsys-mp-target arg           Use DRAMSys as memory model with a 
+                                        multiport socket. If no argument is 
+                                        provided values are taken from the 
+                                        simulation configuration file (-c 
+                                        swtich). Optionally a JSON config file 
+                                        can be specified which may be relative 
+                                        to scenario file or relative to 
+                                        ${NCORE_HOME}/contrib/DRAMSys/configs. 
+                                        E.g. --use-dramsys-target=ddr4-example.
+                                        json will read ${NCORE_HOME}/contrib/DR
+                                        AMSys/configs/ddr4-example.json
+  --use-reorder-target                  Use a reordering target sas memory 
+                                        model
+  --stop-on-first-finish                Stop when first driver finishes 
+                                        execution
+  -p [ --param-override ] arg           A YAML file specifying MAESTRO 
+                                        parameter overrides. There is no 
+                                        consistency checking, USE AT YOUR OWN 
+                                        RISK!!!
+</pre>
+</div></div><p>Some of the more complex options will be described in more detail.</p><h3 id="TopLevelConfiguration---config-file">--config-file</h3><p>This option allows to specify a JSON or YAML file configuring the testbench components. A detailed description of the formats and capabilities can be found <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/78708803/System+config+file+format" data-linked-resource-id="78708803" data-linked-resource-version="5" data-linked-resource-type="page">here</a>.</p><p>The actual properties and their values which might serve as a template can be generated using the '<code>--dump-config &lt;file name&gt;</code>' as a JSON file. Since the various switches and config files determine the hierarchy of modules and properties it is a good idea to use this switch and the generated output as a starting point for customization. A configuration could look like:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">{
+        &quot;tb&quot;: 
+        {
+                &quot;caiu0_drv&quot;: 
+                {
+                        &quot;filename&quot;: &quot;&quot;,
+                        &quot;gen_stl&quot;: false,
+                        &quot;home_node_id&quot;: 0,
+                        &quot;num_sets&quot;: 8,
+                        &quot;num_ways&quot;: 4,
+                        &quot;src_id&quot;: 1,
+                        &quot;use_tpu&quot;: false
+                },
+                &quot;dii0_pe&quot;: 
+                {
+                        &quot;rd_addr_accept_delay&quot;: 0,
+                        &quot;rd_data_beat_delay&quot;: 0,
+                        &quot;rd_resp_delay&quot;: 0,
+                        &quot;wr_data_accept_delay&quot;: 0,
+                        &quot;wr_resp_delay&quot;: 0
+                },
+                &quot;dmi0_pe&quot;: 
+                {
+                        &quot;rd_addr_accept_delay&quot;: 0,
+                        &quot;rd_data_beat_delay&quot;: 0,
+                        &quot;rd_resp_delay&quot;: 0,
+                        &quot;wr_data_accept_delay&quot;: 0,
+                        &quot;wr_resp_delay&quot;: 0
+                },
+                &quot;ncaiu0_drv&quot;: 
+                {
+                        &quot;filename&quot;: &quot;&quot;,
+                        &quot;master&quot;: 
+                        {
+                                &quot;cache_active&quot;: false
+                        },
+                        &quot;pe&quot;: 
+                        {
+                                &quot;rd_data_accept_delay&quot;: 0,
+                                &quot;wr_data_beat_delay&quot;: 0,
+                                &quot;wr_resp_accept_delay&quot;: 0
+                        },
+                        &quot;use_tpu&quot;: false
+                }
+}</pre>
+</div></div><p>The input files of the driver and their format can be configured via the 'filename' and 'use_tpu' parameters of the JSON file.</p><p>All AXI targets in the are represented by a *_pe entry. This way it is possible to alter the timing behavior of the targets. The settings have the following meaning:</p><ul style="list-style-type: square;"><li>rd_addr_accept_delay: the delay before from ARVALID to ARREADY</li><li>wr_data_accept_delay: the delay between AWVALID to AWREADY</li><li>rd_resp_delay: the delay between request and response phase for read accesses</li><li>wr_resp_delay: the delay between request and response phase for write accesses</li><li>rd_data_beat_delay: the delay between RREADY to RVALID</li></ul><h3 id="TopLevelConfiguration---input-file">--input-file</h3><p>This option can be specified multiple times to configure inputs of the drivers. The simulator will figure out the type of input file based on the file extension. For STL files it has to be '.stl' (case sensitive), all other files are treated as ATP input files. The specification of the files can be done in 2 different ways:</p><ul><li>sequential<br/>The filenames can be given plain or with a format specifier overwriting the format detection. The assignement of filename to driver happens in the sequence the interfaces are specified in the Maestro JSON file. The format can be specified as :stl: or :atp: preceding the filename: <code>-f :stl:perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.stl</code></li></ul><ul><li>associative<br/>The filenames are given in the form of &lt;instance name&gt;:&lt;file name&gt; or &lt;instance name&gt;:&lt;file format&gt;:&lt;file name&gt;. E.g. <code>-f caiu0:perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.stl</code> will configure the CHI driver of the CAIU0 unit with an STL parser (based on the file extension) while <code>-f caiu0:atp:perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.txt</code> will force the use if the TPU to read the .txt file. Instance name can contain wildcards (globbing style, '*' and '?' are suppported). This way it is possible to specify the same input file for varying drivers.<br/><br/></li></ul><div class="confluence-information-macro confluence-information-macro-note"><span class="aui-icon aui-icon-small aui-iconfont-warning confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>A mix of the two styles is not supported and will raise an error</p></div></div><p><br/></p><h3 id="TopLevelConfiguration---scenario-file">--scenario-file</h3><p>This option allows to specify the input files in a separate file. It supports the following options:</p><ul><li>line end comments starting with '#'</li><li>maestro-config</li><li>input-file</li><li>duration</li><li>config-file</li></ul><p>The values have to be specified as &lt;option name&gt;=&lt;option value&gt; where the option values conform to the description above:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">maestro-config=hw-test-projects/ncore_v3.0_configs/fsys_config/hw_cfg_1/output/debug/top.level.rtl.json
+# this is a comment
+input-file=perf-vc/tests/stl/bringup/ncore3_bringup_rd0ch.stl
+input-file=perf-vc/tests/stl/bringup/ncore3_bringup_wr0ch.stl
+duration=0.1</pre>
+</div></div><p>If input files are specified as relative paths they are searched first from the current working directory and then from the directory of the scenario file. In case of the Maestro file the search order is opposite (first scenario file directory and then current working directory).</p><h3 id="TopLevelConfiguration---csr-config">--csr-config</h3><p>This option specifies a JSON file describing the CSR settings which is used to do the address decoding. Teh example selects the setting 0 and defines 3 memory regions where 2 of them mapped to DII:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">{
+  &quot;DecodedAddresBits&quot;: 33,
+  &quot;IGVId&quot;: 0,
+  &quot;CSRs&quot;: [
+    {
+      &quot;regionBaseAddr&quot;: &quot;0&quot;,
+      &quot;regionHui&quot;: 0,
+      &quot;regionSize&quot;: &quot;0x100000000&quot;,
+      &quot;regionHut&quot;: &quot;DMI&quot;
+    },
+    {
+      &quot;regionBaseAddr&quot;: &quot;0x100000000&quot;,
+      &quot;regionHui&quot;: 1,
+      &quot;regionSize&quot;: &quot;0x80000000&quot;,
+      &quot;regionHut&quot;: &quot;DII&quot;
+    },
+    {
+      &quot;regionBaseAddr&quot;: &quot;0x180000000&quot;,
+      &quot;regionHui&quot;: 1,
+      &quot;regionSize&quot;: &quot;0x80000000&quot;,
+      &quot;regionHut&quot;: &quot;DII&quot;
+    }
+  ]
+}</pre>
+</div></div><h2 id="TopLevelConfiguration-Envrionmentvariables">Envrionment variables</h2><p><br/></p><p>The set of environment variables being used be the architectural simulatore are listed <a href="https://arterisip.atlassian.net/wiki/spaces/ENGR/pages/16171756/Environment+Variables" data-linked-resource-id="16171756" data-linked-resource-version="26" data-linked-resource-type="page">here</a>.</p>

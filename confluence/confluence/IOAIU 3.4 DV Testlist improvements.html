@@ -1,0 +1,445 @@
+<h2 id="IOAIU3.4DVTestlistimprovements-conn/Currentproblems:"><style>[data-colorid=gyw6r8g26i]{color:#ff5630} html[data-color-mode=dark] [data-colorid=gyw6r8g26i]{color:#cf2600}[data-colorid=xu2cqvhx7r]{color:#ff5630} html[data-color-mode=dark] [data-colorid=xu2cqvhx7r]{color:#cf2600}[data-colorid=k3drhi8ock]{color:#ff5630} html[data-color-mode=dark] [data-colorid=k3drhi8ock]{color:#cf2600}[data-colorid=cfx3t8wgl6]{color:#ff5630} html[data-color-mode=dark] [data-colorid=cfx3t8wgl6]{color:#cf2600}</style><strong>conn/Current problems:</strong></h2><ol start="1"><li><p>Too many tests in IOAIU nightly regression.</p></li><li><p>There are many missing config/test pairs (test that should be running on certain configs but are not.)</p><ol start="1"><li><p>The regr and regr_cov labels are not fully updated.</p></li></ol></li><li><p>Some features do not have feature labels to assist users in finding or running all tests for a particular feature.</p></li><li><p>Some base tests are different from other related tests for no good reason, i.e. number of transactions.</p></li><li><p>Testlist size of ~10,000 lines is too large. Making it hard to read or keep up-to-date.</p></li></ol><p /><h2 id="IOAIU3.4DVTestlistimprovements-Solutionelements:"><strong>Solution elements:</strong></h2><p>Note: some of this work can be done by one person working on the entire testlist, but other parts need to involve the expertise of the feature owner.</p><ol start="1"><li><p>Each feature needs at least one feature label and all tests for that feature must be labeled with it.</p></li><li><p>Related tests should in most test be converted into flavors. This will simplify and shorten the testlist.</p></li><li><p>Once flavors are used where possible, the testlist should be analyzed and optimized per feature. </p><ol start="1"><li><p>Examine where random tests can replace a set of directed tests. If a random test does not exist, note the need below.</p></li><li><p>Examine the feature regr, regr_cov, and short_regr labels. Does each label need to be added or removed for each test.</p></li><li><p>Once the list of code and functional coverage configs has been finalized, make sure that regr_cov has the right tests for each config.</p></li><li><p>If a particular feature has too many test iterations, work with the feature owner to reduce this.</p></li></ol></li></ol><p /><div class="table-wrap"><table data-layout="default" data-local-id="9d8b8ffb-0d00-49ab-b0b3-5ee8f314352f" class="confluenceTable"><colgroup><col style="width: 130.0px;" /><col style="width: 126.0px;" /><col style="width: 126.0px;" /><col style="width: 126.0px;" /><col style="width: 126.0px;" /><col style="width: 126.0px;" /></colgroup><tbody><tr><th class="confluenceTh"><p><strong>feature</strong></p></th><th class="confluenceTh"><p><strong>feature owner(s)</strong></p></th><th class="confluenceTh"><p><strong>feature label(s)</strong></p></th><th class="confluenceTh"><p><strong>flavor work completed</strong></p></th><th class="confluenceTh"><p><strong>feature optimized</strong></p></th><th class="confluenceTh"><p><strong>notes</strong></p></th></tr><tr><td class="confluenceTd"><p>CCP??</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b36eb45ece00069cca831" href="https://arterisip.atlassian.net/wiki/people/624b36eb45ece00069cca831?ref=confluence" target="_blank" data-linked-resource-id="786785" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Kavish Shah</a>, <a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a>  </p></td><td class="confluenceTd"><p>ccp_cov</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>coherent and noncoherent transactions</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a>, <a class="confluence-userlink user-mention" data-account-id="62a822076be17d006f2eef27" href="https://arterisip.atlassian.net/wiki/people/62a822076be17d006f2eef27?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Priyanka Zare (Deactivated)</a> </p></td><td class="confluenceTd"><p><span data-colorid="gyw6r8g26i">need coh_noncoh?</span></p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>connectivity</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b36eb45ece00069cca831" href="https://arterisip.atlassian.net/wiki/people/624b36eb45ece00069cca831?ref=confluence" target="_blank" data-linked-resource-id="786785" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Kavish Shah</a> </p></td><td class="confluenceTd"><p>connectivity </p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>software credit management and skid buffer</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b36eb45ece00069cca831" href="https://arterisip.atlassian.net/wiki/people/624b36eb45ece00069cca831?ref=confluence" target="_blank" data-linked-resource-id="786785" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Kavish Shah</a> </p></td><td class="confluenceTd"><p>scm</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>CSR</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>csr</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>dvm</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b37dc1da0e100713c9b0a" href="https://arterisip.atlassian.net/wiki/people/624b37dc1da0e100713c9b0a?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Prayank Trivedi (Deactivated)</a>, <a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a> </p></td><td class="confluenceTd"><p><span data-colorid="k3drhi8ock">sysco_regr?, connectivity_dvm?</span></p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>errors</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b380c247a4b00691fec04" href="https://arterisip.atlassian.net/wiki/people/624b380c247a4b00691fec04?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Ajit Kakadiya (Deactivated)</a>, <a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a> </p></td><td class="confluenceTd"><p>err_corr_ecc, err_uncorr_ecc, err_uncorr_addr, err_uncorr_cmstatus, err_uncorr_targid, err_uncorr_parity, </p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>interleaving??</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention current-user-mention" data-account-id="624b3807a629c30068a79f50" href="https://arterisip.atlassian.net/wiki/people/624b3807a629c30068a79f50?ref=confluence" target="_blank" data-linked-resource-id="790813" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Sai Pavan Yaraguti</a> </p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>maintenance ops</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b36eb45ece00069cca831" href="https://arterisip.atlassian.net/wiki/people/624b36eb45ece00069cca831?ref=confluence" target="_blank" data-linked-resource-id="786785" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Kavish Shah</a> </p></td><td class="confluenceTd"><p>Mntop</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>multiported??</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention current-user-mention" data-account-id="624b3807a629c30068a79f50" href="https://arterisip.atlassian.net/wiki/people/624b3807a629c30068a79f50?ref=confluence" target="_blank" data-linked-resource-id="790813" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Sai Pavan Yaraguti</a> </p></td><td class="confluenceTd"><p>multiport_bringup, multiport_2c, multiport_4c, multiport_8c</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>native???</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>ordering</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a> </p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>axi_collision?</p></td></tr><tr><td class="confluenceTd"><p>pmon</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b38174fe01d006ba96e74" href="https://arterisip.atlassian.net/wiki/people/624b38174fe01d006ba96e74?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Kushal Choksi (Deactivated)</a> </p></td><td class="confluenceTd"><p>perf_mon_events, perf_mon_overflow, perf_mon_1ct, perf_mon_regr, perf_mon_smi_pkt, </p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>qos, starvation</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a> </p></td><td class="confluenceTd"><p>starv_regr</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>reads, write, snoops, native traffic</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a>, <a class="confluence-userlink user-mention" data-account-id="62a822076be17d006f2eef27" href="https://arterisip.atlassian.net/wiki/people/62a822076be17d006f2eef27?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Priyanka Zare (Deactivated)</a> </p></td><td class="confluenceTd"><p>snp, <span data-colorid="cfx3t8wgl6">ace_rd_wr_snp? random_traffic</span></p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>resiliency</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention current-user-mention" data-account-id="624b3807a629c30068a79f50" href="https://arterisip.atlassian.net/wiki/people/624b3807a629c30068a79f50?ref=confluence" target="_blank" data-linked-resource-id="790813" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Sai Pavan Yaraguti</a> </p></td><td class="confluenceTd"><p>resiliency, resiliency_tt</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p>Do we add resiliency label to all resiliency_tt tests?</p></td></tr><tr><td class="confluenceTd"><p>GPR security</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="62a822076be17d006f2eef27" href="https://arterisip.atlassian.net/wiki/people/62a822076be17d006f2eef27?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Priyanka Zare (Deactivated)</a>, <a class="confluence-userlink user-mention" data-account-id="624b383afd5e45007047001d" href="https://arterisip.atlassian.net/wiki/people/624b383afd5e45007047001d?ref=confluence" target="_blank" data-linked-resource-id="758611" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Hema Sajja</a> </p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>sharer promotion, owner transfer</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b37dc1da0e100713c9b0a" href="https://arterisip.atlassian.net/wiki/people/624b37dc1da0e100713c9b0a?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Prayank Trivedi (Deactivated)</a>, <a class="confluence-userlink user-mention current-user-mention" data-account-id="624b3807a629c30068a79f50" href="https://arterisip.atlassian.net/wiki/people/624b3807a629c30068a79f50?ref=confluence" target="_blank" data-linked-resource-id="790813" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Sai Pavan Yaraguti</a>, <a class="confluence-userlink user-mention" data-account-id="624b37e45f63fd0069b55519" href="https://arterisip.atlassian.net/wiki/people/624b37e45f63fd0069b55519?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Niteesh Reddy Varra (Deactivated)</a> </p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>SMI??</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b37dc1da0e100713c9b0a" href="https://arterisip.atlassian.net/wiki/people/624b37dc1da0e100713c9b0a?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Prayank Trivedi (Deactivated)</a>, <a class="confluence-userlink user-mention current-user-mention" data-account-id="624b3807a629c30068a79f50" href="https://arterisip.atlassian.net/wiki/people/624b3807a629c30068a79f50?ref=confluence" target="_blank" data-linked-resource-id="790813" data-linked-resource-version="1" data-linked-resource-type="userinfo" data-base-url="https://arterisip.atlassian.net/wiki">Sai Pavan Yaraguti</a> </p></td><td class="confluenceTd"><p><span data-colorid="xu2cqvhx7r">perf_mon_smi_pkt?</span></p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr><tr><td class="confluenceTd"><p>trace_debug</p></td><td class="confluenceTd"><p><a class="confluence-userlink user-mention" data-account-id="624b38261da0e100713c9b4b" href="https://arterisip.atlassian.net/wiki/people/624b38261da0e100713c9b4b?ref=confluence" target="_blank" data-base-url="https://arterisip.atlassian.net/wiki">Bill Chandler (Deactivated)</a> </p></td><td class="confluenceTd"><p>trace_debug</p></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td><td class="confluenceTd"><p /></td></tr></tbody></table></div><p /><h2 id="IOAIU3.4DVTestlistimprovements-Note:">Note:</h2><p>After careful scrubbing and scripting a few aspects, below are the tests identified to be combined for using flavors that would reduce the clutter in the IOAIU testlist. Most of the candidates seem to nicely line up under a attribute as seen in the test list&rsquo;s test name. Following is the work in progress:-</p><ul><li><p>Create a formatted version of the testlist (no changes except formatting)</p></li><li><p> Add the attribute labels to the tests &rarr; Get stats from this testlist</p></li><li><p>Merge flavor candidates &rarr; Get stats from this new merged testlist</p></li><li><p>Compare the 2 stats to bless the merge and push the changes in</p></li></ul><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"> - uvm_test: bring_up_test
+           ~ config: config_ace
+           ~ config: config_ace_256b
+           ~ config: config_ace_small_ott
+           ~ config: config_ace_64b
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           &gt; flavor candidates are:-
+                     &gt; ace_dvm_only
+                     &gt; ace_rd_only
+                     &gt; ace_rd_wr_snp_stress
+                     &gt; ace_rd_wr_snp_vs
+                     &gt; ace_wr_only
+                     &gt; random_cmprsp_cmstatus_with_error
+
+ - uvm_test: bring_up_test
+           ~ config: config_ace
+           ~ config: config_ace_256b
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: config_ace_64b
+           &gt; flavor candidates are:-
+                     &gt; Native_intf_snoop_rsp_error
+                     &gt; Native_intf_snoop_rsp_error_dvm_snoop
+
+ - uvm_test: bring_up_test
+           ~ config: config_ace_lite_e_64b
+           ~ config: config_ace_lite_e_128b
+           ~ config: config_ace_lite_e_256b
+           &gt; flavor candidates are:-
+                     &gt; bring_up_test_acelite_e
+                     &gt; bring_up_test_acelite_e_short
+
+ - uvm_test: bring_up_test
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           &gt; flavor candidates are:-
+                     &gt; ace_rd_wr_snp_small_ott
+                     &gt; ace_rd_wr_snp_stress_small_ott
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_02_ioc_1c
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_03_ace_1c
+           ~ config: hw_cfg_22_ace_lite_1c
+           ~ config: hw_cfg_07_axi4_1c
+           ~ config: hw_cfg_nxpauto_ace_lite_e_1c
+           ~ config: hw_cfg_60_ioc_4c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           &gt; flavor candidates are:-
+                     &gt; random_traffic_all_gpra_secure
+                     &gt; random_traffic_random_gpra_secure
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_02_ioc_1c
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_07_axi4_1c
+           ~ config: hw_cfg_22_ace_lite_1c
+           ~ config: hw_cfg_03_ace_1c
+           ~ config: hw_cfg_nxpauto_ace_lite_e_1c
+           ~ config: hw_cfg_60_ioc_4c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           &gt; flavor candidates are:-
+                     &gt; starvation_stress_nonunq_addr
+                     &gt; starvation_stress_short
+                     &gt; starvation_stress_unq_addr
+                     
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_2_ioc
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_60_ioc_4c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_2_ioc_64b
+           ~ config: hw_cfg_2_ioc_small_ott
+           &gt; flavor candidates are:-
+                     &gt; bring_up_snoop_crdt_adj_dce
+                     &gt; bring_up_snoop_more_evicts
+                     &gt; bring_up_snoop_more_full_cl
+                     &gt; bring_up_snoop_more_sc_evicts
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_2_ioc
+           ~ config: hw_cfg_60_ioc_4c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_2_ioc_64b
+           ~ config: hw_cfg_2_ioc_small_ott
+           &gt; flavor candidates are:-
+                     &gt; bring_up_snoop_more_full_cl_short
+                     &gt; bring_up_snoop_region_priority
+                     &gt; bring_up_snoop_vs
+                     &gt; bring_up_snoop_wr_mrg_ccp_rd
+                     &gt; ncmode_withccp
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_2_ioc
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_60_ioc_4c
+           ~ config: hw_cfg_2_axi4
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_2_ioc_64b
+           ~ config: hw_cfg_2_ioc_small_ott
+           &gt; flavor candidates are:-
+                     &gt; ccp_evict_backpressure
+                     &gt; ccp_fill_stall_and_noway
+                     &gt; ccp_rdrsp_backpressure
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_2_ioc
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_2_ioc_64b
+           ~ config: hw_cfg_2_ioc_small_ott
+           &gt; flavor candidates are:-
+                     &gt; IOAIU_MntOp_SMC_ccp_offline_seq
+                     &gt; IOAIU_MntOp_SMC_flush_by_addr
+                     &gt; IOAIU_MntOp_SMC_flush_by_addr_range
+                     &gt; IOAIU_MntOp_SMC_flush_by_index_way
+                     &gt; IOAIU_MntOp_SMC_flush_by_index_way_range
+                     &gt; IOAIU_MntOp_SMC_flush_random_all_type
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: config_ace_64b_parity
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_60_ioc_4c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_7_all_parity
+           &gt; flavor candidates are:-
+                     &gt; resiliency_trans_prot_fault_parity_all_cov_uncorr_err
+                     &gt; resiliency_trans_prot_fault_parity_all_uncorr_err
+                     &gt; resiliency_trans_prot_fault_parity_all_uncorr_err_short
+                     &gt; resiliency_trans_prot_fault_parity_dp_uncorr_err
+                     &gt; resiliency_trans_prot_fault_parity_hdr_uncorr_err
+                     &gt; resiliency_trans_prot_fault_parity_ndp_uncorr_err
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_2_parity_err
+           &gt; flavor candidates are:-
+                     &gt; csr_elr_seq_single_bit_data_err_uncorr_PARITY
+                     &gt; csr_elr_seq_single_bit_ott_err_uncorr_PARITY
+                     &gt; csr_elr_seq_single_bit_tag_err_uncorr_PARITY
+                     &gt; csr_uuedr_noDetEn_PARITY
+                     &gt; csr_uuedr_noIntEn_PARITY
+                     &gt; csr_uueir_ErrInt_uncorr_CCP_Data_PARITY
+                     &gt; csr_uueir_ErrInt_uncorr_CCP_Tag_PARITY
+                     &gt; csr_uueir_ErrInt_uncorr_OTT_Data_PARITY
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: hw_cfg_2_ioc
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: config1
+           ~ config: hw_cfg_2_ioc_err
+           ~ config: config3
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; csr_addr_region_overlap_test_read_req
+                     &gt; csr_addr_region_overlap_test_write_req
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: config1
+           ~ config: hw_cfg_2_ioc_err
+           ~ config: config3
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; csr_no_addr_hit_in_addr_map_test
+                     &gt; csr_timeout_error_test_str_req_delayed
+                     &gt; csr_ucecr_single_errThd_corr
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_2_ioc_err
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; csr_elr_seq_double_bit_data_err_uncorr
+                     &gt; csr_elr_seq_double_bit_tag_err_uncorr
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_02_ioc_1c
+           ~ config: hw_cfg_60_ioc_4c
+           &gt; flavor candidates are:-
+                     &gt; coh_dii
+                     &gt; ioc_noncoh_ops_unq_addr
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_7_all_ecc
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: config_ace_256b_ecc
+           &gt; flavor candidates are:-
+                     &gt; resiliency_trans_prot_fault_ecc_all_cov_uncorr_err
+                     &gt; resiliency_trans_prot_fault_ecc_all_uncorr_err
+                     &gt; resiliency_trans_prot_fault_ecc_all_uncorr_err_short
+                     &gt; resiliency_trans_prot_fault_ecc_dp_corr_err
+                     &gt; resiliency_trans_prot_fault_ecc_dp_uncorr_err
+                     &gt; resiliency_trans_prot_fault_ecc_ndp_corr_err
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: config_ace_256b_ecc
+           ~ config: hw_cfg_7_all_ecc
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           &gt; flavor candidates are:-
+                     &gt; resiliency_trans_prot_fault_ecc_all_corr_err
+                     &gt; resiliency_trans_prot_fault_ecc_ndp_uncorr_err
+                     &gt; resiliency_trans_prot_fault_ecc_ndp_uncorr_err_short
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_22
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: config1
+           ~ config: config3
+           ~ config: config4
+           &gt; flavor candidates are:-
+                     &gt; bring_up_test_vs
+                     &gt; csr_xaiucctrlr
+                     &gt; csr_xaiucesar
+                     &gt; csr_xaiutbahr0
+                     &gt; csr_xaiutbalr0
+                     &gt; csr_xaiutctrlr0
+                     &gt; csr_xaiutopcr0
+                     &gt; csr_xaiutubmr0
+                     &gt; csr_xaiutubr0
+                     &gt; csr_xaiuuesar
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_2_ioc
+           ~ config: config_ace
+           ~ config: hw_cfg_22
+           ~ config: hw_cfg_60_ioc_4c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: config1
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: config3
+           ~ config: config4
+           &gt; flavor candidates are:-
+                     &gt; bring_up_test_crdt_adj_dmi_dii_dce
+                     &gt; bring_up_test_run_out_credit_dmi_dii_dce
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_2_ioc_err
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; csr_cecr_ErrInt_corr_CCP_Tag
+                     &gt; csr_ucecr_noIntEn
+                     &gt; csr_ucecr_sw_write_data
+                     &gt; csr_ucecr_sw_write_tag
+                     &gt; csr_uuecr_sw_write_data
+                     &gt; csr_uuecr_sw_write_tag
+                     &gt; csr_uueir_MemErrInt_uncorr_CCP_Data
+                     &gt; csr_uueir_MemErrInt_uncorr_CCP_Tag
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: config_ace_256b_ecc
+           ~ config: hw_cfg_7_all_ecc
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           &gt; flavor candidates are:-
+                     &gt; resiliency_trans_prot_fault_ecc_all_100p_corr_err
+                     &gt; resiliency_trans_prot_fault_ecc_corr_err_vs_cnt
+                     &gt; resiliency_trans_prot_fault_ecc_hdr_uncorr_err
+                     &gt; resiliency_trans_prot_fault_ecc_hdr_uncorr_err_short
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: config1
+           ~ config: hw_cfg_2_ioc_err
+           ~ config: config3
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; csr_elr_seq_single_bit_data_err_corr
+                     &gt; csr_uuecr_sw_write_ott
+
+ - uvm_test: bring_up_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_2_ioc_err
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; csr_cecr_ErrInt_corr_CCP_Data
+                     &gt; csr_cecr_ErrInt_corr_OTT_Data
+                     &gt; csr_elr_seq_double_bit_ott_err_uncorr
+                     &gt; csr_elr_seq_single_bit_ott_err_corr
+                     &gt; csr_ucecr_noDetEn
+                     &gt; csr_ucecr_sw_write_ott
+                     &gt; csr_uueir_MemErrInt_uncorr_OTT_Data
+
+ - uvm_test: ioaiu_qchannel_test
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: hw_cfg_7
+           &gt; flavor candidates are:-
+                     &gt; ioaiu_qchannel_multiple_request_test
+                     &gt; ioaiu_qchannel_req_between_cmd_test
+                     &gt; ioaiu_qchannel_req_during_cmd_test
+                     &gt; ioaiu_qchannel_reset_test
+                     &gt; ioaiu_qchannel_sanity_test
+
+ - uvm_test: perf_cnt_test
+           ~ config: config_ace_assert_off
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           &gt; flavor candidates are:-
+                     &gt; perfmon_ace_specific_evt_ACE_AC
+                     &gt; perfmon_ace_specific_evt_ACE_CD
+                     &gt; perfmon_ace_specific_evt_ACE_CR
+                     &gt; perfmon_ace_specific_evt_agent_counter_event
+                     &gt; perfmon_ace_specific_evt_captured_smi_pkt
+                     &gt; perfmon_ace_specific_evt_dropped_smi_pkt
+                     &gt; perfmon_ace_specific_evt_noc_counter_event
+
+ - uvm_test: perf_cnt_test
+           ~ config: hw_cfg_02_ioc_1c
+           ~ config: hw_cfg_03_ace_1c
+           ~ config: hw_cfg_22_ace_lite_1c
+           ~ config: hw_cfg_07_axi4_1c
+           ~ config: hw_cfg_nxpauto_ace_lite_e_1c
+           ~ config: hw_cfg_2_axi4
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; perfmon_counter_bandwidth_funit_bringup
+                     &gt; perfmon_counter_bandwidth_no_filter_bringup
+
+ - uvm_test: perf_cnt_test
+           ~ config: hw_cfg_02_ioc_1c
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_03_ace_1c
+           ~ config: hw_cfg_22_ace_lite_1c
+           ~ config: hw_cfg_07_axi4_1c
+           ~ config: hw_cfg_nxpauto_ace_lite_e_1c
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_2_axi4
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: hw_cfg_2_ioc_64b
+           &gt; flavor candidates are:-
+                     &gt; perfmon_counter_latency_bringup_offset
+                     &gt; perfmon_counter_latency_rand
+
+ - uvm_test: perf_cnt_test
+           ~ config: hw_cfg_2_axi4
+           &gt; flavor candidates are:-
+                     &gt; perfmon_evt_proxy_cache_specific_eviction
+                     &gt; perfmon_evt_proxy_cache_specific_fill_stall
+                     &gt; perfmon_evt_proxy_cache_specific_no_ways_to_allocate
+                     &gt; perfmon_evt_proxy_cache_specific_read_hit
+                     &gt; perfmon_evt_proxy_cache_specific_read_miss
+                     &gt; perfmon_evt_proxy_cache_specific_read_stall
+                     &gt; perfmon_evt_proxy_cache_specific_replay
+                     &gt; perfmon_evt_proxy_cache_specific_snoop_hit
+                     &gt; perfmon_evt_proxy_cache_specific_snoop_miss
+                     &gt; perfmon_evt_proxy_cache_specific_write_hit
+                     &gt; perfmon_evt_proxy_cache_specific_write_miss
+                     &gt; perfmon_evt_proxy_cache_specific_write_stall
+
+ - uvm_test: sysco_test
+           ~ config: hw_cfg_meye_q7_cpu2_ace_1c
+           ~ config: hw_cfg_2_ioc_256b
+           ~ config: hw_cfg_meye_q7_pci_ace_lite_1c
+           ~ config: hw_cfg_nxpauto
+           ~ config: hw_cfg_2_ioc
+           ~ config: hw_cfg_7_all_ecc
+           ~ config: config_ace_lite_e_64b
+           ~ config: hw_cfg_7
+           ~ config: hw_cfg_2_ioc_small_ott
+           ~ config: config_ace
+           ~ config: hw_cfg_22
+           ~ config: config_ace_small_ott
+           ~ config: hw_cfg_7_all_parity
+           ~ config: hw_cfg_meye_q7_aux1_axi4_1c
+           ~ config: config1
+           ~ config: hw_cfg_meye_q7_ioc_4c
+           ~ config: config3
+           ~ config: hw_cfg_2_ioc_64b
+           ~ config: config4
+           ~ config: config_ace_lite_128b
+           &gt; flavor candidates are:-
+                     &gt; attach_detach_reattach_seq
+                     &gt; attach_detach_seq
+                     &gt; attach_error_detach_error_sysrsp_error_seq
+                     &gt; attach_error_detach_error_timeout_seq
+                     &gt; attach_error_sysrsp_seq
+                     &gt; attach_error_timeout_seq
+                     &gt; attach_seq
+                     &gt; detach_error_sysrsp_seq
+                     &gt; detach_error_timeout_seq                                     </pre>
+</div></div>

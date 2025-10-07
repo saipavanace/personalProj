@@ -1,0 +1,413 @@
+//=============================================================================
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// Dmi Cache Maintenance Op Control Unit
+// Author: Tso-Wei Chang
+// 
+//=========================================================================
+
+var u = obj.lib;
+var bundleFunctions = obj.userLib.bundleFunctions;
+var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+var wMntOpCode             = obj.lib.getParam('wMntOpCode');
+var PortPriSubDiagAddrBits = obj.lib.getParam('PortPriSubDiagAddrBits');
+var PortSecSubRows         = obj.lib.getParam('PortSecSubRows');
+var PriSubDiagAddrBits     = obj.lib.getParam('PriSubDiagAddrBits');
+var SecSubRows             = obj.lib.getParam('SecSubRows');
+var num_ports              = obj.lib.getParam('num_ports');
+var wAddr                  = obj.lib.getParam('wAddr');
+var wSecurity              = obj.lib.getParam('wSecurity');
+var wCacheLineOffset       = obj.lib.getParam('wCacheLineOffset');
+var nSets                  = obj.lib.getParam('nSets');
+var nWays                  = obj.lib.getParam('nWays');
+var wWays                  = obj.lib.getParam('wWays');
+
+var wCompBits  = log2ceil( Math.pow(2, PortPriSubDiagAddrBits.length) / num_ports );
+
+var wTagEntry  = wAddr
+               - wCacheLineOffset
+               - PriSubDiagAddrBits.length
+               - PortPriSubDiagAddrBits.length
+               + wCompBits;
+
+var wIndexBits = PriSubDiagAddrBits.length;
+\jsend
+
+\jsbegin
+//=============================================================================
+// Ports
+//=============================================================================
+// TODO: parametize width
+obj.lib.interface('',  'slave', obj.lib.getParam('clkInterface'));
+
+obj.lib.port('output', 'reinit',                1);
+obj.lib.port('input',  'init_done',             1);
+obj.lib.port('input',  'tag_init_done',         1);
+obj.lib.port('input',  'data_init_done',        1);
+
+obj.lib.port('input',  'MntOp_init',            1);
+obj.lib.port('input',  'MCR_MntOp',             4);
+obj.lib.port('input',  'MCR_ArrId',             1);
+obj.lib.port('input',  'MCR_SecAttr',           1);
+obj.lib.port('input',  'MLR0_MntSet',           20);
+obj.lib.port('input',  'MLR0_MntWay',           6);
+obj.lib.port('input',  'MLR0_MntWord',          6);
+obj.lib.port('input',  'MLR1_MntAddr',          16);
+obj.lib.port('input',  'MLR1_MntAddrRange',     16);
+
+obj.lib.port('output', 'mnt_req_valid',          1);
+obj.lib.port('input',  'mnt_req_ready',          1);
+
+obj.lib.port('input',  'mnt_req_valid_p2',       1);
+obj.lib.port('input',  'mnt_req_msg_p2',         wMntOpCode);
+obj.lib.port('input',  'ways_pending_p2',        nWays);
+obj.lib.port('input',  'rtt_addr_match_p2',      1);
+obj.lib.port('input',  'wtt_addr_match_p2',      1);
+obj.lib.port('input',  'wtt_ready',              1);
+
+obj.lib.port('output', 'mntop_active',           1);
+
+obj.lib.port('output', 'auto_init_active',       1);
+
+obj.lib.port('output', 'mnt_req_bundle_msg',     wMntOpCode);
+obj.lib.port('output', 'mnt_req_bundle_addr',    wAddr);
+// wNS is fixed on ncore3 and always set
+/* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wSecurity > 0) {
+obj.lib.port('output', 'mnt_req_bundle_security',1);
+    }
+obj.lib.port('output', 'mnt_req_bundle_way',      wWays);
+
+obj.lib.port('output', 'mntop_flush_p2',          1);
+obj.lib.port('output', 'flush_fail_p2',           1);
+
+\jsend
+
+module \=obj.lib.getModuleName()=\ (\=obj.lib.getPorts('\n')=\);
+
+\js // 
+localparam INIT                 = 4'b0000,
+           FLUSH_ALL            = 4'b0100, 
+           FLUSH_SET_WAY        = 4'b0101,
+           FLUSH_ADDR           = 4'b0110,
+           FLUSH_ADDR_RANGE     = 4'b0111,
+           FLUSH_SET_WAY_RANGE  = 4'b1000,
+           DEBUG_RD             = 4'b1100,
+           DEBUG_WR             = 4'b1110;
+
+\js // mnt fsm state
+localparam IDLE           = 3'b000, 
+           SEND_FLUSH     = 3'b001,
+           SEND_RDWR      = 3'b010,
+           TAG_INIT       = 3'b011,
+           WAIT_FLUSH_RSP = 3'b100,
+           WAIT_RDWR_RSP  = 3'b101,
+           WAIT_TAG_INIT  = 3'b110;
+
+\jsbegin
+//=============================================================================
+// Wires
+//=============================================================================
+\jsend
+wire [\=wAddr-1=\:0] gen_mnt_addr__addr_out;
+wire [\=wTagEntry-1=\:0] gen_mnt_addr__tag_in;
+wire [\=PriSubDiagAddrBits.length-1=\:0] gen_mnt_addr__index_in;
+
+wire [53:0] mntop_max_addr;
+wire [\=wAddr-1=\:0] mntop_flush_by_addr;
+
+wire [\=PriSubDiagAddrBits.length-1=\:0] mnt_index;
+
+wire [\=wIndexBits-1=\:0] flush_index;
+wire [\=wWays-1=\:0] flush_way;
+
+wire mntop_flush;
+wire mntop_flush_all_entries;
+wire mntop_flush_entry_by_address;
+wire mntop_flush_entry_by_address_range;
+wire mntop_flush_entry_by_indexway;
+wire mntop_flush_entry_by_indexway_range;
+wire mntop_init_entries;
+wire mntop_rdwr;
+wire mntop_read_data_entry_by_index_way_word;
+wire mntop_read_tag_entry_by_index_way_word;
+wire mntop_write_data_entry_by_index_way_word;
+wire mntop_write_tag_entry_by_index_way_word;
+
+wire mntop_init_all_entries_p2;
+wire mntop_flush_all_entries_p2;
+wire mntop_flush_entry_by_indexway_p2;
+wire mntop_flush_entry_by_address_p2;
+wire mntop_flush_entry_by_address_range_p2;
+wire mntop_flush_entry_by_indexway_range_p2;
+wire mntop_read_tag_entry_by_indexwayword_p2;
+wire mntop_write_tag_entry_by_indexwayword_p2;
+wire mntop_read_data_entry_by_indexwayword_p2;
+wire mntop_write_data_entry_by_indexwayword_p2;
+
+wire mntop_done_p2;
+
+wire sel_mntop;
+wire flush_scheduled;
+wire rdwr_scheduled;
+wire rdwr_done_p2;
+wire flush_done_p2;
+wire all_flush_done_p2;
+wire flush_pending_way_by_index;
+wire [\=nWays-1=\:0] flush_way_onehot_by_index;
+
+wire        flush_by_addr_range_counter_at_max;
+wire [15:0] flush_by_addr_range_counter;
+wire [15:0] flush_by_addr_range_count_in;
+wire        flush_by_addr_range_count_en;
+
+wire                 way_counter_at_max;
+wire                 way_count_en;
+wire [\=wWays-1=\:0] way_count_in;
+wire [\=wWays-1=\:0] way_counter;
+wire                 index_counter_at_max;
+wire                 index_count_en;
+
+wire [\=wIndexBits-1=\:0] index_count_in;
+wire [\=wIndexBits-1=\:0] index_counter;
+
+wire MntOp_init_ff;
+
+reg  [2:0] mnt_op_nxt_state;
+wire [2:0] mnt_op_state;
+
+wire IDLE_SEND_FLUSH_event;
+wire IDLE_SEND_RDWR_event;
+wire IDLE_TAG_INIT_event;
+wire SEND_FLUSH_WAIT_FLUSH_RSP_event;
+wire SEND_RDWR_WAIT_RDWR_RSP_event;
+wire TAG_INIT_WAIT_TAG_INIT_event;
+wire WAIT_FLUSH_RSP_IDLE_event;
+wire WAIT_FLUSH_RSP_SEND_FLUSH_event;
+wire WAIT_RDWR_RSP_IDLE_event;
+wire WAIT_TAG_INIT_IDLE_event;
+
+wire auto_init;
+wire tag_mem_init;
+wire tag_mem_init_ff;
+wire dff_enable;
+
+assign dff_enable = 1'b1;
+
+\jsbegin
+//=============================================================================
+// Maintenance request bundle
+//=============================================================================
+\jsend
+
+assign mnt_req_bundle_way = mntop_flush_all_entries | mntop_flush_entry_by_indexway_range ? flush_way[\=wWays-1=\:0] : MLR0_MntWay[\=wWays-1=\:0];
+
+assign mnt_req_bundle_msg = mntop_flush_all_entries | mntop_flush_entry_by_indexway_range ? {1'b0, FLUSH_SET_WAY} : 
+                            mntop_flush_entry_by_address_range                            ? {1'b0, FLUSH_ADDR} :
+                                                                                            {1'b0, MCR_MntOp[3:0]};
+\jsbegin
+// wNS is fixed on ncore3 and always set
+/* istanbul ignore else env ncore_3p0,ncore_3p2,ncore_3p4,ncore_3p6, ncore_3p7 */
+    if (wSecurity > 0) {
+\jsend
+assign mnt_req_bundle_security = MCR_SecAttr;
+    \js }
+
+assign mnt_req_bundle_addr = mntop_flush_entry_by_address | mntop_flush_entry_by_address_range ? mntop_flush_by_addr : gen_mnt_addr__addr_out;
+
+\jsbegin
+    var gen_mnt_params = { PortPriSubDiagAddrBits : PortPriSubDiagAddrBits,
+                           PortSecSubRows         : PortSecSubRows,
+                           PriSubDiagAddrBits     : PriSubDiagAddrBits,
+                           SecSubRows             : SecSubRows,
+                           num_ports              : num_ports,
+                           wAddr                  : wAddr,
+                           wCacheLineOffset       : wCacheLineOffset
+                         };
+    var instance_ports_for_gen_mnt_addr = {
+        addr_out            : 'gen_mnt_addr__addr_out',
+        tag_in              : 'gen_mnt_addr__tag_in',
+        index_in            : 'gen_mnt_addr__index_in'
+    };
+
+\jsend
+    \=obj.lib.instance({
+        instanceName: 'u_gen_mnt_addr',
+        moduleName: 'addr_gen',
+        params : gen_mnt_params,
+        verilogParams: {},
+        ports: instance_ports_for_gen_mnt_addr,
+        portsDelimiter: '\n    '
+    })=\
+
+assign mnt_index = flush_index[\=PriSubDiagAddrBits.length-1=\:0];
+
+assign gen_mnt_addr__tag_in   = \=wTagEntry=\'b0;
+assign gen_mnt_addr__index_in = mnt_index ;
+
+
+assign mntop_max_addr = {MLR1_MntAddr[15:0], MLR0_MntWord[5:0], MLR0_MntWay[5:0], MLR0_MntSet[19:0], \=wCacheLineOffset=\'d0};
+
+assign mntop_flush_by_addr[\=wAddr-1=\:\=wCacheLineOffset=\] = mntop_max_addr[\=wAddr-1=\:\=wCacheLineOffset=\] + (mntop_flush_entry_by_address_range ? {\=wAddr-wCacheLineOffset-16=\'b0, flush_by_addr_range_counter} : \=wAddr-wCacheLineOffset=\'d0);
+
+assign mntop_flush_by_addr[\=wCacheLineOffset-1=\:0] = \=wCacheLineOffset=\'d0;
+
+\jsbegin
+//=============================================================================
+// Maintenance Operation Logic
+//=============================================================================
+\jsend
+
+assign mntop_init_all_entries_p2                 = (mnt_req_msg_p2[3:0] == INIT);
+assign mntop_flush_all_entries_p2                = (mnt_req_msg_p2[3:0] == FLUSH_ALL);
+assign mntop_flush_entry_by_indexway_p2          = (mnt_req_msg_p2[3:0] == FLUSH_SET_WAY);
+assign mntop_flush_entry_by_address_p2           = (mnt_req_msg_p2[3:0] == FLUSH_ADDR);
+assign mntop_flush_entry_by_address_range_p2     = (mnt_req_msg_p2[3:0] == FLUSH_ADDR_RANGE);
+assign mntop_flush_entry_by_indexway_range_p2    = (mnt_req_msg_p2[3:0] == FLUSH_SET_WAY_RANGE);
+assign mntop_read_tag_entry_by_indexwayword_p2   = (mnt_req_msg_p2[3:0] == DEBUG_RD) & ~mnt_req_msg_p2[4];
+assign mntop_write_tag_entry_by_indexwayword_p2  = (mnt_req_msg_p2[3:0] == DEBUG_WR) & ~mnt_req_msg_p2[4];
+assign mntop_read_data_entry_by_indexwayword_p2  = (mnt_req_msg_p2[3:0] == DEBUG_RD) &  mnt_req_msg_p2[4];
+assign mntop_write_data_entry_by_indexwayword_p2 = (mnt_req_msg_p2[3:0] == DEBUG_WR) &  mnt_req_msg_p2[4];
+
+assign mntop_flush_p2 = mntop_flush_entry_by_address_p2         | 
+                        mntop_flush_entry_by_address_range_p2   | 
+                        mntop_flush_all_entries_p2              | 
+                        mntop_flush_entry_by_indexway_p2        | 
+                        mntop_flush_entry_by_indexway_range_p2;
+
+assign mntop_done_p2 = mnt_req_valid_p2;
+
+assign mntop_init_entries                       = (MCR_MntOp[3:0] == INIT) & MntOp_init_ff;
+assign mntop_flush_all_entries                  = (MCR_MntOp[3:0] == FLUSH_ALL);
+assign mntop_flush_entry_by_indexway            = (MCR_MntOp[3:0] == FLUSH_SET_WAY);
+assign mntop_flush_entry_by_address             = (MCR_MntOp[3:0] == FLUSH_ADDR);
+assign mntop_flush_entry_by_address_range       = (MCR_MntOp[3:0] == FLUSH_ADDR_RANGE);
+assign mntop_flush_entry_by_indexway_range      = (MCR_MntOp[3:0] == FLUSH_SET_WAY_RANGE);
+\js // ArrId to distinguish tag/data array
+assign mntop_read_tag_entry_by_index_way_word   = (MCR_MntOp[3:0] == DEBUG_RD) & ~MCR_ArrId;
+assign mntop_write_tag_entry_by_index_way_word  = (MCR_MntOp[3:0] == DEBUG_WR) & ~MCR_ArrId;
+assign mntop_read_data_entry_by_index_way_word  = (MCR_MntOp[3:0] == DEBUG_RD) &  MCR_ArrId;
+assign mntop_write_data_entry_by_index_way_word = (MCR_MntOp[3:0] == DEBUG_WR) &  MCR_ArrId;
+
+assign mntop_flush = mntop_flush_all_entries                |
+                     mntop_flush_entry_by_indexway          |
+                     mntop_flush_entry_by_address           |
+                     mntop_flush_entry_by_address_range     |
+                     mntop_flush_entry_by_indexway_range    ;
+                   
+
+assign mntop_rdwr = mntop_read_tag_entry_by_index_way_word  |
+                    mntop_read_data_entry_by_index_way_word |
+                    mntop_write_data_entry_by_index_way_word|
+                    mntop_write_tag_entry_by_index_way_word ;
+                  
+    \=obj.lib.dffre(1, 'MntOp_init_ff', 'MntOp_init', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+assign sel_mntop = mnt_req_valid & mnt_req_ready;
+
+assign flush_scheduled = mntop_flush & sel_mntop;
+assign rdwr_scheduled  = mntop_rdwr  & sel_mntop;
+assign rdwr_done_p2    = mntop_rdwr  & mntop_done_p2;
+
+assign flush_fail_p2 = (mntop_done_p2 & (mntop_flush_entry_by_address | mntop_flush_entry_by_address_range) & (rtt_addr_match_p2 | wtt_addr_match_p2))
+                     | (mntop_done_p2 & mntop_flush & ~wtt_ready)
+                     | (mntop_done_p2 & (mntop_flush_entry_by_indexway | mntop_flush_entry_by_indexway_range | mntop_flush_all_entries) & flush_pending_way_by_index);
+
+assign flush_done_p2 = mntop_done_p2 & mntop_flush & ~flush_fail_p2;
+
+assign all_flush_done_p2 = (way_counter_at_max & index_counter_at_max & mntop_flush_all_entries & flush_done_p2)
+                         | (flush_by_addr_range_counter_at_max & (mntop_flush_entry_by_address_range | mntop_flush_entry_by_indexway_range) & flush_done_p2)
+                         | ((mntop_flush_entry_by_indexway | mntop_flush_entry_by_address) & flush_done_p2);
+
+assign way_count_en       = (flush_done_p2 & (mntop_flush_all_entries | mntop_flush_entry_by_indexway_range)) | IDLE_SEND_FLUSH_event;
+assign way_counter_at_max = (way_counter == \=wWays=\'d\=nWays-1=\);
+assign way_count_in[\=wWays-1=\:0] = IDLE_SEND_FLUSH_event ? (mntop_flush_all_entries ? \=wWays=\'d0 : MLR0_MntWay[\=wWays-1=\:0]) : way_counter_at_max ? \=wWays=\'d0 : way_counter + \=wWays=\'d1;
+
+
+assign index_count_in[\=wIndexBits-1=\:0] = IDLE_SEND_FLUSH_event ? (mntop_flush_all_entries ? \=wIndexBits=\'d0 : MLR0_MntSet[\=wIndexBits-1=\:0]) : index_counter + \=wIndexBits=\'d1;
+assign index_count_en = (way_counter_at_max & flush_done_p2 & (mntop_flush_all_entries | mntop_flush_entry_by_indexway_range)) | IDLE_SEND_FLUSH_event;
+assign index_counter_at_max = (index_counter == \=wIndexBits=\'d\=nSets-1=\);
+
+
+        \=obj.lib.dffre(wWays, 'way_counter', 'way_count_in', wWays+"'b0", 'way_count_en', 'clk', 'reset_n')=\
+
+assign flush_way = mntop_flush_all_entries | mntop_flush_entry_by_indexway_range ? way_counter : MLR0_MntWay[\=wWays-1=\:0];
+
+
+        \=obj.lib.dffre(wIndexBits, 'index_counter', 'index_count_in', wIndexBits+"'b0", 'index_count_en', 'clk', 'reset_n')=\
+
+assign flush_index = mntop_flush_all_entries | mntop_flush_entry_by_indexway_range ? index_counter : MLR0_MntSet[\=wIndexBits-1=\:0];
+
+
+assign flush_pending_way_by_index = |{ways_pending_p2 & flush_way_onehot_by_index};
+
+assign flush_way_onehot_by_index[\=nWays-1=\:0] = \=nWays=\'d1 << flush_way;
+
+
+\js //TODO: configure width of the address
+        \=obj.lib.dffre(16, 'flush_by_addr_range_counter', 'flush_by_addr_range_count_in', "16'b0", 'flush_by_addr_range_count_en', 'clk', 'reset_n')=\
+
+assign flush_by_addr_range_count_in[15:0] = IDLE_SEND_FLUSH_event ? 16'd0 : flush_by_addr_range_counter + 16'd1;
+assign flush_by_addr_range_count_en = (flush_done_p2 & (mntop_flush_entry_by_address_range | mntop_flush_entry_by_indexway_range)) | IDLE_SEND_FLUSH_event;
+assign flush_by_addr_range_counter_at_max = (flush_by_addr_range_counter == MLR1_MntAddrRange);
+
+assign mntop_active = ~(mnt_op_state == IDLE);
+assign mnt_req_valid = ((mnt_op_state == SEND_FLUSH) & wtt_ready) | (mnt_op_state == SEND_RDWR);
+
+assign IDLE_TAG_INIT_event             = (mnt_op_state == IDLE)           & mntop_init_entries;
+assign IDLE_SEND_FLUSH_event           = (mnt_op_state == IDLE)           & MntOp_init_ff & mntop_flush;
+assign IDLE_SEND_RDWR_event            = (mnt_op_state == IDLE)           & MntOp_init_ff & mntop_rdwr;
+assign TAG_INIT_WAIT_TAG_INIT_event    = (mnt_op_state == TAG_INIT);
+assign WAIT_TAG_INIT_IDLE_event        = (mnt_op_state == WAIT_TAG_INIT)  & (MCR_ArrId ? data_init_done : tag_init_done);
+assign SEND_FLUSH_WAIT_FLUSH_RSP_event = (mnt_op_state == SEND_FLUSH)     & flush_scheduled;
+assign WAIT_FLUSH_RSP_IDLE_event       = (mnt_op_state == WAIT_FLUSH_RSP) & all_flush_done_p2;
+assign WAIT_FLUSH_RSP_SEND_FLUSH_event = (mnt_op_state == WAIT_FLUSH_RSP) & (flush_done_p2 | flush_fail_p2);
+assign SEND_RDWR_WAIT_RDWR_RSP_event   = (mnt_op_state == SEND_RDWR)      & rdwr_scheduled;
+assign WAIT_RDWR_RSP_IDLE_event        = (mnt_op_state == WAIT_RDWR_RSP)  & rdwr_done_p2;
+
+always @(*) begin
+    case (1'b1)
+        IDLE_TAG_INIT_event:             mnt_op_nxt_state = TAG_INIT;
+        IDLE_SEND_FLUSH_event:           mnt_op_nxt_state = SEND_FLUSH;
+        IDLE_SEND_RDWR_event:            mnt_op_nxt_state = SEND_RDWR;
+        TAG_INIT_WAIT_TAG_INIT_event:    mnt_op_nxt_state = WAIT_TAG_INIT;
+        WAIT_TAG_INIT_IDLE_event:        mnt_op_nxt_state = IDLE;
+        SEND_FLUSH_WAIT_FLUSH_RSP_event: mnt_op_nxt_state = WAIT_FLUSH_RSP;
+        WAIT_FLUSH_RSP_IDLE_event:       mnt_op_nxt_state = IDLE;
+        WAIT_FLUSH_RSP_SEND_FLUSH_event: mnt_op_nxt_state = SEND_FLUSH;
+        SEND_RDWR_WAIT_RDWR_RSP_event:   mnt_op_nxt_state = WAIT_RDWR_RSP;
+        WAIT_RDWR_RSP_IDLE_event:        mnt_op_nxt_state = IDLE;
+        default:                         mnt_op_nxt_state = mnt_op_state;
+    endcase
+end
+
+    \=obj.lib.dffre(3, 'mnt_op_state', 'mnt_op_nxt_state', "3'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+\jsbegin
+//=============================================================================
+// Init Logic
+//=============================================================================
+\jsend
+
+assign reinit = mntop_init_entries | auto_init;
+\js // TODO: enable auto init if needed
+assign auto_init = tag_mem_init & ~tag_mem_init_ff;
+
+assign tag_mem_init = 1'b1;
+\=obj.lib.dffre(1, 'tag_mem_init_ff', 'tag_mem_init', "1'b0", 'dff_enable', 'clk', 'reset_n')=\
+
+wire auto_init_en;
+wire auto_init_state;
+wire auto_init_state_next;
+
+\=obj.lib.dffre(1, 'auto_init_state', 'auto_init_state_next', "1'b0", 'auto_init_en', 'clk', 'reset_n')=\
+parameter AUTO_INIT_IDLE = 1'b0,
+          AUTO_INIT_BUSY = 1'b1;
+assign auto_init_state_next = auto_init ? AUTO_INIT_BUSY : AUTO_INIT_IDLE ;
+assign auto_init_en = tag_init_done | auto_init; 
+assign auto_init_active = (auto_init_state == AUTO_INIT_BUSY);
+
+endmodule

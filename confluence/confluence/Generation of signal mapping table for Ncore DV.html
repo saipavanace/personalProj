@@ -1,0 +1,47 @@
+<p> </p><p>This table is required for Ncore testbench automation. It's written from Aria in a form of a json file, here is an example </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">{
+      &quot;rtlSignal&quot;: &quot;dmi0__mst_ar_len&quot;,
+      &quot;dvSignal&quot;: &quot;ioaiu_if0.arlen[7:0]&quot;,
+      &quot;info&quot;: &quot;Interface dmi0__mst_ (InterfaceAXI), connected to instance /myChip/dmi0 (dmi)&quot;
+    },</pre>
+</div></div><p>rtlSignal consists of one or more prefixes which are interface instance names  (here dmi0_mst_) and a signal name inside the interface (ar_len)</p><p>dvSignal is constructed by genNcoreTbConnectivityMap as shown below in the snippet of Javascript code</p><p> </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">// 1. Require Aria as a library
+let {genNcoreTbConnectivityMap,ncoreTbNamingMap} = require( &#39;/engr/dev/releases/utils/aria/latest/aria-linux-x64/resources/app/index&#39;); 
+ 
+// 2. Initialize Ncore signal TB naming rule mapping table
+let nMap = new ncoreTbNamingMap(&#39;ncore&#39;,&#39;fsys&#39;);
+
+// 3. Define names of interfaces and ncore units for which mapping rules may be defined
+nMap.legalInterfaces = [&#39;InterfaceAXI&#39;,&#39;InterfaceCTL&#39;,&#39;InterfaceSMI&#39;,&#39;InterfaceATP&#39;,&#39;InterfaceAPB&#39;,&#39;InterfaceCHI&#39;,&#39;InrefaceCLK&#39;];
+nMap.legalNcoreUnits = [&#39;aiu_top&#39;,&#39;ioaiu_top&#39;,&#39;dve&#39;,&#39;dce&#39;,&#39;dmi&#39;,&#39;dii_top&#39;,&#39;grb&#39;];
+
+// 4. Add prefix lookup rules
+// a. If both interfaceDef and unitDef are specified then prefix is only applicable for 
+//  the combination of interface and unit. So here m_chi_if prefix will only appear for InterfaceCHI 
+//  which connect to instances of aiu_top 
+nMap.addPrefixRule({interfaceDef:&#39;InterfaceCHI&#39;,unitDef:&#39;aiu_top&#39;,tbInstanceName:&#39;m_chi_if&#39;}); 
+// b. If only interfaceDef is specified, then rule becomes default for this interface
+//  definition for all unit types. Here ioaiu_if prefix will be used for all instances 
+// of InterfaceAXI
+nMap.addPrefixRule({interfaceDef:&#39;InterfaceAXI&#39;,tbInstanceName:&#39;ioaiu_if&#39;});
+
+// If system can&#39;t find appropriate name in the lookup table, then tb name simply falls 
+// back to the rtl signal name  
+// 5. Add suffix naming changing (typically regsub) rules
+nMap.addRegsubRule({
+  interfaceDef:&#39;InterfaceAXI&#39;,
+  regsubFunc: function(str) {return str.replace(/^ar_/,&#39;ar&#39;)}
+})
+
+// 6. Now Generate signal mapping table
+genNcoreTbConnectivityMap({
+  // Mandatory parameters
+  rtlJsonFile: &#39;/home/bennyw/testcases/rtl_json/hw_config_two.bad.json&#39;,   // RTL DUT file in genwrapper format
+  outputFile: &#39;tb_signal_map_hw_config_two.json&#39;,                          // File which will contain signal mapping table
+  tbNamingMap: nMap,                                                       // Previously defined naming rules
+  // Optional parameters
+  checkDut: {run:true, exitOnError:false}, // Check validity of of RTL json and abort if errors are found
+  msgPrefix: &#39;ARIA&#39;, // Add prefix to all message printed by Aria
+  verbose: true      // Run in verbose mode, useful for debug
+});</pre>
+</div></div><p>When checkDut is enabled a checker procedure is launched right after loading RTL json. It reports individual errors and a summary table at the end </p><p><span class="confluence-embedded-file-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image" width="817" src="https://arterisip.atlassian.net/wiki/download/attachments/16166931/image2019-10-10%2014:45:53.png?api=v2"></span></p><p>if user checkDut: {run:true, exitOnError:false}   and errors are detected in RTL json, assertion is raised thus aborting the entire process</p><p>Checker procedure can also be launched from interactive Aria as <code>ncoreChecker.run()</code> command </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p><p> </p>

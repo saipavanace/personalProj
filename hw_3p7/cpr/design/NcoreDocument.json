@@ -1,0 +1,86 @@
+{
+    "title": "Ncore user-settable parameters",
+    "members": [{
+        "title": "Ncore sockets",
+        "filename": "NcoreSockets.json",
+        "members": [{
+            "title": "AXI4 interface",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_InterfaceAXI.design.cpr"]
+        },{
+            "title": "ACE interface",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_InterfaceAXI.design.cpr", "$HW_NCR_DESIGN/postMap/InterfaceACE.design.cpr"]
+        },{
+            "title": "ACE-LITE interface",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_InterfaceAXI.design.cpr", "$HW_NCR_DESIGN/postMap/InterfaceACELITE.design.cpr"]
+        },{
+            "title": "ACE-LITE-E interface",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_InterfaceAXI.design.cpr", "$HW_NCR_DESIGN/postMap/InterfaceACELITEE.design.cpr"]
+        },{
+            "title": "CHI Issue A interface",
+            "reference": ["$HW_NCR_DESIGN/postMap/InterfaceCHI_A.design.cpr"]
+        },{
+            "title": "CHI Issue B interface",
+            "reference": ["$HW_NCR_DESIGN/postMap/InterfaceCHI_B.design.cpr"]
+        }]
+    }, {
+        "title": "Ncore pre-map parameters",
+        "filename": "NcorePreMap.json",
+        "members": [{
+            "title": "System parameters",
+            "reference": ["$HW_NCR_DESIGN/System/NC_SystemPreMapParams.design.cpr"],
+            "exclude": []
+        }, {
+            "title": "Coherent agent interface unit (C-AIU)",
+            "reference": ["$HW_NCR_DESIGN/preMap/SW_NcoreCAIU.design.cpr"],
+            "exclude": []
+        }, {
+            "title": "Non-coherent agent interface unit (NC-AIU)",
+            "reference": ["$HW_NCR_DESIGN/preMap/SW_NcoreNCAIU.design.cpr"],
+            "exclude": []
+        }, {
+            "title": "Distributed memory interface unit (DMI)",
+            "reference": ["$HW_NCR_DESIGN/preMap/SW_NcoreDMI.design.cpr"],
+            "exclude": []
+        }, {
+            "title": "Distributed IO interface unit (DII)",
+            "reference": ["$HW_NCR_DESIGN/preMap/SW_NcoreDII.design.cpr"],
+            "exclude": []
+        }, {
+            "title": "Distributed coherency engine unit (DCE)",
+            "reference": ["$HW_NCR_DESIGN/preMap/SW_NcoreDCE.design.cpr"],
+            "exclude": []
+        }]
+    }, {
+        "title": "Ncore post-map parameters",
+        "filename": "NcorePostMap.json",
+        "members": [{
+            "title": "Coherent agent interface unit (C-AIU)",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_CAIU.design.cpr", "$HW_NCR_DESIGN/postMap/NC_IOAIU.design.cpr"],
+            "exclude": ["InterfaceGeneric", "MemoryInterface"]
+        }, {
+            "title": "Non-coherent agent interface unit (NC-AIU)",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_IOAIU.design.cpr"],
+            "exclude": ["InterfaceGeneric", "MemoryInterface"]
+        }, {
+            "title": "Distributed memory interface (DMI)",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_DMI.design.cpr"],
+            "exclude": ["InterfaceGeneric", "NC_InterfaceAXI", "NC_CCP", "MemoryInterface"]
+        }, {
+            "title": "NC-AIU proxy cache (AXI4 only) and DMI system memory cache parameters",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_CCP.design.cpr"],
+            "exclude": []
+        }, {
+            "title": "Distributed IO interface (DII)",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_DII.design.cpr"],
+            "exclude": ["InterfaceGeneric", "NC_InterfaceAXI", "MemoryInterface"]
+        }, {
+            "title": "Distributed coherency engine (DCE)",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_DCE.design.cpr"],
+            "exclude": ["InterfaceGeneric", "MemoryInterface"]
+        }, {
+            "title": "Snoop filter",
+            "reference": ["$HW_NCR_DESIGN/postMap/NC_TagFilter.design.cpr"],
+            "exclude": ["MemoryInterface"]
+        }]
+    }]
+}

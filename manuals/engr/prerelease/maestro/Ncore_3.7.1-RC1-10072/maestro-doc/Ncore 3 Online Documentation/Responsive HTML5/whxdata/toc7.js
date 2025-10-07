@@ -1,0 +1,1 @@
+gXMLBuffer ="<?xml version=\"1.0\" encoding=\"utf-8\" ?><data  src=\"toc6.js\"  name=\"License File\" url=\"Ncore_3_Online_Documentation/Get_Started/Flex_Licensing_Manager/Maestro_Licensing.htm#990625bc-2\"><item name=\"License Server Setup\" url=\"Ncore_3_Online_Documentation/Get_Started/Flex_Licensing_Manager/Maestro_Licensing.htm#990655bc-3\" /></data>";

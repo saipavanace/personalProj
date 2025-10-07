@@ -1,0 +1,50 @@
+//=============================================================================
+// Copyright (C) 2017 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines single transaction table entry
+//
+//=============================================================================
+\jsend
+
+\jsbegin
+var u = obj.lib;
+\jsend
+
+\jsbegin
+
+var wOpcode  = u.getParam('wOpcode');
+var chi_cmd  = u.getParam('chi_cmd');
+
+var clkInterface = {
+    clk: 1,
+    reset_n: 1
+}
+
+u.port('input',"Opcode_in",wOpcode);
+u.port ('input',"cm_status",4)
+u.port('output',"Resp_out",3);
+
+var bundleFunctions = obj.userLib.bundleFunctions;
+
+\jsend
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+wire SO ;
+wire SS ;
+wire SD ;
+wire ST ;
+
+assign {SO,SS,SD,ST} = cm_status ;
+
+assign  Resp_out  [2:0]  =   {3{( (Opcode_in== \=wOpcode=\\=chi_cmd.CleanUnique=\)    | (Opcode_in== \=wOpcode=\\=chi_cmd.MakeUnique=\)  )}}  & \=chi_cmd.Comp_UC=\ 
+                         |   {3{( (Opcode_in== \=wOpcode=\\=chi_cmd.CleanInvalid=\)   | (Opcode_in== \=wOpcode=\\=chi_cmd.MakeInvalid=\) | (Opcode_in == \=wOpcode=\\=chi_cmd.Evict=\) )}}  & \=chi_cmd.Comp_I=\ 
+                         |   {3{( (Opcode_in== \=wOpcode=\\=chi_cmd.CleanShared=\)    | (Opcode_in== \=wOpcode=\\=chi_cmd.CleanSharedPersist=\) )  }}  & \=chi_cmd.Comp_I=\ 
+                         |   {3{( (Opcode_in== \=wOpcode=\\=chi_cmd.StashOnceShared=\) | (Opcode_in== \=wOpcode=\\=chi_cmd.StashOnceUnique=\) ) &  SO & ~SS & ~SD & ~ST }}  & \=chi_cmd.Comp_UC=\ ; 
+
+
+
+endmodule
+

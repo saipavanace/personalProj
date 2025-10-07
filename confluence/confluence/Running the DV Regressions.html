@@ -1,0 +1,209 @@
+<p>These regressions, under the name “checkin tests”, are part of the Jenkins pipelines that qualify Maestro builds to be promoted from <code>bleeding_edge</code> to <code>stable</code>.</p><h2 id="RunningtheDVRegressions-InstallingandrunningthewholeDVsuite">Installing and running the whole DV suite</h2><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>To follow these steps, you will need access to various HW/DV git repos.</p></div></div><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>The regressions need many GBs of disk space. By default, they will run under <code>/scratch/&lt;yourusername&gt;</code>. They can be run elsewhere, e.g. in your home, but you may run out of disk quota. Thus, it is better to ensure that you have an account on <code>/scratch</code>. </p></div></div><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>This example is for <code>csh</code>/<code>tcsh</code>, but <code>bash</code> is also supported below.</p></div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">This example is for csh/tcsh, but bash is also supported.
+mkdir &lt;your_work_dir&gt;; cd &lt;your_work_dir&gt;
+
+# Branch for the 3.7 work. This command takes a while as it checks out lots of stuff.
+/engr/dev/tools/script/setup_concerto Ncore3.7/develop
+
+# A couple of harmless Errors are possible.
+source hw-ncr/dv/scripts/setup_ncore37.csh
+
+# Which Maestro to test with. In this case, bleeding_edge.
+module unload dev/release/Ncore3.7/stable
+module load dev/release/Ncore3.7/bleeding_edge
+
+setenv MAESTRO_EXAMPLES &quot;$WORK_TOP/../test_projects/ncore_v3.7_configs/base_configs&quot;
+
+# The next command will launch the regression scripts as defined in &lt;your_work_dir&gt;/hw-test-projects.
+# If developing on them, this is the right moment to ensure that &lt;your_work_dir&gt;/hw-test-projects contains your modifications.
+
+# This launches the regressions in /scratch/&lt;youraccount&gt;.
+# If you need to use another location, pass additionally: -z /some/other/temp/space
+# This command will usually take more than an hour.
+$WORK_TOP/dv/scripts/checkin_test -n -o -l -p -s
+</pre>
+</div></div><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>This example is for <code>bash</code> and running sandbox version of maestro.</p></div></div><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">This example is for bash. 
+mkdir &lt;your_work_dir&gt;; cd &lt;your_work_dir&gt;
+
+# Branch for the 3.7 work. This command takes a while as it checks out lots of stuff.
+/engr/dev/tools/script/setup_concerto Ncore3.7/develop
+
+# A couple of harmless Errors are possible.
+source hw-ncr/dv/scripts/setup_ncore37
+
+# Which Maestro to test with. In this case, &lt;your_sandbox&gt;.
+module load dev/release/Ncore3.7/stable
+export PATH=&lt;your_sandbox&gt;/build_debug/bin
+which maestro ; # point to your sandbox executable
+
+# Verify MAESTRO_TCLLIB env var
+# Should point to &lt;your_sandbox&gt;/tests/cases/test_tcl/tcllib
+export MAESTRO_TCLLIB=&lt;your_sandbox&gt;/tests/cases/test_tcl/tcllib
+echo $MAESTRO_TCLLIB
+
+# Verify maestro-server path.
+# Should point to something like:
+# /engr/build/maestro/Ncore3.7/maestro-product/stable/maestro-server/maestro-server
+which maestro-server
+
+# Verify WORK_TOP env var. Should point to &lt;your_work_dir&gt;/hw-ncr
+echo $WORK_TOP
+
+# Verify MAESTRO_EXAMPLES env var. 
+# Should point to &quot;$WORK_TOP/../test_projects/ncore_v3.7_configs/base_configs&quot;
+echo $MAESTRO_EXAMPLES 
+
+# The next command will launch the regression scripts as defined in &lt;your_work_dir&gt;/hw-test-projects.
+# If developing on them, this is the right moment to ensure that &lt;your_work_dir&gt;/hw-test-projects contains your modifications.
+
+# This launches the regressions in /scratch/&lt;youraccount&gt;.
+# If you need to use another location, pass additionally: -z /some/other/temp/space
+# This command will usually take more than an hour.
+$WORK_TOP/dv/scripts/checkin_test -n -o -l -p -s
+</pre>
+</div></div><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>During the test execution, it is possible to monitor the progress by looking at a path like e.g. <code>/scratch/federico/Ncore3.7/11754/checkin_2024_09_21_15_35_12/...</code> .</p></div></div><p>The command will print a report of passes and fails that can be investigated. For example, in case of failures:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">********************************************************
+REPORT FOR UNLABELED
+********************************************************
+Total tests    : 182
+Passed         : 163
+Pass Rate      : 89.56%
+Failed         : 19
+Did Not Run    : 0
+Failed compile : 9
+Wall time      : 0:00:00
+Total Cycles   : 6.01593*10^14
+
+
+Signature List
+==========================
+#    Fails	Signature                                         	Suggested test
+
+
+Failures By Config
+==========================
+
+Configs                        
+hw_cfg_nxpauto                 
+hw_config_two                  
+hw_cfg_20                      
+config256bit                   
+hw_cfg_42_mix                  
+hw_cfg_42_e                    
+hw_cfg_42_e_qos                
+axi4                           
+ace_lite                       
+ace_lite_e                     
+ace                            
+ioc                            
+ioc_4c                         
+ioc_256b                       
+ioc_128b                       
+ioc_2c                         
+hw_cfg_02_ioc_1c               
+hw_cfg_03_ace_1c               
+hw_cfg_07_axi4_1c              
+hw_cfg_ioaiu_subsys1           
+hw_cfg_ioaiu_subsys2           
+hw_cfg_43                      
+hw_cfg_46                      
+hw_cfg_40                      
+hw_cfg_oppo                    
+hw_cfg_perf_snps               
+hw_cfg_2_slow_sram             
+hw_cfg_2_e                     
+hw_cfg_31                      
+hw_cfg_45_e                    
+hw_cfg_60_4                    
+hw_config_e_atomic             
+hw_cfg_tenstorrent_4cn         
+hw_cfg_resiltech_connectivity_e
+hw_cfg_2                       
+hw_cfg_3                       
+hw_cfg_7                       
+hw_config_2                    
+hw_cfg_7_all_ecc               
+hw_config_10                   
+hw_cfg_meye_q7_latest          
+config1                        
+hw_cfg_22                      
+config2                        
+config3                        
+config4                        
+config5                        
+256b                           
+256b_narrow_axid               
+256b_wXttCtrlEntries_4         
+128b                           
+64b                            
+32b                            
+128b_ecc                       
+128b_parity                    
+128b_exmon                     
+
+
+************************************************
+             BELOW COMPILE FAILED               
+************************************************
+
+ioc_4c : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu/ioc_4c/compile.err or compile.out
+ioc_2c : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu/ioc_2c/compile.err or compile.out
+hw_cfg_ioaiu_subsys1 : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu_subsys/hw_cfg_ioaiu_subsys1/compile.err or compile.out
+hw_cfg_ioaiu_subsys2 : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu_subsys/hw_cfg_ioaiu_subsys2/compile.err or compile.out
+hw_cfg_60_4 : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/fsys/hw_cfg_60_4/compile.err or compile.out
+hw_cfg_tenstorrent_4cn : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/fsys/hw_cfg_tenstorrent_4cn/compile.err or compile.out
+hw_cfg_resiltech_connectivity_e : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/fsys/hw_cfg_resiltech_connectivity_e/compile.err or compile.out
+hw_cfg_meye_q7_latest : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/dve/hw_cfg_meye_q7_latest/compile.err or compile.out
+128b_ecc : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/dii/128b_ecc/compile.err or compile.out
+hw_cfg_nxpauto : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/chi_aiu/hw_cfg_nxpauto/compile.err or compile.out
+ioc_4c : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu/ioc_4c/compile.err or compile.out
+ioc_2c : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu/ioc_2c/compile.err or compile.out
+hw_cfg_ioaiu_subsys1 : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu_subsys/hw_cfg_ioaiu_subsys1/compile.err or compile.out
+hw_cfg_ioaiu_subsys2 : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/ioaiu_subsys/hw_cfg_ioaiu_subsys2/compile.err or compile.out
+hw_cfg_60_4 : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/fsys/hw_cfg_60_4/compile.err or compile.out
+hw_cfg_tenstorrent_4cn : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/fsys/hw_cfg_tenstorrent_4cn/compile.err or compile.out
+hw_cfg_resiltech_connectivity_e : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/fsys/hw_cfg_resiltech_connectivity_e/compile.err or compile.out
+hw_cfg_meye_q7_latest : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/dve/hw_cfg_meye_q7_latest/compile.err or compile.out
+128b_ecc : /scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/dii/128b_ecc/compile.err or compile.out</pre>
+</div></div><div class="confluence-information-macro confluence-information-macro-information"><span class="aui-icon aui-icon-small aui-iconfont-info confluence-information-macro-icon"></span><div class="confluence-information-macro-body"><p>To debug the Maestro execution part, modify the error paths as follows:</p><p><code>/scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/dii/128b_ecc/compile.err or compile.out</code> → <code>/scratch/maestro1/sym_checkin_test/CLIENT/Ncore3.7/checkin_2024_09_22_02_42_16/debug/dii/128b_ecc/exe/maestro.log</code></p><p>And potentially, for problems in Maestro Server, <code>.maestro-server.log</code> in the same location.</p></div></div><p /><h2 id="RunningtheDVRegressions-RunningtheMaestroportionofanindividualtest">Running the Maestro portion of an individual test</h2><p>Running the whole DV suite can be time-consuming, indirect and overwhelming. It is possible to isolate a single DV test and run it in an environment more familiar to Maestro developers, without any need for the infrastructure of the DV suite.</p><p>To do so, first of all it is important to understand that DV tests work with a “<em>base config</em>” on top of which an additional “<em>unit customization</em>” is applied. This mechanism is used to test HW features on top of baseline designs, or to apply randomization. Thus, it is necessary to indicate a path to both elements to rerun a simulation.</p><p>Helpfully, looking at the log of a regression (e.g. in Jenkins) (see above - <code>.../exe/maestro.log</code>), the relevant information is close to the top, e.g.:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">% # source /engr/build/maestro/Ncore3.7/maestro-product/11758/hw_repos/test_projects/ncore_v3.7_configs/base_configs/hw_config_60/hw_config_60.tcl
+
+Found envVar MAESTRO_TCLLIB = /engr/build/maestro/Ncore3.7/maestro-product/11758/maestro-client/tests/cases/test_tcl/tcllib
+auto_path = /usr/share/tcl8.5 /usr/lib64/tcl8.5 /usr/lib64/tk8.5 /usr/share/tk8.5 /engr/build/maestro/Ncore3.7/maestro-product/11758/maestro-client/tests/cases/test_tcl/tcllib
+Sourcing /engr/build/maestro/Ncore3.7/maestro-product/11758/maestro-client/tests/cases/test_tcl/tcllib/pkgs.tcl
+#######################################
+#### Sourcing BASE config script: /engr/build/maestro/Ncore3.7/maestro-product/11758/hw_repos/test_projects/ncore_v3.7_configs/base_configs/hw_config_60/hw_config_60.tcl
+#######################################
+MUT exists? 1
+Env var MAESTRO_USER_TCL = /engr/build/maestro/Ncore3.7/maestro-product/11758/hw_repos/test_projects/ncore_v3.7_configs/ioaiu_config/hw_cfg_60_ioc_4c
+Sourcing MUT /engr/build/maestro/Ncore3.7/maestro-product/11758/hw_repos/test_projects/ncore_v3.7_configs/ioaiu_config/hw_cfg_60_ioc_4c/config_design.tcl
+#######################################
+#### Sourcing UNIT config script: /engr/build/maestro/Ncore3.7/maestro-product/11758/hw_repos/test_projects/ncore_v3.7_configs/ioaiu_config/hw_cfg_60_ioc_4c/config_design.tcl
+#######################################</pre>
+</div></div><p>Based on this information, it is possible to run Maestro as follows:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence"># Location of the unit customization.
+setenv MAESTRO_USER_TCL /engr/build/maestro/Ncore3.7/maestro-product/11758/hw_repos/test_projects/ncore_v3.7_configs/ioaiu_config/hw_cfg_60_ioc_4c
+# Location of Tcllib. Can also be pointed to the Maestro source code in maestro/tests/cases/test_tcl/tcllib.
+setenv MAESTRO_TCLLIB /engr/build/maestro/Ncore3.7/maestro-product/11758/maestro-client/tests/cases/test_tcl/tcllib
+# Assuming we have a Maestro installation in ~/maestro/build/bin.
+cd ~/maestro
+./build/bin/maestro -c -s /engr/build/maestro/Ncore3.7/maestro-product/11758/hw_repos/test_projects/ncore_v3.7_configs/base_configs/hw_config_60/hw_config_60.tcl</pre>
+</div></div><p /><h2 id="RunningtheDVRegressions-Abortingtherunanddeleteyourjobs.">Aborting the run and delete your jobs.</h2><p>To stop the run and terminate all the jobs, press <code>ctrl-C</code> in the window. The window also shows a path to the <code>qdel_cmd</code> script. Source the script to terminate all jobs.</p><h2 id="RunningtheDVRegressions-Monitoringthestatusofthejobs.">Monitoring the status of the jobs.</h2><p>To monitor the jobs submitted to the grid, use command:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">qstat -u $USER</pre>
+</div></div><p>The console will display something like:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">job-ID  prior   name       user         state submit/start at     queue                          slots ja-task-ID
+-----------------------------------------------------------------------------------------------------------------
+5355520 0.47517 dmi_config  klaw         r     10/02/2024 11:42:47 checkin.q@gr7-03.arteris.com       1        
+5355525 0.47512 dmi_config  klaw         r     10/02/2024 11:42:47 checkin.q@gr7-01.arteris.com       1        
+5355530 0.47507 dii_256b_c klaw         r     10/02/2024 11:42:47 checkin.q@gr7-22.arteris.com       1        
+5355349 0.00000 chi_aiu_hw klaw         hqw   10/02/2024 11:42:33                                    1        
+5355350 0.00000 chi_aiu_hw klaw         hqw   10/02/2024 11:42:33                                    1        
+5355352 0.00000 chi_aiu_hw klaw         hqw   10/02/2024 11:42:33                                    1        </pre>
+</div></div><p>Job-ID 5355520, 5355525, 5355530 are running. The others are in the queue waiting to execute.</p><p>To get details about a particular job such as which design it is running and where the output directory is, use command:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">qstat -j &lt;Job-ID&gt;</pre>
+</div></div><p>Then look for something like: </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">stdout_path_list: NONE:NONE:/scratch/klaw/Ncore3.7/11840/checkin_2024_10_02_11_41_53/debug/chi_aiu/hw_cfg_nxpauto/compile.out</pre>
+</div></div><p>The output directory is at the location of the “compile.out” under the sub-directory “exe”.</p><p>To terminate a particular job, use command:</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">qdel -j Job-ID</pre>
+</div></div><p />

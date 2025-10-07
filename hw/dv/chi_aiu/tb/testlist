@@ -1,0 +1,51 @@
+
+#Compile -- hw_cfg_two
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -c -i caiu1 -a -n chi_aiu_hw2 -d INHOUSE_APB_VIP,RTL_DUT,INHOUSE_AXI -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_2
+#test run -- hw_cfg_two
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n chi_aiu_hw2 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 27159160
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n chi_aiu_hw2 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 990526160
+
+###################################
+### Perf monitor bringup_test 
+###################################
+#chi_aiu perf monitor sanity test
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n chi_aiu_hw2 -t perf_cnt_test -R 18430028 -p +UVM_MAX_QUIT_COUNT=150,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=10000000000,+en_excl_txn,+k_targ_src_id_chk_en=1,+k_num_requests=100,+k_num_snoop=20,+random_txn_test,+event_first=1,+event_second=0,+counter_control=0,+ssr_count=0
+
+#Compile -- hw_cfg_nxpauto
+node $WORK_TOP/../hw-scripts/qrsim.js -e chi_aiu -a -c -n hw_cfg_nxpauto -d ASSERT_ON,COVER_ON,INHOUSE_APB_VIP,RESILIENCY_TESTING,INHOUSE_AXI -i caiu0 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_nxpauto -y hw_config_nxpauto
+
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_nxpauto -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 890654650
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_nxpauto -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 654321486
+
+#compile -- hw_cfg_20
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -c -i caiu0 -a -n hw_cfg_20 -d INHOUSE_APB_VIP,RTL_DUT,INHOUSE_AXI -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_20 -y hw_config_20
+#test run -- hw_cfg_20
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_20 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 990526160
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_20 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 654321486
+
+#compile -- hw_cfg_7
+# node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -c -i caiu0 -a -n hw_cfg_7 -d INHOUSE_APB_VIP,RTL_DUT,INHOUSE_AXI -y hw_config_07 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7
+#test run -- hw_cfg_7
+# node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_7 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 27159160
+# node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_7 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 990526160
+# node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_7 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 890654650
+# node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_7 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 654321486
+
+#compile -- hw_cfg_256
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -c -i caiu0 -a -n hw_cfg_256 -d INHOUSE_APB_VIP,RTL_DUT,INHOUSE_AXI -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_22 -y hw_config_22
+#test run -- hw_cfg_256
+node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_256 -t chi_aiu_bringup_test -p +random_txn_test,+k_num_snoop=500,+en_excl_txn,+k_targ_src_id_chk_en,+UVM_VERBOSITY=UVM_NONE,+UVM_MAX_QUIT_COUNT=1 -R 271591234
+
+#chi_resiliency_sanity_tests
+#Compile -- hw_cfg_7_all_ecc
+# node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -a -c -n hw_cfg_7_all_ecc -d ASSERT_ON,COVER_ON,INHOUSE_APB_VIP,RESILIENCY_TESTING,INHOUSE_AXI -i caiu0 -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_7_all_ecc -y hw_config_07
+#test run -- hw_cfg_7_all_ecc uce+ce of ECC
+# node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_7_all_ecc -t chi_aiu_resiliency_test -R 16006580 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+en_excl_txn,+k_targ_src_id_chk_en=1,+disable_pri_check=1,+inject_smi_uncorr_error=1,+drop_smi_uce_pkt,+check_hdr_msg_type,+uncorr_error_inj_pcnt=100,+random_txn_test,+k_num_snoop=1000,+ccmd_rsp_err_inj,+smi_ndp_err_inj=1 -u _resiliency_smi_uncorr_err_multi_ndp_c_cmdrsp
+##node $WORK_TOP/../scripts/qrsim.js -e chi_aiu -n hw_cfg_7_all_ecc -t chi_aiu_resiliency_test -R 16006581 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+en_excl_txn,+k_targ_src_id_chk_en=1,+inj_cntl=1,+random_txn_test,+k_num_snoop=1000,+smi_ndp_err_inj=1,+corr_error_inj_pcnt=30 -u _resiliency_smi_corr_err_multi_ndp
+
+#chisubsys compilation
+##node $WORK_TOP/../scripts/qrsim.js -e chi_subsys -a -c -n hw_cfg_42_e -d ASSERT_ON,INHOUSE_APB_VIP,DATA_ADEPT,FSYS_COVER_ON,RESILIENCY_TESTING,USE_VIP_SNPS_CHI,CHI_SUBSYS -Z $MAESTRO_EXAMPLES/../fsys_config/hw_cfg_42 -y hw_config_42_e
+
+#chisubsys run
+
+##node $WORK_TOP/../scripts/qrsim.js -e chi_subsys -n hw_cfg_42_e -t chi_subsys_base_test -R 0 -p +UVM_MAX_QUIT_COUNT=1,+UVM_VERBOSITY=UVM_NONE,+UVM_TIMEOUT=200000000000,+k_targ_src_id_chk_en=1,+chiaiu_scb_en=1,+ioaiu_scb_en=1,+dce_scb_en=1,+dmi_scb_en=1,+dii_scb_en=1,+dve_scb_en=1,+legato_scb_dis=1,+EN_FSYS_SCB=1,chi_snps_fcov_en=1,+k_coh_noncoh_collision=1,+is_dve_dtwdbg_reader=0,+k_ace_slave_read_data_interleave_dis=1,+k_timeout=1500000,+wt_expected_end_state=70,+wt_legal_end_state_with_sf=30,+use_sw_crdt_mgr_cls=1,+wt_legal_end_state_without_sf=0,+chi_num_trans=15,+k_sim_timeout=10 -u _directed_read_prefer_unique_0 

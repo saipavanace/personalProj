@@ -1,0 +1,146 @@
+[
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/csr/u_dmi_apb_csr"
+     ],
+     "line_pat" : "\\= m_penable \\& m_psel \\& m_pwrite\\;",
+     "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/csr/u_dmi_apb_csr"
+     ],
+     "line_pat" : "\\= m_penable \\& m_psel \\& \\~m_pwrite\\;",
+     "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 5 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/csr/u_dmi_apb_csr"
+     ],
+     "line_pat" : "\\= m_penable \\& m_psel \\& \\(addr_no_hit ",
+     "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "APB psel does not go low while penable is asserted.",
+     "file_pat" : "apb_csr_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/csr/u_dmi_apb_csr"
+     ],
+     "line_pat" : "\\= m_penable \\& m_psel\\;",
+     "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 3 -comment {APB psel does not go low while penable is asserted.}"
+    },
+    {"comment" : "maint_req_array_sel=1 means select data mem, thus never possible in tagpipe.",
+     "file_pat" : "ccp_tagpipe_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/u_ccp/u_tagpipe"
+     ],
+     "line_pat" : "assign way[0-9]+_state \\= \\(way_addr_matchvec",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 6 -comment {maint_req_array_sel=1 means select data mem, thus never possible in tagpipe.}"
+    },
+    {"comment" : "rtt_cam_match=1&rtt_cam_bus=0 needs more random stimulus for remaining entries.",
+     "file_pat" : "dmi_cache_pipe_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/cache_pipe"
+     ],
+     "line_pat" : "\\| \\(rtt_cam_match\\[[0-9]+\\] \\& rtt_cam_bus",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 3 -comment {rtt_cam_match=1&rtt_cam_bus=0 needs more random stimulus for remaining entries.}"
+    },
+    {"comment" : "Questa is not detecting condition where size=5 for atomic COMPARE.",
+     "file_pat" : "dmi_atomic_engine.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_transaction_control/dmi_atomic_engine"
+     ],
+     "line_pat" : "assign compSwapDataBE \\= \\(ab_req_size \\=\\= \\'b101",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 2 -comment {Questa is not detecting condition where size=5 for atomic COMPARE.}"
+    },
+    {"comment" : "ncore3 does not support atomics with size=32 bytes.",
+     "file_pat" : "dmi_atomic_engine.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_transaction_control/dmi_atomic_engine"
+     ],
+     "line_pat" : "assign swapDataMux \\= \\(\\(atomicType",
+     "exclusion" : "coverage exclude -src %file% -feccondrow %line% 3 -comment {ncore3 does not support atomics with size=32 bytes.}"
+    },
+    {"comment" : "CCP FSM transition not possible, should have been caught by coverCheck.",
+     "file_pat" : "ccp_em_mem_v3_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem3",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem2",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem1",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem0",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_tag_mem1",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_tag_mem0"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -ftrans state {st1 -> st0} -comment {CCP FSM transition not possible, should have been caught by coverCheck.}"
+    },
+    {"comment" : "CCP FSM transition not possible, should have been caught by coverCheck.",
+     "file_pat" : "ccp_em_mem_v3_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem3",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem2",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem1",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem0",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_tag_mem1",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_tag_mem0"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -ftrans state {st2 -> st0} -comment {CCP FSM transition not possible, should have been caught by coverCheck.}"
+    },
+    {"comment" : "CCP FSM transition re-init from maint op, covered in config5.",
+     "file_pat" : "ccp_em_mem_v3_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem3",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem2",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem1",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_data_mem0",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_tag_mem1",
+         "/tb_top/dut/dmi_unit/dmi_resource_control/dmi_cache_wrap/dmi_ccp/mem/u_tag_mem0"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -ftrans state {st2 -> st1} -comment {CCP FSM transition re-init from maint op, covered in config5.}"
+    },
+    {"comment" : "PMON monitor excluded in this config, fully covered in <config>.",
+     "file_pat" : "ncr_pmon_*.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/u_ncr_pmon"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {PMON monitor excluded in this config, fully covered in <config>.}"
+    },
+    {"comment" : "Questa Issue: tool is not detecting condition observed in simulations. Remove when resolved.",
+     "file_pat" : "dmi_csr_.*",
+     "instances": [
+         "/tb_top/dut/dmi_unit/csr"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {Questa Issue: tool is not detecting condition observed in simulations. Remove when resolved.}"
+    },
+     {"file_pat" : "dmi_protocol_control",
+    "instances": [
+        "/tb_top/dut/dmi_unit/dmi_protocol_control"
+    ],
+    "line_pat" : "is_cmdcacheop *=",
+    "exclusion" : "coverage exclude -scope {%instance%} -src %file% -fecexprrow %line% 8 10",
+    "comment" : "DMI doesn't receive those messages"
+    },
+     {"comment" : "STR req FLM selects IDs based on find first, thus not reach upper IDs since related to nNcCmdInFlight.",
+     "file_pat" : "arb_spri",
+     "instances": [
+         "/tb_top/dut/dmi_unit/dmi_protocol_control/str_req_flm/flm_alloc_find_first"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {STR req FLM selects IDs based on find first, thus not reach upper IDs since related to nNcCmdInFlight.}"
+    },
+    {"comment" : "trace_capture is covered fully in config4.",
+     "file_pat" : "trace_capture.*",
+     "instances": [
+         "/tb_top/dut/trace_capture"
+     ],
+     "line_pat" : "endmodule",
+     "exclusion" : "coverage exclude -scope {%instance%} -recursive -comment {trace_capture is covered fully in config4.}"
+    }
+
+]

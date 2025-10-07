@@ -1,0 +1,17 @@
+<h1 id="MaestroServer-Introduction">Introduction</h1><p>maestro-server is a JavaScript based application responsible for generating HW collaterals from intermediate JSON provided from maestro-client</p><p>Setup:</p><ol start="1"><li><p>Clone repo <a class="external-link" href="http://gitlab.arteris.com/maestro-dev/services/m-ncore" rel="nofollow">http://gitlab.arteris.com/maestro-dev/services/m-ncore</a></p></li><li><p>install proper nodejs version </p><ol start="1"><li><p>&gt;=Ncore3.7: <code>module load node/v16.19.0</code> (or <code>module load dev/release/Ncore3.7/stable</code>)</p></li><li><p>&lt;=Ncore3.6: <code>module load node/v10.15.3</code> (or <code>module load dev/release/Ncore3.6/stable</code>)</p></li></ol></li><li><p>run <code>npm install</code>, this command will download node packages (including third party and internal)</p></li><li><p>run <code>node ${repo}/index.js -j ${path_to_intermediate.json}</code> </p></li></ol><h1 id="MaestroServer-Troubleshooting">Troubleshooting</h1><p>Invoke maestro-server help </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ node ${repo}/index.js -h</pre>
+</div></div><p>To cleanup npm, please review</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ more ~bhavin/bin/npm_clean
+module load node
+npm cache clean --force --max-old-space-size=8192</pre>
+</div></div><p>Sometimes you may have to do a prepublish</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ npm run prepublish</pre>
+</div></div><p>You may have to remove package-lock.json when versions become inconsistent</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">$ rm -rf node_modules package-lock.json</pre>
+</div></div><h1 id="MaestroServer-Debugging">Debugging</h1><p>To turn on the debug mode use</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">export MAESTRO_SERVER_DEBUG_MODE=true</pre>
+</div></div><h1 id="MaestroServer-DeployingYourOwnServer">Deploying Your Own Server</h1><p>If you are working on the server and want to use it in maestro client, try the following setup. When you use modules to load environments, server path is setup to point to engineering release. The following commands override it.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence">cd ${YOUR_SERVER_PATH}/services/m-ncore
+ln -s index.js maestro-server
+export PATH=${YOUR_SERVER_PATH}/services/m-ncore:${PATH}</pre>
+</div></div>

@@ -1,0 +1,137 @@
+\jsbegin
+//============================================================================
+// Copyright (C) 2019 Arteris, Inc.
+// All rights reserved.
+//============================================================================
+//
+// NAME: Age Link Arbiter 
+// 
+// AUTHOR : Tso-Wei Chang
+//
+// DESCRIPTION:
+// Contains 'depth' number of shift registers and each of the register stores 
+// the valid bit and the entry index. When a new entry is allocated, the 
+// allocation pointer is pushed into the first register. Each register only flops 
+// the index from the previous pipe stage only when all the previous stages are valid. 
+// The entry can be popped at any location based on the grant pointer.
+//============================================================================
+\jsend
+
+\jsbegin
+//============================================================================     
+// Variables
+//============================================================================
+   
+let u = obj.lib;
+let m = obj.userLib;
+let bundleFunctions = m.bundleFunctions;
+let log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+let depth = u.getParam('depth');
+let clkInterface= u.getParam('clkInterface');
+let wDepth = log2ceil(depth);
+//============================================================================
+// Ports
+//============================================================================
+u.port('input',     'push_en',          1);
+u.port('input',     'pop_en',           1);
+u.port('input',     'push_data',    depth);
+u.port('input',     'req_vec',      depth);
+u.port('output',    'grant_vec',    depth);
+
+
+//============================================================================
+// Interfaces
+//============================================================================
+obj.lib.interface('',        'slave', clkInterface);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+\jsbegin
+//============================================================================
+// Wires
+//============================================================================
+\jsend
+
+wire [\=depth-1=\:0]    valid_en;
+wire [\=depth-1=\:0]    valid_set;
+wire [\=depth-1=\:0]    valid_clr;
+wire [\=depth-1=\:0]    valid_d;
+wire [\=depth-1=\:0]    valid;
+\js for (let i = 0; i < depth; i++) {
+wire [\=depth-1=\:0]    index_dec\=i=\;
+wire [\=wDepth-1=\:0]   index\=i=\;
+wire [\=wDepth-1=\:0]   index_d\=i=\;
+wire                    valid\=i=\;
+wire                    older_qual_req\=i=\;
+\js }
+wire [\=wDepth-1=\:0]   push_data_enc;
+wire [\=depth-1=\:0]    qual_age_vec;
+
+wire [\=depth-1=\:0]    pop_vec;
+\jsbegin
+//============================================================================
+// Arbitration
+//============================================================================
+\jsend
+\js for (let i = 0; i < depth; i++) {
+assign qual_age_vec[\=i=\] = |(req_vec & index_dec\=i=\) & valid[\=i=\];
+assign pop_vec[\=i=\] = qual_age_vec[\=i=\] & ~older_qual_req\=i=\;
+assign index_dec\=i=\ = \=depth=\'b1 << index\=i=\;
+\js }
+
+\js // Find First: MSB has highest priority (oldest)
+\js for( var i = depth-1 ; i > 0 ; i-- ) {
+assign older_qual_req\=i-1=\ = older_qual_req\=i=\ | qual_age_vec[\=i=\];
+\js }
+assign older_qual_req\=depth-1=\ = 1'b0;
+
+assign grant_vec = index_dec0 & {\=depth=\{pop_vec[0]}}
+\js for (let i = 1; i < depth; i++) {
+                  |index_dec\=i=\ & {\=depth=\{pop_vec[\=i=\]}}
+\js }
+                  ;
+
+\jsbegin
+//============================================================================
+// Link Entries
+//============================================================================
+\jsend
+
+\js for (let i = 0; i < depth; i++) {
+\=u.dffre(wDepth,   'index'+i,  'index_d'+i,       wDepth+"'d0",  'valid_set['+i+']',   'clk',   'reset_n')=\
+\=u.dffre(1,        'valid'+i,  'valid_d['+i+']',        "1'b0",  'valid_en['+i+']',    'clk',   'reset_n')=\
+assign valid[\=i=\] = valid\=i=\;
+
+assign valid_set[\=i=\] = push_en 
+\js     for (let j = 0; j < i; j++) {
+                        & valid[\=j=\] & ~(pop_vec[\=j=\] & pop_en)                   
+\js     }
+                        ;
+    \js if(i == 0) {
+assign index_d0 = push_data_enc;
+    \js } else {
+assign index_d\=i=\ = index\=i-1=\;
+    \js }
+
+\js }
+
+assign valid_en = valid_set | valid_clr;
+assign valid_clr = pop_vec & {\=depth=\{pop_en}};
+assign valid_d = valid_set | ~valid_clr; 
+
+\=obj.lib.instance({
+    instanceName:  'push_idx_encode',
+    moduleName: 'encoder',
+    params: {width: depth},
+    verilogParams: {},
+    ports: {
+            invector : 'push_data',
+            outdecode: 'push_data_enc'},
+    interfaces:[],
+    portsDelimiter: '\n        '
+})=\
+
+\js // TODO: add assertion to check overflow
+
+endmodule

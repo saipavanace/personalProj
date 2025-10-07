@@ -1,0 +1,1 @@
+gXMLBuffer ="<?xml version=\"1.0\" encoding=\"utf-8\" ?><data  src=\"toc23.js\"  name=\"Mapping (Phase 4)\" url=\"Ncore_3_Online_Documentation/User_Guide/Mapping/Mapping.htm#927532\"><item name=\"6.1  Run the Mapping Tool\" url=\"Ncore_3_Online_Documentation/User_Guide/Mapping/Run_the_Mapping_Tool.htm#1007222\" /></data>";

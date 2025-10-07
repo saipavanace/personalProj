@@ -1,0 +1,51 @@
+<p>Starting from Ncore3.7/develop, we can route CSR request / response networks separately, using three different approaches - cascade, regular topology, or manual.</p><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="start_page.png" width="1141" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/start_page.png?api=v2"></span><p>Routing the CSR networks as cascade preserves the behavior as with Ncore3.6/develop. </p><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="cascade.png" width="967" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/cascade.png?api=v2"></span><p>For the other two approaches, it works the same as for the main networks.</p><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="mesh.png" width="965" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/mesh.png?api=v2"></span><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="manual.png" width="964" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/manual.png?api=v2"></span><p>In Tcl, the command to initialize CSR networks (i.e., to create ATUs) is </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">create_configuration_units -topology $topology -clock $clock</pre>
+</div></div><p>In the above command, <em>topology</em> refers to path to the TransportSolution, <em>clock</em> refers to the ClockSubdomain.</p><p>To route the networks as cascade, we can use the following commands.</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">connect_request_csr_network -topology $topology -clock $clock
+connect_response_csr_network -topology $topology -clock $clock</pre>
+</div></div><p>To route the networks as regular topology, we can use </p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">set node_positions {
+    {atu_dce0 0 0} 
+    {atu_default_peripheral_socket_1 0 0} 
+    {atu_default_initiator_socket_1 1 0}
+    {atu_sys_global_register_blk 1 0} 
+    {atu_default_memory_socket_1 2 0} 
+    {atu_default_initiator_socket 0 1}
+    {atu_dve0 0 1} 
+    {atu_default_memory_socket 1 1} 
+    {axi_sys_dii 1 1} 
+    {atu_default_peripheral_socket 2 1}
+    {atu_default_initiator_socket_0 0 2} 
+    {atu_sys_dii 0 2} 
+    {atu_default_memory_socket_0 1 2}
+    {ncore_debug_atu 1 2} 
+    {atu_default_peripheral_socket_0 2 2}
+}
+
+proc set_node_positions {network} {
+    global node_positions topology
+    foreach node_data $node_positions {
+        set node [lindex $node_data 0]
+        set x [lindex $node_data 1]
+        set y [lindex $node_data 2]
+        set_node_position -object $topology/$node -x [expr int($x)] -y [expr int($y)] -network $network
+    }
+}
+
+set request_mesh_params [list type mesh meshx 3 meshy 3 dataWidth 32 pipes_per_link 0 \
+                              internal_buffer_depth 2 allow_pass_through_switch false router xy \
+                              network $topology/csr_request_nw ]
+
+set response_mesh_params [list type mesh meshx 3 meshy 3 dataWidth 32 pipes_per_link 0 \
+                               internal_buffer_depth 2 allow_pass_through_switch false router yx \
+                               network $topology/csr_response_nw ]
+
+set_node_positions $topology/csr_request_nw
+run_generator -name regular_topology -topology $topology -clock $clock -params $request_mesh_params
+
+set_node_positions $topology/csr_response_nw
+run_generator -name regular_topology -topology $topology -clock $clock -params $response_mesh_params</pre>
+</div></div><p>To route the networks for manual editing, we can use the same commands as for the main networks</p><div class="code panel pdl" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">connect_network -name $topology/csr_request_nw
+connect_network -name $topology/csr_response_nw</pre>
+</div></div><p>It worthies mentioning that when trying to tile the CSR networks that are routed in mesh, we can choose different routing algorithms to make the networks have more similar structures and thus maximize the chances of tiling. For example, we can choose XY routing (which is also the default) for the request network:</p><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="request_network_xy.png" width="1229" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/request_network_xy.png?api=v2"></span><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="request_network_layout.png" width="1132" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/request_network_layout.png?api=v2"></span><p>For the response network, we can copy the placement of the atus from the request network, and choose YX routing:</p><p /><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="response_network_yx_copy_from_request.png" width="1322" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/response_network_yx_copy_from_request.png?api=v2"></span><span class="confluence-embedded-file-wrapper image-center-wrapper confluence-embedded-manual-size"><img class="confluence-embedded-image image-center" alt="response_network_layout.png" width="965" src="https://arterisip.atlassian.net/wiki/download/attachments/1033928814/response_network_layout.png?api=v2"></span><p>This would result in two networks having a very similar structure.</p>

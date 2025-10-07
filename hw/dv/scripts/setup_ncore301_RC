@@ -1,0 +1,105 @@
+#!/bin/bash -fx
+if [ -z $WORK_TOP ]; 
+then
+    echo "WORK_TOP is not set"
+    exit 1
+fi
+export ARTERISD_LICENSE_FILE=5281@lic-node0.arteris.com
+
+cd $WORK_TOP
+git config --unset-all remote.origin.fetch
+git config --add remote.origin.fetch +refs/heads/Ncore3_RC6c:refs/remotes/origin/Ncore3_RC6c
+git config --add remote.origin.fetch +refs/heads/Ncore3:refs/remotes/origin/Ncore3
+git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master
+git fetch
+if [ -z $1 ]; then
+git checkout Ncore3
+elif [ $1 == "RC6" ]; then
+export PATH="/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6-2021-04-07/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6-2021-04-07/maestro-doc/examples/tcllib
+git checkout maestro-1.1.0-RC6
+echo "Using Maestro release $1"
+elif [ $1 == "RC6b" ]; then
+export PATH="/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6b-2021-04-19/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6b-2021-04-19/maestro-doc/examples/tcllib
+git checkout maestro-1.1.0-RC6
+echo "Using Maestro release $1"
+elif [ $1 == "RC6c" ]; then
+git checkout Ncore3_RC6c
+export PATH="/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/maestro-doc/examples/tcllib
+else
+echo "ERROR: Unknown RC version $1"
+fi
+cd ../hw-ccp/
+git config --unset-all remote.origin.fetch
+git config --add remote.origin.fetch +refs/heads/Ncore3:refs/remotes/origin/Ncore3
+git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master
+git fetch
+if [ -z $1 ]; then
+git checkout Ncore3
+elif [ $1 == "RC6" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6b" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6c" ]; then
+git checkout maestro-1.1.0-RC6
+export PATH="/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/maestro-doc/examples/tcllib
+fi
+cd ../hw-lib/
+git config --unset-all remote.origin.fetch
+git config --add remote.origin.fetch +refs/heads/Ncore3:refs/remotes/origin/Ncore3
+git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master
+git fetch
+if [ -z $1 ]; then
+git checkout Ncore3
+elif [ $1 == "RC6" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6b" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6c" ]; then
+git checkout maestro-1.1.0-RC6
+export PATH="/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/maestro-doc/examples/tcllib
+fi
+cd ../hw-sym/
+git config --unset-all remote.origin.fetch
+git config --add remote.origin.fetch +refs/heads/Ncore3:refs/remotes/origin/Ncore3
+git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master
+git fetch
+if [ -z $1 ]; then
+git checkout Ncore3
+elif [ $1 == "RC6" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6b" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6c" ]; then
+git checkout maestro-1.1.0-RC6
+export PATH="/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/maestro-doc/examples/tcllib
+fi
+cd ../hw-scripts/
+git config --unset-all remote.origin.fetch
+git config --add remote.origin.fetch +refs/heads/Ncore3:refs/remotes/origin/Ncore3
+git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master
+git fetch
+git checkout Ncore3
+cd ../hw-test-projects/
+git config --unset-all remote.origin.fetch
+git config --add remote.origin.fetch +refs/heads/Ncore3_RC6c:refs/remotes/origin/Ncore3_RC6c
+git config --add remote.origin.fetch +refs/heads/Ncore3:refs/remotes/origin/Ncore3
+git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master
+git fetch
+if [ -z $1 ]; then
+git checkout Ncore3
+elif [ $1 == "RC6" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6b" ]; then
+git checkout maestro-1.1.0-RC6
+elif [ $1 == "RC6c" ]; then
+git checkout Ncore3_RC6c
+export PATH="/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/bin:${PATH}"
+export MAESTRO_TCLLIB=/engr/dev/releases/maestro/build/releases/maestro-1.1.0-RC6c-2021-04-20/maestro-doc/examples/tcllib
+fi
+cd ../hw-ncr/

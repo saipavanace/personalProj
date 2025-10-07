@@ -1,0 +1,37 @@
+\jsbegin
+var u = obj.lib;
+\jsend
+
+module \=u.getModuleName()=\ (
+	vec_i,
+	ror_o
+);
+
+parameter NUM = 10;
+parameter DW = 4;
+
+input [DW*NUM-1:0]	vec_i;
+output [DW-1:0]		ror_o;
+
+reg [NUM-1:0]	t_vec[DW-1:0];
+reg [DW-1:0]	t_ror;
+
+integer i, j, k;
+
+always @ (*) begin
+for (i=0; i<DW; i=i+1) begin
+	for (j=0; j<NUM; j=j+1) begin
+		t_vec[i][j] = vec_i[DW*j+i];
+	end
+end
+end
+
+always @ (*) begin
+for (k=0; k<DW; k=k+1) begin
+	t_ror[k] = (| t_vec[k]);
+end
+end
+
+assign ror_o = t_ror;
+
+endmodule

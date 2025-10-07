@@ -1,0 +1,88 @@
+\jsbegin
+//=============================================================================
+// Copyright(C) 2024 Arteris, Inc.
+// All rights reserved
+//=============================================================================
+//GIU
+// Author: Benjamin Madon
+//=============================================================================
+
+
+var utilFunctions   = obj.userLib.lib_utils;
+
+var m = obj.userLib;
+var u=obj.lib;
+var p =u.getParam();
+
+function padd_smi_to_VC_size (smi_interface,SMI_ndp_packing_order,SMI_dp_packing_order,GranuleSizeInBytes,MessageSizeInGranule,nVC){
+    var width =nVC;
+    var signals = [];
+    var signal_list = u.getInterfaceSignals(smi_interface);
+    var smi_size=width;
+    var dp_size = SMI_dp_packing_order.length;
+    var ndp_size = SMI_ndp_packing_order.length;
+
+
+    for (var i in SMI_dp_packing_order){
+        width = signal_list["dp_"][SMI_dp_packing_order[dp_size-1-i]].width
+        smi_size+=width;
+        if (width > 0) { signals.push("dp_"+SMI_dp_packing_order[dp_size-1-i]);}
+    }
+    for (var i in SMI_ndp_packing_order){
+        width = signal_list["ndp_"][SMI_ndp_packing_order[ndp_size-1-i]].width
+        smi_size+=width;
+        if (width > 0) { signals.push("ndp_"+SMI_ndp_packing_order[ndp_size-1-i]);}
+    }
+    signals.push("VC");
+    return {padding : GranuleSizeInBytes*MessageSizeInGranule*8-smi_size+2, signals : signals};
+  }
+  
+  function pack_smi_to_VC (smi_interface,SMI_ndp_packing_order,SMI_dp_packing_order,GranuleSizeInBytes,MessageSizeInGranule,nVC){
+    var pad = padd_smi_to_VC_size(smi_interface,SMI_ndp_packing_order,SMI_dp_packing_order,GranuleSizeInBytes,MessageSizeInGranule,nVC)
+    var res= "{ "+ pad.padding +"'d0"
+    for (var i in pad.signals){
+        res+=","+smi_interface.name+pad.signals[i]
+    }
+    return res+"}";
+  }
+
+
+u.nInterfaces(p.interfaces);
+
+\jsend
+
+
+module \=u.getModuleName()=\ (\=u.getPorts('\n')=\);
+
+
+\jsbegin
+
+for (var i=0; i<p.vc_descriptor["nVC"];i++){
+    
+    for (var int in p.interfaces["smiRxInt"]){
+        if (p.interfaces["smiRxInt"][int]["name"].includes(i)){
+\jsend
+            wire [\=m.log2ceil(p.vc_descriptor["nVC"])-1=\:0] \=p.interfaces["smiRxInt"][int].name=\VC;
+
+            assign \=p.interfaces["smiRxInt"][int].name=\VC = \=m.log2ceil(p.vc_descriptor["nVC"])=\'d\=i=\;
+
+            assign \=p.interfaces["VC_"+i].name=\data = \=pack_smi_to_VC(p.interfaces["smiRxInt"][int],p.packet_descriptor["SMI_ndp_packing_order"],p.packet_descriptor["SMI_dp_packing_order"],p.packet_descriptor["GranuleSizeInBytes"],p.vc_descriptor["MessageSizeInGranule"][i], p.vc_descriptor["nVC"])=\ ;
+
+            assign \=p.interfaces["smiRxInt"][int].name=\ndp_msg_ready = \=p.interfaces["VC_"+i].name=\ready  ;
+            \jsbegin
+            if (p.interfaces["smiRxInt"][int].params["wSmiDPdata"]>0){
+            \jsend
+                assign \=p.interfaces["VC_"+i].name=\valid = \=p.interfaces["smiRxInt"][int].name=\ndp_msg_valid & \=p.interfaces["smiRxInt"][int].name=\dp_valid;
+                assign \=p.interfaces["smiRxInt"][int].name=\dp_ready = \=p.interfaces["VC_"+i].name=\ready  ;
+            \jsbegin
+            } else {
+            \jsend
+                assign \=p.interfaces["VC_"+i].name=\valid = \=p.interfaces["smiRxInt"][int].name=\ndp_msg_valid ;
+            \jsbegin
+            }
+        }
+    }
+}
+\jsend
+
+endmodule

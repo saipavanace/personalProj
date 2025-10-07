@@ -1,0 +1,1195 @@
+// Copyright (C) 2018 Arteris, Inc.
+// All rights reserved.
+//=============================================================================
+\jsbegin
+// This module defines dii top level.
+//
+//=============================================================================
+
+var u                    = obj.lib;
+var memFunctions         = obj.userLib;
+var bundleFunctions      = obj.userLib.bundleFunctions;
+var log2ceil             = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+
+u.paramDefault('fnErrDetectCorrect','string',"NONE");
+u.paramDefault('fnNativeInterface','string',"AXI4");
+u.paramDefault('useExternalMemory','int',0);
+u.paramDefault('usePma','int',1);
+u.paramDefault('PmaInfo', 'object', {"wActive" : 1, "fnPmaInterfaceType":"Q"});
+//u.paramDefault('regProtectionInterface', 'object', {});
+//u.paramDefault('regProtectionInterfaceName', 'string', "");
+//u.paramDefault('regProtectionStyle', 'object', null);
+u.paramDefault('useAddrTranslation','int',0);
+u.paramDefault('nAddrTransRegisters','int',0);
+u.paramDefault('assertOn','int',0);
+u.paramDefault('wAddr','int',0);
+u.paramDefault('wCacheLineOffset','int',16);
+u.paramDefault('wFPortId','int',8);
+u.paramDefault('configuration','int',1);
+u.paramDefault('wData','int',128);
+u.paramDefault('wLargestEndpoint','int',16);
+u.paramDefault('enableDoublePortBuffer','int',0);
+u.paramDefault('engVerId','int',0);
+u.paramDefault('implVerId','int',0);
+u.paramDefault('readBufferDepth','int',4);
+u.paramDefault('useResiliency','int',0);
+u.paramDefault('ResilienceInfo', 'object', {});
+u.paramDefault('cmType', 'object', {});
+u.paramDefault('concParams', 'object', {});
+u.paramDefault('concMuxMsgParams', 'object', {});
+u.paramDefault('cmpInfo', 'object', {});
+u.paramDefault('smiPortParams', 'object', {});
+u.paramDefault('DataMem', 'object', {});
+u.paramDefault('interfaces', 'object', {});
+
+//=============================================================================
+// Top Level Parameters
+//=============================================================================
+var smiTxPortParams       = obj.lib.getParam('smiPortParams', 'tx');
+var smiRxPortParams       = obj.lib.getParam('smiPortParams', 'rx');
+var concParams            = obj.lib.getParam('concParams');
+var concMuxTxMsgParams    = obj.lib.getParam('concMuxMsgParams', 'tx');
+var concMuxRxMsgParams    = obj.lib.getParam('concMuxMsgParams', 'rx');
+var interfaces            = obj.lib.getParam('interfaces');
+
+var doublePortReadBuffer  = obj.lib.getParam('enableDoublePortBuffer');
+var useExternalMemory     = obj.lib.getParam('useExternalMemory');
+
+var wAddr                 = obj.lib.getParam('wAddr');
+var wData                 = obj.lib.getParam('wData');
+var wLargestEndpoint      = obj.lib.getParam('wLargestEndpoint');
+var wCacheLineOffset      = obj.lib.getParam('wCacheLineOffset'); 
+var be_width              = wData/8; //obj.lib.getParam('be_width');
+var fnNativeInterface     = obj.lib.getParam('fnNativeInterface');
+var implVerId             = obj.lib.getParam('implVerId');
+var engVerId              = obj.lib.getParam('engVerId');
+var assertOn              = obj.lib.getParam('assertOn');
+var cmpInfo               = obj.lib.getParam('cmpInfo');
+var ResilienceInfo        = obj.lib.getParam('ResilienceInfo');
+var cmType                = obj.lib.getParam('cmType');
+//var internalInterfaces    = obj.lib.getParam('internalInterfaces');
+var wFUnitId              = interfaces.uIdInt.params.wFUnitId;
+var wFPortId              = obj.lib.getParam('wFPortId');
+var wNUnitId              = interfaces.uIdInt.params.wNUnitId;
+var wRpn                  = interfaces.uIdInt.params.wRpn;
+var wNrri                 = interfaces.uIdInt.params.wNrri;
+var csr                   = obj.lib.getParam('csr');
+
+var useAddrTranslation      = obj.lib.getParam('useAddrTranslation');
+var nAddrTransRegisters     = obj.lib.getParam('nAddrTransRegisters');
+
+var usePma                = obj.lib.getParam('usePma');
+var PmaInfo               = obj.lib.getParam('PmaInfo');
+
+//var useResiliency         = obj.lib.getParam('ResilienceInfo', 'hasResiliancy');
+var ResilienceInfo               = obj.lib.getParam('ResilienceInfo');
+var nResiliencyDelay             = obj.lib.getParam('ResilienceInfo', 'nResiliencyDelay');
+var enableUnitDuplication        = obj.lib.getParam('ResilienceInfo', 'enableUnitDuplication');
+var enableNativeIntfProtection   = obj.lib.getParam('ResilienceInfo', 'enableNativeIntfProtection');
+var useResiliency                = obj.lib.getParam('useResiliency');
+var fnErrDetectCorrect           = obj.lib.getParam('fnErrDetectCorrect');
+
+//var regProtectionInterface          = obj.lib.getParam('regProtectionInterface');
+//var regProtectionInterfaceName      = obj.lib.getParam('regProtectionInterfaceName');
+//var regProtectionStyle              = obj.lib.getParam('regProtectionStyle');
+
+//=============================================================================
+// Interface Generation
+//=============================================================================
+
+// AXI interface params generation
+var interfaceFunc        = new obj.userLib[interfaces.axiInt.interface];
+var axiInterface         = interfaceFunc.getSignals(interfaces.axiInt.params);
+var axiInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.axiInt.params);
+var axiInterfaceName     = interfaces.axiInt.name;
+
+// Unit Id interface params generation
+var interfaceFunc        = new obj.userLib[interfaces.uIdInt.interface];
+var uIdInterface         = interfaceFunc.getSignals(interfaces.uIdInt.params);
+var uIdInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.uIdInt.params);
+var uIdInterfaceName     = interfaces.uIdInt.name;
+
+// Unit Id interface params generation
+var interfaceFunc        = new obj.userLib[interfaces.apbInt.interface];
+var apbInterface         = interfaceFunc.getSignals(interfaces.apbInt.params);
+var apbInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.apbInt.params);
+var apbInterfaceName     = interfaces.apbInt.name;
+
+// IRQ interface params generation
+var interfaceFunc        = new obj.userLib[interfaces.irqInt.interface];
+var irqInterface         = interfaceFunc.getSignals(interfaces.irqInt.params);
+var irqInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.irqInt.params);
+var irqInterfaceName     = interfaces.irqInt.name;
+
+// Q-Channel Interface
+if(usePma) {
+  var interfaceFunc        = new obj.userLib[interfaces.qInt.interface];
+  var qInterface           = interfaceFunc.getSignals(interfaces.qInt.params);
+  var qInterfaceBundle     = interfaceFunc.getSignalsBundle(interfaces.qInt.params);
+  var qInterfaceName       = interfaces.qInt.name;
+}
+
+// Resilliancy interface params generation
+if(useResiliency) {
+  var interfaceFunc         = new obj.userLib[interfaces.bistInt.interface];
+  var bistInterface         = interfaceFunc.getSignals(interfaces.bistInt.params);
+  var bistInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.bistInt.params);
+  var bistInterfaceName     = interfaces.bistInt.name;
+
+  var interfaceFunc          = new obj.userLib[interfaces.faultInt.interface];
+  var faultInterface         = interfaceFunc.getSignals(interfaces.faultInt.params);
+  var faultInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.faultInt.params);
+  var faultInterfaceName     = interfaces.faultInt.name;
+
+    if (enableUnitDuplication) {
+  var interfaceFunc             = new obj.userLib[interfaces.checkClkInt.interface];
+  var checkClkInterface         = interfaceFunc.getSignalsBundle(interfaces.checkClkInt.params);
+  var checkClkInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.checkClkInt.params);
+  var checkClkInterfaceName     = interfaces.checkClkInt.name;
+    }
+
+}
+
+// native placeholder interface params generation
+if(enableNativeIntfProtection) {
+  var interfaceFunc        = new obj.userLib[interfaces.userPlaceInt.interface];
+  var placeInterface       = interfaceFunc.getSignals(interfaces.userPlaceInt.params);
+  var placeInterfaceBundle = interfaceFunc.getSignalsBundle(interfaces.userPlaceInt.params);
+  var placeInterfaceName   = interfaces.userPlaceInt.name;
+  var placeInterfaceDef    = interfaces.userPlaceInt.synonyms;
+  var placeInterfaceSkip   = interfaces.userPlaceInt._SKIP_;  
+} else {
+  var placeInterface       = [];
+  var placeInterfaceBundle = [];
+  var placeInterfaceName   = "";
+  var placeInterfaceDef    = [];
+  var placeInterfaceSkip   = true;    
+}
+
+// clk interface params generation
+var interfaceFunc        = new obj.userLib[interfaces.clkInt.interface];
+var clkInterface         = interfaceFunc.getSignalsBundle(interfaces.clkInt.params);
+var clkInterfaceBundle   = interfaceFunc.getSignalsBundle(interfaces.clkInt.params);
+var clkInterfaceName     = interfaces.clkInt.name;
+var blkClkGateOn         = (interfaces.clkInt.blkClkGateOn == undefined) ? false : interfaces.clkInt.blkClkGateOn;
+
+// Concerto Mux RX Message struture
+var CMD_REQ    = obj.userLib.concMsgGen(obj, 'cmd_req_', 'ConcMsgBodyCMDReq', concParams.hdrParams, concParams.cmdReqParams, concMuxRxMsgParams.cmdReq, 'rx');
+var STR_RSP    = obj.userLib.concMsgGen(obj, 'str_rsp_', 'ConcMsgBodySTRRsp', concParams.hdrParams, concParams.strRspParams, concMuxRxMsgParams.strRsp, 'rx');
+var DTR_RSP    = obj.userLib.concMsgGen(obj, 'dtr_rsp_', 'ConcMsgBodyDTRRsp', concParams.hdrParams, concParams.dtrRspParams, concMuxRxMsgParams.dtrRsp, 'rx');
+var DTW_REQ    = obj.userLib.concMsgGen(obj, 'dtw_req_', 'ConcMsgBodyDTWReq', concParams.hdrParams, concParams.dtwReqParams, concMuxRxMsgParams.dtwReq, 'rx');
+
+// Concerto Mux TX Message structure
+var NC_CMD_RSP = obj.userLib.concMsgGen(obj, 'cmd_rsp_', 'ConcMsgBodyCMDRsp', concParams.hdrParams, concParams.CmdRspParams, concMuxTxMsgParams.CmdRsp, 'tx');
+var DTW_RSP    = obj.userLib.concMsgGen(obj, 'dtw_rsp_',    'ConcMsgBodyDTWRsp',   concParams.hdrParams, concParams.dtwRspParams,   concMuxTxMsgParams.dtwRsp,   'tx');
+var STR_REQ    = obj.userLib.concMsgGen(obj, 'str_req_',    'ConcMsgBodySTRReq',   concParams.hdrParams, concParams.strReqParams,   concMuxTxMsgParams.strReq,   'tx');
+var DTR_REQ    = obj.userLib.concMsgGen(obj, 'dtr_req_',    'ConcMsgBodyDTRReq',   concParams.hdrParams, concParams.dtrReqParams,   concMuxTxMsgParams.dtrReq,   'tx');
+
+var CONC_TX_INTF = [];
+var CONC_RX_INTF = [];
+CONC_TX_INTF.push(NC_CMD_RSP, DTW_RSP, STR_REQ, DTR_REQ);
+CONC_RX_INTF.push(CMD_REQ, STR_RSP,DTR_RSP, DTW_REQ);
+
+// Concerto Message Interfaces generation
+var CONC_INTF = {};
+CONC_INTF['CMDReqInterface']      = CMD_REQ.signals;
+CONC_INTF['STRRespInterface']     = STR_RSP.signals;
+CONC_INTF['DTRRespInterface']     = DTR_RSP.signals;
+CONC_INTF['DTWReqInterface']      = DTW_REQ.signals;
+
+CONC_INTF['NCCMDRespInterface']   = NC_CMD_RSP.signals;
+CONC_INTF['DTWRespInterface']     = DTW_RSP.signals;
+CONC_INTF['STRReqInterface']      = STR_REQ.signals;
+CONC_INTF['DTRReqInterface']      = DTR_REQ.signals;
+
+// SMI interface params generation
+var SMI_TX_INTF = [];
+var SMI_RX_INTF = [];
+for(var i = 0; i< smiTxPortParams.length; i++) {
+    SMI_TX_INTF.push(obj.userLib.smiPortGen(obj, smiTxPortParams[i], interfaces.smiTxInt[i].params, 'tx'));
+};
+
+for(var i = 0; i < smiRxPortParams.length; i++) {
+    SMI_RX_INTF.push(obj.userLib.smiPortGen(obj, smiRxPortParams[i], interfaces.smiRxInt[i].params, 'rx'));
+};
+
+var smiTxPortInterfaces = SMI_TX_INTF;
+var smiRxPortInterfaces = SMI_RX_INTF;
+
+//=============================================================================
+// SMI Interface
+//=============================================================================
+
+for (i=0; i<SMI_TX_INTF.length; i++) {
+                                      obj.userLib.defineMasterPortsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].signals, obj.lib.port);
+                                      if(SMI_TX_INTF[i].params.dpPresent) {
+                                            obj.userLib.defineMasterPortsFromInterface(SMI_TX_INTF[i].name, SMI_TX_INTF[i].dpSignals, obj.lib.port);    
+                                      }
+                                     }
+for (i=0; i<SMI_RX_INTF.length; i++) {
+                                      obj.userLib.defineSlavePortsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].signals, obj.lib.port);
+                                      if(SMI_RX_INTF[i].params.dpPresent) {
+                                            obj.userLib.defineSlavePortsFromInterface(SMI_RX_INTF[i].name, SMI_RX_INTF[i].dpSignals, obj.lib.port);    
+                                      }
+                                     }				     
+
+//=============================================================================
+// AXI Interface
+//=============================================================================
+
+obj.lib.interface(axiInterfaceName, 'master', axiInterface);
+
+//=============================================================================
+// Clock and ID Interfaces
+//=============================================================================
+
+obj.lib.interface(clkInterfaceName, 'slave' , clkInterface);
+obj.lib.interface(uIdInterfaceName, 'slave' , uIdInterface);
+obj.lib.interface(irqInterfaceName, 'master', irqInterface);
+
+//=============================================================================
+// Clock and ID Interfaces
+//=============================================================================
+
+obj.lib.interface(apbInterfaceName, 'slave' , apbInterface);
+
+//=============================================================================
+// Q Interface
+//=============================================================================
+
+if(usePma) {
+  obj.lib.interface(qInterfaceName, 'slave' , qInterface);
+}
+
+//=============================================================================
+// Res Interfaces
+//=============================================================================
+
+if(useResiliency) {
+  obj.lib.interface(bistInterfaceName, 'slave' , bistInterface);
+  obj.lib.interface(faultInterfaceName, 'master' , faultInterface);
+    if (enableUnitDuplication) {
+  obj.lib.interface(checkClkInterfaceName, 'slave' , checkClkInterface);
+    }
+}
+
+//=============================================================================
+// Placeholder Interface
+//=============================================================================
+
+if(enableNativeIntfProtection & !placeInterfaceSkip) {
+  obj.lib.interface(placeInterfaceName, 'master' , placeInterface);
+}
+
+//=============================================================================
+// Internal Interface Construction
+//=============================================================================
+
+var nRttEntries             = obj.lib.getParam('cmpInfo', 'nRttCtrlEntries');
+var nWttEntries             = obj.lib.getParam('cmpInfo', 'nWttCtrlEntries');
+var maxEntries              = Math.max(nRttEntries,nWttEntries);
+
+var internalInterfaces  = {
+	"internalFaultInterface": {
+	    "read_buffer_UCE"    : 1,
+            "read_buffer_CE"     : 1,
+            "placeholder_UCE"    : 1,
+            "placeholder_CE"     : 1,
+            "cmux_UCE"           : 1,
+            "cmux_cmd_req_CE"    : 1,
+            "cmux_dtr_rsp_CE"    : 1,
+            "cmux_str_rsp_CE"    : 1,
+            "cmux_dtw_req_CE"    : 1
+        },
+        "tt_entry_dtr": {
+            "valid"              : -1,
+            "oldest"             : 1,
+            "axi_id"             : -Math.abs(axiInterfaceBundle.ar_.id),
+            "addr"               : -Math.abs(CONC_INTF.CMDReqInterface.addr),
+            "size"               : -Math.abs(CONC_INTF.CMDReqInterface.size),
+            "intfsize"           : -Math.abs(CONC_INTF.CMDReqInterface.intf_size),
+            "tid"                : -Math.abs(CONC_INTF.CMDReqInterface.message_id),
+            "init_id"            : -wFUnitId,
+	    "tof"                : -Math.abs(CONC_INTF.CMDReqInterface.tof),
+	    "tm"                 : -1,
+	    "st"                 : -1,
+	    "ca"                 : -1,
+	    "ch"                 : -1,
+	    "narrow"             : -1,
+	    "mpf1"               : -Math.abs(CONC_INTF.CMDReqInterface.mpf1)
+        },
+        "tt_entry_dtw": {
+            "addr"               : -Math.abs(CONC_INTF.CMDReqInterface.addr),
+	    "intfsize"           : -Math.abs(CONC_INTF.CMDReqInterface.intf_size),
+            "tof"                : -Math.abs(CONC_INTF.CMDReqInterface.tof),	    
+	    "dbad"               : -1,	    
+	    "valid"              : -1,
+	    "st"                 : -1,
+	    "ca"                 : -1,
+	    "ch"                 : -1,
+	    "size"               : -Math.abs(CONC_INTF.CMDReqInterface.size),	    
+	    "mpf1"               : -Math.abs(CONC_INTF.CMDReqInterface.mpf1),
+            "ewa_sent"           : -1,
+            "ewa"                : -1,
+	    "narrow"             : -1,	    	    
+            "oldest"             : 1,
+            "axi_id"             : -Math.abs(axiInterfaceBundle.ar_.id),
+            "tid"                : -Math.abs(CONC_INTF.CMDReqInterface.target_id),
+            "init_id"            : -wFUnitId,
+            "dtw_tid"            : -Math.abs(CONC_INTF.CMDReqInterface.message_id),
+            "dtw_ql"             : -Math.abs(CONC_INTF.CMDReqInterface.ql),
+            "dtw_priority"       : -Math.abs(CONC_INTF.CMDReqInterface.priority)	    
+        },
+        "tt_ctl_entry": {
+            "valid"              : -1,
+            "muxarb_valid"       : -1,
+            "wr_enable"          : 1,
+            "clear"              : 1,
+            "oldest"             : 1,
+            "ewa"                : -1,
+            "youngest_axi"       : -1,
+            "youngest_ro"        : -1,
+            "youngest_eo"        : -1,
+            "youngest_wo"        : -1,
+            "resp_pending"       : 1,
+            "sleep"              : -1,
+            "addr"               : -Math.abs(CONC_INTF.CMDReqInterface.addr),
+            "axi_id"             : -Math.abs(axiInterfaceBundle.ar_.id),
+	    "prot"               : -3,
+            "ordering"           : -2,
+            "ro_depnd_id"        : -log2ceil(maxEntries),
+            "eo_depnd_id"        : -log2ceil(maxEntries),
+            "wo_depnd_id"        : -log2ceil(maxEntries),
+            "axi_depnd_id"       : -log2ceil(maxEntries),
+            "ro_depnd"           : -2,
+            "eo_depnd"           : -2,
+            "wo_depnd"           : -1,
+            "axi_depnd"          : -1,
+	    "cmo"                : -1,
+            "init_id"            : -wFUnitId
+        },
+        "tt_ctl": {
+            "allocate_new_entry" : 1,
+            "addr"               : -Math.abs(CONC_INTF.CMDReqInterface.addr),
+            "prot"               : -3,	    
+            "ordering"           : -2,
+            "init_id"            : -wFUnitId,
+            "valid_entries"      : -maxEntries,
+            "retire_entry"       : -maxEntries,
+            "muxarb_grant"       : -maxEntries,
+            "ro_depnd_set"       : 1,
+            "eo_depnd_set"       : 1,
+            "axi_depnd_set"      : 1,
+            "sleep_set"          : 1,
+            "ro_match_rd"        : 1,
+            "ro_match_wr"        : 1,
+            "eo_match_rd"        : 1,
+            "eo_match_wr"        : 1,
+            "ro_depnd_clear"     : 32,
+            "eo_depnd_clear"     : 32,
+            "axi_depnd_clear"    : 32,
+            "sleep_clear"        : 32,
+            "ro_depnd_id_in"     : log2ceil(maxEntries),
+            "eo_depnd_id_in"     : log2ceil(maxEntries),
+            "axi_depnd_id_in"    : log2ceil(maxEntries),
+            "new_axi_id"         : Math.abs(axiInterfaceBundle.ar_.id)
+        },
+        "tt_entry_1": {
+            "addr"               : Math.abs(CONC_INTF.CMDReqInterface.addr),
+            "size"               : Math.abs(CONC_INTF.CMDReqInterface.size),
+            "intfsize"           : Math.abs(CONC_INTF.CMDReqInterface.intf_size),
+	    "st"                 : 1,
+	    "tm"                 : 1,
+	    "ca"                 : 1,
+	    "ch"                 : 1,
+	    "cmo"                : 1,	    
+	    "mpf1"               : Math.abs(CONC_INTF.CMDReqInterface.mpf1),
+            "ordering"           : 2,
+            "tid"                : Math.abs(CONC_INTF.CMDReqInterface.message_id),
+            "init_id"            : wFUnitId
+        },
+        "tt_entry_2": {
+            "valid"              : -1,
+            "muxarb_valid"       : -1,
+            "wr_enable"          : -1,
+            "clear"              : -1,
+            "oldest"             : 1,
+            "youngest_axi"       : 1,
+            "youngest_ro"        : 1,
+            "youngest_eo"        : 1,
+            "youngest_wo"        : 1,
+	    "tof"                : Math.abs(CONC_INTF.CMDReqInterface.tof),	    
+	    "dbad"               : 1,
+	    "narrow"             : 1,	    	    	    
+            "ewa"                : 1,
+            "ewa_sent"           : 1,
+            "resp_pending"       : 1,
+            "sleep"              : -1,
+            "ro_depnd"           : 2,
+            "eo_depnd"           : 2,
+            "wo_depnd"           : 1,
+            "axi_depnd"          : 1,
+	    "prot"               : 3,
+            "ro_depnd_id"        : log2ceil(maxEntries),
+            "eo_depnd_id"        : log2ceil(maxEntries),
+            "wo_depnd_id"        : log2ceil(maxEntries),
+            "axi_depnd_id"       : log2ceil(maxEntries),
+            "axi_id"             : Math.abs(axiInterfaceBundle.ar_.id),
+            "dtw_tid"            : Math.abs(CONC_INTF.CMDReqInterface.message_id),
+            "dtw_ql"             : Math.abs(CONC_INTF.CMDReqInterface.ql),
+            "dtw_priority"       : Math.abs(CONC_INTF.CMDReqInterface.priority)
+        },
+        "tt_1": {
+            "addr"               : Math.abs(CONC_INTF.CMDReqInterface.addr),
+            "ordering"           : Math.abs(CONC_INTF.CMDReqInterface.or),
+            "size"               : Math.abs(CONC_INTF.CMDReqInterface.size),
+            "tof"                : Math.abs(CONC_INTF.CMDReqInterface.tof),
+            "tid"                : Math.abs(CONC_INTF.CMDReqInterface.message_id),
+            "prot"               : 3,
+	    "tm"                 : 1,
+            "lock"               : 1,
+            "ca"                 : 1,
+            "ac"                 : 1,
+            "vz"                 : 1,
+            "ch"                 : 1,
+            "cmo"                : 1,
+            "user"               : Math.abs(axiInterfaceBundle.ar_.user),
+            "intfsize"           : Math.abs(CONC_INTF.CMDReqInterface.intf_size),
+            "st"                 : 1,
+	    "narrow"             : 1,	    
+            "mpf1"               : Math.abs(CONC_INTF.CMDReqInterface.mpf1),
+            "mpf2"               : Math.abs(CONC_INTF.CMDReqInterface.mpf2),
+            "init_id"            : wFUnitId
+        },
+        "tt_2": {
+            "allocate_new_entry" : -1,
+            "ro_depnd_set"       : -1,
+            "eo_depnd_set"       : -1,
+            "axi_depnd_set"      : -1,
+            "sleep_set"          : -1,
+            "ro_depnd_clear"     : -1,
+            "eo_depnd_clear"     : -1,
+            "axi_depnd_clear"    : -1,
+            "sleep_clear"        : -1,
+            "ro_match_rd"        : -1,
+            "ro_match_wr"        : -1,
+            "eo_match_rd"        : -1,
+            "eo_match_wr"        : -1,
+            "ro_depnd_id_in"     : -log2ceil(maxEntries),
+            "eo_depnd_id_in"     : -log2ceil(maxEntries),
+            "axi_depnd_id_in"    : -log2ceil(maxEntries),
+            "new_axi_id"         : -Math.abs(axiInterfaceBundle.ar_.id),
+        }
+};
+
+/* istanbul ignore if env ncore_3p0 */
+if (Math.abs(CONC_INTF.CMDReqInterface.ql) != 0) {
+   internalInterfaces.tt_entry_dtr["ql"]  = -Math.abs(CONC_INTF.CMDReqInterface.ql);
+   internalInterfaces.tt_entry_dtw["ql"]  = -Math.abs(CONC_INTF.CMDReqInterface.ql);
+   internalInterfaces.tt_entry_1["ql"]    = Math.abs(CONC_INTF.CMDReqInterface.ql);
+   internalInterfaces.tt_1["ql"]          = Math.abs(CONC_INTF.CMDReqInterface.ql);
+}
+
+if (Math.abs(CONC_INTF.CMDReqInterface.priority) != 0) {
+   internalInterfaces.tt_entry_dtr["priority"] = -Math.abs(CONC_INTF.CMDReqInterface.priority);
+   internalInterfaces.tt_entry_dtw["priority"] = -Math.abs(CONC_INTF.CMDReqInterface.priority);
+   internalInterfaces.tt_entry_1["priority"]   =  Math.abs(CONC_INTF.CMDReqInterface.priority);
+   internalInterfaces.tt_1["priority"]         =  Math.abs(CONC_INTF.CMDReqInterface.priority);
+}
+
+if (Math.abs(CONC_INTF.CMDReqInterface.qos) != 0) {
+   internalInterfaces.tt_entry_dtr["qos"] = -Math.abs(CONC_INTF.CMDReqInterface.qos);
+   internalInterfaces.tt_entry_dtw["qos"] = -Math.abs(CONC_INTF.CMDReqInterface.qos);
+   internalInterfaces.tt_entry_1["qos"]   =  Math.abs(CONC_INTF.CMDReqInterface.qos);
+   internalInterfaces.tt_1["qos"]         =  Math.abs(CONC_INTF.CMDReqInterface.qos);
+}
+
+//=============================================================================
+// Memory Parameters and Structures
+//=============================================================================
+
+var readDataMemInterface = obj.lib.getParam('DataMem');
+var readDataMemParams    = [];
+var readDataMemStructure = [];
+
+var memoryType           = obj.lib.getParam('DataMem','MemType');
+
+/* istanbul ignore if env ncore_3p0 */
+if (doublePortReadBuffer == 1) {
+var portType = 'tp';
+} else {
+var portType = 'sp';
+}
+
+readDataMemInterface["MemType"]  = memoryType;
+readDataMemInterface["nSignals"] = obj.lib.getParam('DataMem','Signals').length;
+readDataMemInterface["signals"]  = obj.lib.getParam('DataMem','Signals');
+
+//readDataMemParams = memFunctions.diiMemoryParams(obj.lib.getParam());
+
+    var errorInfo               = obj.lib.getParam('fnErrDetectCorrect');
+    var wMpf1                   = CONC_INTF.CMDReqInterface.mpf1;
+    var wOrder                  = CONC_INTF.CMDReqInterface.or;
+    var wSize                   = CONC_INTF.CMDReqInterface.size;  
+    var axi_id_width            = axiInterfaceBundle.ar_.id;
+    var wAddr                   = wAddr; 
+    var arprot_width            = Math.abs(axiInterfaceBundle.ar_.prot);
+    var arlock_width            = Math.abs(axiInterfaceBundle.ar_.lock);
+    var aruser_width            = Math.abs(axiInterfaceBundle.ar_.user);
+    var rresp_width             = Math.abs(axiInterfaceBundle.r_.resp);
+
+    //var dataWidth = wMpf1 + axi_id_width + wAddr + wSize + wQos + arprot_width + aruser_width + 1 + 1 + 1 + 1 + wOrder + arlock_width + 1;
+    var dataWidth = axi_id_width + wData + rresp_width + aruser_width + 1
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ECC Calculations
+    //
+    var memEccBlocks = [];
+    var eccOnlyBlocks = [];
+    var blockWidths;
+    
+    /* istanbul ignore if env ncore_3p0 */
+    if ((errorInfo === 'SECDED64BITS') || (errorInfo === 'SECDED128BITS')) {
+        blockWidths = memFunctions.getEvenBlockWidths(errorInfo, dataWidth, 0);
+    } else {
+        blockWidths = [dataWidth];
+    }
+
+    // Act like its a single way
+    var wayStart = 0;
+    for (var way = 0; way < 1; way++) {
+        var eccIndexes = memFunctions.getEccIndexes(blockWidths, wayStart, errorInfo);
+        memEccBlocks = memEccBlocks.concat(eccIndexes.memEccBlocks);
+        eccOnlyBlocks = eccOnlyBlocks.concat(eccIndexes.eccOnlyBlocks);
+    }
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Width with Error Bits
+    // - Width of external memory doesnt match data + ecc
+    
+    var memWidth = (dataWidth + memFunctions.getErrorEncodingWidth(errorInfo, dataWidth, blockWidths));
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Depth
+    //
+    var memDepth = obj.lib.getParam('readBufferDepth');
+
+     readDataMemParams = {
+        widthWithoutEcc: dataWidth,
+        blockWidths: blockWidths,
+        width: memWidth,
+        depth: memDepth,
+        eccOnlyBlocks: eccOnlyBlocks,
+        eccBlocks: memEccBlocks
+    }
+    
+    readDataMemStructure = 
+            memFunctions.createMemoryDataStructure(
+                readDataMemInterface,
+                readDataMemParams,  
+                portType,
+                0,
+                readDataMemInterface.rtlPrefixString,
+                '_data',
+                0);
+
+    var memoryInterface = {};
+    /* istanbul ignore if env ncore_3p0 */
+    if(doublePortReadBuffer) {
+        memoryInterface = {
+            "int_data_in": memWidth,
+            "int_address_write": log2ceil(memDepth),
+	    "int_address_read": log2ceil(memDepth),
+            "int_chip_en_read": 1,
+            "int_chip_en_write": 1,
+            "int_data_out": -memWidth };  
+    } else {
+        memoryInterface = {
+            "int_data_in": memWidth,
+            "int_address":log2ceil(memDepth),
+            "int_chip_en": 1,
+            "int_write_en": 1,
+            "int_data_out": -memWidth
+        };
+    }
+
+    instance_ports_for_ram = {clk : clkInterfaceName+'clk'};
+            var rtlPrefixString = readDataMemStructure.rtlPrefixString;
+            var memoryControlInterface = memoryInterface;
+            for (var signal in memoryControlInterface) {
+                instance_ports_for_ram[signal]  = 'mem__' + rtlPrefixString + '_' + signal;
+            }
+	    /* istanbul ignore if env ncore_3p0 */
+            if (memoryType === "SYNOPSYS") {
+                if (Object.keys(readDataMemStructure.signals).length > 0) {
+                    for (var signal in readDataMemStructure.signals) {
+                        instance_ports_for_ram[readDataMemStructure.rtlPrefixString + '_' + signal] = readDataMemStructure.rtlPrefixString + '_' + signal;
+                    }
+                }
+            }
+
+
+obj.lib.setAttribute("csr", csr);
+
+\jsend
+module \=u.getModuleName()=\ (\=u.getPorts('\n    ')=\);
+
+//=============================================================================
+// DII Unit Instance
+//=============================================================================
+
+//-----------------------------------------------------------------------------
+// External Memory Wire Declarations
+
+\=bundleFunctions.wiresFromInterface('dii_', internalInterfaces.internalFaultInterface,   [], obj.lib.bundle)=\
+
+\jsbegin
+/* istanbul ignore if env ncore_3p0 */
+if(useExternalMemory == 1){
+\jsend
+\=bundleFunctions.wiresFromInterface('mem__' + rtlPrefixString + '_', memoryInterface,   [], obj.lib.bundle)=\
+\js }
+
+\jsbegin
+var dii_unit_interfaces = [];
+var dii_intf_num = 0;
+
+//-----------------------------------------------------------------------------
+// cerr_threshold Wire Declarations
+
+\jsend
+wire [31:0] cerr_thresh, late_cerr_thresh;
+
+\js if(enableUnitDuplication == 0 & useResiliency) {
+assign late_cerr_thresh = cerr_thresh;
+wire reset_n_delay      = \=clkInterfaceName=\reset_n;
+\js }
+
+\jsbegin
+
+//-----------------------------------------------------------------------------
+// DII Unit Parameters
+		     
+var dii_unit_Params = {
+                  blkClkGateOn                   : blkClkGateOn,
+                  wAddr                          : wAddr,
+		  wData                          : wData,
+		  clkInterfaceParams             : interfaces.clkInt.params,
+		  wLargestEndpoint               : wLargestEndpoint,
+		  wCacheLineOffset               : wCacheLineOffset,
+		  be_width                       : be_width,
+		  wFUnitId                       : wFUnitId,
+		  fnNativeInterface              : fnNativeInterface,
+		  assertOn                       : assertOn,
+		  cmpInfo                        : cmpInfo,
+		  ResilienceInfo                 : ResilienceInfo,
+		  cmType                         : cmType,
+		  clkInterface                   : clkInterface,
+		  smiTxPortParams                : smiTxPortParams,
+		  smiRxPortParams                : smiRxPortParams,
+		  axiInterface                   : axiInterfaceBundle,
+		  placeInterfaceName             : placeInterfaceName,
+		  placeInterface                 : placeInterfaceBundle,
+		  placeInterfaceDef              : placeInterfaceDef,
+		  placeInterfaceSkip             : placeInterfaceSkip,
+		  apbInterface                   : apbInterfaceBundle,
+		  apbInterfaceName               : apbInterfaceName,
+		  usePma                         : usePma,
+		  PmaInfo                        : PmaInfo,		  
+		  qInterface                     : qInterfaceBundle,
+		  qInterfaceName                 : qInterfaceName,
+		  concertoInterfaces             : CONC_INTF,
+		  memoryInterface                : memoryInterface,
+		  internalInterfaces             : internalInterfaces,
+		  concParams                     : concParams,
+		  wFPortId                       : wFPortId,
+		  wNUnitId                       : wNUnitId,
+		  wRpn                           : wRpn,
+		  wNrri                          : wNrri,
+		  implVerId                      : implVerId,
+		  engVerId                       : engVerId,
+		  smiTxPortInterfaces            : SMI_TX_INTF,
+                  smiRxPortInterfaces            : SMI_RX_INTF, 
+                  concertoTxInterfaces           : CONC_TX_INTF, 
+                  concertoRxInterfaces           : CONC_RX_INTF,
+		  useResiliency                  : useResiliency,
+		  doublePortReadBuffer           : doublePortReadBuffer,
+		  useExternalMemory              : useExternalMemory,
+		  fnErrDetectCorrect             : fnErrDetectCorrect,
+		  readBufferBlockWidths          : blockWidths,
+		  memoryType                     : memoryType,
+		  instance_ports_for_ram         : instance_ports_for_ram,
+                  useAddrTranslation             : useAddrTranslation,
+                  nAddrTransRegisters            : nAddrTransRegisters,		  
+		  readDataMemStructure           : readDataMemStructure,
+		  readDataMemInterface           : readDataMemInterface,
+		  portType                       : portType,
+		  memDepth                       : memDepth,
+		  csr                            : csr
+};
+
+var implVerId          = obj.lib.getParam('implVerId');
+var engVerId           = obj.lib.getParam('engVerId');
+
+//-----------------------------------------------------------------------------
+// DII Unit Interfaces
+
+var dii_unit_interfaces = [];
+
+dii_unit_interfaces.push({
+        modulePrefix: 'to_clk_gate_',
+        localPrefix: clkInterfaceName,
+        interface: clkInterface,
+	direction : "slave"
+});
+
+dii_unit_interfaces.push({
+        modulePrefix: '',
+        localPrefix: uIdInterfaceName,
+        interface: uIdInterfaceBundle,
+	direction : "slave"
+});
+
+dii_unit_interfaces.push({
+        modulePrefix: 'axi_mst_',
+        localPrefix: axiInterfaceName,
+        interface: axiInterfaceBundle,
+	direction : "master"
+});
+
+dii_unit_interfaces.push({
+        modulePrefix: apbInterfaceName,
+        localPrefix: apbInterfaceName,
+        interface: apbInterfaceBundle,
+	direction : "slave"
+});
+
+/* istanbul ignore if env ncore_3p0 */
+if(useExternalMemory == 1) {
+  dii_unit_interfaces.push({
+        modulePrefix: 'mem_read_buffer_',
+        localPrefix: 'mem__' + rtlPrefixString + '_',
+        interface: memoryInterface,
+	direction : "master"
+  });
+}
+
+if(enableNativeIntfProtection & !placeInterfaceSkip) {
+  dii_unit_interfaces.push({
+        modulePrefix: placeInterfaceName,
+        localPrefix: placeInterfaceName,
+        interface: placeInterfaceBundle,
+	direction : "master"
+  });
+}
+
+for (var i=0; i<SMI_TX_INTF.length; i++) {
+     dii_unit_interfaces.push({
+                         modulePrefix: SMI_TX_INTF[i].name, 
+                         localPrefix: SMI_TX_INTF[i].name, 
+                         interface: SMI_TX_INTF[i].signals,
+	                 direction : "master"
+                         });
+     
+     if(SMI_TX_INTF[i].params.dpPresent) {
+     dii_unit_interfaces.push({
+                         modulePrefix: SMI_TX_INTF[i].name, 
+                         localPrefix: SMI_TX_INTF[i].name, 
+                         interface: SMI_TX_INTF[i].dpSignals,
+	                 direction : "master"
+                         });
+     }
+};
+ 
+for (var i=0; i<SMI_RX_INTF.length; i++) {
+      dii_unit_interfaces.push({
+                          modulePrefix: SMI_RX_INTF[i].name, 
+                          localPrefix: SMI_RX_INTF[i].name, 
+                          interface: SMI_RX_INTF[i].signals,
+	                  direction : "slave"
+                          });
+
+     if(SMI_RX_INTF[i].params.dpPresent) {
+     dii_unit_interfaces.push({
+                         modulePrefix: SMI_RX_INTF[i].name, 
+                         localPrefix: SMI_RX_INTF[i].name, 
+                         interface: SMI_RX_INTF[i].dpSignals,
+	                 direction : "slave"
+                         });
+     }
+};
+
+if ( usePma ) {
+  dii_unit_interfaces.push({
+        modulePrefix: qInterfaceName,
+        localPrefix: qInterfaceName,
+        interface: qInterfaceBundle,
+	direction : "slave"
+  });
+}
+
+
+dii_unit_interfaces.push({
+        modulePrefix: 'dii_',
+        localPrefix: 'dii_',
+        interface: internalInterfaces.internalFaultInterface,
+	direction : "master",
+	excludeFromFC : true 
+});
+
+dii_unit_interfaces.push({
+        modulePrefix: '',
+        localPrefix: irqInterfaceName,
+        interface: irqInterfaceBundle,
+	direction : "master",
+	excludeFromFC : true 	
+});
+\jsend
+//-----------------------------------------------------------------------------
+// DII Unit
+
+ \=u.instance({
+        instanceName   : 'u_dii_unit',
+        moduleName     : 'dii_unit',
+        params         :  dii_unit_Params,
+        verilogParams  :  {},
+        ports          :  {
+	                     cerr_threshold : 'cerr_thresh'
+	                  },
+        interfaces     :  dii_unit_interfaces,
+        portsDelimiter : '\n    '
+
+})=\
+
+//=============================================================================
+// DII Duplicate Unit
+//=============================================================================
+\jsbegin
+var checkerInterfaceBundle  = {};
+var delayInterfaceBundle    = {};
+
+if(enableUnitDuplication == 1 & useResiliency) {
+// Copy over interfaces with new local prefix
+var dii_dup_unit_interfaces = [];
+
+for(var i = 0; i < dii_unit_interfaces.length; i++){
+   dii_dup_unit_interfaces.push({
+        modulePrefix: dii_unit_interfaces[i].modulePrefix,
+        localPrefix: 'late_' + dii_unit_interfaces[i].localPrefix,
+        interface: dii_unit_interfaces[i].interface,
+	excludeFromFC: dii_unit_interfaces[i].excludeFromFC
+   });
+}
+
+
+//-----------------------------------------------------------------------------
+// Create Params/Interfaces for Delay/Checker module - Should automatically pick up changes from main module
+
+for(var intf = 0; intf < dii_dup_unit_interfaces.length; intf++) {
+ if (dii_dup_unit_interfaces[intf].excludeFromFC != true) {
+   var inputSignalKeys  = [];
+   var outputSignalKeys = [];
+
+   // Handle AXI Case of 2 Deep
+   if (Object.keys(dii_dup_unit_interfaces[intf].interface)[0] == 'ar_') {
+     var axiKeys = Object.keys(dii_dup_unit_interfaces[intf].interface);
+     var prefix = dii_unit_interfaces[intf].localPrefix;
+     for( var axiKey = 0; axiKey < axiKeys.length; axiKey++ ) {
+        var axiSignals = Object.keys(dii_dup_unit_interfaces[intf].interface[axiKeys[axiKey]]);
+        for( var axiSig = 0; axiSig < axiSignals.length; axiSig++ ) {
+	 if(dii_dup_unit_interfaces[intf].interface[axiKeys[axiKey]][axiSignals[axiSig]] < 0) {
+	  delayInterfaceBundle[prefix + axiKeys[axiKey] + axiSignals[axiSig]] = Math.abs(dii_dup_unit_interfaces[intf].interface[axiKeys[axiKey]][axiSignals[axiSig]]);
+	 } else if (dii_dup_unit_interfaces[intf].interface[axiKeys[axiKey]][axiSignals[axiSig]] > 0){
+	  checkerInterfaceBundle[prefix + axiKeys[axiKey] + axiSignals[axiSig]] = Math.abs(dii_dup_unit_interfaces[intf].interface[axiKeys[axiKey]][axiSignals[axiSig]]);
+	 }
+	}
+     }
+   } else {
+     // All other cases
+     if (dii_unit_interfaces[intf].direction == "master"){
+       inputSignalKeys  = Object.keys(dii_dup_unit_interfaces[intf].interface).filter(key => (dii_dup_unit_interfaces[intf].interface[key] < 0) & key != 'clk' & key != 'reset_n');
+       outputSignalKeys = Object.keys(dii_dup_unit_interfaces[intf].interface).filter(key => (dii_dup_unit_interfaces[intf].interface[key] > 0) & key != 'clk' & key != 'reset_n');
+     } else {
+       inputSignalKeys  = Object.keys(dii_dup_unit_interfaces[intf].interface).filter(key => (dii_dup_unit_interfaces[intf].interface[key] > 0) & key != 'clk' & key != 'reset_n');
+       outputSignalKeys = Object.keys(dii_dup_unit_interfaces[intf].interface).filter(key => (dii_dup_unit_interfaces[intf].interface[key] < 0) & key != 'clk' & key != 'reset_n');
+     }
+     for(var sig = 0; sig < inputSignalKeys.length; sig++) {
+       delayInterfaceBundle[dii_unit_interfaces[intf].localPrefix + inputSignalKeys[sig]] = Math.abs(dii_dup_unit_interfaces[intf].interface[inputSignalKeys[sig]]);
+     }
+
+     for(var sig = 0; sig < outputSignalKeys.length; sig++) {
+       checkerInterfaceBundle[dii_unit_interfaces[intf].localPrefix + outputSignalKeys[sig]] = Math.abs(dii_dup_unit_interfaces[intf].interface[outputSignalKeys[sig]]);
+     }
+   }
+  }
+}
+
+\jsend
+
+//-----------------------------------------------------------------------------
+// Create Wires for delayed signals
+\jsbegin
+/* istanbul ignore if env ncore_3p0 */
+if(useExternalMemory == 1) {
+\jsend
+\=bundleFunctions.wiresFromInterface('late_mem__' + rtlPrefixString + '_', memoryInterface,   [], obj.lib.bundle)=\
+\js }
+
+\js if(enableNativeIntfProtection & !placeInterfaceSkip) {
+\=bundleFunctions.wiresFromInterface('late_'+placeInterfaceName, placeInterfaceBundle,   [], obj.lib.bundle)=\
+\js }
+
+\=bundleFunctions.wiresFromInterface('late_', clkInterface,   [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('late_dii_' , internalInterfaces.internalFaultInterface,   [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('late_'+axiInterfaceName, axiInterfaceBundle,   [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('late_'+apbInterfaceName, apbInterfaceBundle,   [], obj.lib.bundle)=\
+\=bundleFunctions.wiresFromInterface('late_'+uIdInterfaceName, uIdInterfaceBundle,   [], obj.lib.bundle)=\
+
+\js if (usePma) {
+\=bundleFunctions.wiresFromInterface('late_'+qInterfaceName  , qInterfaceBundle  ,   [], obj.lib.bundle)=\
+\js }
+
+\=bundleFunctions.wiresFromInterface('late_'+irqInterfaceName, irqInterfaceBundle,   [], obj.lib.bundle)=\
+
+\js for (var i=0; i<SMI_TX_INTF.length; i++) {
+\=bundleFunctions.wiresFromInterface('late_' + SMI_TX_INTF[i].name, SMI_TX_INTF[i].signals,   [], obj.lib.bundle)=\
+\js     if(SMI_TX_INTF[i].params.dpPresent) {
+\=bundleFunctions.wiresFromInterface('late_' + SMI_TX_INTF[i].name,SMI_TX_INTF[i].dpSignals ,   [], obj.lib.bundle)=\
+\js     }
+\js};
+ 
+\js for (var i=0; i<SMI_RX_INTF.length; i++) {
+\=bundleFunctions.wiresFromInterface('late_' + SMI_RX_INTF[i].name, SMI_RX_INTF[i].signals,   [], obj.lib.bundle)=\
+\js     if(SMI_RX_INTF[i].params.dpPresent) {
+\=bundleFunctions.wiresFromInterface('late_' + SMI_RX_INTF[i].name, SMI_RX_INTF[i].dpSignals,   [], obj.lib.bundle)=\
+\js     }
+\js};
+
+//-----------------------------------------------------------------------------
+// Delay Unit
+
+wire reset_n_delay;
+
+\jsbegin
+var delayInterfaces = [];
+
+delayInterfaces.push({
+        modulePrefix: '',
+        localPrefix: clkInterfaceName,
+        interface: clkInterface
+   });
+   
+delayInterfaces.push({
+        modulePrefix: 'in_',
+        localPrefix: '',
+        interface: delayInterfaceBundle
+   });
+
+delayInterfaces.push({
+        modulePrefix: 'out_',
+        localPrefix: 'late_',
+        interface: delayInterfaceBundle
+   });
+\jsend
+
+\=u.instance({
+        instanceName   : 'u_dii_checker_delay',
+        moduleName     : 'checker_delay',
+        params         :  {
+	                     clkInterface    : clkInterface,
+	                     delayInterface  : delayInterfaceBundle,
+			     nDelay          : nResiliencyDelay
+	                  },
+	interfaces     : delayInterfaces,
+	ports          : {
+			     reset_n_delay   : 'reset_n_delay',
+	                     test_mode       : "1'b0"
+	                 },
+        verilogParams  :  {},
+        portsDelimiter : '\n    '
+
+})=\
+
+//-----------------------------------------------------------------------------
+// Duplicate DII Unit
+
+\js delete dii_dup_unit_interfaces[0]; // Delete clk interface from duplicate unit interfaces
+
+ \=u.instance({
+        instanceName   : 'dup_unit',
+        moduleName     : 'dii_unit',
+        params         :  dii_unit_Params,
+        verilogParams  :  {},
+        ports          :  {
+	                     to_clk_gate_clk       : checkClkInterfaceName+'clk',
+	                     to_clk_gate_reset_n   : 'reset_n_delay',
+			     cerr_threshold        : 'late_cerr_thresh'
+	                  },
+        interfaces     :  dii_dup_unit_interfaces,
+        portsDelimiter : '\n    '
+
+})=\
+\jsbegin
+}
+if(useResiliency) {
+\jsend
+
+//-----------------------------------------------------------------------------
+// Check Unit
+
+assign \=bistInterfaceName=\domain_is_on = 1'b1;
+
+\jsbegin
+var dii_checker_interfaces = [];
+
+// Add cerr_threshold
+checkerInterfaceBundle.cerr_thresh = 32;
+
+dii_checker_interfaces.push({
+        modulePrefix: '',
+        localPrefix: clkInterfaceName,
+        interface: clkInterface, exclude : ['clk']
+});
+
+dii_checker_interfaces.push({
+        modulePrefix: '',
+        localPrefix: bistInterfaceName,
+        interface: bistInterfaceBundle, exclude : ['domain_is_on']
+});
+
+dii_checker_interfaces.push({
+        modulePrefix: '',
+        localPrefix: faultInterfaceName,
+        interface: faultInterfaceBundle, exclude : ['late_clk']
+});
+
+dii_checker_interfaces.push({
+        modulePrefix: 'func_',
+        localPrefix: '',
+        interface: checkerInterfaceBundle
+});
+
+dii_checker_interfaces.push({
+        modulePrefix: 'check_',
+        localPrefix: 'late_',
+        interface: checkerInterfaceBundle
+});
+\jsend
+
+\js var latePrefix = (enableUnitDuplication == 1) ? 'late_' : '';
+
+wire func_0_fault_in       = dii_read_buffer_UCE;
+wire check_0_fault_in      = \=latePrefix=\dii_read_buffer_UCE;
+wire func_0_cerr_fault_in  = dii_read_buffer_CE;
+wire check_0_cerr_fault_in = \=latePrefix=\dii_read_buffer_CE;
+
+wire func_1_fault_in       = dii_placeholder_UCE;
+wire check_1_fault_in      = \=latePrefix=\dii_placeholder_UCE;
+wire func_1_cerr_fault_in  = dii_placeholder_CE;
+wire check_1_cerr_fault_in = \=latePrefix=\dii_placeholder_CE;
+
+wire func_2_fault_in       = dii_cmux_UCE;
+wire check_2_fault_in      = \=latePrefix=\dii_cmux_UCE;
+wire func_2_cerr_fault_in  = dii_cmux_cmd_req_CE;
+wire check_2_cerr_fault_in = \=latePrefix=\dii_cmux_cmd_req_CE;
+
+wire func_3_fault_in       = 'h0; 
+wire check_3_fault_in      = 'h0;
+wire func_3_cerr_fault_in  = dii_cmux_dtr_rsp_CE;
+wire check_3_cerr_fault_in = \=latePrefix=\dii_cmux_dtr_rsp_CE;
+
+wire func_4_fault_in       = 'h0;
+wire check_4_fault_in      = 'h0;
+wire func_4_cerr_fault_in  = dii_cmux_str_rsp_CE;
+wire check_4_cerr_fault_in = \=latePrefix=\dii_cmux_str_rsp_CE;
+
+wire func_5_fault_in       = 'h0;
+wire check_5_fault_in      = 'h0;
+wire func_5_cerr_fault_in  = dii_cmux_dtw_req_CE;
+wire check_5_cerr_fault_in = \=latePrefix=\dii_cmux_dtw_req_CE;
+
+
+\=u.instance({
+        instanceName   : 'u_dii_fault_checker',
+        moduleName     : 'fault_checker',
+        params         :  {
+			     nDelay                : nResiliencyDelay,
+	                     wThreshold            : 32,
+			     clkInterface          : clkInterface,
+			     checkerInterface      : checkerInterfaceBundle,
+			     enableUnitDuplication : enableUnitDuplication,
+			     numFaultInputs        : 6,
+                             eSignalPipe           : 1 
+	                  },
+        verilogParams  :  {},
+	interfaces     :  dii_checker_interfaces,
+        ports          :  {
+	                     clk                   : clkInterfaceName+'clk',
+			     reset_n_delay         : 'reset_n_delay',
+			     func_0_fault_in       : 'func_0_fault_in',
+			     check_0_fault_in      : 'check_0_fault_in',
+			     func_0_cerr_fault_in  : 'func_0_cerr_fault_in',
+			     check_0_cerr_fault_in : 'check_0_cerr_fault_in',
+			     func_1_fault_in       : 'func_1_fault_in',
+			     check_1_fault_in      : 'check_1_fault_in',
+			     func_1_cerr_fault_in  : 'func_1_cerr_fault_in',
+			     check_1_cerr_fault_in : 'check_1_cerr_fault_in',
+			     func_2_fault_in       : 'func_2_fault_in',
+			     check_2_fault_in      : 'check_2_fault_in',
+			     func_2_cerr_fault_in  : 'func_2_cerr_fault_in',
+			     check_2_cerr_fault_in : 'check_2_cerr_fault_in',
+			     func_3_fault_in       : 'func_3_fault_in',
+			     check_3_fault_in      : 'check_3_fault_in',
+			     func_3_cerr_fault_in  : 'func_3_cerr_fault_in',
+			     check_3_cerr_fault_in : 'check_3_cerr_fault_in',
+			     func_4_fault_in       : 'func_4_fault_in',
+			     check_4_fault_in      : 'check_4_fault_in',
+			     func_4_cerr_fault_in  : 'func_4_cerr_fault_in',
+			     check_4_cerr_fault_in : 'check_4_cerr_fault_in',
+			     func_5_fault_in       : 'func_5_fault_in',
+			     check_5_fault_in      : 'check_5_fault_in',
+			     func_5_cerr_fault_in  : 'func_5_cerr_fault_in',
+			     check_5_cerr_fault_in : 'check_5_cerr_fault_in',
+			     cerr_threshold        : 'cerr_thresh[7:0]'
+			     
+	                  },
+        portsDelimiter : '\n    '
+
+})=\
+\jsbegin
+}
+
+/* istanbul ignore if env ncore_3p0 */
+if(useExternalMemory == 1) {
+\jsend
+//=============================================================================
+// DII External Memory Instances
+//=============================================================================
+\js console.log(memoryType);
+\=obj.lib.instance({
+        instanceName: 'u_readDataMem',
+        moduleName: readDataMemInterface.rtlPrefixString + '_em_mem_external',
+	tachlName: 'em_mem_external',
+        params: {
+                        sverilog        : assertOn,
+                        memEccBlocks    : readDataMemParams.eccBlocks,
+                        rtlPrefixString : readDataMemInterface.rtlPrefixString,
+                        modulePrefix    : 'dii',
+                        memoryType      : memoryType,
+                        nSignals        : readDataMemInterface.nSignals,
+                        signals         : readDataMemInterface.signals,
+                        useHandshake    : 0,
+                        no_mem_init     : 0,
+                        ports           : portType,
+                        bitEnable       : 0,
+                        numberOfEnables : 0,
+                        width           : readDataMemStructure.width,
+                        depth           : readDataMemStructure.depth 
+                    },
+         verilogParams  : {},
+         ports          : instance_ports_for_ram,
+         portsDelimiter : '\n'
+})=\
+\js }
+	
+endmodule

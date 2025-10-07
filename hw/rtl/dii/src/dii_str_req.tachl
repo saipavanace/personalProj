@@ -1,0 +1,403 @@
+\jsbegin
+    var u = obj.lib;
+
+    var log2ceil = function(n) { return Math.ceil(Math.log(n)/Math.LN2); };
+
+    var wChipletId          = u.getParam('wChipletId');
+    var wLinkId             = u.getParam('wLinkId');
+
+    var tt_id_width         = u.getParam('tt_id_width');
+    
+    var nWriteRBIDs         = u.getParam('nWriteRBIDs');
+    var nNcCmdInFlightToDii = u.getParam('nNcCmdInFlightToDii');
+    var wData               = u.getParam('wData');
+    var rtt_num_entries     = u.getParam('nRttEntries');
+    var wtt_num_entries     = u.getParam('nWttEntries');
+    var wWttId              = log2ceil(wtt_num_entries);
+    var nTotalEntries       = rtt_num_entries + wtt_num_entries;
+    var tm_width            = (u.getParam('STRReqInterface').tm == undefined) ? /* istanbul ignore next env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */ 0 : u.getParam('STRReqInterface', 'tm');
+    var str_id_num          = Math.pow(2,u.getParam('STRReqInterface', 'r_message_id'));
+    var str_id_width        = log2ceil(str_id_num);
+
+    var dii_intfsize = 0;
+    if(wData == 256) {
+      dii_intfsize = 2;
+    } else if(wData == 128){
+      dii_intfsize = 1;
+    } else {
+      dii_intfsize = 0;
+    }
+
+    var tid_width           = u.getParam('wMsgId');
+    var init_id_width       = u.getParam('wInitiatorId');
+    var unit_id_width       = u.getParam('unit_id_width');
+    var port_id_width       = u.getParam('port_id_width');
+    var str_req_width       = u.getParam('str_req_width') ;
+    var cm_type_width       = u.getParam('wCmType');
+    var h_prot_width        = u.getParam('wHProt');
+    var t_tier_width        = u.getParam('wTtier');
+    var steering_width      = u.getParam('wSteering');
+    var priority_width      = u.getParam('wPriority');
+    var ql_width            = u.getParam('wQl');
+    var qos_width           = u.getParam('wQos');        
+    var str_rbid_width      = u.getParam('STRReqInterface', 'rb_id');
+    var str_mpf1_width      = u.getParam('STRReqInterface', 'mpf1');
+    var str_mpf2_width      = u.getParam('STRReqInterface', 'mpf2');
+    var cmstatus_width      = u.getParam('STRReqInterface', 'cm_status');
+    var rmessage_id_width   = u.getParam('STRReqInterface', 'r_message_id');
+    var m_prot_width        = u.getParam('STRRspInterface', 'm_prot');
+    var fnNativeInterface   = u.getParam('fnNativeInterface');    
+    var rtt_id_width        = log2ceil(rtt_num_entries);
+    var wFUnitId            = u.getParam('wFUnitId');
+    var wFPortId            = obj.lib.getParam('wFPortId');
+    var wGlobalFUnitId      = wChipletId + wFUnitId;
+    var StrReq              = u.getParam('cmType','StrReq'); 
+    
+    u.port('input' , 'clk'                    , 1);
+    u.port('input' , 'reset_n'                , 1);
+
+    if (wChipletId > 0) {
+    u.port('input', 'my_chiplet_id'           , wChipletId);
+    }
+
+    u.port('input' , 'str_req_fifo_valid_wr'  , 1);
+    u.port('input' , 'str_req_fifo_data_wr'   , str_req_width);
+    u.port('input' , 'str_req_fifo_last_wr'   , 1);
+    u.port('input' , 'str_req_fifo_valid_rd'  , 1);
+    u.port('input' , 'str_req_fifo_data_rd'   , str_req_width);
+    u.port('input' , 'str_req_fifo_last_rd'   , 1);
+    u.port('input' , 'str_req_fifo_valid_cmo' , 1);
+    u.port('input' , 'str_req_fifo_data_cmo'  , str_req_width);
+    u.port('input' , 'str_req_fifo_last_cmo'  , 1);
+    u.port('output', 'str_req_fifo_ready_cmo' , 1);
+    u.port('input' , 'my_f_unit_id'           , wFUnitId);
+
+    u.port('input' , 'str_rsp_UCE' , 1);
+
+    u.port('output',  'str_req_fifo_ready_wr' , 1);
+    u.port('output',  'str_req_fifo_ready_rd' , 1);
+
+    u.port('output',  'str_busy' , 1);
+
+    u.port('input',  'str_req_has_credits'    , 1);
+    u.port('input',  'release_rbid_credit'    , 1);
+
+    obj.lib.interface('str_req_mst_', 'master', obj.lib.getParam('STRReqInterface'));
+    obj.lib.interface('str_rsp_slv_', 'slave',  obj.lib.getParam('STRRspInterface'));
+
+\jsend
+
+module \=u.getModuleName()=\
+(
+\=u.getPorts('\n    ')=\
+);
+
+wire                        incoming_msg_target_mismatch;
+    \js if (wChipletId > 0) {
+assign                      incoming_msg_target_mismatch = (str_rsp_slv_target_id[\=wFUnitId+wFPortId-1=\:\=wFPortId=\] != my_f_unit_id) |
+                                                           (str_rsp_slv_target_id[\=wChipletId+wLinkId+wFUnitId+wFPortId-1=\:\=wLinkId+wFUnitId+wFPortId=\] != my_chiplet_id);
+    \js } else {
+assign                      incoming_msg_target_mismatch = (str_rsp_slv_target_id != {my_f_unit_id,\=wFPortId=\'b0});
+    \js }
+
+wire [\=str_id_num-1=\:0]    valid_str_ids;
+wire [\=str_id_num-1=\:0]    valid_str_ids_in;
+wire [\=str_id_num-1=\:0]    invalid_str_ids;
+wire [\=str_id_num-1=\:0]    str_id_next;
+wire [\=str_id_num-1=\:0]    comp_str_id_num;
+wire [\=str_id_num-1=\:0]    str_req_mst_message_id_decoded;
+wire [\=str_req_width-1=\:0] str_req_fifo_out_packet;
+wire [\=str_req_width-1=\:0] str_req_mux_data;
+wire [\=str_id_width-1=\:0]  str_id_next_encoded;
+wire [\=str_id_width-1=\:0]  str_req_mst_message_id_d1;
+wire [\=str_id_width-1=\:0]  str_req_mst_message_id_trim = str_req_mst_message_id[\=str_id_width-1=\:0];
+wire                         str_req_fifo_out_valid;
+wire                         use_new_str_id;
+wire                         all_str_ids_in_use;
+wire                         out_str_req_ready;
+wire                         str_req_mux_ready;
+wire                         str_req_mux_valid;
+wire                         str_req_mux_last;
+wire                         str_req_fifo_empty;
+wire                         use_new_str_id_d1;
+wire                         str_id_retire;
+wire                         update_valid_str_ids;
+wire                         fifo_ready_wr;
+\jsbegin
+var str_req_tid_lsb          = 0;
+var str_req_tid_msb          = tid_width - 1;
+var str_req_init_id_lsb      = tid_width;
+var str_req_init_id_msb      = tid_width + wGlobalFUnitId -1;
+var str_req_rb_id_lsb        = tid_width + wGlobalFUnitId;
+var str_req_rb_id_msb        = tid_width + wGlobalFUnitId + tt_id_width -1; 
+var str_req_cm_type_lsb      = tid_width + wGlobalFUnitId + tt_id_width ;
+var str_req_cm_type_msb      = tid_width + wGlobalFUnitId + tt_id_width + 7 ;
+var str_req_is_write         = tid_width + wGlobalFUnitId + tt_id_width;
+
+var str_req_qos_lsb          = tid_width + wGlobalFUnitId + tt_id_width + 1;
+var str_req_qos_msb          = tid_width + wGlobalFUnitId + tt_id_width + qos_width;
+var str_req_priority_lsb     = tid_width + wGlobalFUnitId + tt_id_width + qos_width + 1;
+var str_req_priority_msb     = tid_width + wGlobalFUnitId + tt_id_width + qos_width + priority_width;
+var str_req_ql_lsb           = tid_width + wGlobalFUnitId + tt_id_width + qos_width + priority_width + 1;
+var str_req_ql_msb           = tid_width + wGlobalFUnitId + tt_id_width + qos_width + priority_width + ql_width;
+var str_req_tm               = tid_width + wGlobalFUnitId + tt_id_width + qos_width + priority_width + ql_width + 1;
+\jsend
+assign out_str_req_ready = str_req_has_credits & str_req_mst_ready &  ~all_str_ids_in_use;
+assign str_req_mst_valid = str_req_has_credits & str_req_fifo_out_valid  & ~all_str_ids_in_use;
+
+wire new_write = str_req_fifo_ready_wr & str_req_fifo_valid_wr;
+
+// Need to Retire Write after write is sent from buffer. Not on STRRsp
+wire ret_write = release_rbid_credit; 
+
+reg  [\=log2ceil(nWriteRBIDs)=\:0] next_write_count;
+wire [\=log2ceil(nWriteRBIDs)=\:0] write_count;
+
+always @ (*) begin
+  case({new_write,ret_write})
+   2'b00   : begin next_write_count = write_count;      end
+   2'b10   : begin next_write_count = write_count + \=log2ceil(nWriteRBIDs)+1=\'h1;  end
+   2'b01   : begin next_write_count = write_count - \=log2ceil(nWriteRBIDs)+1=\'h1;  end
+   default : begin next_write_count = write_count;      end
+  endcase
+end
+
+wire can_isse_write_str = (write_count < \=nWriteRBIDs=\);
+
+\=u.dffre(      log2ceil(nWriteRBIDs) + 1
+              , 'write_count'
+	      , 'next_write_count'
+	      , '{'+log2ceil(nWriteRBIDs)+'+'+1+'{1\'b0}}'
+	      , "1'b1" 
+	      , 'clk'
+	      , 'reset_n')=\
+
+assign str_req_fifo_ready_wr = fifo_ready_wr & can_isse_write_str;
+
+\jsbegin
+var numInputPorts = 3;
+var requestMuxarbParam = {
+        width             : str_req_width,
+        number_of_inputs  : numInputPorts
+    };
+    
+var instance_ports_for_str_request_muxarb = {
+        clk                 : 'clk',
+        reset_n             : 'reset_n',
+        source_ready        : 'str_req_mux_ready',
+        source_valid        : 'str_req_mux_valid',
+        source_last         : 'str_req_mux_last',
+        source_data         : 'str_req_mux_data'
+    };
+    
+instance_ports_for_str_request_muxarb['sink0_ready'] = 'fifo_ready_wr'; 
+instance_ports_for_str_request_muxarb['sink0_valid'] = 'str_req_fifo_valid_wr & can_isse_write_str';
+instance_ports_for_str_request_muxarb['sink0_last']  = 'str_req_fifo_last_wr';
+instance_ports_for_str_request_muxarb['sink0_data']  = 'str_req_fifo_data_wr';
+instance_ports_for_str_request_muxarb['sink1_ready'] = 'str_req_fifo_ready_rd';
+instance_ports_for_str_request_muxarb['sink1_valid'] = 'str_req_fifo_valid_rd';
+instance_ports_for_str_request_muxarb['sink1_last']  = 'str_req_fifo_last_rd';
+instance_ports_for_str_request_muxarb['sink1_data']  = 'str_req_fifo_data_rd';
+instance_ports_for_str_request_muxarb['sink2_ready'] = 'str_req_fifo_ready_cmo';
+instance_ports_for_str_request_muxarb['sink2_valid'] = 'str_req_fifo_valid_cmo';
+instance_ports_for_str_request_muxarb['sink2_last']  = 'str_req_fifo_last_cmo';
+instance_ports_for_str_request_muxarb['sink2_data']  = 'str_req_fifo_data_cmo';
+	
+\jsend
+\=u.instance({
+        instanceName   : 'request_muxarb',
+        moduleName     : 'muxarb',
+        params         : requestMuxarbParam,
+        verilogParams  : {},
+        ports          : instance_ports_for_str_request_muxarb,
+        portsDelimiter : '\n    '
+})=\
+
+
+\jsbegin
+        var dii_str_req_fifo_Params = {
+                width       : str_req_width ,
+                depth       : 2,
+                bypass_mode : 0
+        };
+
+        var  instance_ports_for_dii_str_req_fifo = {
+                clk             : 'clk',
+                reset_n         : 'reset_n',
+                push_valid      : 'str_req_mux_valid',
+                push_data       : 'str_req_mux_data',
+                push_ready      : 'str_req_mux_ready',
+                pop_valid       : 'str_req_fifo_out_valid',
+                pop_data        : 'str_req_fifo_out_packet',
+                pop_ready       : 'out_str_req_ready',
+                empty           : 'str_req_fifo_empty'
+        };
+\jsend
+
+\=u.instance({
+        instanceName: 'dii_str_req_inp_fifo',
+        moduleName: 'dii_fifo',
+        params: dii_str_req_fifo_Params,
+        verilogParams: {},
+        ports: instance_ports_for_dii_str_req_fifo
+})=\
+
+//RMesage ID of the STR request is the TID of the write request
+assign str_req_mst_r_message_id  = str_req_fifo_out_packet[\=str_req_tid_msb=\:\=str_req_tid_lsb=\];
+//Target ID of the STR request is the initiator ID of the write request
+    \js if (wChipletId > 0) {
+assign str_req_mst_target_id     = {
+                                     str_req_fifo_out_packet[\=wChipletId+wFUnitId+str_req_init_id_lsb-1=\:\=wFUnitId+str_req_init_id_lsb=\],
+                                     {\=wLinkId=\{1'b0}},
+                                     str_req_fifo_out_packet[\=wFUnitId+str_req_init_id_lsb-1=\:\=str_req_init_id_lsb=\],
+                                     {\=wFPortId=\{1'b0}}
+                                   };
+    \js } else {
+assign str_req_mst_target_id     = {str_req_fifo_out_packet[\=str_req_init_id_msb=\:\=str_req_init_id_lsb=\],{\=wFPortId=\{1'b0}}};
+    \js }
+//RB_ID is the index of the WTT entry
+\jsbegin
+/* istanbul ignore else env ncore_3p7 */
+if (str_rbid_width > wWttId) { \jsend
+assign str_req_mst_rb_id         = {\=str_rbid_width-wWttId=\'b0,str_req_fifo_out_packet[\=str_req_rb_id_lsb+wWttId-1=\:\=str_req_rb_id_lsb=\]};
+\js } else {
+  \jsbegin
+  /* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+  if (str_rbid_width == wWttId) {
+  \jsend
+  assign str_req_mst_rb_id         = str_req_fifo_out_packet[\=str_req_rb_id_lsb+wWttId-1=\:\=str_req_rb_id_lsb=\];
+  \js } else {
+  \js throw "ERROR: DII - STRReq RBID must be wide enough to hold the value of the last entry in WTT."
+  \js }
+\js }
+//CMD type   
+assign str_req_mst_cm_type       = \=StrReq=\;
+
+\js// Initiator ID should be instanced at the top level and driven down from 1 source
+    \js if (wChipletId > 0) {
+assign str_req_mst_initiator_id  = {my_chiplet_id,{\=wLinkId=\{1'b0}},my_f_unit_id,{\=wFPortId=\{1'b0}}};
+    \js } else {
+assign str_req_mst_initiator_id  = {my_f_unit_id,{\=wFPortId=\{1'b0}}};
+    \js }
+
+\js if (u.getParam('STRReqInterface', 'h_prot')) {
+assign str_req_mst_h_prot        = \=u.getParam('STRReqInterface', 'h_prot')=\'h0;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (u.getParam('STRReqInterface', 't_tier')) {
+\jsend
+assign str_req_mst_t_tier        = 'h0;
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (u.getParam('STRReqInterface', 'steering')) {
+\jsend
+assign str_req_mst_steering      = 'h0;
+\js }
+
+\js if (u.getParam('STRReqInterface', 'priority')) {
+assign str_req_mst_priority      = str_req_fifo_out_packet[\=str_req_priority_msb=\:\=str_req_priority_lsb=\];
+\js }
+
+\jsbegin
+// Always have tm bit
+/* istanbul ignore else env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (tm_width) {
+\jsend
+assign str_req_mst_tm            = str_req_fifo_out_packet[\=str_req_tm=\];
+\js }
+
+\jsbegin
+// No ql for this release
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (u.getParam('STRReqInterface', 'ql')) {
+\jsend
+assign str_req_mst_ql            = str_req_fifo_out_packet[\=str_req_ql_msb=\:\=str_req_ql_lsb=\];
+\js }
+
+\jsbegin
+/* istanbul ignore if env ncore_3p2,ncore_3p0,ncore_3p4,ncore_3p6,ncore_3p7 */
+if (u.getParam('STRReqInterface').qos != undefined & u.getParam('STRReqInterface').qos != 0) {
+\jsend
+assign str_req_mst_qos           = str_req_fifo_out_packet[\=str_req_qos_msb=\:\=str_req_qos_lsb=\];
+\js }
+
+assign str_req_mst_mpf1          = \=str_mpf1_width=\'h0;
+assign str_req_mst_mpf2          = \=str_mpf2_width=\'h0;
+assign str_req_mst_cm_status     = \=cmstatus_width=\'d0; 
+assign str_req_mst_intf_size     = 2'd\=dii_intfsize=\;
+
+\js if(u.getParam('STRReqInterface','m_prot') != 0) {
+    assign str_req_mst_m_prot    = \=u.getParam('STRReqInterface','m_prot')=\'h0;
+\js }
+
+
+//STR TID generation
+
+assign invalid_str_ids               = ~(valid_str_ids[\=str_id_num-1=\:0] );
+assign all_str_ids_in_use            = &(valid_str_ids[\=str_id_num-1=\:0]);
+assign str_busy                      = |valid_str_ids[\=str_id_num-1=\:0];
+
+  \=u.instance({
+        instanceName : 'u_dii_str_id_gen',
+        moduleName   : 'dii_req_id_gen',
+        params       : {id_num : str_id_num},
+        verilogParams: {},
+        ports        :  {
+        invec        : 'invalid_str_ids',
+        outvec       : 'str_id_next'
+        }
+  })=\
+
+\=u.dffre(       1
+              , 'use_new_str_id_d1'
+	      , 'use_new_str_id'
+	      , "1'b0"
+	      , "1'b1"
+	      , 'clk'
+	      , 'reset_n')=\
+
+\=u.instance({
+        instanceName: 'u_str_id_next',
+        moduleName: 'encoder',
+        params: { width : str_id_num},
+        verilogParams: {},
+        ports: {
+            invector : 'str_id_next', outdecode : 'str_id_next_encoded'
+        }
+    })=\
+
+\=u.dffre(       str_id_width
+              , 'str_req_mst_message_id_d1'
+	      , 'str_req_mst_message_id_trim'
+	      , '{'+str_id_width+'{1\'b0}}'
+	      , "1'b1" 
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+ assign str_req_mst_message_id[\=str_id_width-1=\:0] =  use_new_str_id_d1 ? str_id_next_encoded : str_req_mst_message_id_d1;
+
+//Calculating valid IDs
+ assign str_id_retire = str_rsp_slv_valid & ~incoming_msg_target_mismatch & ~str_rsp_UCE;
+ assign str_rsp_slv_ready = str_rsp_slv_valid ;
+ 
+ assign comp_str_id_num[\=str_id_num-1=\:0]  = (\=str_id_num=\'b1 << (str_rsp_slv_r_message_id)) &  {\=str_id_num=\{str_id_retire}};
+ assign str_req_mst_message_id_decoded =  (\=str_id_num=\'b1 << str_req_mst_message_id) & {\=str_id_num=\{use_new_str_id}};
+ assign use_new_str_id = (str_req_mst_valid & str_req_mst_ready) | (use_new_str_id_d1 & all_str_ids_in_use) ;
+
+ assign valid_str_ids_in = (valid_str_ids | str_req_mst_message_id_decoded) & ~comp_str_id_num ;
+ assign update_valid_str_ids = (use_new_str_id | str_id_retire);
+
+\=u.dffre(       str_id_num
+              , 'valid_str_ids'
+	      , 'valid_str_ids_in'
+	      , '{'+str_id_num+'{1\'b0}}'
+	      , 'update_valid_str_ids'
+	      , 'clk'
+	      , 'reset_n')=\
+	      
+endmodule
+ 
