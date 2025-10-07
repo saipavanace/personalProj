@@ -1,1 +1,0 @@
-gXMLBuffer="<?xml version=\"1.0\" encoding=\"UTF-8\"?><cki><ck fm=\"Flex Licensing Manager\" to=\"RDC Considerations\" num=\"35\"/><ck fm=\"Replication\" to=\"Glossary\" num=\"39\"/><ck fm=\"Additional UI Features\" to=\"DMI Interleaving Procedure\" num=\"36\"/><ck fm=\"Memory Map\" to=\"Welcome\" num=\"6\"/></cki>";

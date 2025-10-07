@@ -1,1 +1,0 @@
-gXMLBuffer ="<?xml version=\"1.0\" encoding=\"utf-8\" ?><data  src=\"toc11.js\"  name=\"3.3  Replication\" url=\"Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/Replication.htm#1048908\"><item name=\"3.3.1  Replication Steps of Ncore Units\" url=\"Ncore_3_Online_Documentation/Integration_Guide/EmbedMem/Replication.htm#1048966bc-1\" /></data>";

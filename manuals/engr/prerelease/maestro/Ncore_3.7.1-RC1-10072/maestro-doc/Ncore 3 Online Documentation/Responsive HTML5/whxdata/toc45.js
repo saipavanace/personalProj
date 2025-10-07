@@ -1,1 +1,0 @@
-gXMLBuffer ="<?xml version=\"1.0\" encoding=\"utf-8\" ?><data  src=\"toc23.js\"  name=\"Export Design (Phase 5)\" url=\"Ncore_3_Online_Documentation/User_Guide/Export/Export.htm#927532\"><item name=\"7.1  Export a Design\" url=\"Ncore_3_Online_Documentation/User_Guide/Export/Export_a_Design.htm#1003357\" /></data>";

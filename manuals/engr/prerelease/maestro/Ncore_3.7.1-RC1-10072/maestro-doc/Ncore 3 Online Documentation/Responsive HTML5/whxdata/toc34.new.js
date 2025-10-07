@@ -1,4 +1,0 @@
-(function() {
-var toc =  [{"name":"4.1  System Assembly Socket Overview","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/System_Assembly/System_Assembly_Socket_Overview.htm#1004345"},{"key":"toc35","name":"4.2  Socket Configuration Procedures","type":"book","url":"Ncore_3_Online_Documentation/User_Guide/System_Assembly/Socket_Configuration_Procedures.htm#1020397"},{"name":"4.3  Memory Map","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/System_Assembly/Memory_Map.htm#1085426"},{"key":"toc36","name":"4.4  DMI Interleaving Procedure","type":"book","url":"Ncore_3_Online_Documentation/User_Guide/System_Assembly/DMI_Interleaving_Procedure.htm#1043789"},{"key":"toc37","name":"4.5  System Assembly Communication","type":"book","url":"Ncore_3_Online_Documentation/User_Guide/System_Assembly/System_Assembly__47_Communication.htm#1109569"}];
-window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
-})();

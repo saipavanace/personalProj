@@ -1,1 +1,0 @@
-gXMLBuffer ="<?xml version=\"1.0\" encoding=\"utf-8\" ?><data  src=\"toc26.js\"  name=\"2.3  Horizontal Toolbar\" url=\"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Horizontal_Toolbar.htm#1038112\"><item name=\"2.3.1  Flow Navigator Ribbon\" url=\"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Horizontal_Toolbar.htm#1038432bc-1\" /></data>";

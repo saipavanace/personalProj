@@ -1,4 +1,0 @@
-(function() {
-var toc =  [{"name":"Maestro Licensing","type":"item","url":"Ncore_3_Online_Documentation/Get_Started/Flex_Licensing_Manager/Maestro_Licensing.htm#990622"},{"name":"License Basics","type":"item","url":"Ncore_3_Online_Documentation/Get_Started/Flex_Licensing_Manager/Maestro_Licensing.htm#990623bc-1"},{"key":"toc7","name":"License File","type":"book","url":"Ncore_3_Online_Documentation/Get_Started/Flex_Licensing_Manager/Maestro_Licensing.htm#990625bc-2"},{"key":"toc8","name":"Starting The License Server","type":"book","url":"Ncore_3_Online_Documentation/Get_Started/Flex_Licensing_Manager/Maestro_Licensing.htm#990660bc-4"}];
-window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
-})();

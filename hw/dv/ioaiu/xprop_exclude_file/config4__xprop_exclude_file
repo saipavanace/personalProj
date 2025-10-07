@@ -1,6 +1,0 @@
-#assign timestamp_inc_updated = dtw_resp_cm_status[7] ? (XAIUCCTRLR_inc_out - {4'd0,timestamp_gainErrProduct[10:3]}) : (XAIUCCTRLR_inc_out + {4'd0,timestamp_gainErrProduct[10:3]});
-assertion enable -off -filter XPROP_COMB_1196_32 /tb_top/dut/trace_capture
-assertion enable -off -filter XPROP_COMB_1196_34 /tb_top/dut/trace_capture
-# apb event ordering issue setting fire_xcheck (note: you will see it pass in the sim until the ignore delay counter is hit)
-assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/ioaiu_core_wrapper/ioaiu_core0/assert_unknown_apb
-assertion enable -off -filter XPROP_COMB_38 /tb_top/dut/dup_unit/ioaiu_core0/assert_unknown_apb

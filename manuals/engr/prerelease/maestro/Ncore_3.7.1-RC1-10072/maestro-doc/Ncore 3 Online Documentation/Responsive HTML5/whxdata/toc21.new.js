@@ -1,4 +1,0 @@
-(function() {
-var toc =  [{"name":"7.1  Timing Constraints","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/Replication/Timing_Constraints.htm#1049329"},{"name":"7.2  CDC Considerations","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/Replication/CDC_Considerations.htm#998406"},{"name":"7.3  RDC Considerations","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/Replication/RDC_Considerations.htm#998437"},{"key":"toc22","name":"7.4  Physical Implementation Considerations","type":"book","url":"Ncore_3_Online_Documentation/Integration_Guide/Replication/Physical_Implementation_Considerations.htm#998473"}];
-window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
-})();

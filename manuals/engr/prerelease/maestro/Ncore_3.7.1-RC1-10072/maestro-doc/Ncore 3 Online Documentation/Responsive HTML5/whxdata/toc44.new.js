@@ -1,4 +1,0 @@
-(function() {
-var toc =  [{"name":"6.2.1  Topology Editor","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Refinement_Architectural_View/Topology_Editor_Tools_and_Controls.htm#1012991bc-1"},{"name":"6.2.2  Parameter View","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Refinement_Architectural_View/Topology_Editor_Tools_and_Controls.htm#1012843bc-2"},{"name":"6.2.3  Connectivity Table and Routing Table","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Refinement_Architectural_View/Topology_Editor_Tools_and_Controls.htm#1012889bc-3"}];
-window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
-})();

@@ -1,1 +1,0 @@
-source ccov_chi_aiu_hw_config_two_exclude_coverCheck.do

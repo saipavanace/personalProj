@@ -1,9 +1,0 @@
-#!/bin/csh -f
-# Usage: runtest.sh [test_list=testlist]
-
-set testf = testlist
-if ( $#argv > 0 ) then
-    set testf = $1
-endif
-
-tclsh $WORK_TOP/dv/scripts/par_run.tcl -e . -b -f $testf

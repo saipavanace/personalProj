@@ -1,4 +1,0 @@
-(function() {
-var toc =  [{"name":"6.1.1  Synopsys DCNXT","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Global_Synthesis_Options.htm#1053745bc-1"},{"name":"6.1.2  Synthesis Script Files","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Global_Synthesis_Options.htm#1015746bc-2"},{"name":"6.1.3  Running Synthesis","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Global_Synthesis_Options.htm#1017774bc-3"},{"name":"6.1.4  Synthesis Options","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Global_Synthesis_Options.htm#1017880bc-4"},{"name":"6.1.5  Synthesis Reports","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/LogicSynthesis/Global_Synthesis_Options.htm#1018018bc-5"}];
-window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
-})();

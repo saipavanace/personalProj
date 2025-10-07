@@ -1,1 +1,0 @@
-source ccov_chi_aiu_hw_cfg_nxpauto_exclude_coverCheck.do

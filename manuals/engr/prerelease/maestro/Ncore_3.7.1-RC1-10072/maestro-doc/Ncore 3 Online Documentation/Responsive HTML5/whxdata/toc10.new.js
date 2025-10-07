@@ -1,4 +1,0 @@
-(function() {
-var toc =  [{"name":"2.1  APB4 Interface Support","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/ExtTimingReq/APB4_Interface_Support.htm#1047650"},{"name":"2.2  Interface Timing","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/ExtTimingReq/Interface_Timing.htm#1047757"},{"name":"2.3  Integrating Synchronous Interfaces","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/ExtTimingReq/Integrating_Synchronous_Interfaces.htm#1045379"},{"name":"2.4  Integrating Asynchronous Interfaces","type":"item","url":"Ncore_3_Online_Documentation/Integration_Guide/ExtTimingReq/Integrating_Asynchronous_Interfaces.htm#1044914"}];
-window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
-})();

@@ -1,4 +1,0 @@
-(function() {
-var toc =  [{"name":"2.6.1  Undock and restore the Maestro interface","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Additional_UI_Features.htm#1038858bc-1"},{"name":"2.6.2  Maestro Settings Dialog","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Additional_UI_Features.htm#1038880bc-2"},{"name":"2.6.3  Topology Editor Settings","type":"item","url":"Ncore_3_Online_Documentation/User_Guide/Graphical_User_Interface/Additional_UI_Features.htm#1094944bc-3"}];
-window.rh.model.publish(rh.consts('KEY_TEMP_DATA'), toc, { sync:true });
-})();

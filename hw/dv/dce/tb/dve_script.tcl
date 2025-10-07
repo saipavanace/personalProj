@@ -1,6 +1,0 @@
-gui_list_create_group_when_add -wave -enable
-gui_open_window Wave
-gui_list_add -id Wave.1 -from Search.1 { {dce_top_tb.dut.atm.sfi_mst_req_addr} {dce_top_tb.dut.atm.sfi_mst_req_be} dce_top_tb.dut.atm.sfi_mst_req_bursttype {dce_top_tb.dut.atm.sfi_mst_req_data} dce_top_tb.dut.atm.sfi_mst_req_hurry dce_top_tb.dut.atm.sfi_mst_req_last {dce_top_tb.dut.atm.sfi_mst_req_length} dce_top_tb.dut.atm.sfi_mst_req_opc dce_top_tb.dut.atm.sfi_mst_req_press dce_top_tb.dut.atm.sfi_mst_req_protbits dce_top_tb.dut.atm.sfi_mst_req_rdy dce_top_tb.dut.atm.sfi_mst_req_security {dce_top_tb.dut.atm.sfi_mst_req_sfipriv} {dce_top_tb.dut.atm.sfi_mst_req_sfislvid} {dce_top_tb.dut.atm.sfi_mst_req_transid} dce_top_tb.dut.atm.sfi_mst_req_urgency dce_top_tb.dut.atm.sfi_mst_req_vld {dce_top_tb.dut.dvm.sfi_mst_req_addr} {dce_top_tb.dut.dvm.sfi_mst_req_be} dce_top_tb.dut.dvm.sfi_mst_req_bursttype {dce_top_tb.dut.dvm.sfi_mst_req_data} dce_top_tb.dut.dvm.sfi_mst_req_hurry dce_top_tb.dut.dvm.sfi_mst_req_last {dce_top_tb.dut.dvm.sfi_mst_req_length} dce_top_tb.dut.dvm.sfi_mst_req_opc dce_top_tb.dut.dvm.sfi_mst_req_press dce_top_tb.dut.dvm.sfi_mst_req_rdy dce_top_tb.dut.dvm.sfi_mst_req_security } -insertionbar
-gui_zoom -window Wave.1 -full
-gui_set_time_units 1ns
-gui_list_descend -id Hier.1 -meta dce_top_tb.dut
